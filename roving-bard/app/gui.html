@@ -622,6 +622,7 @@
                             <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1.0" oninput="changeVolume(this.value)">
                             <span id="volume-pct" style="font-family: 'Space Mono', monospace; font-size: 0.9rem; min-width: 35px;">100%</span>
                         </div>
+                        <button id="now-playing-toggle-btn" class="btn" style="min-width: 90px; padding: 0.8rem 1.5rem;" onclick="toggleNowPlayingPlayback()">Play</button>
                         <button class="btn btn-secondary" onclick="stopMusic()">Stop</button>
                     </div>
                 </div>
@@ -941,17 +942,37 @@
             const volumePct = document.getElementById('volume-pct');
             const volumeSlider = document.getElementById('volume-slider');
             const playerMode = document.getElementById('player-mode');
+            const toggleBtn = document.getElementById('now-playing-toggle-btn');
 
             playerMode.innerText = status.simulated ? "SIMULATED PLAYER" : "LOCAL MIXER";
             
             if (status.current_track) {
                 trackTitle.innerText = status.current_track;
-                trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
                 wave.style.display = 'flex';
+                toggleBtn.disabled = false;
+
+                if (status.paused) {
+                    trackStatus.innerText = `Paused · Vol: ${parseInt(status.volume * 100)}%`;
+                    toggleBtn.innerText = 'Resume';
+                    toggleBtn.style.background = '#ef4444';
+                    toggleBtn.style.borderColor = '#ef4444';
+                    toggleBtn.style.color = 'white';
+                } else {
+                    trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
+                    toggleBtn.innerText = 'Playing';
+                    toggleBtn.style.background = '#10b981';
+                    toggleBtn.style.borderColor = '#10b981';
+                    toggleBtn.style.color = 'white';
+                }
             } else {
                 trackTitle.innerText = "Silent (No Track Active)";
                 trackStatus.innerText = "Stopped";
                 wave.style.display = 'none';
+                toggleBtn.innerText = 'Play';
+                toggleBtn.disabled = true;
+                toggleBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+                toggleBtn.style.borderColor = 'var(--border)';
+                toggleBtn.style.color = 'var(--text-muted)';
             }
 
             volumeSlider.value = status.volume;
@@ -1130,6 +1151,15 @@
             } catch (err) {
                 console.error("Error playing audio file:", err);
                 loadDashboard();
+            }
+        }
+
+        async function toggleNowPlayingPlayback() {
+            if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) return;
+            if (currentPlaybackStatus.paused) {
+                await resumeAudioFile();
+            } else {
+                await pauseAudioFile();
             }
         }
 
