@@ -1102,6 +1102,7 @@
         async function playAudioFile(filename) {
             try {
                 const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+                const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
                 if (activeTrack && activeTrack !== filename) {
                     const items = document.querySelectorAll('#audio-files-list .mapping-item');
                     items.forEach(item => {
@@ -1109,7 +1110,7 @@
                         const titleText = titleEl ? titleEl.innerText.trim() : '';
                         const btn = item.querySelector('button');
                         if (btn) {
-                            if (titleText === activeTrack) {
+                            if (titleText === activeTrack && !isPaused) {
                                 btn.innerText = 'Stopping';
                                 btn.style.backgroundColor = '#d97706';
                                 btn.style.borderColor = '#d97706';

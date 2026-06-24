@@ -121,3 +121,34 @@ def test_player_transition_delay(tmp_path) -> None:
     assert duration_2 >= 0.18  # should sleep for approximately 200ms
     assert player.current_track == "track2.mp3"
 
+
+def test_player_transition_no_delay_when_paused(tmp_path) -> None:
+    """Test that transitioning from a paused active track to a new track is immediate."""
+    import time
+
+    # Create two dummy track files
+    track1 = tmp_path / "track1.mp3"
+    track1.write_bytes(b"dummy")
+    track2 = tmp_path / "track2.mp3"
+    track2.write_bytes(b"dummy")
+
+    player = SafeMusicPlayer(playlist_dir=str(tmp_path))
+    player.simulated = True
+
+    # Start play of track1
+    assert player.play_track("track1.mp3", fade_in_ms=100, fade_out_ms=100) is True
+    assert player.current_track == "track1.mp3"
+
+    # Pause the player
+    assert player.pause() is True
+    assert player.paused is True
+
+    # Transition to track2 (should NOT delay despite fade_out_ms = 200ms)
+    start_time = time.time()
+    assert player.play_track("track2.mp3", fade_in_ms=100, fade_out_ms=200) is True
+    duration = time.time() - start_time
+    assert duration < 0.05  # should be virtually instant
+    assert player.current_track == "track2.mp3"
+    assert player.paused is False
+
+

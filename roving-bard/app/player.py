@@ -60,16 +60,23 @@ class SafeMusicPlayer:
             f"[Playback] Transitioning to track '{track_file}' (fadeout: {fade_out_ms}ms, fadein: {fade_in_ms}ms)"
         )
 
-        # If a track is currently playing, fade it out first and wait for it to end
+        # If a track is currently playing, fade it out first and wait for it to end (only if not paused)
         if self.current_track:
-            if not self.simulated and self.mixer_initialized:
-                try:
-                    if pygame.mixer.music.get_busy():
-                        pygame.mixer.music.fadeout(fade_out_ms)
-                except Exception as e:
-                    print(f"Error during fadeout: {e}")
-            import time
-            time.sleep(fade_out_ms / 1000.0)
+            if not self.paused:
+                if not self.simulated and self.mixer_initialized:
+                    try:
+                        if pygame.mixer.music.get_busy():
+                            pygame.mixer.music.fadeout(fade_out_ms)
+                    except Exception as e:
+                        print(f"Error during fadeout: {e}")
+                import time
+                time.sleep(fade_out_ms / 1000.0)
+            else:
+                if not self.simulated and self.mixer_initialized:
+                    try:
+                        pygame.mixer.music.stop()
+                    except Exception as e:
+                        print(f"Error stopping paused music: {e}")
 
         self.current_track = track_file
         self.paused = False
