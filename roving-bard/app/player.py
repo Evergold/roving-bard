@@ -103,33 +103,63 @@ class SafeMusicPlayer:
         print(f"[Playback] Volume set to {int(self.volume * 100)}%")
 
 
+SCREENSHOTS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "screenshots"
+)
+
+
 # Minimap screen grabbing and cropping
 class ScreenGrabber:
     def __init__(self, bounds_config):
         self.bounds = bounds_config
 
-    def capture_and_crop(self):
-        """Captures the primary monitor screen and crops immediately to the minimap bounds for privacy."""
+    def capture_full(self):
+        """Captures the primary monitor screen or loads from screenshots directory, returning the full uncropped image."""
+        os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+        # Check manual screenshots first
+        if os.path.exists(SCREENSHOTS_DIR):
+            files = [f for f in os.listdir(SCREENSHOTS_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+            if files:
+                filepath = os.path.join(SCREENSHOTS_DIR, files[0])
+                try:
+                    img = Image.open(filepath).convert("RGB")
+                    print(f"[ScreenGrabber] Loaded manual screenshot: {filepath}")
+                    return img
+                except Exception as e:
+                    print(f"Error loading manual screenshot {filepath}: {e}")
+
+        # Fallback to mss capture
         try:
             with mss.mss() as sct:
                 # Primary monitor is 1 (0 is virtual screen of all monitors combined)
                 monitor = sct.monitors[1]
-
-                # Compute pixel coordinates from relative 0-1 bounds
-                left = int(monitor["left"] + self.bounds["x"] * monitor["width"])
-                top = int(monitor["top"] + self.bounds["y"] * monitor["height"])
-                width = int(self.bounds["width"] * monitor["width"])
-                height = int(self.bounds["height"] * monitor["height"])
-
-                bbox = {"top": top, "left": left, "width": width, "height": height}
-                sct_img = sct.grab(bbox)
-
+                sct_img = sct.grab(monitor)
                 # Convert to PIL Image immediately
                 img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
                 return img
         except Exception as e:
-            print(f"Error capturing screenshot: {e}")
+            print(f"Error capturing full screenshot: {e}")
             return None
+
+    def crop_image(self, img):
+        """Crops a full image to the minimap bounds."""
+        if not img or not self.bounds:
+            return img
+        try:
+            width, height = img.size
+            left = int(self.bounds["x"] * width)
+            top = int(self.bounds["y"] * height)
+            crop_width = int(self.bounds["width"] * width)
+            crop_height = int(self.bounds["height"] * height)
+            return img.crop((left, top, left + crop_width, top + crop_height))
+        except Exception as e:
+            print(f"Error cropping image: {e}")
+            return img
+
+    def capture_and_crop(self):
+        """Maintains backward compatibility by capturing and cropping immediately."""
+        full_img = self.capture_full()
+        return self.crop_image(full_img)
 
 
 # Local OCR and parsing

@@ -125,17 +125,20 @@ def check_screen_and_update_music() -> dict:
         dict containing the extraction result (location, coordinates) and action taken.
     """
     global latest_screenshot_bytes, latest_parse_result
-    img = grabber.capture_and_crop()
-    if not img:
+    full_img = grabber.capture_full()
+    if not full_img:
         return {"status": "error", "message": "Failed to capture screenshot."}
 
-    # Cache image as bytes for GUI
+    # Cache image as bytes for GUI (full capture for now, eventually cropped)
     try:
         buf = BytesIO()
-        img.save(buf, format="PNG")
+        full_img.save(buf, format="PNG")
         latest_screenshot_bytes = buf.getvalue()
     except Exception as e:
         print(f"Error caching screenshot: {e}")
+
+    # Crop to bounds for OCR processing
+    img = grabber.crop_image(full_img)
 
     # Step 1: Attempt local OCR
     print("[Pipeline] Attempting local Tesseract OCR...")

@@ -20,7 +20,7 @@ load_dotenv()
 
 import google.auth
 import yaml
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import HTMLResponse, Response
 from google.adk.cli.fast_api import get_fast_api_app
 from google.auth.credentials import Credentials
@@ -260,6 +260,59 @@ def api_screenshot():
     # 1x1 transparent PNG fallback
     transparent_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82"
     return Response(content=transparent_png, media_type="image/png")
+
+
+@app.post("/api/screenshot/refresh", dependencies=[Depends(verify_api_key)])
+def api_screenshot_refresh():
+    """Reloads the current capture from disk/screen and updates latest_screenshot_bytes without running OCR."""
+    full_img = tools.grabber.capture_full()
+    if not full_img:
+        return {"status": "error", "message": "Failed to capture/load screenshot."}
+    try:
+        from io import BytesIO
+        buf = BytesIO()
+        full_img.save(buf, format="PNG")
+        tools.latest_screenshot_bytes = buf.getvalue()
+        return {"status": "success", "message": "Screenshot reloaded successfully."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/audio-files", dependencies=[Depends(verify_api_key)])
+def api_list_audio_files():
+    """Lists all audio files in the playlist directory."""
+    playlist_dir = tools.player.playlist_dir
+    os.makedirs(playlist_dir, exist_ok=True)
+    files = [
+        f for f in os.listdir(playlist_dir)
+        if f.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4"))
+    ]
+    return {"status": "success", "files": sorted(files)}
+
+
+@app.post("/api/upload-audio", dependencies=[Depends(verify_api_key)])
+def api_upload_audio(file: UploadFile = File(...)):
+    """Uploads an audio file and saves it to the playlist directory."""
+    playlist_dir = tools.player.playlist_dir
+    os.makedirs(playlist_dir, exist_ok=True)
+    
+    filename = os.path.basename(file.filename)
+    if not filename.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported audio file format."
+        )
+        
+    filepath = os.path.join(playlist_dir, filename)
+    try:
+        with open(filepath, "wb") as f:
+            f.write(file.file.read())
+        return {"status": "success", "message": f"Successfully uploaded {filename}."}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}"
+        )
 
 
 # Main execution

@@ -632,7 +632,10 @@
             <div class="card">
                 <div class="card-title">
                     ACTIVE SCREEN DETECTION
-                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="scanScreenNow()">Scan Screen</button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="refreshScreenshot()">Refresh Capture</button>
+                        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="scanScreenNow()">Scan Screen</button>
+                    </div>
                 </div>
                 <div class="capture-grid">
                     <div class="screenshot-container">
@@ -658,6 +661,22 @@
                             <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
                             <span id="parse-timestamp">--:--:--</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUDIO LIBRARY CARD -->
+            <div class="card">
+                <div class="card-title">
+                    AUDIO LIBRARY
+                    <div>
+                        <input type="file" id="audio-file-input" accept=".wav,.mp3,.ogg,.flac,.mp4" style="display: none;" onchange="uploadAudioFile(this)">
+                        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="document.getElementById('audio-file-input').click()">Upload Audio</button>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div id="audio-files-list" class="mappings-list" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Audio files rendered here -->
                     </div>
                 </div>
             </div>
@@ -862,6 +881,9 @@
 
                 // Cache busting screenshot reload
                 reloadScreenshot();
+
+                // Load audio library files
+                loadAudioLibrary();
             } catch (err) {
                 console.error("Error loading dashboard data:", err);
             }
@@ -973,6 +995,99 @@
             } catch (err) {
                 console.error("Error scanning screen:", err);
             }
+        }
+
+        async function refreshScreenshot() {
+            try {
+                const response = await apiFetch('/api/screenshot/refresh', {
+                    method: 'POST'
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    reloadScreenshot();
+                } else {
+                    alert("Failed to refresh screenshot: " + res.message);
+                }
+            } catch (err) {
+                console.error("Error refreshing screenshot:", err);
+            }
+        }
+
+        async function loadAudioLibrary() {
+            try {
+                const response = await apiFetch('/api/audio-files');
+                const res = await response.json();
+                if (res.status === 'success') {
+                    renderAudioFiles(res.files);
+                }
+            } catch (err) {
+                console.error("Error loading audio files:", err);
+            }
+        }
+
+        function renderAudioFiles(files) {
+            const list = document.getElementById('audio-files-list');
+            list.innerHTML = '';
+            if (files.length === 0) {
+                list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">No audio files found in music/ directory.</div>';
+                return;
+            }
+            files.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'mapping-item';
+                item.innerHTML = `
+                    <div class="mapping-item-details">
+                        <div class="mapping-item-title" style="font-family: \'Space Mono\', monospace; font-size: 0.85rem;">${file}</div>
+                        <div class="mapping-item-sub">Click to play this track</div>
+                    </div>
+                    <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="playAudioFile(\'${file.replace(/\'/g, "\\\'")}\')">Play</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function playAudioFile(filename) {
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'play', track_file: filename })
+                });
+                loadDashboard();
+            } catch (err) {
+                console.error("Error playing audio file:", err);
+            }
+        }
+
+        async function uploadAudioFile(input) {
+            if (input.files.length === 0) return;
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const apiKey = getApiKey();
+                const headers = {};
+                if (apiKey) {
+                    headers['X-API-Key'] = apiKey;
+                }
+                const response = await fetch('/api/upload-audio', {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    alert(`Successfully uploaded ${file.name}`);
+                    loadAudioLibrary();
+                } else {
+                    alert("Upload failed: " + res.detail);
+                }
+            } catch (err) {
+                console.error("Error uploading audio file:", err);
+                alert("Upload failed: " + err.message);
+            }
+            input.value = ''; // Reset input
         }
 
         function renderMappings() {
