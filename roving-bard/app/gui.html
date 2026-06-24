@@ -585,7 +585,6 @@
                 <input type="checkbox" id="polling-toggle" onchange="togglePolling(this.checked)">
                 <span class="slider"></span>
             </label>
-            <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 6px;" onclick="resetApiKey()">Set API Key</button>
             <div id="status-badge" class="status-badge online">
                 <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
                 READY
@@ -717,9 +716,11 @@
                         </div>
                     </div>
                     <div class="form-row" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                        <div class="form-group">
-                            <label for="config-api-key">Agent API Key (in mapping.yaml)</label>
-                            <input type="text" id="config-api-key" placeholder="Enter API Key" oninput="updateConfigApiKey(this.value)">
+                        <div class="form-group" style="width: 100%;">
+                            <label style="margin-bottom: 0.5rem; display: block;">API Key Environment Detection</label>
+                            <div id="api-key-detection-status" style="background: var(--bg-card-light); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+                                Loading status...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -804,53 +805,56 @@
         let pollingIntervalId = null;
         let isEditIndex = -1;
 
+        const EMBEDDED_API_KEY = "{{API_KEY_PLACEHOLDER}}";
+
         function getApiKey() {
-            return localStorage.getItem('agent_api_key') || '';
-        }
-
-        function resetApiKey() {
-            const key = prompt("Enter Agent API Key:", getApiKey());
-            if (key !== null) {
-                localStorage.setItem('agent_api_key', key.trim());
-                loadDashboard();
-            }
-        }
-
-        function updateConfigApiKey(val) {
-            if (configData) {
-                configData.api_key = val;
-            }
+            return EMBEDDED_API_KEY;
         }
 
         async function apiFetch(url, options = {}) {
-            let apiKey = getApiKey();
-            if (!apiKey) {
-                const urlParams = new URLSearchParams(window.location.search);
-                apiKey = urlParams.get('api_key');
-                if (apiKey) {
-                    localStorage.setItem('agent_api_key', apiKey.trim());
-                    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                    window.history.replaceState({path: cleanUrl}, '', cleanUrl);
-                } else {
-                    apiKey = prompt("API Key required. Please enter Agent API Key:");
-                    if (apiKey) {
-                        localStorage.setItem('agent_api_key', apiKey.trim());
-                    } else {
-                        throw new Error("API Key is required");
-                    }
-                }
-            }
-
+            const apiKey = getApiKey();
             options.headers = options.headers || {};
-            options.headers['X-API-Key'] = apiKey;
-
-            const response = await fetch(url, options);
-            if (response.status === 401) {
-                localStorage.removeItem('agent_api_key');
-                alert("Invalid API Key! Please enter a valid key.");
-                return apiFetch(url, options);
+            if (apiKey) {
+                options.headers['X-API-Key'] = apiKey;
             }
-            return response;
+            return await fetch(url, options);
+        }
+
+        async function checkApiKeyEnvStatus() {
+            try {
+                const response = await fetch('/api/env-status');
+                const res = await response.json();
+                
+                const container = document.getElementById('api-key-detection-status');
+                
+                const hasAgent = res.AGENT_API_KEY;
+                const hasGoogle = res.GOOGLE_API_KEY;
+                const hasGemini = res.GEMINI_API_KEY;
+                
+                const anyDetected = hasAgent || hasGoogle || hasGemini;
+                
+                let html = '';
+                if (anyDetected) {
+                    html += `<div style="color: #4caf50; font-weight: bold; margin-bottom: 0.5rem;">✔️ API Key Detected</div>`;
+                    html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
+                    html += `  <div>${hasAgent ? '✔️' : '❌'} AGENT_API_KEY</div>`;
+                    html += `  <div>${hasGoogle ? '✔️' : '❌'} GOOGLE_API_KEY</div>`;
+                    html += `  <div>${hasGemini ? '✔️' : '❌'} GEMINI_API_KEY</div>`;
+                    html += `</div>`;
+                } else {
+                    html += `<div style="color: #f44336; font-weight: bold; margin-bottom: 0.5rem;">❌ API Key Not Detected</div>`;
+                    html += `<div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #f44336;">A supported API key was not detected.</div>`;
+                    html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.65; margin-left: 0.5rem;">`;
+                    html += `  <div>❌ AGENT_API_KEY</div>`;
+                    html += `  <div>❌ GOOGLE_API_KEY</div>`;
+                    html += `  <div>❌ GEMINI_API_KEY</div>`;
+                    html += `</div>`;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Error checking API key status:", err);
+                document.getElementById('api-key-detection-status').innerText = "Failed to load status";
+            }
         }
 
         async function loadDashboard() {
@@ -884,6 +888,9 @@
 
                 // Load audio library files
                 loadAudioLibrary();
+
+                // Check API key environment status
+                checkApiKeyEnvStatus();
             } catch (err) {
                 console.error("Error loading dashboard data:", err);
             }
@@ -1226,9 +1233,6 @@
                 });
                 const res = await response.json();
                 if (res.status === "success") {
-                    if (configData.api_key) {
-                        localStorage.setItem('agent_api_key', configData.api_key);
-                    }
                     alert("Configuration saved and player re-loaded successfully!");
                     loadDashboard();
                 } else {

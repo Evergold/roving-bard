@@ -54,6 +54,7 @@ google.auth.default = lambda *args, **kwargs: (mock_creds, "mock-project-id")
 if os.getenv("INTEGRATION_TEST") == "TRUE":
     import litellm
     from litellm.utils import ModelResponse, ModelResponseStream
+    import google.adk.models.lite_llm
 
     def mock_complete(*args, **kwargs):
         response_format = kwargs.get("response_format")
@@ -71,22 +72,43 @@ if os.getenv("INTEGRATION_TEST") == "TRUE":
         )
 
     async def mock_acomplete(*args, **kwargs):
-        async def chunk_generator():
-            yield ModelResponseStream(
+        if kwargs.get("stream"):
+            async def chunk_generator():
+                yield ModelResponseStream(
+                    choices=[
+                        {
+                            "delta": {
+                                "content": "This is a mock streaming response from the Game-Aware Music Player Agent."
+                            },
+                            "finish_reason": "stop",
+                        }
+                    ]
+                )
+            return chunk_generator()
+        else:
+            response_format = kwargs.get("response_format")
+            if response_format and response_format.get("type") == "json_object":
+                content = '{"location": "Town", "coordinates": "19.3N, 70.9W"}'
+            else:
+                content = "This is a mock assistant response from the Game-Aware Music Player Agent."
+            return ModelResponse(
                 choices=[
                     {
-                        "delta": {
-                            "content": "This is a mock streaming response from the Game-Aware Music Player Agent."
-                        },
+                        "message": {"content": content, "role": "assistant"},
                         "finish_reason": "stop",
                     }
                 ]
             )
 
-        return chunk_generator()
-
     litellm.completion = mock_complete
     litellm.acompletion = mock_acomplete
+    google.adk.models.lite_llm.LiteLLMClient.acompletion = mock_acomplete
+    google.adk.models.lite_llm.LiteLLMClient.completion = mock_complete
+
+    if hasattr(google.adk.models.lite_llm, "completion"):
+        google.adk.models.lite_llm.completion = mock_complete
+    if hasattr(google.adk.models.lite_llm, "acompletion"):
+        google.adk.models.lite_llm.acompletion = mock_acomplete
 
 setup_telemetry()
 
@@ -191,12 +213,25 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
 
 @app.get("/gui", response_class=HTMLResponse)
 def get_gui():
-    """Serves the music player HTML GUI dashboard."""
+    """Serves the music player HTML GUI dashboard with embedded API key."""
     gui_file = os.path.join(AGENT_DIR, "app", "gui.html")
     if os.path.exists(gui_file):
         with open(gui_file) as f:
-            return f.read()
+            content = f.read()
+        api_key = os.getenv("AGENT_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
+        content = content.replace("{{API_KEY_PLACEHOLDER}}", api_key)
+        return content
     return "<h3>Error: gui.html not found!</h3>"
+
+
+@app.get("/api/env-status")
+def get_env_status():
+    """Returns the presence of API key environment variables (without returning their values)."""
+    return {
+        "AGENT_API_KEY": os.getenv("AGENT_API_KEY") is not None,
+        "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
+        "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY") is not None,
+    }
 
 
 @app.get("/api/status", dependencies=[Depends(verify_api_key)])

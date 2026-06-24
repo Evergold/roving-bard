@@ -30,7 +30,7 @@ from requests.exceptions import RequestException
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = "http://127.0.0.1:8002"
 STREAM_URL = BASE_URL + "/run_sse"
 FEEDBACK_URL = BASE_URL + "/feedback"
 
@@ -58,10 +58,11 @@ def start_server() -> subprocess.Popen[str]:
         "--host",
         "127.0.0.1",
         "--port",
-        "8000",
+        "8002",
     ]
     env = os.environ.copy()
     env["INTEGRATION_TEST"] = "TRUE"
+    env["PYTHONUNBUFFERED"] = "1"
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
@@ -87,7 +88,7 @@ def wait_for_server(timeout: int = 90, interval: int = 1) -> bool:
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
-            response = requests.get("http://127.0.0.1:8000/docs", timeout=10)
+            response = requests.get(f"{BASE_URL}/docs", timeout=10)
             if response.status_code == 200:
                 logger.info("Server is ready")
                 return True
@@ -164,6 +165,7 @@ def test_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
                 event = json.loads(event_json)
                 events.append(event)
 
+    print("DEBUG EVENTS:", events)
     assert events, "No events received from stream"
     # Check for valid content in the response
     has_text_content = False
