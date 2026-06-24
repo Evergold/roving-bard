@@ -108,7 +108,23 @@ class SafeMusicPlayer:
 
         try:
             if pygame.mixer.music.get_busy():
-                pygame.mixer.music.fadeout(fade_out_ms)
+                def fade_and_pause():
+                    try:
+                        initial_volume = self.volume
+                        steps = 10
+                        delay = (fade_out_ms / 1000.0) / steps
+                        for i in range(steps):
+                            import time
+                            time.sleep(delay)
+                            if not self.paused:
+                                return
+                            pygame.mixer.music.set_volume(initial_volume * (1.0 - (i + 1) / steps))
+                        pygame.mixer.music.pause()
+                        pygame.mixer.music.set_volume(initial_volume)
+                    except Exception as ex:
+                        print(f"Error in stop fade thread: {ex}")
+                import threading
+                threading.Thread(target=fade_and_pause, daemon=True).start()
         except Exception as e:
             print(f"Error stopping playback: {e}")
 
@@ -143,13 +159,7 @@ class SafeMusicPlayer:
         if self.simulated:
             return True
         try:
-            if not pygame.mixer.music.get_busy():
-                track_path = os.path.join(self.playlist_dir, self.current_track)
-                pygame.mixer.music.load(track_path)
-                pygame.mixer.music.play(loops=-1, fade_ms=1500)
-                pygame.mixer.music.set_volume(self.volume)
-            else:
-                pygame.mixer.music.unpause()
+            pygame.mixer.music.unpause()
             return True
         except Exception as e:
             print(f"Error resuming music: {e}")
