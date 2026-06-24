@@ -34,7 +34,8 @@ BASE_URL = "http://127.0.0.1:8000"
 STREAM_URL = BASE_URL + "/run_sse"
 FEEDBACK_URL = BASE_URL + "/feedback"
 
-HEADERS = {"Content-Type": "application/json", "X-API-Key": "dev-api-key-12345"}
+API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("AGENT_API_KEY") or ""
+HEADERS = {"Content-Type": "application/json", "X-API-Key": API_KEY}
 
 
 def log_output(pipe: Any, log_func: Any) -> None:
@@ -61,7 +62,6 @@ def start_server() -> subprocess.Popen[str]:
     ]
     env = os.environ.copy()
     env["INTEGRATION_TEST"] = "TRUE"
-    env["AGENT_API_KEY"] = "dev-api-key-12345"
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
@@ -101,6 +101,8 @@ def wait_for_server(timeout: int = 90, interval: int = 1) -> bool:
 @pytest.fixture(scope="session")
 def server_fixture(request: Any) -> Iterator[subprocess.Popen[str]]:
     """Pytest fixture to start and stop the server for testing."""
+    if not API_KEY:
+        pytest.skip("Skipping integration tests: no API key (GEMINI_API_KEY, GOOGLE_API_KEY, or AGENT_API_KEY) found in the environment.")
     logger.info("Starting server process")
     server_process = start_server()
     if not wait_for_server():

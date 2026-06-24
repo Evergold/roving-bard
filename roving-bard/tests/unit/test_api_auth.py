@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import pytest
 from fastapi.testclient import TestClient
 
 from app.fast_api_app import app
@@ -28,6 +30,9 @@ def test_api_status_unauthorized() -> None:
 
 def test_api_status_authorized() -> None:
     """Ensure status endpoint succeeds when correct API key is passed."""
-    response = client.get("/api/status", headers={"X-API-Key": "dev-api-key-12345"})
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("AGENT_API_KEY")
+    if not api_key:
+        pytest.skip("No API key (GEMINI_API_KEY, GOOGLE_API_KEY, or AGENT_API_KEY) found in environment.")
+    response = client.get("/api/status", headers={"X-API-Key": api_key})
     assert response.status_code == 200
     assert "current_track" in response.json()
