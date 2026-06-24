@@ -202,3 +202,10 @@ my_env.tfvars
 
 # A2A Inspector
 tools/a2a-inspector/
+
+# App-specific runtime directories
+roving-bard/music/*
+!roving-bard/music/.gitkeep
+
+roving-bard/screenshots/*
+!roving-bard/screenshots/.gitkeep
