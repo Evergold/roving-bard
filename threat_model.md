@@ -9,13 +9,13 @@ This document outlines the security boundaries, potential threat vectors, and mi
 Roving Bard consists of three main components running locally:
 1.  **FastAPI Web Server (`fast_api_app.py`)**: Serves the control panel GUI and exposes control APIs.
 2.  **Music Player Engine (`player.py` / `tools.py`)**: Captures screen content, performs OCR/Vision checks, and controls Pygame audio playback.
-3.  **Local Storage Layer**: Includes configuration files (`mapping.yaml`), local screenshots (`screenshots/`), and local audio files (`music/`).
+3.  **Local Storage Layer**: Includes configuration files (`mapping.yaml`), local captures (`capture/`), and local audio files (`music/`).
 
 ```mermaid
 graph TD
     Client[Web Browser / GUI] -- HTTP + API Key --> API[FastAPI Server]
     API -- Control Actions --> Tools[Agent Tools]
-    Tools -- Screen Grab --> Screen[Local Screen / Screenshots Folder]
+    Tools -- Screen Grab --> Screen[Local Screen / Capture Folder]
     Tools -- Playback --> Pygame[Pygame Mixer Engine]
     API -- Read/Write --> Config[mapping.yaml]
     API -- Write Audio --> Music[music/ Playlist Directory]
@@ -26,7 +26,7 @@ graph TD
 ## 🛡️ STRIDE Threat Analysis
 
 ### 1. Spoofing (Identity Verification)
-*   **Threat**: An unauthenticated user spoofing requests to control the music player, configuration, or view screenshots.
+*   **Threat**: An unauthenticated user spoofing requests to control the music player, configuration, or view screen captures.
 *   **Analysis**: 
     *   The API endpoints require an API key passed via the `X-API-Key` header or `api_key` query parameter.
     *   Accepted keys are pulled from host environment variables (`AGENT_API_KEY`, `GOOGLE_API_KEY`, or `GEMINI_API_KEY`).
@@ -52,7 +52,7 @@ graph TD
 ### 4. Information Disclosure (Data Leakage)
 *   **Threat**: Desktop privacy leaks via screen capture sharing.
 *   **Analysis**:
-    *   While the OCR scanner crops the screenshot immediately for privacy, the `/api/screenshot` endpoint serves the **full, uncropped screen capture** cached in memory (`latest_screenshot_bytes`) to the front-end.
+    *   While the OCR scanner crops the capture immediately for privacy, the `/api/screenshot` endpoint serves the **full, uncropped screen capture** cached in memory (`latest_screenshot_bytes`) to the front-end.
     *   If a user leaves sensitive information open on their screen during a scan, it will be cached and readable via the API.
 *   **Mitigation**:
     *   Avoid caching the full monitor capture in `latest_screenshot_bytes` if privacy is a concern. Crop the image immediately upon capture/load before saving it to the cache.

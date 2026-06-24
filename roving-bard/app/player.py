@@ -103,8 +103,8 @@ class SafeMusicPlayer:
         print(f"[Playback] Volume set to {int(self.volume * 100)}%")
 
 
-SCREENSHOTS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "screenshots"
+CAPTURE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "capture"
 )
 
 
@@ -114,19 +114,19 @@ class ScreenGrabber:
         self.bounds = bounds_config
 
     def capture_full(self):
-        """Captures the primary monitor screen or loads from screenshots directory, returning the full uncropped image."""
-        os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
-        # Check manual screenshots first
-        if os.path.exists(SCREENSHOTS_DIR):
-            files = [f for f in os.listdir(SCREENSHOTS_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        """Captures the primary monitor screen or loads from capture directory, returning the full uncropped image."""
+        os.makedirs(CAPTURE_DIR, exist_ok=True)
+        # Check manual screen captures first
+        if os.path.exists(CAPTURE_DIR):
+            files = [f for f in os.listdir(CAPTURE_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
             if files:
-                filepath = os.path.join(SCREENSHOTS_DIR, files[0])
+                filepath = os.path.join(CAPTURE_DIR, files[0])
                 try:
                     img = Image.open(filepath).convert("RGB")
-                    print(f"[ScreenGrabber] Loaded manual screenshot: {filepath}")
+                    print(f"[ScreenGrabber] Loaded manual capture: {filepath}")
                     return img
                 except Exception as e:
-                    print(f"Error loading manual screenshot {filepath}: {e}")
+                    print(f"Error loading manual capture {filepath}: {e}")
 
         # Fallback to mss capture
         try:
