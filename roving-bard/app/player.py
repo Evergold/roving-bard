@@ -1,0 +1,242 @@
+# Copyright 2026 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import re
+
+import cv2
+import mss
+import numpy as np
+import pygame
+import pytesseract
+from PIL import Image
+
+
+# Safe pygame mixer initialization
+class SafeMusicPlayer:
+    def __init__(self, playlist_dir="music"):
+        self.playlist_dir = playlist_dir
+        self.current_track = None
+        self.volume = 1.0
+        self.mixer_initialized = False
+        self.simulated = False
+
+        try:
+            pygame.mixer.init()
+            self.mixer_initialized = True
+            print("Successfully initialized Pygame mixer.")
+        except Exception as e:
+            self.simulated = True
+            print(
+                f"Warning: Could not initialize Pygame mixer (running in simulated mode): {e}"
+            )
+
+    def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500):
+        if not track_file:
+            self.stop(fade_out_ms)
+            return True
+
+        track_path = os.path.join(self.playlist_dir, track_file)
+        if not os.path.exists(track_path):
+            print(f"Warning: Track file not found: {track_path}")
+            return False
+
+        if self.current_track == track_file:
+            # Track is already playing
+            return True
+
+        print(
+            f"[Playback] Transitioning to track '{track_file}' (fadeout: {fade_out_ms}ms, fadein: {fade_in_ms}ms)"
+        )
+        self.current_track = track_file
+
+        if self.simulated:
+            print(f"[Playback SIMULATED] Playing: {track_file}")
+            return True
+
+        try:
+            # If a track is currently playing, fade it out first
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.fadeout(fade_out_ms)
+
+            pygame.mixer.music.load(track_path)
+            pygame.mixer.music.play(loops=-1, fade_ms=fade_in_ms)
+            pygame.mixer.music.set_volume(self.volume)
+            return True
+        except Exception as e:
+            print(f"Error during Pygame playback of {track_file}: {e}")
+            return False
+
+    def stop(self, fade_out_ms=1500):
+        if not self.current_track:
+            return
+
+        print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
+        self.current_track = None
+
+        if self.simulated:
+            return
+
+        try:
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.fadeout(fade_out_ms)
+        except Exception as e:
+            print(f"Error stopping playback: {e}")
+
+    def set_volume(self, volume):
+        self.volume = max(0.0, min(1.0, volume))
+        if self.mixer_initialized and not self.simulated:
+            try:
+                pygame.mixer.music.set_volume(self.volume)
+            except Exception as e:
+                print(f"Error setting volume: {e}")
+        print(f"[Playback] Volume set to {int(self.volume * 100)}%")
+
+
+# Minimap screen grabbing and cropping
+class ScreenGrabber:
+    def __init__(self, bounds_config):
+        self.bounds = bounds_config
+
+    def capture_and_crop(self):
+        """Captures the primary monitor screen and crops immediately to the minimap bounds for privacy."""
+        try:
+            with mss.mss() as sct:
+                # Primary monitor is 1 (0 is virtual screen of all monitors combined)
+                monitor = sct.monitors[1]
+
+                # Compute pixel coordinates from relative 0-1 bounds
+                left = int(monitor["left"] + self.bounds["x"] * monitor["width"])
+                top = int(monitor["top"] + self.bounds["y"] * monitor["height"])
+                width = int(self.bounds["width"] * monitor["width"])
+                height = int(self.bounds["height"] * monitor["height"])
+
+                bbox = {"top": top, "left": left, "width": width, "height": height}
+                sct_img = sct.grab(bbox)
+
+                # Convert to PIL Image immediately
+                img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+                return img
+        except Exception as e:
+            print(f"Error capturing screenshot: {e}")
+            return None
+
+
+# Local OCR and parsing
+class LocalOCRParser:
+    @staticmethod
+    def preprocess_image(pil_img):
+        """Applies grayscale, 2x resizing, and Otsu thresholding for OCR optimization."""
+        # Convert PIL to open-cv format
+        cv_img = np.array(pil_img)
+        cv_img = cv_img[:, :, ::-1].copy()  # Convert RGB to BGR
+
+        # Grayscale
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+
+        # 2x Resize
+        resized = cv2.resize(
+            gray, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC
+        )
+
+        # Thresholding (Otsu binarization)
+        _, thresh = cv2.threshold(resized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        return thresh
+
+    @staticmethod
+    def parse_text(text):
+        """Extracts coordinate floats (signed) and potential location names from OCR text."""
+        # Coordinate pattern: e.g. 19.3N, 70.9W or 14.9S, 103.1E
+        # Lat/NS: N is positive, S is negative. Long/EW: E is positive, W is negative.
+        coord_pattern = re.compile(
+            r"(\d+(?:\.\d+)?)\s*([NS])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW])", re.IGNORECASE
+        )
+
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
+
+        location = None
+        coordinates = None
+        ns_val, ew_val = None, None
+
+        # Search for coordinates in text
+        for line in lines:
+            match = coord_pattern.search(line)
+            if match:
+                ns_raw = float(match.group(1))
+                ns_dir = match.group(2).upper()
+                ew_raw = float(match.group(3))
+                ew_dir = match.group(4).upper()
+
+                ns_val = ns_raw if ns_dir == "N" else -ns_raw
+                ew_val = ew_raw if ew_dir == "E" else -ew_raw
+                coordinates = f"{ns_raw}{ns_dir}, {ew_raw}{ew_dir}"
+                break
+
+        # Extract location: find lines that are not coordinates and contain alphabetical characters
+        for line in lines:
+            if coord_pattern.search(line):
+                continue
+            # Remove symbols/noise, check if it looks like a location name
+            cleaned = re.sub(r"[^a-zA-Z\s]", "", line).strip()
+            if len(cleaned) > 2:  # At least 3 chars
+                location = cleaned
+                break
+
+        return location, coordinates, ns_val, ew_val
+
+    def run_ocr(self, pil_img):
+        try:
+            processed = self.preprocess_image(pil_img)
+            # Run pytesseract OCR
+            raw_text = pytesseract.image_to_string(processed)
+            return self.parse_text(raw_text)
+        except Exception as e:
+            print(f"Local OCR engine execution error: {e}")
+            return None, None, None, None
+
+
+# Coordinates and Location Mapper
+class TrackMapper:
+    def __init__(self, mappings):
+        self.mappings = mappings
+
+    def get_track_for_state(self, location, ns, ew):
+        """Matches current location/coordinates against configured mappings.
+
+        Matches location names first (fuzzy substring), then matches coordinate ranges.
+        """
+        # 1. Match by Location Name if available
+        if location:
+            for mapping in self.mappings:
+                loc_name = mapping.get("location_name")
+                if loc_name and loc_name.lower() in location.lower():
+                    print(
+                        f"[Mapper] Matched location name: '{loc_name}' -> '{mapping['track_file']}'"
+                    )
+                    return mapping["track_file"]
+
+        # 2. Match by Coordinate Ranges if coordinates are available
+        if ns is not None and ew is not None:
+            for mapping in self.mappings:
+                # Range fields: ns_min, ns_max, ew_min, ew_max
+                if all(k in mapping for k in ["ns_min", "ns_max", "ew_min", "ew_max"]):
+                    if (
+                        mapping["ns_min"] <= ns <= mapping["ns_max"]
+                        and mapping["ew_min"] <= ew <= mapping["ew_max"]
+                    ):
+                        print(
+                            f"[Mapper] Matched coordinate range (NS: {ns}, EW: {ew}) -> '{mapping['track_file']}'"
+                        )
+                        return mapping["track_file"]
+
+        return None

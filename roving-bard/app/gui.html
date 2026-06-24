@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player Agent Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0f131a;
+            --bg-card: rgba(22, 28, 38, 0.7);
+            --bg-card-hover: rgba(28, 36, 48, 0.8);
+            --accent: #7c4dff;
+            --accent-glow: rgba(124, 77, 255, 0.4);
+            --neon-blue: #00f2fe;
+            --neon-green: #39ff14;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(124, 77, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Background Pattern */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            top: -10%;
+            right: -10%;
+            z-index: -1;
+            filter: blur(80px);
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(0, 242, 254, 0.15) 0%, transparent 70%);
+            bottom: -5%;
+            left: -5%;
+            z-index: -1;
+            filter: blur(60px);
+        }
+
+        header {
+            padding: 2rem 4rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(8px);
+            background: rgba(15, 19, 26, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #7c4dff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-container p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 4rem;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+        }
+
+        .dashboard-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Widgets */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--border-glow);
+            box-shadow: 0 12px 40px 0 rgba(124, 77, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.75rem;
+        }
+
+        .card-title span {
+            color: var(--neon-blue);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        /* Audio Player Widget */
+        .player-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.2rem;
+            border-radius: 12px;
+            border: 1px dashed var(--border);
+        }
+
+        .music-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--neon-blue) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(124, 77, 255, 0.3);
+        }
+
+        .now-playing-info {
+            flex: 1;
+        }
+
+        .track-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .track-status {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Wave Animation */
+        .wave-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 24px;
+        }
+
+        .wave-bar {
+            width: 3px;
+            height: 5px;
+            background-color: var(--neon-blue);
+            border-radius: 2px;
+            animation: wave 1.2s ease-in-out infinite alternate;
+        }
+
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+
+        @keyframes wave {
+            0% { height: 4px; }
+            100% { height: 22px; }
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .volume-control input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* Capture & Parsing Dashboard */
+        .capture-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 1.5rem;
+        }
+
+        .screenshot-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1;
+            position: relative;
+        }
+
+        .screenshot-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .no-screenshot {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .parse-data {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .data-item {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .data-item.active-state {
+            border-left-color: var(--neon-blue);
+        }
+
+        .data-item .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .data-item .value {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .data-item .coords-font {
+            font-family: 'Space Mono', monospace;
+            color: var(--neon-blue);
+        }
+
+        /* Config Forms */
+        .form-section {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: 'Space Mono', monospace;
+        }
+
+        input[type="text"], input[type="number"], select {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Interactive Bounds Visualizer */
+        .bounds-visualizer {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            aspect-ratio: 16/9;
+            background: #1c202a;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .bounds-visualizer-grid {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 5% 5%;
+        }
+
+        .visual-crop-box {
+            position: absolute;
+            border: 2px dashed var(--neon-blue);
+            background-color: rgba(0, 242, 254, 0.1);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-family: 'Space Mono', monospace;
+            color: var(--neon-blue);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        /* Buttons styling */
+        .btn {
+            background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(124, 77, 255, 0.2);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(124, 77, 255, 0.3);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--text-muted);
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4d4d 0%, #d50000 100%);
+            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(255, 77, 77, 0.3);
+        }
+
+        /* Mapping Config List */
+        .mappings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .mapping-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.3s;
+        }
+
+        .mapping-item:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .mapping-item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mapping-item-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .mapping-item-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .mapping-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 4px;
+            font-size: 1.1rem;
+            transition: color 0.3s;
+        }
+
+        .action-icon-btn:hover {
+            color: white;
+        }
+
+        .action-icon-btn.delete:hover {
+            color: #ff4d4d;
+        }
+
+        /* Status Indicator */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .status-badge.online {
+            background-color: rgba(57, 255, 20, 0.1);
+            color: var(--neon-green);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+        }
+
+        .status-badge.offline {
+            background-color: rgba(255, 77, 77, 0.1);
+            color: #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.2);
+        }
+
+        /* Toggle switches */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #2b303b;
+            transition: .3s;
+            border-radius: 34px;
+            border: 1px solid var(--border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Game-Aware Music Player</h1>
+            <p>ADK Agent Dashboard v0.1.0</p>
+        </div>
+        <div class="switch-container">
+            <span style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--text-muted);">AUTO-POLLING SCREEN</span>
+            <label class="switch">
+                <input type="checkbox" id="polling-toggle" onchange="togglePolling(this.checked)">
+                <span class="slider"></span>
+            </label>
+            <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 6px;" onclick="resetApiKey()">Set API Key</button>
+            <div id="status-badge" class="status-badge online">
+                <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
+                READY
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- LEFT PANEL: Dashboard details -->
+        <div class="dashboard-panel">
+            <!-- NOW PLAYING CARD -->
+            <div class="card">
+                <div class="card-title">
+                    NOW PLAYING
+                    <div id="player-mode" style="font-size: 0.8rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">LOCAL MIXER</div>
+                </div>
+                <div class="player-widget">
+                    <div class="now-playing">
+                        <div class="music-icon">🎵</div>
+                        <div class="now-playing-info">
+                            <div id="track-title" class="track-title">Silent (No Track Active)</div>
+                            <div id="track-status" class="track-status">Mixer ready · Stop</div>
+                        </div>
+                        <div id="audio-wave" class="wave-container" style="display: none;">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                        </div>
+                    </div>
+                    <div class="controls-row">
+                        <div class="volume-control">
+                            <span style="font-size: 1.1rem;">🔊</span>
+                            <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1.0" oninput="changeVolume(this.value)">
+                            <span id="volume-pct" style="font-family: 'Space Mono', monospace; font-size: 0.9rem; min-width: 35px;">100%</span>
+                        </div>
+                        <button class="btn btn-secondary" onclick="stopMusic()">Stop</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAPTURE & PARSE WORKFLOW CARD -->
+            <div class="card">
+                <div class="card-title">
+                    ACTIVE SCREEN DETECTION
+                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="scanScreenNow()">Scan Screen</button>
+                </div>
+                <div class="capture-grid">
+                    <div class="screenshot-container">
+                        <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onerror="showNoScreenshot()">
+                        <div id="no-screenshot-message" class="no-screenshot" style="display: none;">
+                            No screen captures cached yet.<br><span style="font-size: 0.8rem; opacity: 0.7;">Click Scan Screen to capture.</span>
+                        </div>
+                    </div>
+                    <div class="parse-data">
+                        <div class="data-item active-state">
+                            <div class="label">Matched Location</div>
+                            <div id="parse-location" class="value">Unknown</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="label">Parsed Coordinates</div>
+                            <div id="parse-coords" class="value coords-font">None</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="label">Extraction Route</div>
+                            <div id="parse-route" class="value" style="font-size: 0.9rem;">Waiting for scan...</div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between;">
+                            <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
+                            <span id="parse-timestamp">--:--:--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Configuration editor -->
+        <div class="dashboard-panel">
+            <!-- MINIMAP BOUNDS CARD -->
+            <div class="card">
+                <div class="card-title">
+                    BOUNDING BOX SELECTOR
+                    <span>mapping.yaml</span>
+                </div>
+                <div class="form-section">
+                    <div class="bounds-visualizer">
+                        <div class="bounds-visualizer-grid"></div>
+                        <div id="visual-crop-box" class="visual-crop-box">
+                            MINIMAP CROP BOX
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bounds-x">X Position (0-1)</label>
+                            <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                        </div>
+                        <div class="form-group">
+                            <label for="bounds-y">Y Position (0-1)</label>
+                            <input type="number" id="bounds-y" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                        </div>
+                        <div class="form-group">
+                            <label for="bounds-w">Width (0-1)</label>
+                            <input type="number" id="bounds-w" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                        </div>
+                        <div class="form-group">
+                            <label for="bounds-h">Height (0-1)</label>
+                            <input type="number" id="bounds-h" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                        <div class="form-group">
+                            <label for="config-api-key">Agent API Key (in mapping.yaml)</label>
+                            <input type="text" id="config-api-key" placeholder="Enter API Key" oninput="updateConfigApiKey(this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REGION & COORDINATE MAPPINGS -->
+            <div class="card">
+                <div class="card-title">
+                    REGION MUSIC MAPPINGS
+                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="openAddMappingModal()">Add Mapping</button>
+                </div>
+                <div class="form-section">
+                    <div id="mappings-list" class="mappings-list">
+                        <!-- Mappings rendered here -->
+                    </div>
+                    
+                    <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                        <button class="btn btn-secondary" onclick="loadDashboard()">Reset Config</button>
+                        <button class="btn" onclick="saveConfiguration()">Save Changes to Disk</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- POPUP MODAL FOR ADDING/EDITING MAPPING -->
+    <div id="mapping-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+        <div class="card" style="width: 500px; max-width: 90%;">
+            <div class="card-title" id="modal-title">ADD REGION MAPPING</div>
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="map-type">Match Type</label>
+                    <select id="map-type" onchange="toggleModalFields(this.value)">
+                        <option value="location">Location Name Match (OCR/Vision)</option>
+                        <option value="coordinates">Coordinate Range Match (N/S, E/W)</option>
+                    </select>
+                </div>
+                
+                <div id="modal-location-group" class="form-group">
+                    <label for="map-loc-name">Location Name Text (e.g. Town, Forest)</label>
+                    <input type="text" id="map-loc-name" placeholder="Town">
+                </div>
+
+                <div id="modal-coords-group" style="display: none; flex-direction: column; gap: 0.75rem;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="map-ns-min">N/S Min (South is negative)</label>
+                            <input type="number" id="map-ns-min" step="0.1" value="0.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="map-ns-max">N/S Max</label>
+                            <input type="number" id="map-ns-max" step="0.1" value="0.0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="map-ew-min">E/W Min (West is negative)</label>
+                            <input type="number" id="map-ew-min" step="0.1" value="0.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="map-ew-max">E/W Max</label>
+                            <input type="number" id="map-ew-max" step="0.1" value="0.0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="map-track-file">Audio Track Filename (e.g. town.wav)</label>
+                    <input type="text" id="map-track-file" placeholder="town.wav">
+                </div>
+
+                <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                    <button class="btn btn-secondary" onclick="closeMappingModal()">Cancel</button>
+                    <button class="btn" onclick="saveMappingItem()">Apply Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let configData = null;
+        let pollingIntervalId = null;
+        let isEditIndex = -1;
+
+        function getApiKey() {
+            return localStorage.getItem('agent_api_key') || '';
+        }
+
+        function resetApiKey() {
+            const key = prompt("Enter Agent API Key:", getApiKey());
+            if (key !== null) {
+                localStorage.setItem('agent_api_key', key.trim());
+                loadDashboard();
+            }
+        }
+
+        function updateConfigApiKey(val) {
+            if (configData) {
+                configData.api_key = val;
+            }
+        }
+
+        async function apiFetch(url, options = {}) {
+            let apiKey = getApiKey();
+            if (!apiKey) {
+                const urlParams = new URLSearchParams(window.location.search);
+                apiKey = urlParams.get('api_key');
+                if (apiKey) {
+                    localStorage.setItem('agent_api_key', apiKey.trim());
+                    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                    window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+                } else {
+                    apiKey = prompt("API Key required. Please enter Agent API Key:");
+                    if (apiKey) {
+                        localStorage.setItem('agent_api_key', apiKey.trim());
+                    } else {
+                        throw new Error("API Key is required");
+                    }
+                }
+            }
+
+            options.headers = options.headers || {};
+            options.headers['X-API-Key'] = apiKey;
+
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                localStorage.removeItem('agent_api_key');
+                alert("Invalid API Key! Please enter a valid key.");
+                return apiFetch(url, options);
+            }
+            return response;
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await apiFetch('/api/status');
+                const status = await response.json();
+                
+                configData = status.config_data;
+                
+                // Populate bounds forms
+                const bounds = configData.minimap_bounds;
+                document.getElementById('bounds-x').value = bounds.x;
+                document.getElementById('bounds-y').value = bounds.y;
+                document.getElementById('bounds-w').value = bounds.width;
+                document.getElementById('bounds-h').value = bounds.height;
+                document.getElementById('config-api-key').value = configData.api_key || "";
+                
+                updateVisualizerBounds();
+
+                // Update now playing UI
+                updatePlayerUI(status);
+
+                // Update parsing data UI
+                updateParseUI(status.latest_parse);
+
+                // Render mappings list
+                renderMappings();
+
+                // Cache busting screenshot reload
+                reloadScreenshot();
+            } catch (err) {
+                console.error("Error loading dashboard data:", err);
+            }
+        }
+
+        function updateVisualizerBounds() {
+            const x = parseFloat(document.getElementById('bounds-x').value) || 0.0;
+            const y = parseFloat(document.getElementById('bounds-y').value) || 0.0;
+            const w = parseFloat(document.getElementById('bounds-w').value) || 0.1;
+            const h = parseFloat(document.getElementById('bounds-h').value) || 0.1;
+
+            const box = document.getElementById('visual-crop-box');
+            box.style.left = (x * 100) + '%';
+            box.style.top = (y * 100) + '%';
+            box.style.width = (w * 100) + '%';
+            box.style.height = (h * 100) + '%';
+
+            if (configData) {
+                configData.minimap_bounds = { x, y, width: w, height: h };
+            }
+        }
+
+        function updatePlayerUI(status) {
+            const trackTitle = document.getElementById('track-title');
+            const trackStatus = document.getElementById('track-status');
+            const wave = document.getElementById('audio-wave');
+            const volumePct = document.getElementById('volume-pct');
+            const volumeSlider = document.getElementById('volume-slider');
+            const playerMode = document.getElementById('player-mode');
+
+            playerMode.innerText = status.simulated ? "SIMULATED PLAYER" : "LOCAL MIXER";
+            
+            if (status.current_track) {
+                trackTitle.innerText = status.current_track;
+                trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
+                wave.style.display = 'flex';
+            } else {
+                trackTitle.innerText = "Silent (No Track Active)";
+                trackStatus.innerText = "Stopped";
+                wave.style.display = 'none';
+            }
+
+            volumeSlider.value = status.volume;
+            volumePct.innerText = `${parseInt(status.volume * 100)}%`;
+        }
+
+        function updateParseUI(parse) {
+            if (!parse || parse.action === "stopped" && !parse.parsed_location) {
+                return;
+            }
+
+            document.getElementById('parse-location').innerText = parse.parsed_location || "Unknown/Out of Bounds";
+            document.getElementById('parse-coords').innerText = parse.parsed_coordinates || "None";
+            document.getElementById('parse-route').innerText = parse.method || "None";
+            document.getElementById('matched-track-file').innerText = parse.matched_track || "None";
+            document.getElementById('parse-timestamp').innerText = parse.timestamp || "--:--:--";
+            
+            // Toggle screenshot view
+            document.getElementById('screenshot-view').style.display = 'block';
+            document.getElementById('no-screenshot-message').style.display = 'none';
+        }
+
+        function showNoScreenshot() {
+            document.getElementById('screenshot-view').style.display = 'none';
+            document.getElementById('no-screenshot-message').style.display = 'block';
+        }
+
+        function reloadScreenshot() {
+            const img = document.getElementById('screenshot-view');
+            img.src = `/api/screenshot?api_key=${getApiKey()}&t=${new Date().getTime()}`;
+        }
+
+        async function changeVolume(val) {
+            document.getElementById('volume-pct').innerText = `${parseInt(val * 100)}%`;
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'volume', volume: parseFloat(val) })
+                });
+            } catch (err) {
+                console.error("Error setting volume:", err);
+            }
+        }
+
+        async function stopMusic() {
+            try {
+                const response = await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'stop' })
+                });
+                const res = await response.json();
+                loadDashboard();
+            } catch (err) {
+                console.error("Error stopping music:", err);
+            }
+        }
+
+        async function scanScreenNow() {
+            try {
+                const response = await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'scan' })
+                });
+                const res = await response.json();
+                loadDashboard();
+            } catch (err) {
+                console.error("Error scanning screen:", err);
+            }
+        }
+
+        function renderMappings() {
+            const list = document.getElementById('mappings-list');
+            list.innerHTML = '';
+            
+            configData.mappings.forEach((mapping, index) => {
+                const item = document.createElement('div');
+                item.className = 'mapping-item';
+                
+                let detailsHtml = '';
+                if (mapping.location_name) {
+                    detailsHtml = `
+                        <div class="mapping-item-title">${mapping.location_name}</div>
+                        <div class="mapping-item-sub">LOCATION MATCH &rarr; ${mapping.track_file}</div>
+                    `;
+                } else {
+                    detailsHtml = `
+                        <div class="mapping-item-title">Coordinate Range Block</div>
+                        <div class="mapping-item-sub">NS: [${mapping.ns_min}, ${mapping.ns_max}] · EW: [${mapping.ew_min}, ${mapping.ew_max}] &rarr; ${mapping.track_file}</div>
+                    `;
+                }
+                
+                item.innerHTML = `
+                    <div class="mapping-item-details">
+                        ${detailsHtml}
+                    </div>
+                    <div class="mapping-actions">
+                        <button class="action-icon-btn" onclick="openEditMappingModal(${index})">✏️</button>
+                        <button class="action-icon-btn delete" onclick="deleteMappingItem(${index})">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function deleteMappingItem(index) {
+            configData.mappings.splice(index, 1);
+            renderMappings();
+        }
+
+        function openAddMappingModal() {
+            isEditIndex = -1;
+            document.getElementById('modal-title').innerText = "ADD REGION MAPPING";
+            document.getElementById('map-type').value = "location";
+            document.getElementById('map-loc-name').value = "";
+            document.getElementById('map-ns-min').value = "0.0";
+            document.getElementById('map-ns-max').value = "0.0";
+            document.getElementById('map-ew-min').value = "0.0";
+            document.getElementById('map-ew-max').value = "0.0";
+            document.getElementById('map-track-file').value = "";
+            
+            toggleModalFields("location");
+            document.getElementById('mapping-modal').style.display = 'flex';
+        }
+
+        function openEditMappingModal(index) {
+            isEditIndex = index;
+            const mapping = configData.mappings[index];
+            document.getElementById('modal-title').innerText = "EDIT REGION MAPPING";
+            
+            if (mapping.location_name) {
+                document.getElementById('map-type').value = "location";
+                document.getElementById('map-loc-name').value = mapping.location_name;
+                toggleModalFields("location");
+            } else {
+                document.getElementById('map-type').value = "coordinates";
+                document.getElementById('map-ns-min').value = mapping.ns_min;
+                document.getElementById('map-ns-max').value = mapping.ns_max;
+                document.getElementById('map-ew-min').value = mapping.ew_min;
+                document.getElementById('map-ew-max').value = mapping.ew_max;
+                toggleModalFields("coordinates");
+            }
+            
+            document.getElementById('map-track-file').value = mapping.track_file;
+            document.getElementById('mapping-modal').style.display = 'flex';
+        }
+
+        function toggleModalFields(val) {
+            if (val === "location") {
+                document.getElementById('modal-location-group').style.display = 'flex';
+                document.getElementById('modal-coords-group').style.display = 'none';
+            } else {
+                document.getElementById('modal-location-group').style.display = 'none';
+                document.getElementById('modal-coords-group').style.display = 'flex';
+            }
+        }
+
+        function closeMappingModal() {
+            document.getElementById('mapping-modal').style.display = 'none';
+        }
+
+        function saveMappingItem() {
+            const type = document.getElementById('map-type').value;
+            const track = document.getElementById('map-track-file').value.strip || document.getElementById('map-track-file').value.trim();
+            
+            if (!track) {
+                alert("Track filename is required!");
+                return;
+            }
+            
+            let item = {};
+            if (type === "location") {
+                const name = document.getElementById('map-loc-name').value.trim();
+                if (!name) {
+                    alert("Location name text is required!");
+                    return;
+                }
+                item = { location_name: name, track_file: track };
+            } else {
+                item = {
+                    ns_min: parseFloat(document.getElementById('map-ns-min').value) || 0.0,
+                    ns_max: parseFloat(document.getElementById('map-ns-max').value) || 0.0,
+                    ew_min: parseFloat(document.getElementById('map-ew-min').value) || 0.0,
+                    ew_max: parseFloat(document.getElementById('map-ew-max').value) || 0.0,
+                    track_file: track
+                };
+            }
+            
+            if (isEditIndex === -1) {
+                configData.mappings.push(item);
+            } else {
+                configData.mappings[isEditIndex] = item;
+            }
+            
+            renderMappings();
+            closeMappingModal();
+        }
+
+        async function saveConfiguration() {
+            try {
+                const response = await apiFetch('/api/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(configData)
+                });
+                const res = await response.json();
+                if (res.status === "success") {
+                    if (configData.api_key) {
+                        localStorage.setItem('agent_api_key', configData.api_key);
+                    }
+                    alert("Configuration saved and player re-loaded successfully!");
+                    loadDashboard();
+                } else {
+                    alert("Error saving config: " + res.message);
+                }
+            } catch (err) {
+                console.error("Error saving config:", err);
+            }
+        }
+
+        function togglePolling(checked) {
+            if (checked) {
+                // Poll screen status every 2 seconds
+                pollingIntervalId = setInterval(async () => {
+                    await scanScreenNow();
+                }, configData.polling_interval * 1000 || 2000);
+                document.getElementById('status-badge').className = "status-badge online";
+                document.getElementById('status-badge').innerHTML = `
+                    <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
+                    AUTO SCANNING
+                `;
+            } else {
+                if (pollingIntervalId) {
+                    clearInterval(pollingIntervalId);
+                    pollingIntervalId = null;
+                }
+                document.getElementById('status-badge').className = "status-badge online";
+                document.getElementById('status-badge').innerHTML = `
+                    <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    READY
+                `;
+            }
+        }
+
+        // Pulse keyframe
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes pulse {
+                0% { opacity: 0.3; transform: scale(0.9); }
+                100% { opacity: 1; transform: scale(1.1); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initial load
+        window.onload = loadDashboard;
+    </script>
+</body>
+</html>

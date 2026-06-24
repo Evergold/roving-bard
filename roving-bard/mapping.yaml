@@ -1,0 +1,45 @@
+# Configuration for the Game-Aware Music Player Agent
+
+# Bounding box of the mini-map widget (top-left is 0,0; bottom-right is 1,1)
+minimap_bounds:
+  x: 0.8         # 80% from left
+  y: 0.05        # 5% from top
+  width: 0.15    # 15% of screen width
+  height: 0.15   # 15% of screen height
+
+# Audio crossfade transitions configuration
+transitions:
+  fade_out_ms: 1500
+  fade_in_ms: 1500
+
+# Directory within the project scope where tracks are located
+playlist_directory: "music"
+
+# Default multimodal model to use for fallback visual parsing via LiteLLM
+# Supported formats: gemini/gemini-1.5-flash, openai/gpt-4o, anthropic/claude-3-5-sonnet-20240620
+model_name: "gemini/gemini-1.5-flash"
+
+# Screen polling interval in seconds
+polling_interval: 2.0
+
+# Default API key for frontend authentication
+api_key: "dev-api-key-12345"
+
+# Track mapping definitions
+# Will match by location name first (substring match), then check coordinate ranges.
+mappings:
+  - location_name: "Town"
+    track_file: "town.wav"
+    
+  - location_name: "Forest"
+    track_file: "forest.wav"
+    
+  - location_name: "Boss Arena"
+    track_file: "boss.wav"
+
+  # Example coordinate hotspot (e.g. Secret Cave coordinates around 15.0N, 70.0W)
+  - ns_min: 10.0
+    ns_max: 20.0
+    ew_min: -80.0
+    ew_max: -60.0
+    track_file: "cave.wav"
