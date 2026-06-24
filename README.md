@@ -1,4 +1,4 @@
-# Roving Bard: Game-Aware Music Player Agent
+# Roving Bard: Adaptive, location-aware audio in LOTRO
 
 Roving Bard is an autonomous, screen-aware agent built with the Google Agent Development Kit (ADK). It monitors a video game screen in real-time, extracts in-game locations and coordinates, and dynamically transitions background music tracks (using crossfade effects) to match the player's current location or coordinate hotspot.
 

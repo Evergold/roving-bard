@@ -1,4 +1,4 @@
-# music-player-agent
+# Roving Bard: Adaptive, location-aware audio in LOTRO
 
 Simple ReAct agent
 Agent generated with `agents-cli` version `0.5.0`
