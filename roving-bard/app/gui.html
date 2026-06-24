@@ -858,8 +858,30 @@
         }
 
         async function loadDashboard() {
+            // Check API key environment status unconditionally
+            checkApiKeyEnvStatus();
+
             try {
                 const response = await apiFetch('/api/status');
+                if (response.status === 401) {
+                    const badge = document.getElementById('status-badge');
+                    if (badge) {
+                        badge.className = "status-badge offline";
+                        badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-red); border-radius:50%;"></span> UNAUTHORIZED`;
+                    }
+                    console.error("Authentication failed. No valid API key provided.");
+                    return;
+                }
+                if (!response.ok) {
+                    const badge = document.getElementById('status-badge');
+                    if (badge) {
+                        badge.className = "status-badge offline";
+                        badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-red); border-radius:50%;"></span> OFFLINE`;
+                    }
+                    console.error("Failed to load status:", response.status);
+                    return;
+                }
+                
                 const status = await response.json();
                 
                 configData = status.config_data;
@@ -870,7 +892,6 @@
                 document.getElementById('bounds-y').value = bounds.y;
                 document.getElementById('bounds-w').value = bounds.width;
                 document.getElementById('bounds-h').value = bounds.height;
-                document.getElementById('config-api-key').value = configData.api_key || "";
                 
                 updateVisualizerBounds();
 
@@ -888,9 +909,6 @@
 
                 // Load audio library files
                 loadAudioLibrary();
-
-                // Check API key environment status
-                checkApiKeyEnvStatus();
             } catch (err) {
                 console.error("Error loading dashboard data:", err);
             }
