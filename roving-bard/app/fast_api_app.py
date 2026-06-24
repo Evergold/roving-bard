@@ -14,6 +14,10 @@
 import logging
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import google.auth
 import yaml
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
@@ -159,7 +163,6 @@ def verify_api_key(
         os.getenv("GOOGLE_API_KEY"),
         os.getenv("GEMINI_API_KEY"),
         tools.config.get("api_key"),
-        "dev-api-key-12345",
     }
     # Filter out None and empty strings
     allowed_keys = {k for k in allowed_keys if k}

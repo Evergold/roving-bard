@@ -22,8 +22,7 @@ model_name: "gemini/gemini-1.5-flash"
 # Screen polling interval in seconds
 polling_interval: 2.0
 
-# Default API key for frontend authentication
-api_key: "dev-api-key-12345"
+# Default API key for frontend authentication should be set via AGENT_API_KEY environment variable.
 
 # Track mapping definitions
 # Will match by location name first (substring match), then check coordinate ranges.

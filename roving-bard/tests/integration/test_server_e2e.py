@@ -61,6 +61,7 @@ def start_server() -> subprocess.Popen[str]:
     ]
     env = os.environ.copy()
     env["INTEGRATION_TEST"] = "TRUE"
+    env["AGENT_API_KEY"] = "dev-api-key-12345"
     process = subprocess.Popen(
         command,
         stdout=subprocess.PIPE,

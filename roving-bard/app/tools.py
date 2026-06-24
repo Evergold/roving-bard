@@ -38,7 +38,7 @@ def load_config():
         "model_name": "gemini/gemini-1.5-flash",
         "polling_interval": 2.0,
         "mappings": [],
-        "api_key": "dev-api-key-12345",
+        "api_key": None,
     }
 
 

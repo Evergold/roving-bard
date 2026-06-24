@@ -11,6 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
+os.environ.setdefault("AGENT_API_KEY", "dev-api-key-12345")
+
 import litellm
 import pytest
 from litellm.utils import ModelResponse, ModelResponseStream
