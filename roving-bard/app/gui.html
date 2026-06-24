@@ -423,6 +423,17 @@
             box-shadow: none;
         }
 
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            color: var(--text-muted) !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
         .btn-danger {
             background: linear-gradient(135deg, #ff4d4d 0%, #d50000 100%);
             box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2);
