@@ -623,7 +623,7 @@
                             <span id="volume-pct" style="font-family: 'Space Mono', monospace; font-size: 0.9rem; min-width: 35px;">100%</span>
                         </div>
                         <button id="now-playing-toggle-btn" class="btn" style="min-width: 90px; padding: 0.8rem 1.5rem;" onclick="toggleNowPlayingPlayback()">Play</button>
-                        <button class="btn btn-secondary" onclick="stopMusic()">Stop</button>
+                        <button id="now-playing-stop-btn" class="btn btn-secondary" onclick="stopMusic()">Stop</button>
                     </div>
                 </div>
             </div>
@@ -943,6 +943,7 @@
             const volumeSlider = document.getElementById('volume-slider');
             const playerMode = document.getElementById('player-mode');
             const toggleBtn = document.getElementById('now-playing-toggle-btn');
+            const stopBtn = document.getElementById('now-playing-stop-btn');
 
             playerMode.innerText = status.simulated ? "SIMULATED PLAYER" : "LOCAL MIXER";
             
@@ -950,6 +951,7 @@
                 trackTitle.innerText = status.current_track;
                 wave.style.display = 'flex';
                 toggleBtn.disabled = false;
+                stopBtn.disabled = false;
 
                 if (status.paused) {
                     trackStatus.innerText = `Paused · Vol: ${parseInt(status.volume * 100)}%`;
@@ -973,6 +975,8 @@
                 toggleBtn.style.background = 'rgba(255, 255, 255, 0.05)';
                 toggleBtn.style.borderColor = 'var(--border)';
                 toggleBtn.style.color = 'var(--text-muted)';
+                
+                stopBtn.disabled = true;
             }
 
             volumeSlider.value = status.volume;
