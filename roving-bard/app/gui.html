@@ -960,7 +960,6 @@
             
             if (status.current_track) {
                 trackTitle.innerText = status.current_track;
-                wave.style.display = 'flex';
                 toggleBtn.disabled = false;
                 stopBtn.disabled = false;
 
@@ -970,12 +969,14 @@
                     toggleBtn.style.background = '#ef4444';
                     toggleBtn.style.borderColor = '#ef4444';
                     toggleBtn.style.color = 'white';
+                    wave.style.display = 'none';
                 } else {
                     trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
                     toggleBtn.innerText = 'Playing';
                     toggleBtn.style.background = '#10b981';
                     toggleBtn.style.borderColor = '#10b981';
                     toggleBtn.style.color = 'white';
+                    wave.style.display = 'flex';
                 }
             } else {
                 trackTitle.innerText = "Silent (No Track Active)";

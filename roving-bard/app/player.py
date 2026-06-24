@@ -54,6 +54,8 @@ class SafeMusicPlayer:
 
         if self.current_track == track_file:
             # Track is already playing
+            if self.paused:
+                return self.resume()
             return True
 
         print(
@@ -99,8 +101,7 @@ class SafeMusicPlayer:
             return
 
         print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
-        self.current_track = None
-        self.paused = False
+        self.paused = True
 
         if self.simulated:
             return
@@ -142,7 +143,13 @@ class SafeMusicPlayer:
         if self.simulated:
             return True
         try:
-            pygame.mixer.music.unpause()
+            if not pygame.mixer.music.get_busy():
+                track_path = os.path.join(self.playlist_dir, self.current_track)
+                pygame.mixer.music.load(track_path)
+                pygame.mixer.music.play(loops=-1, fade_ms=1500)
+                pygame.mixer.music.set_volume(self.volume)
+            else:
+                pygame.mixer.music.unpause()
             return True
         except Exception as e:
             print(f"Error resuming music: {e}")
