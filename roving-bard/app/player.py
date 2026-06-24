@@ -30,6 +30,7 @@ class SafeMusicPlayer:
         self.volume = 1.0
         self.mixer_initialized = False
         self.simulated = False
+        self.paused = False
 
         try:
             pygame.mixer.init()
@@ -59,6 +60,7 @@ class SafeMusicPlayer:
             f"[Playback] Transitioning to track '{track_file}' (fadeout: {fade_out_ms}ms, fadein: {fade_in_ms}ms)"
         )
         self.current_track = track_file
+        self.paused = False
 
         if self.simulated:
             print(f"[Playback SIMULATED] Playing: {track_file}")
@@ -83,6 +85,7 @@ class SafeMusicPlayer:
 
         print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
         self.current_track = None
+        self.paused = False
 
         if self.simulated:
             return
@@ -101,6 +104,34 @@ class SafeMusicPlayer:
             except Exception as e:
                 print(f"Error setting volume: {e}")
         print(f"[Playback] Volume set to {int(self.volume * 100)}%")
+
+    def pause(self):
+        if not self.current_track:
+            return False
+        print("[Playback] Pausing music.")
+        self.paused = True
+        if self.simulated:
+            return True
+        try:
+            pygame.mixer.music.pause()
+            return True
+        except Exception as e:
+            print(f"Error pausing music: {e}")
+            return False
+
+    def resume(self):
+        if not self.current_track:
+            return False
+        print("[Playback] Resuming music.")
+        self.paused = False
+        if self.simulated:
+            return True
+        try:
+            pygame.mixer.music.unpause()
+            return True
+        except Exception as e:
+            print(f"Error resuming music: {e}")
+            return False
 
 
 CAPTURE_DIR = os.path.join(

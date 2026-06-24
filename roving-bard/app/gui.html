@@ -804,6 +804,8 @@
         let configData = null;
         let pollingIntervalId = null;
         let isEditIndex = -1;
+        let currentPlaybackStatus = null;
+        let audioLibraryFiles = [];
 
         const EMBEDDED_API_KEY = "{{API_KEY_PLACEHOLDER}}";
 
@@ -883,6 +885,7 @@
                 }
                 
                 const status = await response.json();
+                currentPlaybackStatus = status;
                 
                 configData = status.config_data;
                 
@@ -1043,29 +1046,54 @@
                 const response = await apiFetch('/api/audio-files');
                 const res = await response.json();
                 if (res.status === 'success') {
-                    renderAudioFiles(res.files);
+                    audioLibraryFiles = res.files;
+                    renderAudioFiles();
                 }
             } catch (err) {
                 console.error("Error loading audio files:", err);
             }
         }
 
-        function renderAudioFiles(files) {
+        function renderAudioFiles() {
             const list = document.getElementById('audio-files-list');
             list.innerHTML = '';
-            if (files.length === 0) {
+            if (audioLibraryFiles.length === 0) {
                 list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">No audio files found in music/ directory.</div>';
                 return;
             }
-            files.forEach(file => {
+            
+            const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+            const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
+
+            audioLibraryFiles.forEach(file => {
                 const item = document.createElement('div');
                 item.className = 'mapping-item';
+                
+                let btnText = 'Play';
+                let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
+                let btnClass = 'btn btn-secondary';
+                let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+
+                if (activeTrack === file) {
+                    if (isPaused) {
+                        btnText = 'Resume';
+                        btnStyle += ' background-color: #ef4444; color: white; border: 1px solid #ef4444;';
+                        btnClass = 'btn';
+                        btnClick = `resumeAudioFile()`;
+                    } else {
+                        btnText = 'Playing';
+                        btnStyle += ' background-color: #10b981; color: white; border: 1px solid #10b981;';
+                        btnClass = 'btn';
+                        btnClick = `pauseAudioFile()`;
+                    }
+                }
+
                 item.innerHTML = `
                     <div class="mapping-item-details">
                         <div class="mapping-item-title" style="font-family: \'Space Mono\', monospace; font-size: 0.85rem;">${file}</div>
                         <div class="mapping-item-sub">Click to play this track</div>
                     </div>
-                    <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="playAudioFile(\'${file.replace(/\'/g, "\\\'")}\')">Play</button>
+                    <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
                 `;
                 list.appendChild(item);
             });
@@ -1081,6 +1109,32 @@
                 loadDashboard();
             } catch (err) {
                 console.error("Error playing audio file:", err);
+            }
+        }
+
+        async function pauseAudioFile() {
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'pause' })
+                });
+                loadDashboard();
+            } catch (err) {
+                console.error("Error pausing audio file:", err);
+            }
+        }
+
+        async function resumeAudioFile() {
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'resume' })
+                });
+                loadDashboard();
+            } catch (err) {
+                console.error("Error resuming audio file:", err);
             }
         }
 

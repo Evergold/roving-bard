@@ -243,6 +243,7 @@ def api_status():
         "simulated": tools.player.simulated,
         "config_data": tools.config,
         "latest_parse": tools.latest_parse_result,
+        "paused": getattr(tools.player, "paused", False),
     }
 
 
@@ -261,6 +262,16 @@ def api_control(req: ControlRequest):
         return {"status": "error", "message": "volume is required for volume action."}
     elif req.action == "scan":
         return tools.check_screen_and_update_music()
+    elif req.action == "pause":
+        success = tools.player.pause()
+        if success:
+            return {"status": "success", "message": "Playback paused."}
+        return {"status": "error", "message": "Failed to pause playback."}
+    elif req.action == "resume":
+        success = tools.player.resume()
+        if success:
+            return {"status": "success", "message": "Playback resumed."}
+        return {"status": "error", "message": "Failed to resume playback."}
     return {"status": "error", "message": f"Unknown action: {req.action}"}
 
 
