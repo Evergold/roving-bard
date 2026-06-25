@@ -2393,6 +2393,16 @@
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
             const volumeVal = currentPlaybackStatus.volume;
 
+            // Include current EQ settings in the exported segment
+            const presetSelect = document.getElementById('eq-preset-select');
+            const currentPreset = presetSelect ? presetSelect.value : 'flat';
+            let eqVal = null;
+            if (currentPreset !== 'custom') {
+                eqVal = currentPreset;
+            } else {
+                eqVal = { ...eqGains };
+            }
+
             try {
                 const response = await apiFetch('/api/segments', {
                     method: 'POST',
@@ -2402,7 +2412,8 @@
                         track_file: currentPlaybackStatus.current_track,
                         start_time: startVal,
                         end_time: endVal,
-                        volume: volumeVal
+                        volume: volumeVal,
+                        eq: eqVal
                     })
                 });
                 const result = await response.json();
@@ -2424,7 +2435,19 @@
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
-                resetEQToFlat();
+                
+                // Restore saved EQ if present, otherwise reset to flat
+                const segmentObj = segments.find(s => s.name === name);
+                if (segmentObj && segmentObj.eq) {
+                    if (typeof segmentObj.eq === 'string') {
+                        applyEQPreset(segmentObj.eq);
+                    } else if (typeof segmentObj.eq === 'object') {
+                        applyEQGains(segmentObj.eq, 'custom');
+                    }
+                } else {
+                    resetEQToFlat();
+                }
+
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -2450,7 +2473,19 @@
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
-                resetEQToFlat();
+                
+                // Restore saved EQ if present, otherwise reset to flat
+                const segmentObj = segments.find(s => s.name === name);
+                if (segmentObj && segmentObj.eq) {
+                    if (typeof segmentObj.eq === 'string') {
+                        applyEQPreset(segmentObj.eq);
+                    } else if (typeof segmentObj.eq === 'object') {
+                        applyEQGains(segmentObj.eq, 'custom');
+                    }
+                } else {
+                    resetEQToFlat();
+                }
+
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -3679,11 +3714,9 @@
             }
         }
 
-        function applyEQPreset(presetName) {
-            const preset = EQ_PRESETS[presetName];
-            if (!preset) return;
+        function applyEQGains(gains, presetName) {
             EQ_BANDS.forEach(freq => {
-                eqGains[freq] = preset[freq] || 0;
+                eqGains[freq] = gains[freq] !== undefined ? parseFloat(gains[freq]) : 0;
                 const slider = document.getElementById(`eq-slider-${freq}`);
                 if (slider) slider.value = eqGains[freq];
                 const label = document.getElementById(`eq-db-${freq}`);
@@ -3692,8 +3725,15 @@
                 // Reset accent colour
                 if (slider) slider.style.accentColor = v === 0 ? 'var(--accent)' : v > 0 ? `hsl(200,100%,70%)` : `hsl(280,80%,65%)`;
             });
+            document.getElementById('eq-preset-select').value = presetName || 'custom';
             clearTimeout(eqDebounceTimer);
             eqDebounceTimer = setTimeout(sendEQToBackend, 300);
+        }
+
+        function applyEQPreset(presetName) {
+            const preset = EQ_PRESETS[presetName];
+            if (!preset) return;
+            applyEQGains(preset, presetName);
         }
 
         function resetEQ() {

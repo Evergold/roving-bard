@@ -411,6 +411,7 @@ class SegmentModel(BaseModel):
     end_time: float
     volume: float | None = None
     tags: list[str] | None = None
+    eq: dict[str, float] | str | None = None
 
 
 @app.get("/api/segments", dependencies=[Depends(verify_api_key)])
@@ -435,6 +436,8 @@ def add_segment(req: SegmentModel):
         segment_data["volume"] = req.volume
     if req.tags is not None:
         segment_data["tags"] = req.tags
+    if req.eq is not None:
+        segment_data["eq"] = req.eq
     segments.append(segment_data)
     tools.save_segments(segments)
     return {"status": "success", "message": "Segment saved."}

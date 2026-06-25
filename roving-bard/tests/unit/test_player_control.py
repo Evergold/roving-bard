@@ -427,7 +427,8 @@ def test_segments_api(tmp_path) -> None:
             "start_time": 5.5,
             "end_time": 20.0,
             "volume": 0.8,
-            "tags": ["intro", "ambient"]
+            "tags": ["intro", "ambient"],
+            "eq": "bass_boost"
         }
         response = client.post("/api/segments", headers=headers, json=segment_data)
         assert response.status_code == 200
@@ -441,6 +442,7 @@ def test_segments_api(tmp_path) -> None:
         assert response.json()["segments"][0]["start_time"] == 5.5
         assert response.json()["segments"][0]["volume"] == 0.8
         assert response.json()["segments"][0]["tags"] == ["intro", "ambient"]
+        assert response.json()["segments"][0]["eq"] == "bass_boost"
 
         # 4. Select the segment via POST /api/control (action=select)
         tools.player.simulated = True
