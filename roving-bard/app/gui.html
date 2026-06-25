@@ -518,6 +518,13 @@
             font-size: 0.75rem;
             font-weight: 600;
             font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .status-badge:hover {
+            filter: brightness(1.2);
         }
 
         .status-badge.online {
@@ -526,10 +533,18 @@
             border: 1px solid rgba(57, 255, 20, 0.2);
         }
 
+        .status-badge.online:hover {
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.15);
+        }
+
         .status-badge.offline {
             background-color: rgba(255, 77, 77, 0.1);
             color: #ff4d4d;
             border: 1px solid rgba(255, 77, 77, 0.2);
+        }
+
+        .status-badge.offline:hover {
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.15);
         }
 
         /* Toggle switches */
@@ -596,9 +611,19 @@
                 <input type="checkbox" id="polling-toggle" onchange="togglePolling(this.checked)">
                 <span class="slider"></span>
             </label>
-            <div id="status-badge" class="status-badge online">
-                <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
-                READY
+            <div class="badge-dropdown-container" style="position: relative; display: inline-block;">
+                <div id="status-badge" class="status-badge online" onclick="toggleBadgeDropdown(event)">
+                    <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    READY
+                </div>
+                <div id="api-key-dropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+                    <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                        API Key Detection
+                    </div>
+                    <div id="api-key-detection-status" style="font-family: inherit; margin-top: 0.5rem;">
+                        Loading status...
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -727,14 +752,7 @@
                             <input type="number" id="bounds-h" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
                         </div>
                     </div>
-                    <div class="form-row" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                        <div class="form-group" style="width: 100%;">
-                            <label style="margin-bottom: 0.5rem; display: block;">API Key Environment Detection</label>
-                            <div id="api-key-detection-status" style="background: var(--bg-card-light); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
-                                Loading status...
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
@@ -1404,6 +1422,26 @@
                 console.error("Error saving config:", err);
             }
         }
+
+        function toggleBadgeDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('api-key-dropdown');
+            if (dropdown.style.display === 'none') {
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('api-key-dropdown');
+            const badge = document.getElementById('status-badge');
+            if (dropdown && dropdown.style.display === 'block') {
+                if (!dropdown.contains(event.target) && !badge.contains(event.target)) {
+                    dropdown.style.display = 'none';
+                }
+            }
+        });
 
         function togglePolling(checked) {
             if (checked) {
