@@ -1703,15 +1703,16 @@
                         }
                     }
 
-                    let subtitleText = 'Click to select this track';
+                    let subtitleText = '';
                     if (isFileActive) {
                         subtitleText = 'Currently selected track';
                     }
+                    const subtitleHtml = subtitleText ? `<div class="mapping-item-sub">${subtitleText}</div>` : '';
 
                     item.innerHTML = `
                         <div class="mapping-item-details" style="cursor: pointer;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${file}${badgeHtml}</div>
-                            <div class="mapping-item-sub">${subtitleText}</div>
+                            ${subtitleHtml}
                         </div>
                         <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
                     `;
