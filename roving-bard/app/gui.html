@@ -1393,7 +1393,7 @@
             </div>
 
             <!-- REGION & COORDINATE MAPPINGS -->
-            <div class="card" id="card-region-mappings">
+            <div class="card collapsed" id="card-region-mappings">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1418,7 +1418,7 @@
             </div>
 
             <!-- CAPTURE & PARSE WORKFLOW CARD -->
-            <div class="card" id="card-active-screen">
+            <div class="card collapsed" id="card-active-screen">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1462,7 +1462,7 @@
             </div>
 
             <!-- MINIMAP BOUNDS CARD -->
-            <div class="card" id="card-bounding-box">
+            <div class="card collapsed" id="card-bounding-box">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -3719,7 +3719,9 @@
         function restoreCardCollapses() {
             document.querySelectorAll('.card[id]').forEach(card => {
                 const saved = localStorage.getItem(`card_collapsed_${card.id}`);
-                if (saved === 'true') {
+                if (saved === 'false') {
+                    card.classList.remove('collapsed');
+                } else if (saved === 'true') {
                     card.classList.add('collapsed');
                 }
             });
