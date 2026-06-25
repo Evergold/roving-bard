@@ -765,6 +765,12 @@
             border-color: rgba(255, 255, 255, 0.15);
         }
 
+        .mapping-item.selected-track {
+            border-color: var(--neon-blue) !important;
+            background: rgba(0, 242, 254, 0.05);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.1);
+        }
+
         .mapping-item-details {
             display: flex;
             flex-direction: column;
@@ -1516,8 +1522,12 @@
                 let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
                 let btnClass = 'btn btn-secondary';
                 let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                let badgeHtml = '';
 
                 if (activeTrack === file) {
+                    item.classList.add('selected-track');
+                    badgeHtml = `<span style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; letter-spacing: 0.05em;">ACTIVE</span>`;
+                    
                     if (isPaused) {
                         if (wasStopped) {
                             btnText = 'Play';
@@ -1540,7 +1550,7 @@
 
                 item.innerHTML = `
                     <div class="mapping-item-details">
-                        <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${file}</div>
+                        <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${file}${badgeHtml}</div>
                         <div class="mapping-item-sub">Click to play this track</div>
                     </div>
                     <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
