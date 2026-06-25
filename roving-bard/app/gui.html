@@ -349,6 +349,11 @@
             top: 12px;
         }
 
+        #seek-slider {
+            pointer-events: auto !important;
+            height: 6px;
+        }
+
         .stopped-state #seek-start-slider,
         .stopped-state #seek-end-slider {
             top: 22px;
@@ -447,11 +452,30 @@
         }
 
         /* Stopped State:
-           Playback position slider is hidden,
-           Start/End boundaries are active and draggable.
+           Playback position slider is visible but has an invisible control knob,
+           allowing clicking on the seek bar track to seek without showing the playhead.
         */
         .stopped-state #seek-slider {
-            display: none;
+            display: block;
+        }
+
+        .stopped-state #seek-slider::-webkit-slider-thumb {
+            opacity: 0;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .stopped-state #seek-slider::-moz-range-thumb {
+            opacity: 0;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            box-shadow: none;
+            background: transparent;
+            border: none;
         }
 
         .stopped-state #seek-start-slider::-webkit-slider-thumb,
