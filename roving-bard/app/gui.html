@@ -1931,7 +1931,10 @@
 
                 const startDiff = Math.abs(startVal);
                 const endDiff = Math.abs(endVal - duration);
-                if (startDiff > 0.01 || endDiff > 0.01) {
+                const currentVol = (currentPlaybackStatus.volume !== undefined && currentPlaybackStatus.volume !== null) ? currentPlaybackStatus.volume : 1.0;
+                const volDiff = Math.abs(currentVol - 1.0);
+                
+                if (startDiff > 0.01 || endDiff > 0.01 || volDiff > 0.01) {
                     exportBtn.disabled = false;
                 } else {
                     exportBtn.disabled = true;
@@ -1986,7 +1989,7 @@
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ action: 'select', track_file: filename })
+                    body: JSON.stringify({ action: 'select', track_file: filename, volume: 1.0 })
                 });
                 loadDashboard();
             } catch (err) {
@@ -2033,7 +2036,7 @@
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ action: 'play', track_file: filename })
+                    body: JSON.stringify({ action: 'play', track_file: filename, volume: 1.0 })
                 });
                 loadDashboard();
             } catch (err) {
