@@ -32,6 +32,9 @@ class SafeMusicPlayer:
         self.simulated = False
         self.paused = False
         self.was_stopped = False
+        self.track_duration = 0.0
+        self.last_seek_position = 0.0
+        self.last_play_time = None
 
         try:
             pygame.mixer.init()
@@ -85,6 +88,21 @@ class SafeMusicPlayer:
         self.paused = False
         self.was_stopped = False
 
+        # Load track duration
+        self.track_duration = 0.0
+        if self.mixer_initialized:
+            try:
+                sound = pygame.mixer.Sound(track_path)
+                self.track_duration = sound.get_length()
+            except Exception as e:
+                print(f"Error loading sound for length: {e}")
+        if self.track_duration == 0.0:
+            self.track_duration = 180.0
+
+        self.last_seek_position = 0.0
+        import time
+        self.last_play_time = time.time()
+
         if self.simulated:
             print(f"[Playback SIMULATED] Playing: {track_file}")
             return True
@@ -105,6 +123,8 @@ class SafeMusicPlayer:
         print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
         self.paused = True
         self.was_stopped = True
+        self.last_seek_position = 0.0
+        self.last_play_time = None
 
         if self.simulated:
             return
@@ -131,6 +151,13 @@ class SafeMusicPlayer:
         if not self.current_track:
             return False
         print("[Playback] Pausing music.")
+        
+        # Capture current progress before pausing
+        import time
+        if not self.paused and self.last_play_time is not None:
+            self.last_seek_position += time.time() - self.last_play_time
+            self.last_play_time = None
+
         self.paused = True
         if self.simulated:
             return True
@@ -146,11 +173,16 @@ class SafeMusicPlayer:
             return False
         print("[Playback] Resuming music.")
         self.paused = False
+
+        import time
+        self.last_play_time = time.time()
+
         if self.simulated:
             self.was_stopped = False
             return True
         try:
             if self.was_stopped:
+                self.last_seek_position = 0.0
                 track_path = os.path.join(self.playlist_dir, self.current_track)
                 pygame.mixer.music.load(track_path)
                 pygame.mixer.music.play(loops=-1, fade_ms=1500)
@@ -162,6 +194,45 @@ class SafeMusicPlayer:
         except Exception as e:
             print(f"Error resuming music: {e}")
             return False
+
+    def seek(self, position):
+        if not self.current_track:
+            return False
+
+        position = max(0.0, min(self.track_duration, position))
+        print(f"[Playback] Seeking to {position}s")
+
+        self.last_seek_position = position
+        import time
+        self.last_play_time = time.time()
+        self.paused = False
+        self.was_stopped = False
+
+        if self.simulated:
+            return True
+
+        try:
+            track_path = os.path.join(self.playlist_dir, self.current_track)
+            pygame.mixer.music.load(track_path)
+            pygame.mixer.music.play(loops=-1, start=position)
+            pygame.mixer.music.set_volume(self.volume)
+            return True
+        except Exception as e:
+            print(f"Error seeking: {e}")
+            return False
+
+    def get_current_position(self):
+        if not self.current_track:
+            return 0.0
+        import time
+        pos = self.last_seek_position
+        if not self.paused and self.last_play_time is not None:
+            pos += time.time() - self.last_play_time
+
+        if self.track_duration > 0:
+            if pos > self.track_duration:
+                pos = pos % self.track_duration
+        return max(0.0, pos)
 
 
 CAPTURE_DIR = os.path.join(

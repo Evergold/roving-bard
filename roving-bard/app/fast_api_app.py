@@ -153,9 +153,10 @@ app.description = "API for interacting with the Agent roving-bard"
 
 
 class ControlRequest(BaseModel):
-    action: str  # play, stop, volume, scan
+    action: str  # play, stop, volume, scan, seek, pause, resume
     track_file: str | None = None
     volume: float | None = None
+    position: float | None = None
 
 
 class ConfigUpdateRequest(BaseModel):
@@ -245,12 +246,14 @@ def api_status():
         "latest_parse": tools.latest_parse_result,
         "paused": getattr(tools.player, "paused", False),
         "was_stopped": getattr(tools.player, "was_stopped", False),
+        "duration": getattr(tools.player, "track_duration", 0.0),
+        "current_position": tools.player.get_current_position(),
     }
 
 
 @app.post("/api/control", dependencies=[Depends(verify_api_key)])
 def api_control(req: ControlRequest):
-    """Handles manual player actions (play, stop, set volume, scan screen)."""
+    """Handles manual player actions (play, stop, set volume, scan screen, seek)."""
     if req.action == "play":
         if req.track_file:
             return tools.play_track(req.track_file)
@@ -273,6 +276,13 @@ def api_control(req: ControlRequest):
         if success:
             return {"status": "success", "message": "Playback resumed."}
         return {"status": "error", "message": "Failed to resume playback."}
+    elif req.action == "seek":
+        if req.position is not None:
+            success = tools.player.seek(req.position)
+            if success:
+                return {"status": "success", "message": f"Seeked to {req.position} seconds."}
+            return {"status": "error", "message": "Failed to seek playback."}
+        return {"status": "error", "message": "position is required for seek action."}
     return {"status": "error", "message": f"Unknown action: {req.action}"}
 
 

@@ -291,6 +291,93 @@
             pointer-events: none;
         }
 
+        /* Seek Bar Styling */
+        .seek-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            margin: 0.5rem 0 1rem 0;
+            padding: 0 0.2rem;
+        }
+
+        .seek-container span {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        #seek-current-time {
+            min-width: 90px;
+        }
+
+        #seek-duration {
+            min-width: 100px;
+            text-align: right;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        #seek-duration:hover {
+            color: var(--neon-blue);
+        }
+
+        .seek-container input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            transition: background 0.3s;
+            -webkit-appearance: none;
+        }
+
+        .seek-container input[type="range"]::-webkit-slider-runnable-track {
+            background: transparent;
+            height: 6px;
+        }
+
+        .seek-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--neon-blue);
+            transition: transform 0.1s, background-color 0.1s;
+            margin-top: -4px; /* Center thumb vertically */
+        }
+
+        .seek-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+            background: var(--text-main);
+        }
+
+        .seek-container input[type="range"]::-moz-range-track {
+            background: transparent;
+            height: 6px;
+        }
+
+        .seek-container input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--neon-blue);
+            border: none;
+            transition: transform 0.1s, background-color 0.1s;
+        }
+
+        .seek-container input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.3);
+            background: var(--text-main);
+        }
+
         /* Capture & Parsing Dashboard */
         .capture-grid {
             display: grid;
@@ -708,6 +795,12 @@
                             <div class="wave-bar"></div>
                         </div>
                     </div>
+                    <!-- SEEK BAR CONTAINER -->
+                    <div class="seek-container">
+                        <span id="seek-current-time">00:00:00.00</span>
+                        <input type="range" id="seek-slider" min="0" max="100" step="0.01" value="0" oninput="onSeekSliderInput(this.value)" onchange="onSeekSliderChange(this.value)">
+                        <span id="seek-duration" onclick="toggleDurationDisplayMode()">00:00:00.00</span>
+                    </div>
                     <div class="controls-row" style="justify-content: flex-end;">
                         <button id="now-playing-toggle-btn" class="btn" style="min-width: 90px; padding: 0.8rem 1.5rem;" onclick="toggleNowPlayingPlayback()">Play</button>
                         <button id="now-playing-stop-btn" class="btn btn-secondary" onclick="stopMusic()">Stop</button>
@@ -889,6 +982,10 @@
         let audioLibraryFiles = [];
         let isMuted = false;
         let preMuteVolume = 1.0;
+        let lastStatusTime = Date.now();
+        let isDraggingSeek = false;
+        let showRemainingTime = localStorage.getItem('showRemainingTime') === 'true';
+        let seekTimerId = null;
 
         const EMBEDDED_API_KEY = "{{API_KEY_PLACEHOLDER}}";
 
@@ -969,6 +1066,7 @@
                 
                 const status = await response.json();
                 currentPlaybackStatus = status;
+                lastStatusTime = Date.now();
                 
                 configData = status.config_data;
                 
@@ -1541,6 +1639,108 @@
             }
         });
 
+        /* Seek Bar Helper Functions and Event Handlers */
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds === null || seconds === undefined) {
+                return "00:00:00.00";
+            }
+            const isNegative = seconds < 0;
+            const absSeconds = Math.abs(seconds);
+            const hrs = Math.floor(absSeconds / 3600);
+            const mins = Math.floor((absSeconds % 3600) / 60);
+            const secs = Math.floor(absSeconds % 60);
+            const centis = Math.floor((absSeconds % 1) * 100);
+
+            const pad = (n, width = 2) => String(n).padStart(width, '0');
+            const formatted = `${pad(hrs)}:${pad(mins)}:${pad(secs)}.${pad(centis)}`;
+            return isNegative ? `-${formatted}` : formatted;
+        }
+
+        function updateSeekDisplay() {
+            const seekSlider = document.getElementById('seek-slider');
+            const seekCurrentTime = document.getElementById('seek-current-time');
+            const seekDuration = document.getElementById('seek-duration');
+
+            if (!seekSlider || !seekCurrentTime || !seekDuration) return;
+
+            if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
+                seekSlider.disabled = true;
+                seekSlider.value = 0;
+                seekCurrentTime.innerText = "00:00:00.00";
+                seekDuration.innerText = "00:00:00.00";
+                return;
+            }
+
+            seekSlider.disabled = false;
+            const duration = currentPlaybackStatus.duration || 180.0;
+            seekSlider.max = duration;
+
+            let currentPos = currentPlaybackStatus.current_position || 0.0;
+            if (!currentPlaybackStatus.paused) {
+                const elapsed = (Date.now() - lastStatusTime) / 1000.0;
+                currentPos += elapsed;
+                if (currentPos > duration) {
+                    currentPos = currentPos % duration;
+                }
+            }
+
+            if (!isDraggingSeek) {
+                seekSlider.value = currentPos;
+                seekCurrentTime.innerText = formatTime(currentPos);
+            }
+
+            if (showRemainingTime) {
+                const remaining = currentPos - duration;
+                seekDuration.innerText = formatTime(remaining);
+            } else {
+                seekDuration.innerText = formatTime(duration);
+            }
+        }
+
+        function startSeekTimer() {
+            if (seekTimerId) return;
+            seekTimerId = setInterval(updateSeekDisplay, 50);
+        }
+
+        function onSeekSliderInput(val) {
+            isDraggingSeek = true;
+            const seekCurrentTime = document.getElementById('seek-current-time');
+            const numVal = parseFloat(val);
+            if (seekCurrentTime) {
+                seekCurrentTime.innerText = formatTime(numVal);
+            }
+
+            if (showRemainingTime && currentPlaybackStatus) {
+                const duration = currentPlaybackStatus.duration || 180.0;
+                const seekDuration = document.getElementById('seek-duration');
+                if (seekDuration) {
+                    seekDuration.innerText = formatTime(numVal - duration);
+                }
+            }
+        }
+
+        async function onSeekSliderChange(val) {
+            const numVal = parseFloat(val);
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'seek', position: numVal })
+                });
+            } catch (err) {
+                console.error("Error seeking track:", err);
+            } finally {
+                isDraggingSeek = false;
+                await loadDashboard();
+            }
+        }
+
+        function toggleDurationDisplayMode() {
+            showRemainingTime = !showRemainingTime;
+            localStorage.setItem('showRemainingTime', showRemainingTime);
+            updateSeekDisplay();
+        }
+
         function togglePolling(checked) {
             if (checked) {
                 // Poll screen status every 2 seconds
@@ -1576,7 +1776,10 @@
         document.head.appendChild(style);
 
         // Initial load
-        window.onload = loadDashboard;
+        window.onload = () => {
+            loadDashboard();
+            startSeekTimer();
+        };
     </script>
 </body>
 </html>

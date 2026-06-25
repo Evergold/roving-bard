@@ -237,5 +237,56 @@ def test_api_stop_control() -> None:
     assert status_response.json()["was_stopped"] is False
 
 
+def test_player_seek() -> None:
+    """Test seeking functionality on SafeMusicPlayer."""
+    player = SafeMusicPlayer(playlist_dir="music")
+    player.simulated = True
+    player.current_track = "mock_track.mp3"
+    player.track_duration = 180.0
+    player.paused = False
+
+    # Seek to 45.0s
+    assert player.seek(45.0) is True
+    assert player.paused is False
+    assert player.was_stopped is False
+    assert player.get_current_position() >= 45.0
+
+    # Test seek bound limits
+    assert player.seek(-10.0) is True
+    assert player.last_seek_position == 0.0
+
+    assert player.seek(300.0) is True
+    assert player.last_seek_position == 180.0
+
+
+def test_api_seek_control() -> None:
+    """Test POST /api/control with seek action, and status representations."""
+    headers = get_headers()
+
+    # Reset player state
+    tools.player.simulated = True
+    tools.player.current_track = "test_track.mp3"
+    tools.player.track_duration = 180.0
+    tools.player.paused = False
+
+    # Send seek command
+    seek_response = client.post(
+        "/api/control",
+        headers=headers,
+        json={"action": "seek", "position": 60.0},
+    )
+    assert seek_response.status_code == 200
+    assert seek_response.json()["status"] == "success"
+
+    # Verify status includes correct position and duration
+    status_response = client.get("/api/status", headers=headers)
+    assert status_response.status_code == 200
+    status_data = status_response.json()
+    assert "duration" in status_data
+    assert "current_position" in status_data
+    assert status_data["duration"] == 180.0
+    assert status_data["current_position"] >= 60.0
+
+
 
 
