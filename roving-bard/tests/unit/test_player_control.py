@@ -152,6 +152,32 @@ def test_player_transition_no_delay_when_paused(tmp_path) -> None:
     assert player.paused is False
 
 
+def test_player_transition_no_delay_when_fadeout_zero(tmp_path) -> None:
+    """Test that transitioning from a playing active track to a new track is immediate when fade_out_ms=0."""
+    import time
+
+    # Create two dummy track files
+    track1 = tmp_path / "track1.mp3"
+    track1.write_bytes(b"dummy")
+    track2 = tmp_path / "track2.mp3"
+    track2.write_bytes(b"dummy")
+
+    player = SafeMusicPlayer(playlist_dir=str(tmp_path))
+    player.simulated = True
+
+    # Start play of track1
+    assert player.play_track("track1.mp3", fade_in_ms=100, fade_out_ms=100) is True
+    assert player.current_track == "track1.mp3"
+
+    # Transition to track2 with fade_out_ms=0 (should NOT delay)
+    start_time = time.time()
+    assert player.play_track("track2.mp3", fade_in_ms=100, fade_out_ms=0) is True
+    duration = time.time() - start_time
+    assert duration < 0.05  # should be virtually instant
+    assert player.current_track == "track2.mp3"
+    assert player.paused is False
+
+
 def test_player_stop_restarts_from_beginning() -> None:
     """Test that stop sets the was_stopped flag and resume resets it."""
     player = SafeMusicPlayer(playlist_dir="music")

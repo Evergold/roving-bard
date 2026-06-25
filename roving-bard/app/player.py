@@ -65,7 +65,7 @@ class SafeMusicPlayer:
 
         # If a track is currently playing, fade it out first and wait for it to end (only if not paused)
         if self.current_track:
-            if not self.paused:
+            if not self.paused and fade_out_ms > 0:
                 if not self.simulated and self.mixer_initialized:
                     try:
                         if pygame.mixer.music.get_busy():
@@ -79,7 +79,7 @@ class SafeMusicPlayer:
                     try:
                         pygame.mixer.music.stop()
                     except Exception as e:
-                        print(f"Error stopping paused music: {e}")
+                        print(f"Error stopping music: {e}")
 
         self.current_track = track_file
         self.paused = False
