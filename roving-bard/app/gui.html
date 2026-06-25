@@ -1255,6 +1255,7 @@
         let isEditingBoundsInput = false;
         let showRemainingTime = localStorage.getItem('showRemainingTime') === 'true';
         let seekTimerId = null;
+        let isTransitioningTrack = false;
         let activeSegment = null;
         try {
             const savedSeg = localStorage.getItem('activeSegment');
@@ -1328,6 +1329,8 @@
                         badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-red); border-radius:50%;"></span> UNAUTHORIZED`;
                     }
                     console.error("Authentication failed. No valid API key provided.");
+                    isTransitioningTrack = false;
+                    updateExportButtonState();
                     return;
                 }
                 if (!response.ok) {
@@ -1337,11 +1340,14 @@
                         badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-red); border-radius:50%;"></span> OFFLINE`;
                     }
                     console.error("Failed to load status:", response.status);
+                    isTransitioningTrack = false;
+                    updateExportButtonState();
                     return;
                 }
                 
                 const status = await response.json();
                 currentPlaybackStatus = status;
+                isTransitioningTrack = false;
                 lastStatusTime = Date.now();
                 
                 configData = status.config_data;
@@ -1369,8 +1375,12 @@
 
                 // Load audio library files
                 loadAudioLibrary();
+
+                updateExportButtonState();
             } catch (err) {
                 console.error("Error loading dashboard data:", err);
+                isTransitioningTrack = false;
+                updateExportButtonState();
             }
         }
 
@@ -1797,6 +1807,7 @@
             try {
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
+                isTransitioningTrack = true;
                 updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
@@ -1811,6 +1822,8 @@
                 loadDashboard();
             } catch (err) {
                 console.error("Error selecting segment:", err);
+                isTransitioningTrack = false;
+                updateExportButtonState();
             }
         }
 
@@ -1818,6 +1831,7 @@
             try {
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
+                isTransitioningTrack = true;
                 updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
@@ -1832,6 +1846,8 @@
                 loadDashboard();
             } catch (err) {
                 console.error("Error playing segment:", err);
+                isTransitioningTrack = false;
+                updateExportButtonState();
             }
         }
 
@@ -1857,6 +1873,18 @@
         function updateExportButtonState() {
             const exportBtn = document.getElementById('export-segment-btn');
             if (!exportBtn) return;
+
+            if (isTransitioningTrack) {
+                exportBtn.disabled = true;
+                if (activeSegment) {
+                    exportBtn.innerText = 'Save';
+                    exportBtn.onclick = saveSegment;
+                } else {
+                    exportBtn.innerText = 'Export';
+                    exportBtn.onclick = exportSegment;
+                }
+                return;
+            }
 
             if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
                 exportBtn.disabled = true;
@@ -1933,6 +1961,7 @@
             try {
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
+                isTransitioningTrack = true;
                 updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
@@ -1942,6 +1971,8 @@
                 loadDashboard();
             } catch (err) {
                 console.error("Error selecting audio file:", err);
+                isTransitioningTrack = false;
+                updateExportButtonState();
                 loadDashboard();
             }
         }
@@ -1950,6 +1981,7 @@
             try {
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
+                isTransitioningTrack = true;
                 updateExportButtonState();
                 const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
                 const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
@@ -1986,6 +2018,8 @@
                 loadDashboard();
             } catch (err) {
                 console.error("Error playing audio file:", err);
+                isTransitioningTrack = false;
+                updateExportButtonState();
                 loadDashboard();
             }
         }
