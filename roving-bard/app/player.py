@@ -31,6 +31,7 @@ class SafeMusicPlayer:
         self.mixer_initialized = False
         self.simulated = False
         self.paused = False
+        self.was_stopped = False
 
         try:
             pygame.mixer.init()
@@ -82,6 +83,7 @@ class SafeMusicPlayer:
 
         self.current_track = track_file
         self.paused = False
+        self.was_stopped = False
 
         if self.simulated:
             print(f"[Playback SIMULATED] Playing: {track_file}")
@@ -102,29 +104,14 @@ class SafeMusicPlayer:
 
         print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
         self.paused = True
+        self.was_stopped = True
 
         if self.simulated:
             return
 
         try:
             if pygame.mixer.music.get_busy():
-                def fade_and_pause():
-                    try:
-                        initial_volume = self.volume
-                        steps = 10
-                        delay = (fade_out_ms / 1000.0) / steps
-                        for i in range(steps):
-                            import time
-                            time.sleep(delay)
-                            if not self.paused:
-                                return
-                            pygame.mixer.music.set_volume(initial_volume * (1.0 - (i + 1) / steps))
-                        pygame.mixer.music.pause()
-                        pygame.mixer.music.set_volume(initial_volume)
-                    except Exception as ex:
-                        print(f"Error in stop fade thread: {ex}")
-                import threading
-                threading.Thread(target=fade_and_pause, daemon=True).start()
+                pygame.mixer.music.fadeout(fade_out_ms)
         except Exception as e:
             print(f"Error stopping playback: {e}")
 
@@ -157,9 +144,17 @@ class SafeMusicPlayer:
         print("[Playback] Resuming music.")
         self.paused = False
         if self.simulated:
+            self.was_stopped = False
             return True
         try:
-            pygame.mixer.music.unpause()
+            if self.was_stopped:
+                track_path = os.path.join(self.playlist_dir, self.current_track)
+                pygame.mixer.music.load(track_path)
+                pygame.mixer.music.play(loops=-1, fade_ms=1500)
+                pygame.mixer.music.set_volume(self.volume)
+                self.was_stopped = False
+            else:
+                pygame.mixer.music.unpause()
             return True
         except Exception as e:
             print(f"Error resuming music: {e}")

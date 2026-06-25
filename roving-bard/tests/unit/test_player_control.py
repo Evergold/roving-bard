@@ -152,3 +152,23 @@ def test_player_transition_no_delay_when_paused(tmp_path) -> None:
     assert player.paused is False
 
 
+def test_player_stop_restarts_from_beginning() -> None:
+    """Test that stop sets the was_stopped flag and resume resets it."""
+    player = SafeMusicPlayer(playlist_dir="music")
+    player.simulated = True
+    player.current_track = "mock_track.mp3"
+    player.paused = False
+
+    # Stop the player (does not clear current_track, sets paused and was_stopped to True)
+    player.stop()
+    assert player.current_track == "mock_track.mp3"
+    assert player.paused is True
+    assert player.was_stopped is True
+
+    # Resume the player (resets was_stopped, unpauses)
+    assert player.resume() is True
+    assert player.paused is False
+    assert player.was_stopped is False
+
+
+

@@ -1111,7 +1111,10 @@
                 let btnClass = 'btn btn-secondary';
                 let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
 
+                let showStopBtn = false;
+
                 if (activeTrack === file) {
+                    showStopBtn = true;
                     if (isPaused) {
                         btnText = 'Resume';
                         btnStyle += ' background-color: #ef4444; color: white; border: 1px solid #ef4444;';
@@ -1125,13 +1128,26 @@
                     }
                 }
 
-                item.innerHTML = `
-                    <div class="mapping-item-details">
-                        <div class="mapping-item-title" style="font-family: \'Space Mono\', monospace; font-size: 0.85rem;">${file}</div>
-                        <div class="mapping-item-sub">Click to play this track</div>
-                    </div>
-                    <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                `;
+                if (showStopBtn) {
+                    item.innerHTML = `
+                        <div class="mapping-item-details">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${file}</div>
+                            <div class="mapping-item-sub">Click to control this track</div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                            <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease;" onclick="stopMusic()">Stop</button>
+                        </div>
+                    `;
+                } else {
+                    item.innerHTML = `
+                        <div class="mapping-item-details">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${file}</div>
+                            <div class="mapping-item-sub">Click to play this track</div>
+                        </div>
+                        <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                    `;
+                }
                 list.appendChild(item);
             });
         }
@@ -1145,16 +1161,16 @@
                     items.forEach(item => {
                         const titleEl = item.querySelector('.mapping-item-title');
                         const titleText = titleEl ? titleEl.innerText.trim() : '';
-                        const btn = item.querySelector('button');
-                        if (btn) {
-                            if (titleText === activeTrack && !isPaused) {
+                        const btns = item.querySelectorAll('button');
+                        btns.forEach((btn, idx) => {
+                            if (titleText === activeTrack && !isPaused && idx === 0) {
                                 btn.innerText = 'Stopping';
                                 btn.style.backgroundColor = '#d97706';
                                 btn.style.borderColor = '#d97706';
                                 btn.style.color = 'white';
                             }
                             btn.disabled = true;
-                        }
+                        });
                     });
                 }
 
