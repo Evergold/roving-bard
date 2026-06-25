@@ -2237,19 +2237,19 @@
                 
                 let html = '';
                 if (anyDetected) {
-                    html += `<div style="color: #4caf50; font-weight: bold; margin-bottom: 0.5rem;">✔️ API Key Detected</div>`;
+                    html += `<div style="color: var(--neon-green); font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.15rem; font-weight: 900; margin-right: 4px; vertical-align: middle;">✓</span> API Key Detected</div>`;
                     html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
-                    html += `  <div>${hasAgent ? '✔️' : '❌'} AGENT_API_KEY</div>`;
-                    html += `  <div>${hasGoogle ? '✔️' : '❌'} GOOGLE_API_KEY</div>`;
-                    html += `  <div>${hasGemini ? '✔️' : '❌'} GEMINI_API_KEY</div>`;
+                    html += `  <div style="color: ${hasAgent ? 'var(--neon-green)' : 'var(--neon-pink)'};"><span style="font-weight: bold; margin-right: 4px;">${hasAgent ? '✓' : '✗'}</span> AGENT_API_KEY</div>`;
+                    html += `  <div style="color: ${hasGoogle ? 'var(--neon-green)' : 'var(--neon-pink)'};"><span style="font-weight: bold; margin-right: 4px;">${hasGoogle ? '✓' : '✗'}</span> GOOGLE_API_KEY</div>`;
+                    html += `  <div style="color: ${hasGemini ? 'var(--neon-green)' : 'var(--neon-pink)'};"><span style="font-weight: bold; margin-right: 4px;">${hasGemini ? '✓' : '✗'}</span> GEMINI_API_KEY</div>`;
                     html += `</div>`;
                 } else {
-                    html += `<div style="color: #f44336; font-weight: bold; margin-bottom: 0.5rem;">❌ API Key Not Detected</div>`;
-                    html += `<div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #f44336;">A supported API key was not detected.</div>`;
-                    html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.65; margin-left: 0.5rem;">`;
-                    html += `  <div>❌ AGENT_API_KEY</div>`;
-                    html += `  <div>❌ GOOGLE_API_KEY</div>`;
-                    html += `  <div>❌ GEMINI_API_KEY</div>`;
+                    html += `<div style="color: var(--neon-pink); font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.15rem; font-weight: 900; margin-right: 4px; vertical-align: middle;">✗</span> API Key Not Detected</div>`;
+                    html += `<div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--neon-pink);">A supported API key was not detected.</div>`;
+                    html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem; color: var(--neon-pink);">`;
+                    html += `  <div><span style="font-weight: bold; margin-right: 4px;">✗</span> AGENT_API_KEY</div>`;
+                    html += `  <div><span style="font-weight: bold; margin-right: 4px;">✗</span> GOOGLE_API_KEY</div>`;
+                    html += `  <div><span style="font-weight: bold; margin-right: 4px;">✗</span> GEMINI_API_KEY</div>`;
                     html += `</div>`;
                 }
                 container.innerHTML = html;
