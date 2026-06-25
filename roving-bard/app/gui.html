@@ -190,30 +190,16 @@
             margin-top: 4px;
         }
 
-        /* Wave Animation */
+        /* Waveform canvas */
         .wave-container {
             display: flex;
-            align-items: flex-end;
-            gap: 3px;
-            height: 24px;
+            align-items: center;
+            flex-shrink: 0;
         }
 
-        .wave-bar {
-            width: 3px;
-            height: 5px;
-            background-color: var(--neon-blue);
-            border-radius: 2px;
-            animation: wave 1.2s ease-in-out infinite alternate;
-        }
-
-        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
-        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
-        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
-        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
-
-        @keyframes wave {
-            0% { height: 4px; }
-            100% { height: 22px; }
+        #waveform-canvas {
+            display: block;
+            border-radius: 4px;
         }
 
         .controls-row {
@@ -1039,12 +1025,8 @@
                             <div id="track-title" class="track-title">Silent (No Track Active)</div>
                             <div id="track-status" class="track-status">Mixer ready · Stop</div>
                         </div>
-                        <div id="audio-wave" class="wave-container" style="display: none;">
-                            <div class="wave-bar"></div>
-                            <div class="wave-bar"></div>
-                            <div class="wave-bar"></div>
-                            <div class="wave-bar"></div>
-                            <div class="wave-bar"></div>
+                        <div id="audio-wave" class="wave-container">
+                            <canvas id="waveform-canvas" width="72" height="36"></canvas>
                         </div>
                     </div>
                     <!-- SEEK BAR CONTAINER -->
@@ -1428,19 +1410,19 @@
                         toggleBtn.style.borderColor = '#ef4444';
                         toggleBtn.style.color = 'white';
                     }
-                    wave.style.display = 'none';
+                    setWaveformPlaying(false);
                 } else {
                     trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
                     toggleBtn.innerText = 'Playing';
                     toggleBtn.style.background = '#10b981';
                     toggleBtn.style.borderColor = '#10b981';
                     toggleBtn.style.color = 'white';
-                    wave.style.display = 'flex';
+                    setWaveformPlaying(true);
                 }
             } else {
                 trackTitle.innerText = "Silent (No Track Active)";
                 trackStatus.innerText = "Stopped";
-                wave.style.display = 'none';
+                setWaveformPlaying(false);
                 toggleBtn.innerText = 'Play';
                 toggleBtn.disabled = true;
                 toggleBtn.style.background = 'rgba(255, 255, 255, 0.05)';
@@ -2497,7 +2479,93 @@
             }
         }
 
-        // Pulse keyframe
+        // ── Waveform canvas animation ────────────────────────────────────────
+        (function () {
+            const BAR_COUNT = 18;
+            const BAR_GAP = 2;
+            let playing = false;
+            let rafId = null;
+
+            // Current and target heights for each bar (0..1)
+            const current = new Float32Array(BAR_COUNT).fill(0.08);
+            const target  = new Float32Array(BAR_COUNT).fill(0.08);
+            // Phase offsets give each bar an independent organic rhythm
+            const phase   = Float32Array.from({length: BAR_COUNT}, (_, i) => i * 0.41);
+            const speed   = Float32Array.from({length: BAR_COUNT}, () => 0.018 + Math.random() * 0.022);
+
+            function setWaveformPlaying(isPlaying) {
+                playing = isPlaying;
+                if (!rafId) rafId = requestAnimationFrame(tick);
+            }
+            window.setWaveformPlaying = setWaveformPlaying;
+
+            function tick() {
+                const canvas = document.getElementById('waveform-canvas');
+                if (!canvas) { rafId = null; return; }
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width;
+                const H = canvas.height;
+                const midY = H / 2;
+
+                // Advance phases and set targets
+                for (let i = 0; i < BAR_COUNT; i++) {
+                    phase[i] += speed[i];
+                    if (playing) {
+                        // Organic multi-sine: primary + harmonic + slow swell
+                        const v = 0.55
+                            + 0.28 * Math.sin(phase[i])
+                            + 0.10 * Math.sin(phase[i] * 2.3 + 1.1)
+                            + 0.07 * Math.sin(phase[i] * 0.4 + i);
+                        target[i] = Math.max(0.06, Math.min(1.0, v));
+                    } else {
+                        // Idle: very subtle breath
+                        target[i] = 0.06 + 0.04 * Math.sin(phase[i] * 0.3 + i * 0.5);
+                    }
+                    // Lerp current toward target
+                    const lerpRate = playing ? 0.12 : 0.06;
+                    current[i] += (target[i] - current[i]) * lerpRate;
+                }
+
+                ctx.clearRect(0, 0, W, H);
+
+                const totalBarW = (W - (BAR_COUNT - 1) * BAR_GAP) / BAR_COUNT;
+                const barW = Math.max(2, totalBarW);
+
+                // Gradient: accent purple → neon blue
+                const grad = ctx.createLinearGradient(0, 0, 0, H);
+                if (playing) {
+                    grad.addColorStop(0, 'rgba(124, 77, 255, 0.95)');
+                    grad.addColorStop(0.5, 'rgba(80, 140, 255, 0.85)');
+                    grad.addColorStop(1, 'rgba(124, 77, 255, 0.95)');
+                } else {
+                    grad.addColorStop(0, 'rgba(100, 100, 130, 0.5)');
+                    grad.addColorStop(1, 'rgba(100, 100, 130, 0.5)');
+                }
+                ctx.fillStyle = grad;
+
+                for (let i = 0; i < BAR_COUNT; i++) {
+                    const x = i * (barW + BAR_GAP);
+                    const halfH = current[i] * midY;
+                    const radius = Math.min(barW / 2, halfH, 3);
+
+                    // Draw mirrored bar (top half + bottom half)
+                    ctx.beginPath();
+                    // Top half (above centre)
+                    ctx.roundRect(x, midY - halfH, barW, halfH * 2, radius);
+                    ctx.fill();
+                }
+
+                rafId = requestAnimationFrame(tick);
+            }
+
+            // Start the idle animation immediately on load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => { rafId = requestAnimationFrame(tick); });
+            } else {
+                rafId = requestAnimationFrame(tick);
+            }
+        })();
+
         const style = document.createElement('style');
         style.innerHTML = `
             @keyframes pulse {
