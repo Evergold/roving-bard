@@ -257,28 +257,194 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem !important;
             cursor: pointer;
             user-select: none;
-            transition: transform 0.2s ease;
+            transition: filter 0.2s ease, transform 0.2s ease;
+            line-height: 1;
         }
-
         .header-volume-control #volume-mute-btn:hover {
-            transform: scale(1.2);
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(0,242,254,0.6)) drop-shadow(0 0 14px rgba(124,77,255,0.4));
+        }
+        /* SVG wave arcs: hidden by default, shown by volume level classes */
+        #spk-wave-lo, #spk-wave-mid, #spk-wave-hi { transition: opacity 0.2s ease; }
+        #volume-mute-btn.vol-muted  #spk-wave-lo,
+        #volume-mute-btn.vol-muted  #spk-wave-mid,
+        #volume-mute-btn.vol-muted  #spk-wave-hi  { opacity: 0; }
+        #volume-mute-btn.vol-low    #spk-wave-lo  { opacity: 1; }
+        #volume-mute-btn.vol-low    #spk-wave-mid { opacity: 0; }
+        #volume-mute-btn.vol-low    #spk-wave-hi  { opacity: 0; }
+        #volume-mute-btn.vol-mid    #spk-wave-lo  { opacity: 1; }
+        #volume-mute-btn.vol-mid    #spk-wave-mid { opacity: 1; }
+        #volume-mute-btn.vol-mid    #spk-wave-hi  { opacity: 0; }
+        #volume-mute-btn.vol-high   #spk-wave-lo  { opacity: 1; }
+        #volume-mute-btn.vol-high   #spk-wave-mid { opacity: 1; }
+        #volume-mute-btn.vol-high   #spk-wave-hi  { opacity: 1; }
+        /* Mute slash */
+        #spk-mute-slash { opacity: 0; transition: opacity 0.2s ease; }
+        #volume-mute-btn.vol-muted #spk-mute-slash { opacity: 1; }
+        /* Extra gap between EQ anchor and speaker */
+        .eq-anchor { margin-right: 0.35rem; }
+
+        /* ---- EQ Button & Panel ---- */
+        #eq-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: filter 0.2s ease, transform 0.2s ease;
+            color: #a78bfa;
+            line-height: 1;
+            position: relative;
+            /* no border, no background — pure SVG icon */
+        }
+        #eq-btn:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(124,77,255,0.7)) drop-shadow(0 0 16px rgba(0,242,254,0.4));
+        }
+        #eq-btn.eq-active {
+            filter: drop-shadow(0 0 10px rgba(0,242,254,0.8)) drop-shadow(0 0 20px rgba(124,77,255,0.5));
+            transform: scale(1.05);
+        }
+        /* Animate the bars subtly when active */
+        #eq-btn.eq-active .eq-icon-bar {
+            animation: eq-bar-pulse 1.8s ease-in-out infinite alternate;
+        }
+        #eq-btn.eq-active .eq-icon-bar:nth-child(1) { animation-delay: 0s; }
+        #eq-btn.eq-active .eq-icon-bar:nth-child(2) { animation-delay: 0.2s; }
+        #eq-btn.eq-active .eq-icon-bar:nth-child(3) { animation-delay: 0.4s; }
+        #eq-btn.eq-active .eq-icon-bar:nth-child(4) { animation-delay: 0.6s; }
+        #eq-btn.eq-active .eq-icon-bar:nth-child(5) { animation-delay: 0.8s; }
+        @keyframes eq-bar-pulse {
+            from { transform: scaleY(1); }
+            to   { transform: scaleY(0.7); }
         }
 
-        .header-volume-control #volume-mute-btn.muted::after {
-            content: "";
+        #eq-panel {
+            display: none;
+            position: fixed;   /* escapes card overflow:hidden */
+            /* top/right set dynamically by JS on open */
+            z-index: 2000;
+            background: rgba(18, 24, 36, 0.96);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(124, 77, 255, 0.35);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem 1.5rem;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+            min-width: 500px;
+            animation: eq-pop-in 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        #eq-panel.eq-panel-open { display: block; }
+
+        @keyframes eq-pop-in {
+            from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .eq-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .eq-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--neon-blue);
+            font-family: 'Space Mono', monospace;
+        }
+        .eq-header-actions {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+        }
+        .eq-preset-select {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.78rem;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            outline: none;
+        }
+        .eq-preset-select:hover { border-color: var(--accent); }
+        .eq-reset-btn {
+            background: rgba(255,77,77,0.12);
+            border: 1px solid rgba(255,77,77,0.25);
+            border-radius: 6px;
+            color: #ff6b6b;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.15s ease;
+        }
+        .eq-reset-btn:hover { background: rgba(255,77,77,0.22); border-color: #ff6b6b; }
+
+        .eq-bands {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+        .eq-band {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            flex: 1;
+        }
+        .eq-db-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.64rem;
+            color: var(--neon-blue);
+            min-height: 14px;
+            text-align: center;
+        }
+        .eq-slider-wrap {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .eq-slider {
+            -webkit-appearance: slider-vertical;
+            writing-mode: vertical-lr;
+            direction: rtl;
+            width: 22px;
+            height: 110px;
+            cursor: pointer;
+            accent-color: var(--accent);
+            background: transparent;
+        }
+        /* Centre line */
+        .eq-slider-wrap::before {
+            content: '';
             position: absolute;
-            width: 140%;
-            height: 2px;
-            background-color: #ff4d4d;
-            transform: rotate(-45deg);
+            left: 50%;
             top: 50%;
-            left: -20%;
-            margin-top: -1px;
-            box-shadow: 0 0 4px rgba(255, 77, 77, 0.6);
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 1px;
+            background: rgba(255,255,255,0.12);
             pointer-events: none;
+        }
+        .eq-freq-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Wrap eq-panel's anchor relative to card-title */
+        .eq-anchor {
+            position: relative;
         }
 
         /* Seek Bar Styling */
@@ -1018,7 +1184,94 @@
                 <div class="card-title">
                     NOW PLAYING
                     <div class="header-volume-control">
-                        <span id="volume-mute-btn" onclick="toggleMute()">🔊</span>
+                        <!-- EQ Button -->
+                        <div class="eq-anchor">
+                            <span id="eq-btn" onclick="toggleEQPanel()" title="Equalizer">
+                                <!-- EQ SVG Icon: 5 slider bars at staggered positions -->
+                                <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                                    <defs>
+                                        <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#00f2fe"/>
+                                            <stop offset="100%" stop-color="#7c4dff"/>
+                                        </linearGradient>
+                                        <filter id="eqGlow">
+                                            <feGaussianBlur stdDeviation="1.2" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                    </defs>
+                                    <!-- Track lines (full range, dimmed) -->
+                                    <rect x="4"  y="4" width="4" height="32" rx="2" fill="rgba(255,255,255,0.08)"/>
+                                    <rect x="12" y="4" width="4" height="32" rx="2" fill="rgba(255,255,255,0.08)"/>
+                                    <rect x="20" y="4" width="4" height="32" rx="2" fill="rgba(255,255,255,0.08)"/>
+                                    <rect x="28" y="4" width="4" height="32" rx="2" fill="rgba(255,255,255,0.08)"/>
+                                    <rect x="36" y="4" width="4" height="32" rx="2" fill="rgba(255,255,255,0.08)"/>
+                                    <!-- Filled bars at staggered heights (bottom-anchored) -->
+                                    <rect class="eq-icon-bar" x="4"  y="16" width="4" height="20" rx="2" fill="url(#eqGrad)" filter="url(#eqGlow)" style="transform-origin: 6px 36px;"/>
+                                    <rect class="eq-icon-bar" x="12" y="8"  width="4" height="28" rx="2" fill="url(#eqGrad)" filter="url(#eqGlow)" style="transform-origin: 14px 36px;"/>
+                                    <rect class="eq-icon-bar" x="20" y="20" width="4" height="16" rx="2" fill="url(#eqGrad)" filter="url(#eqGlow)" style="transform-origin: 22px 36px;"/>
+                                    <rect class="eq-icon-bar" x="28" y="12" width="4" height="24" rx="2" fill="url(#eqGrad)" filter="url(#eqGlow)" style="transform-origin: 30px 36px;"/>
+                                    <rect class="eq-icon-bar" x="36" y="22" width="4" height="14" rx="2" fill="url(#eqGrad)" filter="url(#eqGlow)" style="transform-origin: 38px 36px;"/>
+                                    <!-- Slider knobs (white circles on the bar top edges) -->
+                                    <circle cx="6"  cy="16" r="3.5" fill="white" opacity="0.9"/>
+                                    <circle cx="14" cy="8"  r="3.5" fill="white" opacity="0.9"/>
+                                    <circle cx="22" cy="20" r="3.5" fill="white" opacity="0.9"/>
+                                    <circle cx="30" cy="12" r="3.5" fill="white" opacity="0.9"/>
+                                    <circle cx="38" cy="22" r="3.5" fill="white" opacity="0.9"/>
+                                </svg>
+                            </span>
+                            <!-- EQ Panel (popover) -->
+                            <div id="eq-panel">
+                                <div class="eq-header">
+                                    <span class="eq-title">EQUALIZER</span>
+                                    <div class="eq-header-actions">
+                                        <select id="eq-preset-select" class="eq-preset-select" onchange="applyEQPreset(this.value)">
+                                            <option value="flat">Flat</option>
+                                            <option value="bass_boost">Bass Boost</option>
+                                            <option value="treble_boost">Treble Boost</option>
+                                            <option value="vocal">Vocal</option>
+                                            <option value="loudness">Loudness</option>
+                                            <option value="acoustic">Acoustic</option>
+                                            <option value="custom" hidden>Custom</option>
+                                        </select>
+                                        <button class="eq-reset-btn" onclick="resetEQ()">Reset</button>
+                                    </div>
+                                </div>
+                                <div class="eq-bands" id="eq-bands-container">
+                                    <!-- bands injected by JS -->
+                                </div>
+                            </div>
+                        </div>
+                        <span id="volume-mute-btn" class="vol-high" onclick="toggleMute()" title="Mute / Unmute">
+                            <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                                <defs>
+                                    <linearGradient id="spkGrad" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stop-color="#00f2fe"/>
+                                        <stop offset="100%" stop-color="#7c4dff"/>
+                                    </linearGradient>
+                                    <filter id="spkGlow">
+                                        <feGaussianBlur stdDeviation="1" result="blur"/>
+                                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                    </filter>
+                                </defs>
+                                <!-- Speaker cone body -->
+                                <path d="M8 14 L16 14 L24 7 L24 33 L16 26 L8 26 Z"
+                                      fill="url(#spkGrad)" filter="url(#spkGlow)"/>
+                                <!-- Sound wave arcs (low, mid, high) -->
+                                <path id="spk-wave-lo"
+                                      d="M27 16.5 Q30 20 27 23.5"
+                                      stroke="url(#spkGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                                <path id="spk-wave-mid"
+                                      d="M30 13 Q35.5 20 30 27"
+                                      stroke="url(#spkGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                                <path id="spk-wave-hi"
+                                      d="M33.5 9.5 Q41 20 33.5 30.5"
+                                      stroke="url(#spkGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                                <!-- Mute slash (red diagonal) -->
+                                <line id="spk-mute-slash" x1="5" y1="35" x2="39" y2="5"
+                                      stroke="#ff4d4d" stroke-width="2.5" stroke-linecap="round"
+                                      filter="url(#spkGlow)"/>
+                            </svg>
+                        </span>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1.0" oninput="changeVolume(this.value)">
                         <span id="volume-pct" style="font-family: 'Space Mono', monospace; font-size: 0.9rem; min-width: 35px;">100%</span>
                     </div>
@@ -1531,26 +1784,24 @@
             const pct = Math.round(val * 100);
             document.getElementById('volume-pct').innerText = `${pct}%`;
             document.getElementById('volume-slider').value = val;
-            
+
             const muteBtn = document.getElementById('volume-mute-btn');
-            
+
             let displayVal = val;
             if ((val === 0 || isMuted) && preMuteVolume > 0) {
                 displayVal = preMuteVolume;
             }
-            
-            if (displayVal < 0.3) {
-                muteBtn.innerText = '🔈';
-            } else if (displayVal < 0.7) {
-                muteBtn.innerText = '🔉';
-            } else {
-                muteBtn.innerText = '🔊';
-            }
-            
+
+            // Set SVG wave level class
+            muteBtn.classList.remove('vol-muted', 'vol-low', 'vol-mid', 'vol-high');
             if (val === 0 || isMuted) {
-                muteBtn.classList.add('muted');
+                muteBtn.classList.add('vol-muted');
+            } else if (displayVal < 0.3) {
+                muteBtn.classList.add('vol-low');
+            } else if (displayVal < 0.7) {
+                muteBtn.classList.add('vol-mid');
             } else {
-                muteBtn.classList.remove('muted');
+                muteBtn.classList.add('vol-high');
             }
         }
 
@@ -2103,6 +2354,7 @@
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
+                resetEQToFlat();
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -2128,6 +2380,7 @@
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
+                resetEQToFlat();
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -2283,6 +2536,7 @@
                 localStorage.removeItem('activeSegment');
                 isTransitioningTrack = true;
                 updateExportButtonState();
+                resetEQToFlat();
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -2303,6 +2557,7 @@
                 localStorage.removeItem('activeSegment');
                 isTransitioningTrack = true;
                 updateExportButtonState();
+                resetEQToFlat();
                 const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
                 const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
                 const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
@@ -3185,10 +3440,206 @@
             }
         })();
 
+        // ============================================================
+        // EQ Engine
+        // ============================================================
+        const EQ_BANDS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+        const EQ_BAND_LABELS = ['32', '64', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
+        const EQ_MIN_DB = -12;
+        const EQ_MAX_DB = 12;
+        const EQ_STORAGE_KEY = 'roving_bard_eq';
+        let eqGains = {}; // band (num) -> dB
+        let eqPanelOpen = false;
+        let eqDebounceTimer = null;
+
+        const EQ_PRESETS = {
+            flat:         { 32:0, 64:0, 125:0, 250:0, 500:0, 1000:0, 2000:0, 4000:0, 8000:0, 16000:0 },
+            bass_boost:   { 32:7, 64:5, 125:3, 250:1, 500:0, 1000:0, 2000:0, 4000:0, 8000:0, 16000:0 },
+            treble_boost: { 32:0, 64:0, 125:0, 250:0, 500:0, 1000:1, 2000:3, 4000:5, 8000:7, 16000:8 },
+            vocal:        { 32:-3, 64:-2, 125:0, 250:2, 500:4, 1000:5, 2000:4, 4000:2, 8000:0, 16000:-1 },
+            loudness:     { 32:5, 64:4, 125:2, 250:0, 500:-1, 1000:-1, 2000:0, 4000:1, 8000:3, 16000:4 },
+            acoustic:     { 32:2, 64:1, 125:3, 250:4, 500:2, 1000:1, 2000:2, 4000:3, 8000:2, 16000:1 },
+        };
+
+        function buildEQBands() {
+            const container = document.getElementById('eq-bands-container');
+            container.innerHTML = '';
+            EQ_BANDS.forEach((freq, i) => {
+                const gain = eqGains[freq] || 0;
+                const label = EQ_BAND_LABELS[i];
+                const col = document.createElement('div');
+                col.className = 'eq-band';
+                col.innerHTML = `
+                    <div class="eq-db-label" id="eq-db-${freq}">${gain >= 0 ? '+' : ''}${gain.toFixed(1)}</div>
+                    <div class="eq-slider-wrap">
+                        <input type="range" class="eq-slider" id="eq-slider-${freq}"
+                            min="${EQ_MIN_DB}" max="${EQ_MAX_DB}" step="0.5"
+                            value="${gain}"
+                            oninput="onEQSliderInput(${freq}, this.value)">
+                    </div>
+                    <div class="eq-freq-label">${label}Hz</div>
+                `;
+                container.appendChild(col);
+            });
+        }
+
+        function onEQSliderInput(freq, rawVal) {
+            const val = parseFloat(rawVal);
+            eqGains[freq] = val;
+            const label = document.getElementById(`eq-db-${freq}`);
+            if (label) label.textContent = (val >= 0 ? '+' : '') + val.toFixed(1);
+            // Colour the slider thumb based on gain
+            const slider = document.getElementById(`eq-slider-${freq}`);
+            if (slider) {
+                const intensity = Math.abs(val) / EQ_MAX_DB;
+                if (val > 0.2) {
+                    slider.style.accentColor = `hsl(200, 100%, ${50 + intensity * 30}%)`;
+                } else if (val < -0.2) {
+                    slider.style.accentColor = `hsl(280, 80%, ${55 + intensity * 20}%)`;
+                } else {
+                    slider.style.accentColor = 'var(--accent)';
+                }
+            }
+            // Show "Custom" in preset dropdown
+            const sel = document.getElementById('eq-preset-select');
+            sel.value = 'custom';
+            if (!sel.querySelector('option[value="custom"]').selected) {
+                sel.value = 'custom'; // ensure visible
+            }
+            // Debounce API call
+            clearTimeout(eqDebounceTimer);
+            eqDebounceTimer = setTimeout(sendEQToBackend, 300);
+        }
+
+        async function sendEQToBackend() {
+            // Save to localStorage regardless
+            localStorage.setItem(EQ_STORAGE_KEY, JSON.stringify(eqGains));
+            try {
+                const gainsPayload = {};
+                EQ_BANDS.forEach(f => { gainsPayload[String(f)] = eqGains[f] || 0; });
+                await apiFetch('/api/eq', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gains: gainsPayload }),
+                });
+            } catch (e) {
+                console.warn('[EQ] Could not send to backend:', e);
+            }
+        }
+
+        function applyEQPreset(presetName) {
+            const preset = EQ_PRESETS[presetName];
+            if (!preset) return;
+            EQ_BANDS.forEach(freq => {
+                eqGains[freq] = preset[freq] || 0;
+                const slider = document.getElementById(`eq-slider-${freq}`);
+                if (slider) slider.value = eqGains[freq];
+                const label = document.getElementById(`eq-db-${freq}`);
+                const v = eqGains[freq];
+                if (label) label.textContent = (v >= 0 ? '+' : '') + v.toFixed(1);
+                // Reset accent colour
+                if (slider) slider.style.accentColor = v === 0 ? 'var(--accent)' : v > 0 ? `hsl(200,100%,70%)` : `hsl(280,80%,65%)`;
+            });
+            clearTimeout(eqDebounceTimer);
+            eqDebounceTimer = setTimeout(sendEQToBackend, 300);
+        }
+
+        function resetEQ() {
+            document.getElementById('eq-preset-select').value = 'flat';
+            applyEQPreset('flat');
+        }
+
+        /** Reset EQ to Flat on track/segment change — does NOT persist custom gains. */
+        function resetEQToFlat() {
+            // Clear session-only custom state (don't touch localStorage preset key)
+            localStorage.removeItem(EQ_STORAGE_KEY);
+            applyEQPreset('flat');
+            document.getElementById('eq-preset-select').value = 'flat';
+        }
+
+        function positionEQPanel() {
+            const btn = document.getElementById('eq-btn');
+            const panel = document.getElementById('eq-panel');
+            if (!btn || !panel) return;
+            const rect = btn.getBoundingClientRect();
+            const panelW = panel.offsetWidth || 500;
+            // Right-align panel with button's right edge, clamped to viewport
+            let left = rect.right - panelW;
+            if (left < 8) left = 8;
+            panel.style.left = left + 'px';
+            panel.style.top  = (rect.bottom + 10) + 'px';
+        }
+
+        function toggleEQPanel() {
+            eqPanelOpen = !eqPanelOpen;
+            const panel = document.getElementById('eq-panel');
+            const btn = document.getElementById('eq-btn');
+            if (eqPanelOpen) {
+                // Show first so offsetWidth is measurable
+                panel.classList.add('eq-panel-open');
+                btn.classList.add('eq-active');
+                positionEQPanel();
+                // Replay open animation
+                panel.style.animation = 'none';
+                panel.offsetHeight;
+                panel.style.animation = '';
+            } else {
+                panel.classList.remove('eq-panel-open');
+                btn.classList.remove('eq-active');
+            }
+        }
+
+        // Reposition on resize while open
+        window.addEventListener('resize', () => { if (eqPanelOpen) positionEQPanel(); });
+
+        async function initEQ() {
+            // Move panel to <body> so it is never clipped by card's overflow:hidden
+            const panel = document.getElementById('eq-panel');
+            if (panel && panel.parentElement !== document.body) {
+                document.body.appendChild(panel);
+            }
+            // Try to load from localStorage first
+            const saved = localStorage.getItem(EQ_STORAGE_KEY);
+            if (saved) {
+                try { eqGains = JSON.parse(saved); } catch (e) { eqGains = {}; }
+            }
+            // Ensure all bands exist
+            EQ_BANDS.forEach(f => { if (eqGains[f] === undefined) eqGains[f] = 0; });
+            // Also sync from backend (overrides localStorage on conflict)
+            try {
+                const res = await apiFetch('/api/eq');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success' && data.gains) {
+                        EQ_BANDS.forEach(f => {
+                            const v = data.gains[String(f)];
+                            if (v !== undefined) eqGains[f] = v;
+                        });
+                    }
+                }
+            } catch (e) { /* backend may not be running yet */ }
+            buildEQBands();
+        }
+
+        // Close EQ panel on outside click
+        document.addEventListener('click', (e) => {
+            if (!eqPanelOpen) return;
+            const panel = document.getElementById('eq-panel');
+            const btn = document.getElementById('eq-btn');
+            if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+                eqPanelOpen = false;
+                panel.classList.remove('eq-panel-open');
+                btn.classList.remove('eq-active');
+            }
+        });
+
+        // ============================================================
         // Initial load
+        // ============================================================
         window.onload = () => {
             loadDashboard();
             startSeekTimer();
+            initEQ();
         };
     </script>
 </body>

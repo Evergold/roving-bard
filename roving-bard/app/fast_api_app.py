@@ -171,6 +171,10 @@ class ConfigUpdateRequest(BaseModel):
     api_key: str | None = None
 
 
+class EQRequest(BaseModel):
+    gains: dict[str, float]  # e.g. {"32": 3.0, "1000": -2.5, ...}
+
+
 def verify_api_key(
     x_api_key: str | None = Header(default=None),
     api_key: str | None = Query(default=None),
@@ -460,6 +464,39 @@ def api_update_file_tags(req: FileTagsModel):
     file_tags[req.filename] = req.tags
     tools.save_file_tags(file_tags)
     return {"status": "success", "message": "File tags updated."}
+
+
+@app.get("/api/eq", dependencies=[Depends(verify_api_key)])
+def api_get_eq():
+    """Returns the current EQ band gains."""
+    return {
+        "status": "success",
+        "gains": {str(k): v for k, v in tools.player.eq_gains.items()},
+    }
+
+
+@app.post("/api/eq", dependencies=[Depends(verify_api_key)])
+def api_set_eq(req: EQRequest):
+    """Updates EQ gains and applies them asynchronously to the current track.
+
+    Gains are specified as a dict mapping band frequency (Hz, as string) to
+    dB gain (-12 to +12 recommended). Filtering runs in a background thread
+    to keep the HTTP response fast.
+    """
+    import threading
+
+    valid_bands = set(str(k) for k in tools.player.eq_gains)
+    for band, gain in req.gains.items():
+        if band not in valid_bands:
+            return {"status": "error", "message": f"Unknown EQ band: {band}Hz"}
+        tools.player.eq_gains[int(band)] = max(-20.0, min(20.0, float(gain)))
+
+    def _apply():
+        result = tools.player.apply_eq()
+        print(f"[EQ] {result}")
+
+    threading.Thread(target=_apply, daemon=True).start()
+    return {"status": "success", "message": "EQ update dispatched.", "gains": {str(k): v for k, v in tools.player.eq_gains.items()}}
 
 
 # Main execution

@@ -13,6 +13,8 @@
 
 import os
 import re
+import tempfile
+import threading
 
 import cv2
 import mss
@@ -39,6 +41,14 @@ class SafeMusicPlayer:
         self.last_play_time = None
         self.start_time = 0.0
         self.end_time = None
+
+        # EQ: 10-band gains in dB, keyed by centre frequency (Hz)
+        self.eq_gains: dict[int, float] = {
+            32: 0.0, 64: 0.0, 125: 0.0, 250: 0.0, 500: 0.0,
+            1000: 0.0, 2000: 0.0, 4000: 0.0, 8000: 0.0, 16000: 0.0,
+        }
+        self._eq_tmp_path: str | None = None  # path to the currently loaded temp EQ file
+        self._eq_lock = threading.Lock()
 
         try:
             pygame.mixer.init()
@@ -328,9 +338,8 @@ class SafeMusicPlayer:
         if range_len > 0:
             if pos > end:
                 # Loop back to start
-                loops = int((pos - start) // range_len)
                 pos = start + ((pos - start) % range_len)
-                
+
                 # Update Pygame playback position
                 if not self.simulated and self.mixer_initialized:
                     try:
@@ -344,6 +353,124 @@ class SafeMusicPlayer:
                 if pos > duration:
                     pos = pos % duration
         return max(0.0, pos)
+
+    # ------------------------------------------------------------------
+    # EQ  (10-band peaking IIR filters via scipy, applied to a 30s window)
+    # ------------------------------------------------------------------
+
+    # EQ_BANDS: (centre_hz, octave_width_Q)
+    _EQ_BANDS: list[tuple[int, float]] = [
+        (32, 1.0), (64, 1.0), (125, 1.0), (250, 1.0), (500, 1.0),
+        (1000, 1.0), (2000, 1.0), (4000, 1.0), (8000, 1.0), (16000, 1.0),
+    ]
+    _WINDOW_SEC = 30  # seconds of audio to filter per EQ apply
+
+    @staticmethod
+    def _peaking_sos(fc: float, gain_db: float, Q: float, fs: int) -> np.ndarray:
+        """Return a 2nd-order peaking EQ filter as a single SOS row."""
+        # Build peaking coefficients manually (Audio EQ Cookbook).
+        A = 10 ** (gain_db / 40.0)
+        w0 = 2 * np.pi * fc / fs
+        alpha = np.sin(w0) / (2 * Q)
+        b0 = 1 + alpha * A
+        b1 = -2 * np.cos(w0)
+        b2 = 1 - alpha * A
+        a0 = 1 + alpha / A
+        a1 = -2 * np.cos(w0)
+        a2 = 1 - alpha / A
+        # Return as SOS row: [b0/a0, b1/a0, b2/a0, 1, a1/a0, a2/a0]
+        return np.array([[b0 / a0, b1 / a0, b2 / a0, 1.0, a1 / a0, a2 / a0]])
+
+    def apply_eq(self) -> dict:
+        """Apply current eq_gains to the active track and hot-reload pygame.
+
+        Reads a _WINDOW_SEC window centred on the current playback position,
+        filters it with peaking IIR filters, writes a temp WAV, and reloads
+        pygame playback from position 0 of the window (seeking back seamlessly).
+
+        Returns a dict with 'status' and 'message'.
+        """
+        if not self.current_track:
+            return {"status": "error", "message": "No track loaded."}
+
+        # Check if all gains are 0 — if so, just reload the original file
+        all_flat = all(abs(g) < 0.01 for g in self.eq_gains.values())
+
+        track_path = os.path.join(self.playlist_dir, self.current_track)
+        if not os.path.exists(track_path):
+            return {"status": "error", "message": f"Track file not found: {track_path}"}
+
+        capture_pos = self.get_current_position()
+
+        with self._eq_lock:
+            try:
+                import soundfile as sf  # type: ignore[import]
+                from scipy.signal import sosfilt  # type: ignore[import]
+
+                # --- Read window ---
+                info = sf.info(track_path)
+                fs = info.samplerate
+                total_frames = info.frames
+
+                win_frames = int(self._WINDOW_SEC * fs)
+                start_frame = max(0, int(capture_pos * fs) - win_frames // 4)
+                end_frame = min(total_frames, start_frame + win_frames)
+                start_frame = max(0, end_frame - win_frames)  # clamp
+
+                audio, _ = sf.read(track_path, start=start_frame, stop=end_frame, dtype="float32", always_2d=True)
+
+                if not all_flat:
+                    # --- Build and apply filter chain ---
+                    for (fc, Q) in self._EQ_BANDS:
+                        gain_db = self.eq_gains.get(fc, 0.0)
+                        if abs(gain_db) < 0.01:
+                            continue
+                        if fc >= fs / 2:  # skip bands above Nyquist
+                            continue
+                        sos = self._peaking_sos(float(fc), float(gain_db), float(Q), fs)
+                        audio = sosfilt(sos, audio, axis=0).astype(np.float32)
+                    # Clamp to prevent clipping
+                    audio = np.clip(audio, -1.0, 1.0)
+
+                # --- Write temp WAV ---
+                tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="eq_tmp_")
+                tmp_path = tmp.name
+                tmp.close()
+                sf.write(tmp_path, audio, fs)
+
+                # --- Reload pygame from the window start ---
+                resume_offset = capture_pos - (start_frame / fs)
+                resume_offset = max(0.0, min(resume_offset, self._WINDOW_SEC - 0.5))
+
+                was_playing = not self.paused and not self.was_stopped
+
+                if not self.simulated and self.mixer_initialized:
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.load(tmp_path)
+                    if was_playing:
+                        pygame.mixer.music.play(loops=0, start=resume_offset, fade_ms=80)
+                        pygame.mixer.music.set_volume(self.volume)
+
+                # Track position so the seek timer stays accurate
+                import time
+                self.last_seek_position = capture_pos
+                self.last_play_time = time.time() if was_playing else None
+
+                # Clean up previous temp file
+                if self._eq_tmp_path and self._eq_tmp_path != tmp_path:
+                    try:
+                        os.unlink(self._eq_tmp_path)
+                    except OSError:
+                        pass
+                self._eq_tmp_path = tmp_path
+
+                return {"status": "success", "message": "EQ applied."}
+
+            except ImportError as e:
+                return {"status": "error", "message": f"Missing dependency for EQ: {e}. Install soundfile."}
+            except Exception as e:
+                print(f"[EQ] Error applying EQ: {e}")
+                return {"status": "error", "message": str(e)}
 
 
 CAPTURE_DIR = os.path.join(
