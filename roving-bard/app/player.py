@@ -50,6 +50,19 @@ class SafeMusicPlayer:
                 f"Warning: Could not initialize Pygame mixer (running in simulated mode): {e}"
             )
 
+    @property
+    def playlist_dir(self):
+        return self._playlist_dir
+
+    @playlist_dir.setter
+    def playlist_dir(self, value):
+        if value and not os.path.isabs(value):
+            self._playlist_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), value
+            )
+        else:
+            self._playlist_dir = value
+
     def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
         if not track_file:
             self.stop(fade_out_ms)
