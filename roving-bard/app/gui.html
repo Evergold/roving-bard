@@ -627,33 +627,56 @@
 
         .audio-library-resize-bar {
             position: relative;
-            height: 14px;
+            height: 20px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            padding: 0 2px;
-            margin-top: 2px;
+            align-items: center;
+            padding: 0 6px;
+            margin-top: 4px;
             cursor: ns-resize;
             user-select: none;
+            border-top: 1px solid var(--border);
+            border-radius: 0 0 8px 8px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .audio-library-resize-bar:hover {
+            border-color: rgba(124, 77, 255, 0.5);
+            background: rgba(124, 77, 255, 0.06);
+        }
+
+        .audio-library-resize-bar.dragging {
+            border-color: var(--accent);
+            background: rgba(124, 77, 255, 0.12);
         }
 
         .audio-library-resize-bar .resize-grip {
-            width: 20px;
-            height: 8px;
+            width: 32px;
+            height: 14px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
-            justify-content: flex-end;
-            opacity: 0.35;
-            transition: opacity 0.2s;
+            gap: 3px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
 
         .audio-library-resize-bar:hover .resize-grip {
-            opacity: 0.75;
+            opacity: 1;
+            background: rgba(124, 77, 255, 0.15);
+            border-color: rgba(124, 77, 255, 0.4);
+            box-shadow: 0 0 6px rgba(124, 77, 255, 0.25);
         }
 
         .audio-library-resize-bar.dragging .resize-grip {
             opacity: 1;
+            background: rgba(124, 77, 255, 0.25);
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(124, 77, 255, 0.45);
         }
 
         .resize-grip span {
@@ -661,16 +684,21 @@
             height: 2px;
             border-radius: 1px;
             background: var(--text-muted);
+            transition: background 0.2s;
+        }
+
+        .audio-library-resize-bar:hover .resize-grip span,
+        .audio-library-resize-bar.dragging .resize-grip span {
+            background: var(--accent);
         }
 
         .resize-grip span:nth-child(1) { width: 100%; }
-        .resize-grip span:nth-child(2) { width: 70%; }
-        .resize-grip span:nth-child(3) { width: 40%; }
+        .resize-grip span:nth-child(2) { width: 65%; }
+        .resize-grip span:nth-child(3) { width: 35%; }
 
-        .resize-grip.grip-left span { margin-left: auto; }
-        .resize-grip.grip-left span:nth-child(1) { width: 100%; }
-        .resize-grip.grip-left span:nth-child(2) { width: 70%; margin-left: 30%; }
-        .resize-grip.grip-left span:nth-child(3) { width: 40%; margin-left: 60%; }
+        .resize-grip.grip-left span:nth-child(2) { margin-left: auto; }
+        .resize-grip.grip-left span:nth-child(3) { margin-left: auto; }
+
 
         .form-row {
             display: flex;
