@@ -1052,11 +1052,29 @@
                         <div class="manual-bounds-container" style="display: flex; gap: 0.75rem; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'Space Mono', monospace;">Start:</span>
-                                <input type="text" id="bounds-start-input" placeholder="00:00:00.00" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; padding: 0.4rem 0.6rem; width: 125px; text-align: center;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="onManualBoundsChange()">
+                                <input type="hidden" id="bounds-start-input">
+                                <div class="manual-time-input" id="bounds-start-input-group" style="display: inline-flex; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; width: 140px; justify-content: space-between;">
+                                    <input type="text" id="bounds-start-h" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-start')" oninput="timeInputAutoTab(this, 'bounds-start-m')" onkeydown="timeInputBackTab(event, this, null)">
+                                    <span style="opacity: 0.5; pointer-events: none; user-select: none;">:</span>
+                                    <input type="text" id="bounds-start-m" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-start')" oninput="timeInputAutoTab(this, 'bounds-start-s')" onkeydown="timeInputBackTab(event, this, 'bounds-start-h')">
+                                    <span style="opacity: 0.5; pointer-events: none; user-select: none;">:</span>
+                                    <input type="text" id="bounds-start-s" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-start')" oninput="timeInputAutoTab(this, 'bounds-start-ms')" onkeydown="timeInputBackTab(event, this, 'bounds-start-m')">
+                                    <span style="opacity: 0.5; pointer-events: none; user-select: none;">.</span>
+                                    <input type="text" id="bounds-start-ms" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-start')" onkeydown="timeInputBackTab(event, this, 'bounds-start-s')">
+                                </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'Space Mono', monospace;">End:</span>
-                                <input type="text" id="bounds-end-input" placeholder="00:00:00.00" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; padding: 0.4rem 0.6rem; width: 125px; text-align: center;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="onManualBoundsChange()">
+                                <input type="hidden" id="bounds-end-input">
+                                <div class="manual-time-input" id="bounds-end-input-group" style="display: inline-flex; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; width: 140px; justify-content: space-between;">
+                                    <input type="text" id="bounds-end-h" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-end')" oninput="timeInputAutoTab(this, 'bounds-end-m')" onkeydown="timeInputBackTab(event, this, null)">
+                                    <span style="opacity: 0.5; pointer-events: none; user-select: none;">:</span>
+                                    <input type="text" id="bounds-end-m" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-end')" oninput="timeInputAutoTab(this, 'bounds-end-s')" onkeydown="timeInputBackTab(event, this, 'bounds-end-h')">
+                                    <span style="opacity: 0.5; pointer-events: none; user-select: none;">:</span>
+                                    <input type="text" id="bounds-end-s" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-end')" oninput="timeInputAutoTab(this, 'bounds-end-ms')" onkeydown="timeInputBackTab(event, this, 'bounds-end-m')">
+                                    <span style="opacity: 0.5; pointer-events: none; user-select: none;">.</span>
+                                    <input type="text" id="bounds-end-ms" placeholder="00" maxlength="2" style="width: 22px; background: transparent; border: none; color: inherit; font-family: inherit; font-size: inherit; text-align: center; outline: none; padding: 0;" onfocus="isEditingBoundsInput=true" onblur="isEditingBoundsInput=false" onchange="syncSplitToHidden('bounds-end')" onkeydown="timeInputBackTab(event, this, 'bounds-end-s')">
+                                </div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem; align-items: center;">
@@ -2313,6 +2331,73 @@
             }
         }
 
+        function timeInputAutoTab(input, nextId) {
+            input.value = input.value.replace(/\D/g, '');
+            if (input.value.length >= 2 && nextId) {
+                const nextInput = document.getElementById(nextId);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                }
+            }
+        }
+
+        function timeInputBackTab(event, input, prevId) {
+            if (event.key === 'Backspace' && input.value.length === 0 && prevId) {
+                const prevInput = document.getElementById(prevId);
+                if (prevInput) {
+                    prevInput.focus();
+                    setTimeout(() => {
+                        prevInput.select();
+                    }, 0);
+                }
+            }
+        }
+
+        function updateSplitTimeFields(prefix, floatSeconds) {
+            const hEl = document.getElementById(`${prefix}-h`);
+            const mEl = document.getElementById(`${prefix}-m`);
+            const sEl = document.getElementById(`${prefix}-s`);
+            const msEl = document.getElementById(`${prefix}-ms`);
+            
+            if (floatSeconds === null || floatSeconds === undefined || isNaN(floatSeconds)) {
+                if (hEl) hEl.value = "";
+                if (mEl) mEl.value = "";
+                if (sEl) sEl.value = "";
+                if (msEl) msEl.value = "";
+                return;
+            }
+
+            const timeStr = formatTime(floatSeconds);
+            const cleanStr = timeStr.replace('-', '');
+            const parts = cleanStr.split(':');
+            if (parts.length === 3) {
+                const secParts = parts[2].split('.');
+                if (hEl) hEl.value = parts[0];
+                if (mEl) mEl.value = parts[1];
+                if (sEl) sEl.value = secParts[0];
+                if (msEl) msEl.value = secParts[1] || '00';
+            }
+        }
+
+        function getSplitTimeValue(prefix) {
+            const h = document.getElementById(`${prefix}-h`).value || '00';
+            const m = document.getElementById(`${prefix}-m`).value || '00';
+            const s = document.getElementById(`${prefix}-s`).value || '00';
+            const ms = document.getElementById(`${prefix}-ms`).value || '00';
+            
+            const pad = (str) => str.padStart(2, '0');
+            return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms)}`;
+        }
+
+        function syncSplitToHidden(prefix) {
+            const hiddenInput = document.getElementById(`${prefix}-input`);
+            if (hiddenInput) {
+                hiddenInput.value = getSplitTimeValue(prefix);
+                onManualBoundsChange();
+            }
+        }
+
         function updateHighlightAndFill() {
             if (!currentPlaybackStatus) return;
             const duration = currentPlaybackStatus.duration || 180.0;
@@ -2361,6 +2446,26 @@
             const boundsStartInput = document.getElementById('bounds-start-input');
             const boundsEndInput = document.getElementById('bounds-end-input');
 
+            const startH = document.getElementById('bounds-start-h');
+            const startM = document.getElementById('bounds-start-m');
+            const startS = document.getElementById('bounds-start-s');
+            const startMs = document.getElementById('bounds-start-ms');
+            const endH = document.getElementById('bounds-end-h');
+            const endM = document.getElementById('bounds-end-m');
+            const endS = document.getElementById('bounds-end-s');
+            const endMs = document.getElementById('bounds-end-ms');
+
+            const setSplitDisabled = (disabled) => {
+                if (startH) startH.disabled = disabled;
+                if (startM) startM.disabled = disabled;
+                if (startS) startS.disabled = disabled;
+                if (startMs) startMs.disabled = disabled;
+                if (endH) endH.disabled = disabled;
+                if (endM) endM.disabled = disabled;
+                if (endS) endS.disabled = disabled;
+                if (endMs) endMs.disabled = disabled;
+            };
+
             if (!seekSlider || !seekCurrentTime || !seekDuration) return;
 
             if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
@@ -2372,10 +2477,17 @@
                 seekEndSlider.value = 100;
                 seekCurrentTime.innerText = "00:00:00.00";
                 seekDuration.innerText = "00:00:00.00";
-                if (boundsStartInput) boundsStartInput.value = "";
-                if (boundsEndInput) boundsEndInput.value = "";
+                if (boundsStartInput) {
+                    boundsStartInput.value = "";
+                    updateSplitTimeFields('bounds-start', null);
+                }
+                if (boundsEndInput) {
+                    boundsEndInput.value = "";
+                    updateSplitTimeFields('bounds-end', null);
+                }
                 if (boundsStartInput) boundsStartInput.disabled = true;
                 if (boundsEndInput) boundsEndInput.disabled = true;
+                setSplitDisabled(true);
                 return;
             }
 
@@ -2392,6 +2504,7 @@
             seekEndSlider.disabled = !canMoveBounds;
             if (boundsStartInput) boundsStartInput.disabled = !canMoveBounds;
             if (boundsEndInput) boundsEndInput.disabled = !canMoveBounds;
+            setSplitDisabled(!canMoveBounds);
 
             const sliderContainer = document.querySelector('.seek-slider-container');
             if (sliderContainer) {
@@ -2411,8 +2524,14 @@
                 seekStartSlider.value = startVal;
                 seekEndSlider.value = endVal;
                 if (!isEditingBoundsInput) {
-                    if (boundsStartInput) boundsStartInput.value = formatTime(startVal);
-                    if (boundsEndInput) boundsEndInput.value = formatTime(endVal);
+                    if (boundsStartInput) {
+                        boundsStartInput.value = formatTime(startVal);
+                        updateSplitTimeFields('bounds-start', startVal);
+                    }
+                    if (boundsEndInput) {
+                        boundsEndInput.value = formatTime(endVal);
+                        updateSplitTimeFields('bounds-end', endVal);
+                    }
                 }
             }
 
@@ -2491,7 +2610,10 @@
             }
             
             const startInput = document.getElementById('bounds-start-input');
-            if (startInput) startInput.value = formatTime(startVal);
+            if (startInput) {
+                startInput.value = formatTime(startVal);
+                updateSplitTimeFields('bounds-start', startVal);
+            }
             
             if (currentPlaybackStatus) {
                 currentPlaybackStatus.start_time = startVal;
@@ -2532,7 +2654,10 @@
             }
             
             const endInput = document.getElementById('bounds-end-input');
-            if (endInput) endInput.value = formatTime(endVal);
+            if (endInput) {
+                endInput.value = formatTime(endVal);
+                updateSplitTimeFields('bounds-end', endVal);
+            }
             
             if (currentPlaybackStatus) {
                 currentPlaybackStatus.end_time = endVal;
