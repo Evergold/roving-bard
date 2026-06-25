@@ -1699,20 +1699,28 @@
         }
 
         /* CVD Accessible mode: API Key Detection dropdown overrides */
+        body.cvd-accessible .api-key-symbol {
+            font-size: 1.35rem !important;
+            font-weight: 900 !important;
+            margin-right: 6px !important;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
         body.cvd-accessible:not(.light-theme) .api-key-detected,
-        body.cvd-accessible:not(.light-theme) .api-key-item.detected {
+        body.cvd-accessible:not(.light-theme) .api-key-symbol.detected {
             color: #00e5ff !important;
         }
         body.cvd-accessible:not(.light-theme) .api-key-not-detected,
-        body.cvd-accessible:not(.light-theme) .api-key-item.not-detected {
+        body.cvd-accessible:not(.light-theme) .api-key-symbol.not-detected {
             color: #ff9100 !important;
         }
         body.light-theme.cvd-accessible .api-key-detected,
-        body.light-theme.cvd-accessible .api-key-item.detected {
+        body.light-theme.cvd-accessible .api-key-symbol.detected {
             color: #0077b6 !important;
         }
         body.light-theme.cvd-accessible .api-key-not-detected,
-        body.light-theme.cvd-accessible .api-key-item.not-detected {
+        body.light-theme.cvd-accessible .api-key-symbol.not-detected {
             color: #d9480f !important;
         }
 
@@ -2259,14 +2267,14 @@
                 let html = '';
                 if (isCvd) {
                     if (anyDetected) {
-                        html += `<div class="api-key-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.15rem; font-weight: 900; margin-right: 4px; vertical-align: middle;">✓</span> API Key Detected</div>`;
+                        html += `<div class="api-key-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.45rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✓</span> API Key Detected</div>`;
                         html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
                         html += `  <div><span class="api-key-symbol ${hasAgent ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasAgent ? '✓' : '✗'}</span> AGENT_API_KEY</div>`;
                         html += `  <div><span class="api-key-symbol ${hasGoogle ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasGoogle ? '✓' : '✗'}</span> GOOGLE_API_KEY</div>`;
                         html += `  <div><span class="api-key-symbol ${hasGemini ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasGemini ? '✓' : '✗'}</span> GEMINI_API_KEY</div>`;
                         html += `</div>`;
                     } else {
-                        html += `<div class="api-key-not-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.15rem; font-weight: 900; margin-right: 4px; vertical-align: middle;">✗</span> API Key Not Detected</div>`;
+                        html += `<div class="api-key-not-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.45rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✗</span> API Key Not Detected</div>`;
                         html += `<div class="api-key-not-detected" style="margin-bottom: 0.5rem; font-size: 0.8rem;">A supported API key was not detected.</div>`;
                         html += `<div class="api-key-not-detected" style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
                         html += `  <div><span class="api-key-symbol not-detected" style="font-weight: bold; margin-right: 4px;">✗</span> AGENT_API_KEY</div>`;
