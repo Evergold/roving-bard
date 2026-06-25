@@ -822,6 +822,7 @@
             position: relative;
             min-height: 80px;
             overflow: hidden;
+            height: 20vh;
         }
 
         .audio-library-resizable .audio-list-scroll {
@@ -1526,7 +1527,7 @@
                     <datalist id="all-existing-tags-list"></datalist>
                 </div>
                 <div class="form-section" style="gap: 0;">
-                    <div id="audio-library-resizable" class="audio-library-resizable" style="height: 200px;">
+                    <div id="audio-library-resizable" class="audio-library-resizable">
                         <div id="audio-files-list" class="mappings-list audio-list-scroll">
                             <!-- Audio files rendered here -->
                         </div>
@@ -3447,9 +3448,16 @@
 
         // ── Audio Library resize handle ──────────────────────────────────────
         (function () {
-            const STORAGE_KEY = 'audioLibraryHeight';
-            const MIN_H = 80;
-            const MAX_H = 700;
+            const STORAGE_KEY = 'audioLibraryHeightFraction'; // Fraction of window.innerHeight
+            const FALLBACK_FRACTION = 0.20; // 20% of viewport default
+
+            function getMinH() {
+                return Math.max(80, Math.round(window.innerHeight * 0.08));
+            }
+            
+            function getMaxH() {
+                return Math.max(200, Math.round(window.innerHeight * 0.45));
+            }
 
             function applyHeight(h) {
                 const el = document.getElementById('audio-library-resizable');
@@ -3461,9 +3469,25 @@
                 const container = document.getElementById('audio-library-resizable');
                 if (!bar || !container) return;
 
-                // Restore saved height
-                const saved = parseInt(localStorage.getItem(STORAGE_KEY), 10);
-                if (saved && saved >= MIN_H && saved <= MAX_H) applyHeight(saved);
+                // Load fraction (fallback to pixel conversion or fallback fraction)
+                let fraction = parseFloat(localStorage.getItem(STORAGE_KEY));
+                if (isNaN(fraction)) {
+                    const oldSaved = parseInt(localStorage.getItem('audioLibraryHeight'), 10);
+                    if (oldSaved && oldSaved >= 80) {
+                        fraction = oldSaved / window.innerHeight;
+                    } else {
+                        fraction = FALLBACK_FRACTION;
+                    }
+                }
+
+                // Keep fraction within sensible visual boundaries
+                fraction = Math.min(0.70, Math.max(0.08, fraction));
+
+                // Position initially
+                const initialH = Math.round(fraction * window.innerHeight);
+                const minH = getMinH();
+                const maxH = getMaxH();
+                applyHeight(Math.min(maxH, Math.max(minH, initialH)));
 
                 let startY = 0;
                 let startH = 0;
@@ -3472,7 +3496,9 @@
                 function onMouseMove(e) {
                     if (!dragging) return;
                     const dy = e.clientY - startY;
-                    const newH = Math.min(MAX_H, Math.max(MIN_H, startH + dy));
+                    const minH = getMinH();
+                    const maxH = getMaxH();
+                    const newH = Math.min(maxH, Math.max(minH, startH + dy));
                     applyHeight(newH);
                 }
 
@@ -3482,8 +3508,11 @@
                     bar.classList.remove('dragging');
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
-                    const h = parseInt(container.style.height, 10);
-                    localStorage.setItem(STORAGE_KEY, h);
+                    
+                    const currentH = container.offsetHeight;
+                    const currentFraction = currentH / window.innerHeight;
+                    localStorage.setItem(STORAGE_KEY, currentFraction.toFixed(4));
+                    
                     window.removeEventListener('mousemove', onMouseMove);
                     window.removeEventListener('mouseup', onMouseUp);
                 }
@@ -3498,6 +3527,16 @@
                     document.body.style.userSelect = 'none';
                     window.addEventListener('mousemove', onMouseMove);
                     window.addEventListener('mouseup', onMouseUp);
+                });
+
+                // Readjust panel height on resize to maintain proportion
+                window.addEventListener('resize', () => {
+                    if (dragging) return;
+                    const savedFraction = parseFloat(localStorage.getItem(STORAGE_KEY)) || fraction;
+                    const minH = getMinH();
+                    const maxH = getMaxH();
+                    const newH = Math.min(maxH, Math.max(minH, Math.round(savedFraction * window.innerHeight)));
+                    applyHeight(newH);
                 });
             }
 
