@@ -33,6 +33,7 @@ class SafeMusicPlayer:
         self.simulated = False
         self.paused = False
         self.was_stopped = False
+        self.seeked_while_paused = False
         self.track_duration = 0.0
         self.last_seek_position = 0.0
         self.last_play_time = None
@@ -90,6 +91,7 @@ class SafeMusicPlayer:
         self.current_track = track_file
         self.paused = False
         self.was_stopped = False
+        self.seeked_while_paused = False
 
         # Load track duration
         self.track_duration = 0.0
@@ -127,6 +129,7 @@ class SafeMusicPlayer:
         print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
         self.paused = True
         self.was_stopped = True
+        self.seeked_while_paused = False
         self.last_seek_position = 0.0
         self.last_play_time = None
 
@@ -163,6 +166,7 @@ class SafeMusicPlayer:
             self.last_play_time = None
 
         self.paused = True
+        self.seeked_while_paused = False
         if self.simulated:
             return True
         try:
@@ -182,13 +186,14 @@ class SafeMusicPlayer:
         self.last_play_time = time.time()
 
         if self.simulated:
-            if self.was_stopped:
+            if self.was_stopped or getattr(self, "seeked_while_paused", False):
                 if self.last_seek_position < self.start_time:
                     self.last_seek_position = self.start_time
             self.was_stopped = False
+            self.seeked_while_paused = False
             return True
         try:
-            if self.was_stopped:
+            if self.was_stopped or getattr(self, "seeked_while_paused", False):
                 start_pos = self.last_seek_position
                 if start_pos < self.start_time:
                     start_pos = self.start_time
@@ -197,6 +202,7 @@ class SafeMusicPlayer:
                 pygame.mixer.music.play(loops=-1, start=start_pos, fade_ms=1500)
                 pygame.mixer.music.set_volume(self.volume)
                 self.was_stopped = False
+                self.seeked_while_paused = False
             else:
                 pygame.mixer.music.unpause()
             return True
@@ -209,20 +215,23 @@ class SafeMusicPlayer:
             return False
 
         position = max(0.0, min(self.track_duration, position))
-        print(f"[Playback] Seeking to {position}s (was_stopped={self.was_stopped})")
+        print(f"[Playback] Seeking to {position}s (was_stopped={self.was_stopped}, paused={self.paused})")
 
         self.last_seek_position = position
         import time
 
-        if self.was_stopped:
-            # When stopped, seeking only updates the current position marker without playing
+        if self.was_stopped or self.paused:
+            # When stopped or paused, seeking only updates the current position marker without playing/unpausing
             self.last_play_time = None
+            if self.paused and not self.was_stopped:
+                self.seeked_while_paused = True
             return True
 
         # Otherwise continue current behavior (resume/start playback)
         self.last_play_time = time.time()
         self.paused = False
         self.was_stopped = False
+        self.seeked_while_paused = False
 
         if self.simulated:
             return True

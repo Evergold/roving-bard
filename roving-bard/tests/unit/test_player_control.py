@@ -265,6 +265,19 @@ def test_player_seek() -> None:
     assert player.was_stopped is True
     assert player.get_current_position() == 90.0
 
+    # Test seek when paused (should not start playing)
+    player.paused = True
+    player.was_stopped = False
+    assert player.seek(120.0) is True
+    assert player.paused is True
+    assert player.was_stopped is False
+    assert player.get_current_position() == 120.0
+
+    # Test resume after seek when paused (should play from seeked position)
+    assert player.resume() is True
+    assert player.paused is False
+    assert player.last_seek_position == 120.0
+
 
 def test_api_seek_control() -> None:
     """Test POST /api/control with seek action, and status representations."""
