@@ -1872,6 +1872,7 @@
             }
 
             const duration = currentPlaybackStatus.duration || 180.0;
+            seekSlider.disabled = false;
             seekSlider.max = duration;
             seekStartSlider.max = duration;
             seekEndSlider.max = duration;
