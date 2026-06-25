@@ -171,4 +171,45 @@ def test_player_stop_restarts_from_beginning() -> None:
     assert player.was_stopped is False
 
 
+def test_api_stop_control() -> None:
+    """Test POST /api/control with stop action, and status representation."""
+    headers = get_headers()
+
+    # Reset player state
+    tools.player.simulated = True
+    tools.player.current_track = "test_track.mp3"
+    tools.player.paused = False
+    tools.player.was_stopped = False
+
+    # Send stop command
+    stop_response = client.post(
+        "/api/control",
+        headers=headers,
+        json={"action": "stop"},
+    )
+    assert stop_response.status_code == 200
+    assert stop_response.json() == {"status": "success", "message": "Music stopped."}
+
+    # Verify status after stop
+    status_response = client.get("/api/status", headers=headers)
+    assert status_response.status_code == 200
+    assert status_response.json()["paused"] is True
+    assert status_response.json()["was_stopped"] is True
+
+    # Send resume command
+    resume_response = client.post(
+        "/api/control",
+        headers=headers,
+        json={"action": "resume"},
+    )
+    assert resume_response.status_code == 200
+
+    # Verify status after resume
+    status_response = client.get("/api/status", headers=headers)
+    assert status_response.status_code == 200
+    assert status_response.json()["paused"] is False
+    assert status_response.json()["was_stopped"] is False
+
+
+
 

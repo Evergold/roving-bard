@@ -244,6 +244,7 @@ def api_status():
         "config_data": tools.config,
         "latest_parse": tools.latest_parse_result,
         "paused": getattr(tools.player, "paused", False),
+        "was_stopped": getattr(tools.player, "was_stopped", False),
     }
 
 

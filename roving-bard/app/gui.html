@@ -964,11 +964,19 @@
                 stopBtn.disabled = false;
 
                 if (status.paused) {
-                    trackStatus.innerText = `Paused · Vol: ${parseInt(status.volume * 100)}%`;
-                    toggleBtn.innerText = 'Resume';
-                    toggleBtn.style.background = '#ef4444';
-                    toggleBtn.style.borderColor = '#ef4444';
-                    toggleBtn.style.color = 'white';
+                    if (status.was_stopped) {
+                        trackStatus.innerText = `Stopped · Vol: ${parseInt(status.volume * 100)}%`;
+                        toggleBtn.innerText = 'Play';
+                        toggleBtn.style.background = 'linear-gradient(135deg, var(--accent) 0%, #6200ea 100%)';
+                        toggleBtn.style.borderColor = 'transparent';
+                        toggleBtn.style.color = 'white';
+                    } else {
+                        trackStatus.innerText = `Paused · Vol: ${parseInt(status.volume * 100)}%`;
+                        toggleBtn.innerText = 'Resume';
+                        toggleBtn.style.background = '#ef4444';
+                        toggleBtn.style.borderColor = '#ef4444';
+                        toggleBtn.style.color = 'white';
+                    }
                     wave.style.display = 'none';
                 } else {
                     trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
@@ -1101,6 +1109,7 @@
             
             const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
             const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
+            const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
 
             audioLibraryFiles.forEach(file => {
                 const item = document.createElement('div');
@@ -1111,15 +1120,17 @@
                 let btnClass = 'btn btn-secondary';
                 let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
 
-                let showStopBtn = false;
-
                 if (activeTrack === file) {
-                    showStopBtn = true;
                     if (isPaused) {
-                        btnText = 'Resume';
-                        btnStyle += ' background-color: #ef4444; color: white; border: 1px solid #ef4444;';
-                        btnClass = 'btn';
-                        btnClick = `resumeAudioFile()`;
+                        if (wasStopped) {
+                            btnText = 'Play';
+                            btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                        } else {
+                            btnText = 'Resume';
+                            btnStyle += ' background-color: #ef4444; color: white; border: 1px solid #ef4444;';
+                            btnClass = 'btn';
+                            btnClick = `resumeAudioFile()`;
+                        }
                     } else {
                         btnText = 'Playing';
                         btnStyle += ' background-color: #10b981; color: white; border: 1px solid #10b981;';
@@ -1128,26 +1139,13 @@
                     }
                 }
 
-                if (showStopBtn) {
-                    item.innerHTML = `
-                        <div class="mapping-item-details">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${file}</div>
-                            <div class="mapping-item-sub">Click to control this track</div>
-                        </div>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                            <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease;" onclick="stopMusic()">Stop</button>
-                        </div>
-                    `;
-                } else {
-                    item.innerHTML = `
-                        <div class="mapping-item-details">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${file}</div>
-                            <div class="mapping-item-sub">Click to play this track</div>
-                        </div>
-                        <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                    `;
-                }
+                item.innerHTML = `
+                    <div class="mapping-item-details">
+                        <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">${file}</div>
+                        <div class="mapping-item-sub">Click to play this track</div>
+                    </div>
+                    <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                `;
                 list.appendChild(item);
             });
         }
@@ -1156,21 +1154,28 @@
             try {
                 const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
                 const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
-                if (activeTrack && activeTrack !== filename) {
+                const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
+                if (activeTrack && activeTrack !== filename && !wasStopped) {
                     const items = document.querySelectorAll('#audio-files-list .mapping-item');
                     items.forEach(item => {
                         const titleEl = item.querySelector('.mapping-item-title');
                         const titleText = titleEl ? titleEl.innerText.trim() : '';
-                        const btns = item.querySelectorAll('button');
-                        btns.forEach((btn, idx) => {
-                            if (titleText === activeTrack && !isPaused && idx === 0) {
+                        const btn = item.querySelector('button');
+                        if (btn) {
+                            if (titleText === activeTrack && !isPaused) {
                                 btn.innerText = 'Stopping';
                                 btn.style.backgroundColor = '#d97706';
                                 btn.style.borderColor = '#d97706';
                                 btn.style.color = 'white';
                             }
                             btn.disabled = true;
-                        });
+                        }
+                    });
+                } else if (activeTrack && activeTrack !== filename && wasStopped) {
+                    const items = document.querySelectorAll('#audio-files-list .mapping-item');
+                    items.forEach(item => {
+                        const btn = item.querySelector('button');
+                        if (btn) btn.disabled = true;
                     });
                 }
 
