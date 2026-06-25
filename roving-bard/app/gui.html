@@ -1931,6 +1931,19 @@
                 return;
             }
 
+            const currentVol = (currentPlaybackStatus.volume !== undefined && currentPlaybackStatus.volume !== null) ? currentPlaybackStatus.volume : 1.0;
+            if (currentVol === 0 || isMuted) {
+                exportBtn.disabled = true;
+                if (activeSegment) {
+                    exportBtn.innerText = 'Save';
+                    exportBtn.onclick = saveSegment;
+                } else {
+                    exportBtn.innerText = 'Export';
+                    exportBtn.onclick = exportSegment;
+                }
+                return;
+            }
+
             const duration = currentPlaybackStatus.duration || 180.0;
             const startVal = currentPlaybackStatus.start_time || 0.0;
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
