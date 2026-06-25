@@ -129,6 +129,54 @@
             transform: translateY(-2px);
         }
 
+        /* Collapsible Cards */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            opacity: 0.95;
+        }
+        .collapsible-header .title-text-container {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .collapse-chevron {
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: rotate(90deg); /* Expanded by default */
+            color: var(--text-muted);
+        }
+        .card.collapsed .collapse-chevron {
+            transform: rotate(0deg); /* Collapsed */
+        }
+        
+        .card-body-wrapper {
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                        opacity 0.2s ease, 
+                        margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 2500px; /* High limit so it doesn't clip when expanded */
+            opacity: 1;
+            overflow: visible;
+        }
+        
+        .card.collapsed {
+            padding-bottom: 1.5rem;
+        }
+        
+        .card.collapsed .card-title {
+            margin-bottom: 0;
+            border-bottom-color: transparent;
+            padding-bottom: 0;
+        }
+        
+        .card.collapsed .card-body-wrapper {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
         .card-title {
             font-size: 1.2rem;
             font-weight: 600;
@@ -1344,39 +1392,114 @@
                 </div>
             </div>
 
+            <!-- REGION & COORDINATE MAPPINGS -->
+            <div class="card" id="card-region-mappings">
+                <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
+                    <div class="title-text-container">
+                        <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                        REGION MUSIC MAPPINGS
+                    </div>
+                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="openAddMappingModal()">Add Mapping</button>
+                </div>
+                <div class="card-body-wrapper">
+                    <div class="form-section">
+                        <div id="mappings-list" class="mappings-list">
+                            <!-- Mappings rendered here -->
+                        </div>
+                        
+                        <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                            <button class="btn btn-secondary" onclick="loadDashboard()">Reset Config</button>
+                            <button class="btn" onclick="saveConfiguration()">Save Changes to Disk</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- CAPTURE & PARSE WORKFLOW CARD -->
-            <div class="card">
-                <div class="card-title">
-                    ACTIVE SCREEN DETECTION
+            <div class="card" id="card-active-screen">
+                <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
+                    <div class="title-text-container">
+                        <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                        ACTIVE SCREEN DETECTION
+                    </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="refreshScreenshot()">Refresh Capture</button>
                         <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="scanScreenNow()">Scan Screen</button>
                     </div>
                 </div>
-                <div class="capture-grid">
-                    <div class="screenshot-container">
-                        <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onerror="showNoScreenshot()">
-                        <div id="no-screenshot-message" class="no-screenshot" style="display: none;">
-                            No screen captures cached yet.<br><span style="font-size: 0.8rem; opacity: 0.7;">Click Scan Screen to capture.</span>
+                <div class="card-body-wrapper">
+                    <div class="capture-grid">
+                        <div class="screenshot-container">
+                            <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onerror="showNoScreenshot()">
+                            <div id="no-screenshot-message" class="no-screenshot" style="display: none;">
+                                No screen captures cached yet.<br><span style="font-size: 0.8rem; opacity: 0.7;">Click Scan Screen to capture.</span>
+                            </div>
+                        </div>
+                        <div class="parse-data">
+                            <div class="data-item active-state">
+                                <div class="label">Matched Location</div>
+                                <div id="parse-location" class="value">Unknown</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">Parsed Coordinates</div>
+                                <div id="parse-coords" class="value coords-font">None</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">Extraction Route</div>
+                                <div id="parse-route" class="value" style="font-size: 0.9rem;">Waiting for scan...</div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between;">
+                                <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
+                                <span id="parse-timestamp">--:--:--</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="parse-data">
-                        <div class="data-item active-state">
-                            <div class="label">Matched Location</div>
-                            <div id="parse-location" class="value">Unknown</div>
+                </div>
+            </div>
+
+            <!-- MINIMAP BOUNDS CARD -->
+            <div class="card" id="card-bounding-box">
+                <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
+                    <div class="title-text-container">
+                        <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                        BOUNDING BOX SELECTOR
+                    </div>
+                    <span>mapping.yaml</span>
+                </div>
+                <div class="card-body-wrapper">
+                    <div class="form-section">
+                        <div class="bounds-visualizer">
+                            <div class="bounds-visualizer-grid"></div>
+                            <div id="visual-crop-box" class="visual-crop-box">
+                                MINIMAP CROP BOX
+                            </div>
                         </div>
-                        <div class="data-item">
-                            <div class="label">Parsed Coordinates</div>
-                            <div id="parse-coords" class="value coords-font">None</div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="bounds-x">X Position (0-1)</label>
+                                <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                            </div>
+                            <div class="form-group">
+                                <label for="bounds-y">Y Position (0-1)</label>
+                                <input type="number" id="bounds-y" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                            </div>
+                            <div class="form-group">
+                                <label for="bounds-w">Width (0-1)</label>
+                                <input type="number" id="bounds-w" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                            </div>
+                            <div class="form-group">
+                                <label for="bounds-h">Height (0-1)</label>
+                                <input type="number" id="bounds-h" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                            </div>
                         </div>
-                        <div class="data-item">
-                            <div class="label">Extraction Route</div>
-                            <div id="parse-route" class="value" style="font-size: 0.9rem;">Waiting for scan...</div>
-                        </div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between;">
-                            <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
-                            <span id="parse-timestamp">--:--:--</span>
-                        </div>
+
                     </div>
                 </div>
             </div>
@@ -1411,60 +1534,6 @@
                     <div id="audio-library-resize-bar" class="audio-library-resize-bar" title="Drag to resize">
                         <div class="resize-grip grip-left"><span></span><span></span><span></span></div>
                         <div class="resize-grip grip-right"><span></span><span></span><span></span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MINIMAP BOUNDS CARD -->
-            <div class="card">
-                <div class="card-title">
-                    BOUNDING BOX SELECTOR
-                    <span>mapping.yaml</span>
-                </div>
-                <div class="form-section">
-                    <div class="bounds-visualizer">
-                        <div class="bounds-visualizer-grid"></div>
-                        <div id="visual-crop-box" class="visual-crop-box">
-                            MINIMAP CROP BOX
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="bounds-x">X Position (0-1)</label>
-                            <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
-                        </div>
-                        <div class="form-group">
-                            <label for="bounds-y">Y Position (0-1)</label>
-                            <input type="number" id="bounds-y" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
-                        </div>
-                        <div class="form-group">
-                            <label for="bounds-w">Width (0-1)</label>
-                            <input type="number" id="bounds-w" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
-                        </div>
-                        <div class="form-group">
-                            <label for="bounds-h">Height (0-1)</label>
-                            <input type="number" id="bounds-h" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- REGION & COORDINATE MAPPINGS -->
-            <div class="card">
-                <div class="card-title">
-                    REGION MUSIC MAPPINGS
-                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="openAddMappingModal()">Add Mapping</button>
-                </div>
-                <div class="form-section">
-                    <div id="mappings-list" class="mappings-list">
-                        <!-- Mappings rendered here -->
-                    </div>
-                    
-                    <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                        <button class="btn btn-secondary" onclick="loadDashboard()">Reset Config</button>
-                        <button class="btn" onclick="saveConfiguration()">Save Changes to Disk</button>
                     </div>
                 </div>
             </div>
@@ -3633,10 +3702,34 @@
             }
         });
 
+        function toggleCardCollapse(event, header) {
+            // Ignore clicks on buttons/inputs/selects inside the header
+            if (event.target.closest('button, input, select, option, a, .btn')) {
+                return;
+            }
+            const card = header.closest('.card');
+            if (!card) return;
+            
+            const isCollapsed = card.classList.toggle('collapsed');
+            if (card.id) {
+                localStorage.setItem(`card_collapsed_${card.id}`, isCollapsed ? 'true' : 'false');
+            }
+        }
+
+        function restoreCardCollapses() {
+            document.querySelectorAll('.card[id]').forEach(card => {
+                const saved = localStorage.getItem(`card_collapsed_${card.id}`);
+                if (saved === 'true') {
+                    card.classList.add('collapsed');
+                }
+            });
+        }
+
         // ============================================================
         // Initial load
         // ============================================================
         window.onload = () => {
+            restoreCardCollapses();
             loadDashboard();
             startSeekTimer();
             initEQ();
