@@ -1332,6 +1332,11 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+        .font-size-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
         .theme-btn:hover, .font-size-btn:hover {
             color: var(--text-main);
             background: rgba(255, 255, 255, 0.05);
@@ -1344,10 +1349,20 @@
             background: rgba(0, 242, 254, 0.15) !important;
             border: 1px solid rgba(0, 242, 254, 0.3) !important;
         }
+        .font-size-btn.active {
+            color: #ffffff !important;
+            text-shadow: 0 0 8px var(--neon-blue);
+            font-weight: 800;
+        }
         body.light-theme .theme-btn.active, body.light-theme .font-size-btn.active {
             color: var(--accent) !important;
             background: var(--accent-glow) !important;
             border: 1px solid rgba(94, 53, 177, 0.3) !important;
+        }
+        body.light-theme .font-size-btn.active {
+            color: var(--accent) !important;
+            text-shadow: 0 0 8px rgba(98, 0, 234, 0.3);
+            font-weight: 800;
         }
     </style>
 </head>
