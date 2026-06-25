@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import os
-import pytest
 from fastapi.testclient import TestClient
 
 from app.fast_api_app import app
@@ -257,6 +256,14 @@ def test_player_seek() -> None:
 
     assert player.seek(300.0) is True
     assert player.last_seek_position == 180.0
+
+    # Test seek when stopped (should not start playing)
+    player.paused = True
+    player.was_stopped = True
+    assert player.seek(90.0) is True
+    assert player.paused is True
+    assert player.was_stopped is True
+    assert player.get_current_position() == 90.0
 
 
 def test_api_seek_control() -> None:

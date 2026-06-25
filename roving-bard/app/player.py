@@ -183,15 +183,18 @@ class SafeMusicPlayer:
 
         if self.simulated:
             if self.was_stopped:
-                self.last_seek_position = self.start_time
+                if self.last_seek_position < self.start_time:
+                    self.last_seek_position = self.start_time
             self.was_stopped = False
             return True
         try:
             if self.was_stopped:
-                self.last_seek_position = self.start_time
+                start_pos = self.last_seek_position
+                if start_pos < self.start_time:
+                    start_pos = self.start_time
                 track_path = os.path.join(self.playlist_dir, self.current_track)
                 pygame.mixer.music.load(track_path)
-                pygame.mixer.music.play(loops=-1, start=self.start_time, fade_ms=1500)
+                pygame.mixer.music.play(loops=-1, start=start_pos, fade_ms=1500)
                 pygame.mixer.music.set_volume(self.volume)
                 self.was_stopped = False
             else:
@@ -206,10 +209,17 @@ class SafeMusicPlayer:
             return False
 
         position = max(0.0, min(self.track_duration, position))
-        print(f"[Playback] Seeking to {position}s")
+        print(f"[Playback] Seeking to {position}s (was_stopped={self.was_stopped})")
 
         self.last_seek_position = position
         import time
+
+        if self.was_stopped:
+            # When stopped, seeking only updates the current position marker without playing
+            self.last_play_time = None
+            return True
+
+        # Otherwise continue current behavior (resume/start playback)
         self.last_play_time = time.time()
         self.paused = False
         self.was_stopped = False
