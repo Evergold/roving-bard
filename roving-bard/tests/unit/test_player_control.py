@@ -178,17 +178,19 @@ def test_player_transition_no_delay_when_fadeout_zero(tmp_path) -> None:
 
 
 def test_player_stop_restarts_from_beginning() -> None:
-    """Test that stop sets the was_stopped flag and resume resets it."""
+    """Test that stop sets the was_stopped flag and resume resets it, resetting position to start_time."""
     player = SafeMusicPlayer(playlist_dir="music")
     player.simulated = True
     player.current_track = "mock_track.mp3"
     player.paused = False
+    player.start_time = 15.0
 
-    # Stop the player (does not clear current_track, sets paused and was_stopped to True)
+    # Stop the player (does not clear current_track, sets paused and was_stopped to True, resets position to start_time)
     player.stop()
     assert player.current_track == "mock_track.mp3"
     assert player.paused is True
     assert player.was_stopped is True
+    assert player.get_current_position() == 15.0
 
     # Resume the player (resets was_stopped, unpauses)
     assert player.resume() is True

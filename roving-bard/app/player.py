@@ -130,7 +130,7 @@ class SafeMusicPlayer:
         self.paused = True
         self.was_stopped = True
         self.seeked_while_paused = False
-        self.last_seek_position = 0.0
+        self.last_seek_position = self.start_time
         self.last_play_time = None
 
         if self.simulated:
