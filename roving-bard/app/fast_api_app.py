@@ -218,7 +218,7 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     return {"status": "success"}
 
 
-@app.get("/gui", response_class=HTMLResponse)
+@app.get("/gui")
 def get_gui():
     """Serves the music player HTML GUI dashboard with embedded API key."""
     gui_file = os.path.join(AGENT_DIR, "app", "gui.html")
@@ -227,8 +227,13 @@ def get_gui():
             content = f.read()
         api_key = os.getenv("AGENT_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
         content = content.replace("{{API_KEY_PLACEHOLDER}}", api_key)
-        return content
-    return "<h3>Error: gui.html not found!</h3>"
+        
+        headers = {
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache"
+        }
+        return HTMLResponse(content=content, headers=headers)
+    return HTMLResponse(content="<h3>Error: gui.html not found!</h3>", status_code=404)
 
 
 @app.get("/api/env-status")
