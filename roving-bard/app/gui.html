@@ -1858,11 +1858,6 @@
             const exportBtn = document.getElementById('export-segment-btn');
             if (!exportBtn) return;
 
-            if (activeSegment && currentPlaybackStatus && currentPlaybackStatus.current_track && activeSegment.track_file !== currentPlaybackStatus.current_track) {
-                activeSegment = null;
-                localStorage.removeItem('activeSegment');
-            }
-
             if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
                 exportBtn.disabled = true;
                 if (activeSegment) {
