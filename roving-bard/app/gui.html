@@ -1025,6 +1025,26 @@
             box-shadow: none;
         }
 
+        /* Playback Action Buttons */
+        .btn.playback-play {
+            background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%) !important;
+            border: 1px solid transparent !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(124, 77, 255, 0.2) !important;
+        }
+        .btn.playback-pause {
+            background: #10b981 !important;
+            border: 1px solid #10b981 !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2) !important;
+        }
+        .btn.playback-resume {
+            background: #ef4444 !important;
+            border: 1px solid #ef4444 !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2) !important;
+        }
+
         .btn:disabled {
             background: rgba(255, 255, 255, 0.03) !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -1296,6 +1316,25 @@
         body.light-theme .btn-secondary:hover {
             background: #c5c8cc !important;
             border-color: #a2a6ae !important;
+        }
+
+        body.light-theme .btn.playback-play {
+            background: linear-gradient(135deg, var(--accent) 0%, #1e40af 100%) !important;
+            border: 1px solid transparent !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(46, 93, 168, 0.2) !important;
+        }
+        body.light-theme .btn.playback-pause {
+            background: #059669 !important;
+            border: 1px solid #059669 !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2) !important;
+        }
+        body.light-theme .btn.playback-resume {
+            background: #dc2626 !important;
+            border: 1px solid #dc2626 !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2) !important;
         }
 
         body.light-theme .btn-danger {
@@ -2177,23 +2216,26 @@
                     if (status.was_stopped) {
                         trackStatus.innerText = `Stopped · Vol: ${parseInt(status.volume * 100)}%`;
                         toggleBtn.innerText = 'Play';
-                        toggleBtn.style.background = 'linear-gradient(135deg, var(--accent) 0%, #6200ea 100%)';
-                        toggleBtn.style.borderColor = 'transparent';
-                        toggleBtn.style.color = 'white';
+                        toggleBtn.className = 'btn playback-play';
+                        toggleBtn.style.background = '';
+                        toggleBtn.style.borderColor = '';
+                        toggleBtn.style.color = '';
                     } else {
                         trackStatus.innerText = `Paused · Vol: ${parseInt(status.volume * 100)}%`;
                         toggleBtn.innerText = 'Resume';
-                        toggleBtn.style.background = '#ef4444';
-                        toggleBtn.style.borderColor = '#ef4444';
-                        toggleBtn.style.color = 'white';
+                        toggleBtn.className = 'btn playback-resume';
+                        toggleBtn.style.background = '';
+                        toggleBtn.style.borderColor = '';
+                        toggleBtn.style.color = '';
                     }
                     setWaveformPlaying(false);
                 } else {
                     trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
                     toggleBtn.innerText = 'Pause';
-                    toggleBtn.style.background = '#10b981';
-                    toggleBtn.style.borderColor = '#10b981';
-                    toggleBtn.style.color = 'white';
+                    toggleBtn.className = 'btn playback-pause';
+                    toggleBtn.style.background = '';
+                    toggleBtn.style.borderColor = '';
+                    toggleBtn.style.color = '';
                     setWaveformPlaying(true);
                 }
             } else {
@@ -2202,9 +2244,10 @@
                 setWaveformPlaying(false);
                 toggleBtn.innerText = 'Play';
                 toggleBtn.disabled = true;
-                toggleBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-                toggleBtn.style.borderColor = 'var(--border)';
-                toggleBtn.style.color = 'var(--text-muted)';
+                toggleBtn.className = 'btn';
+                toggleBtn.style.background = '';
+                toggleBtn.style.borderColor = '';
+                toggleBtn.style.color = '';
                 
                 stopBtn.disabled = true;
             }
@@ -2438,19 +2481,16 @@
                         if (isPaused) {
                             if (wasStopped) {
                                 btnText = 'Play';
-                                btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
-                                btnClass = 'btn';
+                                btnClass = 'btn playback-play';
                                 btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
                             } else {
                                 btnText = 'Resume';
-                                btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
-                                btnClass = 'btn';
+                                btnClass = 'btn playback-resume';
                                 btnClick = `resumeAudioFile()`;
                             }
                         } else {
                             btnText = 'Pause';
-                            btnStyle += ' background: #10b981; color: white; border: 1px solid #10b981;';
-                            btnClass = 'btn';
+                            btnClass = 'btn playback-pause';
                             btnClick = `pauseAudioFile()`;
                         }
                     }
@@ -2525,19 +2565,16 @@
                         if (isPaused) {
                             if (wasStopped) {
                                 btnText = 'Play';
-                                btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
-                                btnClass = 'btn';
+                                btnClass = 'btn playback-play';
                                 btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
                             } else {
                                 btnText = 'Resume';
-                                btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
-                                btnClass = 'btn';
+                                btnClass = 'btn playback-resume';
                                 btnClick = `resumeAudioFile()`;
                             }
                         } else {
                             btnText = 'Pause';
-                            btnStyle += ' background: #10b981; color: white; border: 1px solid #10b981;';
-                            btnClass = 'btn';
+                            btnClass = 'btn playback-pause';
                             btnClick = `pauseAudioFile()`;
                         }
                     }
