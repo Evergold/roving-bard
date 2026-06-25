@@ -988,6 +988,7 @@
                                 <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'Space Mono', monospace;">End:</span>
                                 <input type="text" id="bounds-end-input" placeholder="00:00:00.00" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; padding: 0.4rem 0.6rem; width: 125px; text-align: center;" onchange="onManualBoundsChange()">
                             </div>
+                            <button id="export-segment-btn" class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem; transition: all 0.2s ease;" onclick="exportSegment()" disabled>Export</button>
                         </div>
                         <div style="display: flex; gap: 1rem;">
                             <button id="now-playing-toggle-btn" class="btn" style="min-width: 90px; padding: 0.8rem 1.5rem;" onclick="toggleNowPlayingPlayback()">Play</button>
@@ -1169,6 +1170,7 @@
         let isEditIndex = -1;
         let currentPlaybackStatus = null;
         let audioLibraryFiles = [];
+        let segments = [];
         let isMuted = false;
         let preMuteVolume = 1.0;
         let lastStatusTime = Date.now();
@@ -1491,77 +1493,283 @@
 
         async function loadAudioLibrary() {
             try {
-                const response = await apiFetch('/api/audio-files');
-                const res = await response.json();
-                if (res.status === 'success') {
-                    audioLibraryFiles = res.files;
-                    renderAudioFiles();
+                // Fetch raw audio files
+                const audioResponse = await apiFetch('/api/audio-files');
+                const audioRes = await audioResponse.json();
+                
+                // Fetch segments
+                const segmentsResponse = await apiFetch('/api/segments');
+                const segmentsRes = await segmentsResponse.json();
+                
+                if (audioRes.status === 'success') {
+                    audioLibraryFiles = audioRes.files;
                 }
+                if (segmentsRes.status === 'success') {
+                    segments = segmentsRes.segments || [];
+                }
+                renderAudioFiles();
             } catch (err) {
-                console.error("Error loading audio files:", err);
+                console.error("Error loading audio files and segments:", err);
             }
         }
 
         function renderAudioFiles() {
             const list = document.getElementById('audio-files-list');
             list.innerHTML = '';
-            if (audioLibraryFiles.length === 0) {
-                list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem;">No audio files found in music/ directory.</div>';
-                return;
-            }
             
             const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+            const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
             const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
             const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
-
-            audioLibraryFiles.forEach(file => {
-                const item = document.createElement('div');
-                item.className = 'mapping-item';
-                
-                let btnText = 'Play';
-                let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
-                let btnClass = 'btn btn-secondary';
-                let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
-                let badgeHtml = '';
-
-                if (activeTrack === file) {
-                    item.classList.add('selected-track');
-                    badgeHtml = `<span style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; letter-spacing: 0.05em;">ACTIVE</span>`;
+            
+            // Render section header for Audio Files
+            const filesHeader = document.createElement('div');
+            filesHeader.style = "font-size: 0.75rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+            filesHeader.innerText = "Audio Files";
+            list.appendChild(filesHeader);
+            
+            if (audioLibraryFiles.length === 0) {
+                const emptyFiles = document.createElement('div');
+                emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                emptyFiles.innerText = "No raw tracks found.";
+                list.appendChild(emptyFiles);
+            } else {
+                audioLibraryFiles.forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = 'mapping-item';
                     
-                    if (isPaused) {
-                        if (wasStopped) {
-                            btnText = 'Play';
-                            btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
-                            btnClass = 'btn';
-                            btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                    let btnText = 'Play';
+                    let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
+                    let btnClass = 'btn btn-secondary';
+                    let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                    let badgeHtml = '';
+
+                    // A raw file is active if current_track matches AND start_time is roughly 0
+                    const isFileActive = (activeTrack === file && Math.abs(activeStart) < 0.05);
+
+                    if (isFileActive) {
+                        item.classList.add('selected-track');
+                        badgeHtml = `<span style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; letter-spacing: 0.05em;">ACTIVE</span>`;
+                        
+                        if (isPaused) {
+                            if (wasStopped) {
+                                btnText = 'Play';
+                                btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
+                                btnClass = 'btn';
+                                btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                            } else {
+                                btnText = 'Resume';
+                                btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
+                                btnClass = 'btn';
+                                btnClick = `resumeAudioFile()`;
+                            }
                         } else {
-                            btnText = 'Resume';
-                            btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
+                            btnText = 'Playing';
+                            btnStyle += ' background: #10b981; color: white; border: 1px solid #10b981;';
                             btnClass = 'btn';
-                            btnClick = `resumeAudioFile()`;
+                            btnClick = `pauseAudioFile()`;
                         }
-                    } else {
-                        btnText = 'Playing';
-                        btnStyle += ' background: #10b981; color: white; border: 1px solid #10b981;';
-                        btnClass = 'btn';
-                        btnClick = `pauseAudioFile()`;
                     }
-                }
 
-                let subtitleText = 'Click to select this track';
-                if (activeTrack === file) {
-                    subtitleText = 'Currently selected track';
-                }
+                    let subtitleText = 'Click to select this track';
+                    if (isFileActive) {
+                        subtitleText = 'Currently selected track';
+                    }
 
-                item.innerHTML = `
-                    <div class="mapping-item-details" style="cursor: pointer;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
-                        <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${file}${badgeHtml}</div>
-                        <div class="mapping-item-sub">${subtitleText}</div>
-                    </div>
-                    <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                `;
-                list.appendChild(item);
-            });
+                    item.innerHTML = `
+                        <div class="mapping-item-details" style="cursor: pointer;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${file}${badgeHtml}</div>
+                            <div class="mapping-item-sub">${subtitleText}</div>
+                        </div>
+                        <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+            
+            // Render section header for Exported Segments
+            const segmentsHeader = document.createElement('div');
+            segmentsHeader.style = "font-size: 0.75rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+            segmentsHeader.innerText = "Exported Segments";
+            list.appendChild(segmentsHeader);
+            
+            if (segments.length === 0) {
+                const emptySegments = document.createElement('div');
+                emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                emptySegments.innerText = "No segments exported yet.";
+                list.appendChild(emptySegments);
+            } else {
+                segments.forEach(segment => {
+                    const item = document.createElement('div');
+                    item.className = 'mapping-item';
+                    
+                    let btnText = 'Play';
+                    let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
+                    let btnClass = 'btn btn-secondary';
+                    
+                    const duration = currentPlaybackStatus ? (currentPlaybackStatus.duration || 180.0) : 180.0;
+                    const segEnd = segment.end_time;
+                    
+                    const isSegActive = (activeTrack === segment.track_file && Math.abs(activeStart - segment.start_time) < 0.05 && Math.abs((currentPlaybackStatus ? (currentPlaybackStatus.end_time || duration) : duration) - segEnd) < 0.05);
+                    
+                    let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd})`;
+                    let badgeHtml = '';
+
+                    if (isSegActive) {
+                        item.classList.add('selected-track');
+                        badgeHtml = `<span style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.15); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; letter-spacing: 0.05em;">ACTIVE</span>`;
+                        
+                        if (isPaused) {
+                            if (wasStopped) {
+                                btnText = 'Play';
+                                btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
+                                btnClass = 'btn';
+                                btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd})`;
+                            } else {
+                                btnText = 'Resume';
+                                btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
+                                btnClass = 'btn';
+                                btnClick = `resumeAudioFile()`;
+                            }
+                        } else {
+                            btnText = 'Playing';
+                            btnStyle += ' background: #10b981; color: white; border: 1px solid #10b981;';
+                            btnClass = 'btn';
+                            btnClick = `pauseAudioFile()`;
+                        }
+                    }
+
+                    let subtitleText = `Track: ${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
+                    if (isSegActive) {
+                        subtitleText = `ACTIVE · ${subtitleText}`;
+                    }
+
+                    item.innerHTML = `
+                        <div class="mapping-item-details" style="cursor: pointer;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd})">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${segment.name}${badgeHtml}</div>
+                            <div class="mapping-item-sub">${subtitleText}</div>
+                        </div>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                            <button class="btn btn-secondary" style="padding: 0.3rem; min-width: unset; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="deleteSegment('${segment.name.replace(/\'/g, "\\\'")}')" title="Delete Segment">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        }
+
+        async function exportSegment() {
+            if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) return;
+            const segmentName = prompt("Enter a name for the new audio segment:");
+            if (!segmentName) return; // cancelled or empty
+            const trimmedName = segmentName.trim();
+            if (!trimmedName) return;
+
+            const startVal = currentPlaybackStatus.start_time || 0.0;
+            const duration = currentPlaybackStatus.duration || 180.0;
+            const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
+
+            try {
+                const response = await apiFetch('/api/segments', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: trimmedName,
+                        track_file: currentPlaybackStatus.current_track,
+                        start_time: startVal,
+                        end_time: endVal
+                    })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert("Segment exported successfully.");
+                    await loadAudioLibrary();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (err) {
+                console.error("Error exporting segment:", err);
+                alert("Failed to export segment.");
+            }
+        }
+
+        async function selectSegment(name, trackFile, startTime, endTime) {
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        action: 'select',
+                        track_file: trackFile,
+                        start_time: startTime,
+                        end_time: endTime
+                    })
+                });
+                loadDashboard();
+            } catch (err) {
+                console.error("Error selecting segment:", err);
+            }
+        }
+
+        async function playSegment(name, trackFile, startTime, endTime) {
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        action: 'play',
+                        track_file: trackFile,
+                        start_time: startTime,
+                        end_time: endTime
+                    })
+                });
+                loadDashboard();
+            } catch (err) {
+                console.error("Error playing segment:", err);
+            }
+        }
+
+        async function deleteSegment(name) {
+            if (!confirm(`Are you sure you want to delete the segment "${name}"?`)) return;
+            try {
+                const response = await apiFetch(`/api/segments?name=${encodeURIComponent(name)}`, {
+                    method: 'DELETE'
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    alert("Segment deleted successfully.");
+                    await loadAudioLibrary();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            } catch (err) {
+                console.error("Error deleting segment:", err);
+                alert("Failed to delete segment.");
+            }
+        }
+
+        function updateExportButtonState() {
+            const exportBtn = document.getElementById('export-segment-btn');
+            if (!exportBtn) return;
+            if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
+                exportBtn.disabled = true;
+                return;
+            }
+            const duration = currentPlaybackStatus.duration || 180.0;
+            const startVal = currentPlaybackStatus.start_time || 0.0;
+            const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
+            
+            const startDiff = Math.abs(startVal);
+            const endDiff = Math.abs(endVal - duration);
+            
+            if (startDiff > 0.01 || endDiff > 0.01) {
+                exportBtn.disabled = false;
+            } else {
+                exportBtn.disabled = true;
+            }
         }
 
         async function selectAudioFile(filename) {
@@ -1916,6 +2124,7 @@
                 progressFill.style.left = startPct + '%';
                 progressFill.style.width = Math.max(0, currentPct - startPct) + '%';
             }
+            updateExportButtonState();
         }
 
         function updateSeekDisplay() {

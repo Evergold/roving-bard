@@ -50,7 +50,7 @@ class SafeMusicPlayer:
                 f"Warning: Could not initialize Pygame mixer (running in simulated mode): {e}"
             )
 
-    def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500):
+    def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
         if not track_file:
             self.stop(fade_out_ms)
             return True
@@ -60,8 +60,8 @@ class SafeMusicPlayer:
             print(f"Warning: Track file not found: {track_path}")
             return False
 
-        if self.current_track == track_file:
-            # Track is already playing
+        if self.current_track == track_file and getattr(self, "start_time", 0.0) == start_time and getattr(self, "end_time", None) == end_time:
+            # Track is already playing with same bounds
             if self.paused:
                 return self.resume()
             return True
@@ -103,8 +103,8 @@ class SafeMusicPlayer:
         if self.track_duration is None or self.track_duration == 0.0:
             self.track_duration = 180.0
 
-        self.start_time = 0.0
-        self.end_time = None
+        self.start_time = start_time
+        self.end_time = end_time
         self.last_seek_position = self.start_time
         import time
         self.last_play_time = time.time()
@@ -122,7 +122,7 @@ class SafeMusicPlayer:
             print(f"Error during Pygame playback of {track_file}: {e}")
             return False
 
-    def select_track(self, track_file):
+    def select_track(self, track_file, start_time=0.0, end_time=None):
         if not track_file:
             return False
 
@@ -154,8 +154,8 @@ class SafeMusicPlayer:
         if self.track_duration is None or self.track_duration == 0.0:
             self.track_duration = 180.0
 
-        self.start_time = 0.0
-        self.end_time = None
+        self.start_time = start_time
+        self.end_time = end_time
         self.last_seek_position = self.start_time
         self.last_play_time = None
 

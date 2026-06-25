@@ -25,6 +25,32 @@ from app.player import LocalOCRParser, SafeMusicPlayer, ScreenGrabber, TrackMapp
 CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mapping.yaml"
 )
+SEGMENTS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "segments.yaml"
+)
+
+
+def load_segments() -> list:
+    if os.path.exists(SEGMENTS_PATH):
+        try:
+            with open(SEGMENTS_PATH, "r") as f:
+                data = yaml.safe_load(f)
+                if isinstance(data, dict) and "segments" in data:
+                    return data["segments"] or []
+                elif isinstance(data, list):
+                    return data
+        except Exception as e:
+            print(f"Error loading segments.yaml: {e}")
+    return []
+
+
+def save_segments(segments: list):
+    try:
+        with open(SEGMENTS_PATH, "w") as f:
+            yaml.safe_dump({"segments": segments}, f)
+    except Exception as e:
+        print(f"Error saving segments.yaml: {e}")
+
 
 
 def load_config():
@@ -209,17 +235,19 @@ def check_screen_and_update_music() -> dict:
     }
 
 
-def play_track(track_file: str) -> dict:
+def play_track(track_file: str, start_time: float = 0.0, end_time: float | None = None) -> dict:
     """Manually plays a specific track from the playlist directory.
 
     Args:
         track_file: Filename of the track to play (e.g. 'town.wav').
+        start_time: Start position in seconds.
+        end_time: End position in seconds.
 
     Returns:
         dict containing status of playback.
     """
     # Manual play transitions stop the currently playing track immediately with no fade-in or fade-out delays
-    success = player.play_track(track_file, fade_in_ms=0, fade_out_ms=0)
+    success = player.play_track(track_file, fade_in_ms=0, fade_out_ms=0, start_time=start_time, end_time=end_time)
     if success:
         return {"status": "success", "message": f"Now playing {track_file}"}
     return {"status": "error", "message": f"Failed to play track {track_file}"}

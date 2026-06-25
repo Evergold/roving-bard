@@ -398,5 +398,92 @@ def test_api_select_control() -> None:
             os.remove(dummy_file)
 
 
+def test_segments_api(tmp_path) -> None:
+    """Test GET, POST, and DELETE /api/segments endpoints and play/select with custom bounds."""
+    headers = get_headers()
+    
+    # Save original SEGMENTS_PATH
+    orig_segments_path = tools.SEGMENTS_PATH
+    # Override with temporary path
+    test_segments_file = os.path.join(tmp_path, "test_segments.yaml")
+    tools.SEGMENTS_PATH = test_segments_file
+    
+    # Create dummy track file in tools.player.playlist_dir
+    os.makedirs(tools.player.playlist_dir, exist_ok=True)
+    dummy_file = os.path.join(tools.player.playlist_dir, "test_track.mp3")
+    with open(dummy_file, "wb") as f:
+        f.write(b"dummy")
+
+    try:
+        # 1. GET /api/segments (should be empty initially)
+        response = client.get("/api/segments", headers=headers)
+        assert response.status_code == 200
+        assert response.json() == {"status": "success", "segments": []}
+
+        # 2. POST /api/segments to add a segment
+        segment_data = {
+            "name": "Test Intro",
+            "track_file": "test_track.mp3",
+            "start_time": 5.5,
+            "end_time": 20.0
+        }
+        response = client.post("/api/segments", headers=headers, json=segment_data)
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+
+        # 3. GET /api/segments (should contain the added segment)
+        response = client.get("/api/segments", headers=headers)
+        assert response.status_code == 200
+        assert len(response.json()["segments"]) == 1
+        assert response.json()["segments"][0]["name"] == "Test Intro"
+        assert response.json()["segments"][0]["start_time"] == 5.5
+
+        # 4. Select the segment via POST /api/control (action=select)
+        tools.player.simulated = True
+        select_response = client.post(
+            "/api/control",
+            headers=headers,
+            json={
+                "action": "select",
+                "track_file": "test_track.mp3",
+                "start_time": 5.5,
+                "end_time": 20.0
+            }
+        )
+        assert select_response.status_code == 200
+        assert tools.player.start_time == 5.5
+        assert tools.player.end_time == 20.0
+
+        # 5. Play the segment via POST /api/control (action=play)
+        play_response = client.post(
+            "/api/control",
+            headers=headers,
+            json={
+                "action": "play",
+                "track_file": "test_track.mp3",
+                "start_time": 5.5,
+                "end_time": 20.0
+            }
+        )
+        assert play_response.status_code == 200
+        assert tools.player.start_time == 5.5
+        assert tools.player.end_time == 20.0
+
+        # 6. DELETE /api/segments to remove it
+        delete_response = client.delete("/api/segments?name=Test%20Intro", headers=headers)
+        assert delete_response.status_code == 200
+        assert delete_response.json()["status"] == "success"
+
+        # 7. GET /api/segments (should be empty again)
+        response = client.get("/api/segments", headers=headers)
+        assert response.status_code == 200
+        assert response.json() == {"status": "success", "segments": []}
+
+    finally:
+        tools.SEGMENTS_PATH = orig_segments_path
+        if os.path.exists(dummy_file):
+            os.remove(dummy_file)
+
+
 
 

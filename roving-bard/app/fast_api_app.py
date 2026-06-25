@@ -260,7 +260,8 @@ def api_control(req: ControlRequest):
     """Handles manual player actions (play, stop, set volume, scan screen, seek, set_bounds)."""
     if req.action == "play":
         if req.track_file:
-            return tools.play_track(req.track_file)
+            start_time = req.start_time if req.start_time is not None else 0.0
+            return tools.play_track(req.track_file, start_time=start_time, end_time=req.end_time)
         return {"status": "error", "message": "track_file is required for play action."}
     elif req.action == "stop":
         return tools.stop_music()
@@ -299,7 +300,8 @@ def api_control(req: ControlRequest):
         return {"status": "error", "message": "start_time or end_time is required for set_bounds."}
     elif req.action == "select":
         if req.track_file:
-            success = tools.player.select_track(req.track_file)
+            start_time = req.start_time if req.start_time is not None else 0.0
+            success = tools.player.select_track(req.track_file, start_time=start_time, end_time=req.end_time)
             if success:
                 return {"status": "success", "message": f"Selected track {req.track_file}."}
             return {"status": "error", "message": "Failed to select track."}
@@ -391,6 +393,47 @@ def api_upload_audio(file: UploadFile = File(...)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
         )
+
+
+class SegmentModel(BaseModel):
+    name: str
+    track_file: str
+    start_time: float
+    end_time: float
+
+
+@app.get("/api/segments", dependencies=[Depends(verify_api_key)])
+def get_segments():
+    """Lists all segments from segments.yaml."""
+    return {"status": "success", "segments": tools.load_segments()}
+
+
+@app.post("/api/segments", dependencies=[Depends(verify_api_key)])
+def add_segment(req: SegmentModel):
+    """Saves or updates a segment in segments.yaml."""
+    segments = tools.load_segments()
+    # Check if duplicate name, overwrite it
+    segments = [s for s in segments if s.get("name") != req.name]
+    segments.append({
+        "name": req.name,
+        "track_file": req.track_file,
+        "start_time": req.start_time,
+        "end_time": req.end_time,
+    })
+    tools.save_segments(segments)
+    return {"status": "success", "message": "Segment saved."}
+
+
+@app.delete("/api/segments", dependencies=[Depends(verify_api_key)])
+def delete_segment(name: str = Query(...)):
+    """Deletes a segment from segments.yaml by its name."""
+    segments = tools.load_segments()
+    initial_len = len(segments)
+    segments = [s for s in segments if s.get("name") != name]
+    if len(segments) == initial_len:
+        raise HTTPException(status_code=404, detail="Segment not found.")
+    tools.save_segments(segments)
+    return {"status": "success", "message": "Segment deleted."}
 
 
 # Main execution
