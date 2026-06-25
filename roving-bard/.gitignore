@@ -209,3 +209,6 @@ roving-bard/music/*
 
 roving-bard/capture/*
 !roving-bard/capture/.gitkeep
+
+# Exclude local segment definitions
+segments.yaml
