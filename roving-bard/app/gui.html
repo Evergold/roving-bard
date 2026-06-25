@@ -1124,6 +1124,8 @@
                     if (isPaused) {
                         if (wasStopped) {
                             btnText = 'Play';
+                            btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
+                            btnClass = 'btn';
                             btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
                         } else {
                             btnText = 'Resume';
