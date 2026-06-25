@@ -1616,37 +1616,59 @@
             --neon-red: #d9480f !important;
         }
 
-        /* CVD Accessible mode: chevron replacement with brackets [ ] */
+        /* CVD Accessible mode: chevron replacement with brackets [ ] and backgrounds */
         body.cvd-accessible #seek-start-slider::-webkit-slider-thumb,
         body.cvd-accessible #seek-start-slider::-moz-range-thumb {
             clip-path: polygon(100% 0%, 0% 0%, 0% 100%, 100% 100%, 100% 75%, 25% 75%, 25% 25%, 100% 25%) !important;
+            background: #00e5ff !important;
         }
+        body.light-theme.cvd-accessible #seek-start-slider::-webkit-slider-thumb,
+        body.light-theme.cvd-accessible #seek-start-slider::-moz-range-thumb {
+            background: #0077b6 !important;
+        }
+
         body.cvd-accessible #seek-end-slider::-webkit-slider-thumb,
         body.cvd-accessible #seek-end-slider::-moz-range-thumb {
             clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 75%, 75% 75%, 75% 25%, 0% 25%) !important;
-            background: var(--neon-pink) !important;
+            background: #ff9100 !important;
+        }
+        body.light-theme.cvd-accessible #seek-end-slider::-webkit-slider-thumb,
+        body.light-theme.cvd-accessible #seek-end-slider::-moz-range-thumb {
+            background: #d9480f !important;
         }
 
         /* CVD Accessible mode status badge overrides */
         body.cvd-accessible .status-badge.online {
-            color: var(--neon-green) !important;
-            border-color: var(--neon-green) !important;
+            color: #00e5ff !important;
+            border-color: #00e5ff !important;
             background-color: rgba(0, 229, 255, 0.1) !important;
         }
+        body.cvd-accessible .status-badge.online span {
+            background-color: #00e5ff !important;
+        }
         body.cvd-accessible .status-badge.offline {
-            color: var(--neon-pink) !important;
-            border-color: var(--neon-pink) !important;
+            color: #ff9100 !important;
+            border-color: #ff9100 !important;
             background-color: rgba(255, 145, 0, 0.1) !important;
         }
+        body.cvd-accessible .status-badge.offline span {
+            background-color: #ff9100 !important;
+        }
         body.light-theme.cvd-accessible .status-badge.online {
-            color: var(--neon-green) !important;
-            border-color: var(--neon-green) !important;
+            color: #0077b6 !important;
+            border-color: #0077b6 !important;
             background-color: rgba(0, 119, 182, 0.08) !important;
         }
+        body.light-theme.cvd-accessible .status-badge.online span {
+            background-color: #0077b6 !important;
+        }
         body.light-theme.cvd-accessible .status-badge.offline {
-            color: var(--neon-pink) !important;
-            border-color: var(--neon-pink) !important;
+            color: #d9480f !important;
+            border-color: #d9480f !important;
             background-color: rgba(217, 72, 15, 0.08) !important;
+        }
+        body.light-theme.cvd-accessible .status-badge.offline span {
+            background-color: #d9480f !important;
         }
     </style>
 </head>
