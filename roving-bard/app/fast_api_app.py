@@ -153,10 +153,12 @@ app.description = "API for interacting with the Agent roving-bard"
 
 
 class ControlRequest(BaseModel):
-    action: str  # play, stop, volume, scan, seek, pause, resume
+    action: str  # play, stop, volume, scan, seek, pause, resume, set_bounds
     track_file: str | None = None
     volume: float | None = None
     position: float | None = None
+    start_time: float | None = None
+    end_time: float | None = None
 
 
 class ConfigUpdateRequest(BaseModel):
@@ -248,12 +250,14 @@ def api_status():
         "was_stopped": getattr(tools.player, "was_stopped", False),
         "duration": getattr(tools.player, "track_duration", 0.0),
         "current_position": tools.player.get_current_position(),
+        "start_time": getattr(tools.player, "start_time", 0.0),
+        "end_time": getattr(tools.player, "end_time", None) if getattr(tools.player, "end_time", None) is not None else getattr(tools.player, "track_duration", 0.0),
     }
 
 
 @app.post("/api/control", dependencies=[Depends(verify_api_key)])
 def api_control(req: ControlRequest):
-    """Handles manual player actions (play, stop, set volume, scan screen, seek)."""
+    """Handles manual player actions (play, stop, set volume, scan screen, seek, set_bounds)."""
     if req.action == "play":
         if req.track_file:
             return tools.play_track(req.track_file)
@@ -283,6 +287,16 @@ def api_control(req: ControlRequest):
                 return {"status": "success", "message": f"Seeked to {req.position} seconds."}
             return {"status": "error", "message": "Failed to seek playback."}
         return {"status": "error", "message": "position is required for seek action."}
+    elif req.action == "set_bounds":
+        if req.start_time is not None or req.end_time is not None:
+            if req.start_time is not None:
+                tools.player.start_time = max(0.0, req.start_time)
+            if req.end_time is not None:
+                tools.player.end_time = req.end_time
+            if tools.player.was_stopped or tools.player.paused:
+                tools.player.last_seek_position = tools.player.start_time
+            return {"status": "success", "message": "Playback bounds updated."}
+        return {"status": "error", "message": "start_time or end_time is required for set_bounds."}
     return {"status": "error", "message": f"Unknown action: {req.action}"}
 
 

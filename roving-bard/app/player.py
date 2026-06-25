@@ -36,6 +36,8 @@ class SafeMusicPlayer:
         self.track_duration = 0.0
         self.last_seek_position = 0.0
         self.last_play_time = None
+        self.start_time = 0.0
+        self.end_time = None
 
         try:
             pygame.mixer.init()
@@ -99,7 +101,9 @@ class SafeMusicPlayer:
         if self.track_duration == 0.0:
             self.track_duration = 180.0
 
-        self.last_seek_position = 0.0
+        self.start_time = 0.0
+        self.end_time = None
+        self.last_seek_position = self.start_time
         import time
         self.last_play_time = time.time()
 
@@ -109,7 +113,7 @@ class SafeMusicPlayer:
 
         try:
             pygame.mixer.music.load(track_path)
-            pygame.mixer.music.play(loops=-1, fade_ms=fade_in_ms)
+            pygame.mixer.music.play(loops=-1, start=self.start_time, fade_ms=fade_in_ms)
             pygame.mixer.music.set_volume(self.volume)
             return True
         except Exception as e:
@@ -178,14 +182,16 @@ class SafeMusicPlayer:
         self.last_play_time = time.time()
 
         if self.simulated:
+            if self.was_stopped:
+                self.last_seek_position = self.start_time
             self.was_stopped = False
             return True
         try:
             if self.was_stopped:
-                self.last_seek_position = 0.0
+                self.last_seek_position = self.start_time
                 track_path = os.path.join(self.playlist_dir, self.current_track)
                 pygame.mixer.music.load(track_path)
-                pygame.mixer.music.play(loops=-1, fade_ms=1500)
+                pygame.mixer.music.play(loops=-1, start=self.start_time, fade_ms=1500)
                 pygame.mixer.music.set_volume(self.volume)
                 self.was_stopped = False
             else:
@@ -229,9 +235,34 @@ class SafeMusicPlayer:
         if not self.paused and self.last_play_time is not None:
             pos += time.time() - self.last_play_time
 
-        if self.track_duration > 0:
-            if pos > self.track_duration:
-                pos = pos % self.track_duration
+        duration = self.track_duration
+        start = self.start_time
+        end = self.end_time if self.end_time is not None else duration
+
+        if start < 0:
+            start = 0.0
+        if end > duration:
+            end = duration
+
+        range_len = end - start
+        if range_len > 0:
+            if pos > end:
+                # Loop back to start
+                loops = int((pos - start) // range_len)
+                pos = start + ((pos - start) % range_len)
+                
+                # Update Pygame playback position
+                if not self.simulated and self.mixer_initialized:
+                    try:
+                        pygame.mixer.music.play(loops=-1, start=pos)
+                    except Exception as e:
+                        print(f"Error during loop seek: {e}")
+                self.last_seek_position = pos
+                self.last_play_time = time.time()
+        else:
+            if duration > 0:
+                if pos > duration:
+                    pos = pos % duration
         return max(0.0, pos)
 
 

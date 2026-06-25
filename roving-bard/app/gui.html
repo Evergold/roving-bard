@@ -323,59 +323,154 @@
             color: var(--neon-blue);
         }
 
-        .seek-container input[type="range"] {
+        .seek-slider-container {
+            position: relative;
             flex: 1;
-            accent-color: var(--accent);
-            cursor: pointer;
+            height: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .seek-slider-input {
+            position: absolute;
+            width: 100%;
             height: 6px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.1);
+            background: transparent;
             outline: none;
-            transition: background 0.3s;
+            margin: 0;
+            pointer-events: none;
             -webkit-appearance: none;
         }
 
-        .seek-container input[type="range"]::-webkit-slider-runnable-track {
-            background: transparent;
-            height: 6px;
-        }
-
-        .seek-container input[type="range"]::-webkit-slider-thumb {
+        /* Webkit Thumbs */
+        .seek-slider-input::-webkit-slider-thumb {
             -webkit-appearance: none;
+            pointer-events: auto;
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: var(--neon-blue);
             cursor: pointer;
-            box-shadow: 0 0 8px var(--neon-blue);
-            transition: transform 0.1s, background-color 0.1s;
-            margin-top: -4px; /* Center thumb vertically */
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
         }
-
-        .seek-container input[type="range"]::-webkit-slider-thumb:hover {
+        
+        .seek-slider-input::-webkit-slider-thumb:hover {
             transform: scale(1.3);
-            background: var(--text-main);
         }
 
-        .seek-container input[type="range"]::-moz-range-track {
-            background: transparent;
-            height: 6px;
+        #seek-slider::-webkit-slider-thumb {
+            background: var(--neon-blue);
+            box-shadow: 0 0 8px var(--neon-blue);
         }
 
-        .seek-container input[type="range"]::-moz-range-thumb {
+        #seek-start-slider::-webkit-slider-thumb {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        #seek-end-slider::-webkit-slider-thumb {
+            background: #ff4d4d;
+            box-shadow: 0 0 8px #ff4d4d;
+        }
+
+        /* Moz Thumbs */
+        .seek-slider-input::-moz-range-thumb {
+            pointer-events: auto;
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: var(--neon-blue);
             cursor: pointer;
-            box-shadow: 0 0 8px var(--neon-blue);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
             border: none;
-            transition: transform 0.1s, background-color 0.1s;
+            transition: transform 0.1s;
         }
 
-        .seek-container input[type="range"]::-moz-range-thumb:hover {
+        .seek-slider-input::-moz-range-thumb:hover {
             transform: scale(1.3);
-            background: var(--text-main);
+        }
+
+        #seek-slider::-moz-range-thumb {
+            background: var(--neon-blue);
+            box-shadow: 0 0 8px var(--neon-blue);
+        }
+
+        #seek-start-slider::-moz-range-thumb {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        #seek-end-slider::-moz-range-thumb {
+            background: #ff4d4d;
+            box-shadow: 0 0 8px #ff4d4d;
+        }
+
+        /* Playing/Paused State:
+           Start/End boundaries become static vertical tick marks on the track,
+           Playback position is active and draggable.
+        */
+        .playing-state #seek-slider {
+            display: block;
+        }
+        
+        .playing-state #seek-start-slider::-webkit-slider-thumb,
+        .playing-state #seek-end-slider::-webkit-slider-thumb {
+            width: 4px;
+            height: 12px;
+            border-radius: 1px;
+            cursor: default;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .playing-state #seek-start-slider::-moz-range-thumb,
+        .playing-state #seek-end-slider::-moz-range-thumb {
+            width: 4px;
+            height: 12px;
+            border-radius: 1px;
+            cursor: default;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Stopped State:
+           Playback position slider is hidden,
+           Start/End boundaries are active and draggable.
+        */
+        .stopped-state #seek-slider {
+            display: none;
+        }
+
+        .stopped-state #seek-start-slider::-webkit-slider-thumb,
+        .stopped-state #seek-end-slider::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        .stopped-state #seek-start-slider::-moz-range-thumb,
+        .stopped-state #seek-end-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+        /* Manual bounds input focus/disabled styling */
+        .manual-bounds-container input[type="text"]:focus {
+            border-color: var(--accent) !important;
+            outline: none;
+            box-shadow: 0 0 6px var(--accent-glow);
+        }
+        
+        .manual-bounds-container input[type="text"]:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.05) !important;
         }
 
         /* Capture & Parsing Dashboard */
@@ -798,12 +893,37 @@
                     <!-- SEEK BAR CONTAINER -->
                     <div class="seek-container">
                         <span id="seek-current-time">00:00:00.00</span>
-                        <input type="range" id="seek-slider" min="0" max="100" step="0.01" value="0" oninput="onSeekSliderInput(this.value)" onchange="onSeekSliderChange(this.value)">
+                        <div class="seek-slider-container playing-state">
+                            <!-- Progress Track Background -->
+                            <div class="seek-track-bg" style="position: absolute; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; pointer-events: none;"></div>
+                            <!-- Range Highlight -->
+                            <div id="seek-range-highlight" style="position: absolute; height: 6px; background: rgba(124, 77, 255, 0.4); border-radius: 3px; pointer-events: none; left: 0%; right: 0%;"></div>
+                            <!-- Progress Fill -->
+                            <div id="seek-progress-fill" style="position: absolute; height: 6px; background: var(--neon-blue); border-radius: 3px; pointer-events: none; left: 0%; width: 0%;"></div>
+
+                            <!-- Overlaid range inputs -->
+                            <input type="range" id="seek-slider" class="seek-slider-input" min="0" max="100" step="0.01" value="0" oninput="onSeekSliderInput(this.value)" onchange="onSeekSliderChange(this.value)">
+                            <input type="range" id="seek-start-slider" class="seek-slider-input" min="0" max="100" step="0.01" value="0" oninput="onStartSliderInput(this.value)" onchange="onStartSliderChange(this.value)">
+                            <input type="range" id="seek-end-slider" class="seek-slider-input" min="0" max="100" step="0.01" value="100" oninput="onEndSliderInput(this.value)" onchange="onEndSliderChange(this.value)">
+                        </div>
                         <span id="seek-duration" onclick="toggleDurationDisplayMode()">00:00:00.00</span>
                     </div>
-                    <div class="controls-row" style="justify-content: flex-end;">
-                        <button id="now-playing-toggle-btn" class="btn" style="min-width: 90px; padding: 0.8rem 1.5rem;" onclick="toggleNowPlayingPlayback()">Play</button>
-                        <button id="now-playing-stop-btn" class="btn btn-secondary" onclick="stopMusic()">Stop</button>
+                    <div class="controls-row" style="justify-content: space-between; align-items: center;">
+                        <!-- START/END MANUAL ENTRY BOXES -->
+                        <div class="manual-bounds-container" style="display: flex; gap: 0.75rem; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'Space Mono', monospace;">Start:</span>
+                                <input type="text" id="bounds-start-input" placeholder="00:00:00.00" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; padding: 0.4rem 0.6rem; width: 110px; text-align: center;" onchange="onManualBoundsChange()">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'Space Mono', monospace;">End:</span>
+                                <input type="text" id="bounds-end-input" placeholder="00:00:00.00" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; padding: 0.4rem 0.6rem; width: 110px; text-align: center;" onchange="onManualBoundsChange()">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="now-playing-toggle-btn" class="btn" style="min-width: 90px; padding: 0.8rem 1.5rem;" onclick="toggleNowPlayingPlayback()">Play</button>
+                            <button id="now-playing-stop-btn" class="btn btn-secondary" onclick="stopMusic()">Stop</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1656,31 +1776,126 @@
             return isNegative ? `-${formatted}` : formatted;
         }
 
+        function parseTime(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split(':');
+            if (parts.length === 3) {
+                const hrs = parseFloat(parts[0]) || 0;
+                const mins = parseFloat(parts[1]) || 0;
+                const secs = parseFloat(parts[2]) || 0;
+                return hrs * 3600 + mins * 60 + secs;
+            } else if (parts.length === 2) {
+                const mins = parseFloat(parts[0]) || 0;
+                const secs = parseFloat(parts[1]) || 0;
+                return mins * 60 + secs;
+            } else {
+                return parseFloat(timeStr) || 0;
+            }
+        }
+
+        function updateHighlightAndFill() {
+            if (!currentPlaybackStatus) return;
+            const duration = currentPlaybackStatus.duration || 180.0;
+            const startVal = currentPlaybackStatus.start_time || 0.0;
+            const endVal = currentPlaybackStatus.end_time || duration;
+            
+            let currentPos = currentPlaybackStatus.current_position || 0.0;
+            if (!currentPlaybackStatus.paused) {
+                const elapsed = (Date.now() - lastStatusTime) / 1000.0;
+                currentPos += elapsed;
+                const rangeLen = endVal - startVal;
+                if (rangeLen > 0 && currentPos > endVal) {
+                    currentPos = startVal + ((currentPos - startVal) % rangeLen);
+                }
+            }
+            
+            const startPct = (startVal / duration) * 100;
+            const endPct = (endVal / duration) * 100;
+            const currentPct = (currentPos / duration) * 100;
+            
+            const rangeHighlight = document.getElementById('seek-range-highlight');
+            if (rangeHighlight) {
+                rangeHighlight.style.left = startPct + '%';
+                rangeHighlight.style.width = (endPct - startPct) + '%';
+            }
+            
+            const progressFill = document.getElementById('seek-progress-fill');
+            if (progressFill) {
+                progressFill.style.left = startPct + '%';
+                progressFill.style.width = Math.max(0, currentPct - startPct) + '%';
+            }
+        }
+
         function updateSeekDisplay() {
             const seekSlider = document.getElementById('seek-slider');
+            const seekStartSlider = document.getElementById('seek-start-slider');
+            const seekEndSlider = document.getElementById('seek-end-slider');
+            
             const seekCurrentTime = document.getElementById('seek-current-time');
             const seekDuration = document.getElementById('seek-duration');
+
+            const boundsStartInput = document.getElementById('bounds-start-input');
+            const boundsEndInput = document.getElementById('bounds-end-input');
 
             if (!seekSlider || !seekCurrentTime || !seekDuration) return;
 
             if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
                 seekSlider.disabled = true;
+                seekStartSlider.disabled = true;
+                seekEndSlider.disabled = true;
                 seekSlider.value = 0;
+                seekStartSlider.value = 0;
+                seekEndSlider.value = 100;
                 seekCurrentTime.innerText = "00:00:00.00";
                 seekDuration.innerText = "00:00:00.00";
+                if (boundsStartInput) boundsStartInput.value = "";
+                if (boundsEndInput) boundsEndInput.value = "";
+                if (boundsStartInput) boundsStartInput.disabled = true;
+                if (boundsEndInput) boundsEndInput.disabled = true;
                 return;
             }
 
-            seekSlider.disabled = false;
             const duration = currentPlaybackStatus.duration || 180.0;
             seekSlider.max = duration;
+            seekStartSlider.max = duration;
+            seekEndSlider.max = duration;
+
+            const isStopped = currentPlaybackStatus.paused && currentPlaybackStatus.was_stopped;
+            const canMoveBounds = isStopped;
+
+            seekStartSlider.disabled = !canMoveBounds;
+            seekEndSlider.disabled = !canMoveBounds;
+            if (boundsStartInput) boundsStartInput.disabled = !canMoveBounds;
+            if (boundsEndInput) boundsEndInput.disabled = !canMoveBounds;
+
+            const sliderContainer = document.querySelector('.seek-slider-container');
+            if (sliderContainer) {
+                if (canMoveBounds) {
+                    sliderContainer.classList.add('stopped-state');
+                    sliderContainer.classList.remove('playing-state');
+                } else {
+                    sliderContainer.classList.add('playing-state');
+                    sliderContainer.classList.remove('stopped-state');
+                }
+            }
+
+            let startVal = currentPlaybackStatus.start_time || 0.0;
+            let endVal = currentPlaybackStatus.end_time || duration;
+
+            if (!isDraggingSeek) {
+                seekStartSlider.value = startVal;
+                seekEndSlider.value = endVal;
+                if (boundsStartInput) boundsStartInput.value = formatTime(startVal);
+                if (boundsEndInput) boundsEndInput.value = formatTime(endVal);
+            }
 
             let currentPos = currentPlaybackStatus.current_position || 0.0;
             if (!currentPlaybackStatus.paused) {
                 const elapsed = (Date.now() - lastStatusTime) / 1000.0;
                 currentPos += elapsed;
-                if (currentPos > duration) {
-                    currentPos = currentPos % duration;
+                const rangeLen = endVal - startVal;
+                if (rangeLen > 0 && currentPos > endVal) {
+                    currentPos = startVal + ((currentPos - startVal) % rangeLen);
                 }
             }
 
@@ -1695,6 +1910,8 @@
             } else {
                 seekDuration.innerText = formatTime(duration);
             }
+
+            updateHighlightAndFill();
         }
 
         function startSeekTimer() {
@@ -1731,6 +1948,118 @@
                 console.error("Error seeking track:", err);
             } finally {
                 isDraggingSeek = false;
+                await loadDashboard();
+            }
+        }
+
+        function onStartSliderInput(val) {
+            isDraggingSeek = true;
+            let startVal = parseFloat(val);
+            const endSlider = document.getElementById('seek-end-slider');
+            let endVal = endSlider ? parseFloat(endSlider.value) : startVal;
+            
+            if (startVal > endVal) {
+                startVal = endVal;
+                document.getElementById('seek-start-slider').value = startVal;
+            }
+            
+            const startInput = document.getElementById('bounds-start-input');
+            if (startInput) startInput.value = formatTime(startVal);
+            
+            if (currentPlaybackStatus) {
+                currentPlaybackStatus.start_time = startVal;
+            }
+            updateHighlightAndFill();
+        }
+
+        async function onStartSliderChange(val) {
+            const targetStart = parseFloat(val);
+            const targetEnd = currentPlaybackStatus ? (currentPlaybackStatus.end_time || targetStart) : targetStart;
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        action: 'set_bounds',
+                        start_time: targetStart,
+                        end_time: targetEnd
+                    })
+                });
+            } catch (err) {
+                console.error("Error setting start bound:", err);
+            } finally {
+                isDraggingSeek = false;
+                await loadDashboard();
+            }
+        }
+
+        function onEndSliderInput(val) {
+            isDraggingSeek = true;
+            let endVal = parseFloat(val);
+            const startSlider = document.getElementById('seek-start-slider');
+            let startVal = startSlider ? parseFloat(startSlider.value) : endVal;
+            
+            if (endVal < startVal) {
+                endVal = startVal;
+                document.getElementById('seek-end-slider').value = endVal;
+            }
+            
+            const endInput = document.getElementById('bounds-end-input');
+            if (endInput) endInput.value = formatTime(endVal);
+            
+            if (currentPlaybackStatus) {
+                currentPlaybackStatus.end_time = endVal;
+            }
+            updateHighlightAndFill();
+        }
+
+        async function onEndSliderChange(val) {
+            const targetEnd = parseFloat(val);
+            const targetStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        action: 'set_bounds',
+                        start_time: targetStart,
+                        end_time: targetEnd
+                    })
+                });
+            } catch (err) {
+                console.error("Error setting end bound:", err);
+            } finally {
+                isDraggingSeek = false;
+                await loadDashboard();
+            }
+        }
+
+        async function onManualBoundsChange() {
+            const startVal = parseTime(document.getElementById('bounds-start-input').value);
+            const endVal = parseTime(document.getElementById('bounds-end-input').value);
+            const duration = currentPlaybackStatus ? (currentPlaybackStatus.duration || 180.0) : 180.0;
+            
+            let targetStart = Math.max(0.0, Math.min(duration, startVal));
+            let targetEnd = Math.max(targetStart, Math.min(duration, endVal));
+            
+            if (currentPlaybackStatus) {
+                currentPlaybackStatus.start_time = targetStart;
+                currentPlaybackStatus.end_time = targetEnd;
+            }
+            
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        action: 'set_bounds',
+                        start_time: targetStart,
+                        end_time: targetEnd
+                    })
+                });
+            } catch (err) {
+                console.error("Error setting bounds manually:", err);
+            } finally {
                 await loadDashboard();
             }
         }

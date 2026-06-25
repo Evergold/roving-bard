@@ -288,5 +288,38 @@ def test_api_seek_control() -> None:
     assert status_data["current_position"] >= 60.0
 
 
+def test_api_bounds_control() -> None:
+    """Test POST /api/control with set_bounds action, and status representations."""
+    headers = get_headers()
+
+    # Reset player state
+    tools.player.simulated = True
+    tools.player.current_track = "test_track.mp3"
+    tools.player.track_duration = 180.0
+    tools.player.paused = True
+    tools.player.was_stopped = True
+    tools.player.start_time = 0.0
+    tools.player.end_time = None
+
+    # Send set_bounds command
+    bounds_response = client.post(
+        "/api/control",
+        headers=headers,
+        json={"action": "set_bounds", "start_time": 10.0, "end_time": 120.0},
+    )
+    assert bounds_response.status_code == 200
+    assert bounds_response.json()["status"] == "success"
+
+    # Verify status includes correct bounds
+    status_response = client.get("/api/status", headers=headers)
+    assert status_response.status_code == 200
+    status_data = status_response.json()
+    assert "start_time" in status_data
+    assert "end_time" in status_data
+    assert status_data["start_time"] == 10.0
+    assert status_data["end_time"] == 120.0
+    assert status_data["current_position"] == 10.0
+
+
 
 
