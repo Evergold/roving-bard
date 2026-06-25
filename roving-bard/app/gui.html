@@ -2088,7 +2088,7 @@
                         <div style="display: flex; gap: 0.75rem; align-items: center;">
                             <button id="export-segment-btn" class="btn" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px; transition: all 0.2s ease;" onclick="exportSegment()" disabled>Export</button>
                             <button id="now-playing-toggle-btn" class="btn" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="toggleNowPlayingPlayback()">Play</button>
-                            <button id="now-playing-stop-btn" class="btn btn-secondary" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="stopMusic()">Stop</button>
+                            <button id="now-playing-stop-btn" class="btn btn-secondary" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="stopMusic()" data-loc="stop">Stop</button>
                         </div>
                     </div>
                 </div>
@@ -2742,7 +2742,7 @@
             // Render section header for Audio Files
             const filesHeader = document.createElement('div');
             filesHeader.style = "font-size: 0.75rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-            filesHeader.innerText = "Audio Files";
+            filesHeader.innerText = t("audio_files_title", "Audio Files");
             list.appendChild(filesHeader);
             
             const matchedFiles = audioLibraryFiles.filter(file => {
@@ -2755,19 +2755,19 @@
             if (audioLibraryFiles.length === 0) {
                 const emptyFiles = document.createElement('div');
                 emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptyFiles.innerText = "No raw tracks found.";
+                emptyFiles.innerText = t("no_raw_tracks", "No raw tracks found.");
                 list.appendChild(emptyFiles);
             } else if (matchedFiles.length === 0) {
                 const emptyFiles = document.createElement('div');
                 emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptyFiles.innerText = "No matching audio files.";
+                emptyFiles.innerText = t("no_matching_audio_files", "No matching audio files.");
                 list.appendChild(emptyFiles);
             } else {
                 matchedFiles.forEach(file => {
                     const item = document.createElement('div');
                     item.className = 'mapping-item';
                     
-                    let btnText = 'Play';
+                    let btnText = t('play', 'Play');
                     let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
                     let btnClass = 'btn btn-secondary';
                     let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
@@ -2779,16 +2779,16 @@
                         
                         if (isPaused) {
                             if (wasStopped) {
-                                btnText = 'Play';
+                                btnText = t('play', 'Play');
                                 btnClass = 'btn playback-play';
                                 btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
                             } else {
-                                btnText = 'Resume';
+                                btnText = t('resume', 'Resume');
                                 btnClass = 'btn playback-resume';
                                 btnClick = `resumeAudioFile()`;
                             }
                         } else {
-                            btnText = 'Pause';
+                            btnText = t('pause', 'Pause');
                             btnClass = 'btn playback-pause';
                             btnClick = `pauseAudioFile()`;
                         }
@@ -2802,7 +2802,7 @@
                             tagsHtml += `<span class="badge-tag" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.12rem 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-family: 'Space Mono', monospace; color: var(--text-main);">${tag}<span class="delete-tag-btn" onclick="removeFileTag(event, '${file.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
                         });
                         if (isFileActive) {
-                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.75rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
+                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.75rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">${t('add_tag', '+ Add Tag')}</span>`;
                         }
                         tagsHtml += `</div>`;
                     }
@@ -2821,7 +2821,7 @@
             // Render section header for Exported Segments
             const segmentsHeader = document.createElement('div');
             segmentsHeader.style = "font-size: 0.75rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-            segmentsHeader.innerText = "Exported Segments";
+            segmentsHeader.innerText = t("exported_segments_title", "Exported Segments");
             list.appendChild(segmentsHeader);
             
             const matchedSegments = segments.filter(segment => {
@@ -2834,19 +2834,18 @@
             if (segments.length === 0) {
                 const emptySegments = document.createElement('div');
                 emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptySegments.innerText = "No segments exported yet.";
+                emptySegments.innerText = t("no_segments_exported", "No segments exported yet.");
                 list.appendChild(emptySegments);
             } else if (matchedSegments.length === 0) {
                 const emptySegments = document.createElement('div');
                 emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptySegments.innerText = "No matching segments.";
+                emptySegments.innerText = t("no_matching_segments", "No matching segments.");
                 list.appendChild(emptySegments);
             } else {
                 matchedSegments.forEach(segment => {
                     const item = document.createElement('div');
                     item.className = 'mapping-item';
-                    
-                    let btnText = 'Play';
+                    let btnText = t('play', 'Play');
                     let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
                     let btnClass = 'btn btn-secondary';
                     
@@ -2857,22 +2856,22 @@
                     const isSegActive = (activeTrack === segment.track_file && Math.abs(activeStart - segment.start_time) < 0.05 && Math.abs((currentPlaybackStatus ? (currentPlaybackStatus.end_time || duration) : duration) - segEnd) < 0.05);
                     
                     let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
-
+ 
                     if (isSegActive) {
                         item.classList.add('selected-track');
                         
                         if (isPaused) {
                             if (wasStopped) {
-                                btnText = 'Play';
+                                btnText = t('play', 'Play');
                                 btnClass = 'btn playback-play';
                                 btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
                             } else {
-                                btnText = 'Resume';
+                                btnText = t('resume', 'Resume');
                                 btnClass = 'btn playback-resume';
                                 btnClick = `resumeAudioFile()`;
                             }
                         } else {
-                            btnText = 'Pause';
+                            btnText = t('pause', 'Pause');
                             btnClass = 'btn playback-pause';
                             btnClick = `pauseAudioFile()`;
                         }
@@ -2880,7 +2879,7 @@
 
                     let subtitleText = `${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
                     if (segVolume !== null) {
-                        subtitleText += ` · Vol: ${parseInt(segVolume * 100)}%`;
+                        subtitleText += ` · ${t('vol_label', 'Vol')}: ${parseInt(segVolume * 100)}%`;
                     }
 
                     const segTags = segment.tags || [];
@@ -2891,7 +2890,7 @@
                             tagsHtml += `<span class="badge-tag" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.12rem 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-family: 'Space Mono', monospace; color: var(--text-main);">${tag}<span class="delete-tag-btn" onclick="removeSegmentTag(event, '${segment.name.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
                         });
                         if (isSegActive) {
-                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.75rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
+                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.75rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">${t('add_tag', '+ Add Tag')}</span>`;
                         }
                         tagsHtml += `</div>`;
                     }
@@ -2904,7 +2903,7 @@
                         </div>
                         <div style="display: flex; gap: 0.4rem; align-items: center;">
                             <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                            <button class="btn btn-secondary" style="padding: 0.3rem; min-width: unset; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="deleteSegment('${segment.name.replace(/\'/g, "\\\'")}')" title="Delete Segment">
+                            <button class="btn btn-secondary" style="padding: 0.3rem; min-width: unset; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="deleteSegment('${segment.name.replace(/\'/g, "\\\'")}')" title="${t('delete_segment_title', 'Delete Segment')}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                             </button>
                         </div>
@@ -2931,7 +2930,7 @@
             const filterDropdown = document.getElementById('audio-tag-filter');
             if (filterDropdown) {
                 const currentValue = filterDropdown.value;
-                filterDropdown.innerHTML = '<option value="">All Tags</option>';
+                filterDropdown.innerHTML = `<option value="" data-loc="all_tags">${t('all_tags', 'All Tags')}</option>`;
                 Array.from(uniqueTags).sort().forEach(tag => {
                     const opt = document.createElement('option');
                     opt.value = tag;
@@ -3304,10 +3303,10 @@
             if (isTransitioningTrack) {
                 exportBtn.disabled = true;
                 if (activeSegment) {
-                    exportBtn.innerText = 'Save';
+                    exportBtn.innerText = t('save_btn', 'Save');
                     exportBtn.onclick = saveSegment;
                 } else {
-                    exportBtn.innerText = 'Export';
+                    exportBtn.innerText = t('export_btn', 'Export');
                     exportBtn.onclick = exportSegment;
                 }
                 return;
@@ -3316,10 +3315,10 @@
             if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
                 exportBtn.disabled = true;
                 if (activeSegment) {
-                    exportBtn.innerText = 'Save';
+                    exportBtn.innerText = t('save_btn', 'Save');
                     exportBtn.onclick = saveSegment;
                 } else {
-                    exportBtn.innerText = 'Export';
+                    exportBtn.innerText = t('export_btn', 'Export');
                     exportBtn.onclick = exportSegment;
                 }
                 return;
@@ -3329,10 +3328,10 @@
             if (currentVol === 0 || isMuted) {
                 exportBtn.disabled = true;
                 if (activeSegment) {
-                    exportBtn.innerText = 'Save';
+                    exportBtn.innerText = t('save_btn', 'Save');
                     exportBtn.onclick = saveSegment;
                 } else {
-                    exportBtn.innerText = 'Export';
+                    exportBtn.innerText = t('export_btn', 'Export');
                     exportBtn.onclick = exportSegment;
                 }
                 return;
@@ -3343,7 +3342,7 @@
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
 
             if (activeSegment) {
-                exportBtn.innerText = 'Save';
+                exportBtn.innerText = t('save_btn', 'Save');
                 exportBtn.onclick = saveSegment;
                 
                 const currentVol = (currentPlaybackStatus.volume !== undefined && currentPlaybackStatus.volume !== null) ? currentPlaybackStatus.volume : 1.0;
@@ -3355,7 +3354,7 @@
                                   isEQChangedFrom(activeSegment.eq);
                 exportBtn.disabled = !isChanged;
             } else {
-                exportBtn.innerText = 'Export';
+                exportBtn.innerText = t('export_btn', 'Export');
                 exportBtn.onclick = exportSegment;
 
                 const startDiff = Math.abs(startVal);
@@ -4720,7 +4719,17 @@
                 "eq_vocal": "Vocal",
                 "eq_loudness": "Loudness",
                 "eq_acoustic": "Acoustic",
-                "eq_custom": "Custom"
+                "eq_custom": "Custom",
+                "save_btn": "Save",
+                "export_btn": "Export",
+                "audio_files_title": "Audio Files",
+                "exported_segments_title": "Exported Segments",
+                "no_raw_tracks": "No raw tracks found.",
+                "no_matching_audio_files": "No matching audio files.",
+                "no_segments_exported": "No segments exported yet.",
+                "no_matching_segments": "No matching segments.",
+                "add_tag": "+ Add Tag",
+                "delete_segment_title": "Delete Segment"
             },
             "en-GB": {
                 "subtitle": "Adaptive, location-aware audio in LOTRO",
@@ -4802,7 +4811,17 @@
                 "eq_vocal": "Vocal",
                 "eq_loudness": "Loudness",
                 "eq_acoustic": "Acoustic",
-                "eq_custom": "Custom"
+                "eq_custom": "Custom",
+                "save_btn": "Save",
+                "export_btn": "Export",
+                "audio_files_title": "Audio Files",
+                "exported_segments_title": "Exported Segments",
+                "no_raw_tracks": "No raw tracks found.",
+                "no_matching_audio_files": "No matching audio files.",
+                "no_segments_exported": "No segments exported yet.",
+                "no_matching_segments": "No matching segments.",
+                "add_tag": "+ Add Tag",
+                "delete_segment_title": "Delete Segment"
             },
             "fr-FR": {
                 "subtitle": "Audio adaptatif et sensible à la localisation dans LOTRO",
@@ -4884,7 +4903,17 @@
                 "eq_vocal": "Vocal",
                 "eq_loudness": "Sonie",
                 "eq_acoustic": "Acoustique",
-                "eq_custom": "Personnalisé"
+                "eq_custom": "Personnalisé",
+                "save_btn": "Enregistrer",
+                "export_btn": "Exporter",
+                "audio_files_title": "Fichiers Audio",
+                "exported_segments_title": "Segments Exportés",
+                "no_raw_tracks": "Aucune piste brute trouvée.",
+                "no_matching_audio_files": "Aucun fichier audio correspondant.",
+                "no_segments_exported": "Aucun segment exporté pour le moment.",
+                "no_matching_segments": "Aucun segment correspondant.",
+                "add_tag": "+ Ajouter un Tag",
+                "delete_segment_title": "Supprimer le Segment"
             },
             "de-DE": {
                 "subtitle": "Adaptiver, standortbezogener Ton in LOTRO",
@@ -4966,7 +4995,17 @@
                 "eq_vocal": "Stimme",
                 "eq_loudness": "Lautheit",
                 "eq_acoustic": "Akustisch",
-                "eq_custom": "Benutzerdefiniert"
+                "eq_custom": "Benutzerdefiniert",
+                "save_btn": "Speichern",
+                "export_btn": "Exportieren",
+                "audio_files_title": "Audiodateien",
+                "exported_segments_title": "Exportierte Segmente",
+                "no_raw_tracks": "Keine rohen Spuren gefunden.",
+                "no_matching_audio_files": "Keine passenden Audiodateien.",
+                "no_segments_exported": "Noch keine Segmente exportiert.",
+                "no_matching_segments": "Keine passenden Segmente.",
+                "add_tag": "+ Tag hinzufügen",
+                "delete_segment_title": "Segment löschen"
             },
             "es-ES": {
                 "subtitle": "Audio adaptativo y consciente de la ubicación en LOTRO",
@@ -5048,7 +5087,17 @@
                 "eq_vocal": "Vocal",
                 "eq_loudness": "Sonoridad",
                 "eq_acoustic": "Acústico",
-                "eq_custom": "Personalizado"
+                "eq_custom": "Personalizado",
+                "save_btn": "Guardar",
+                "export_btn": "Exportar",
+                "audio_files_title": "Archivos de Audio",
+                "exported_segments_title": "Segmentos Exportados",
+                "no_raw_tracks": "No se encontraron pistas de audio.",
+                "no_matching_audio_files": "No hay archivos de audio coincidentes.",
+                "no_segments_exported": "Aún no se han exportado segmentos.",
+                "no_matching_segments": "No hay segmentos coincidentes.",
+                "add_tag": "+ Añadir etiqueta",
+                "delete_segment_title": "Eliminar Segmento"
             },
             "it-IT": {
                 "subtitle": "Audio adattivo e sensibile alla posizione in LOTRO",
@@ -5130,7 +5179,17 @@
                 "eq_vocal": "Vocale",
                 "eq_loudness": "Sonorità",
                 "eq_acoustic": "Acustico",
-                "eq_custom": "Personalizzato"
+                "eq_custom": "Personalizzato",
+                "save_btn": "Salva",
+                "export_btn": "Esporta",
+                "audio_files_title": "File Audio",
+                "exported_segments_title": "Segmenti Esportati",
+                "no_raw_tracks": "Nessuna traccia grezza trovata.",
+                "no_matching_audio_files": "Nessun file audio corrispondente.",
+                "no_segments_exported": "Nessun segmento ancora esportato.",
+                "no_matching_segments": "Nessun segmento corrispondente.",
+                "add_tag": "+ Aggiungi Tag",
+                "delete_segment_title": "Elimina Segmento"
             },
             "ru-RU": {
                 "subtitle": "Адаптивный звук с привязкой к местоположению в LOTRO",
@@ -5212,7 +5271,17 @@
                 "eq_vocal": "Вокал",
                 "eq_loudness": "Тонкомпенсация",
                 "eq_acoustic": "Акустический",
-                "eq_custom": "Пользовательский"
+                "eq_custom": "Пользовательский",
+                "save_btn": "Сохранить",
+                "export_btn": "Экспорт",
+                "audio_files_title": "Аудиофайлы",
+                "exported_segments_title": "Экспортированные сегменты",
+                "no_raw_tracks": "Не найдено исходных треков.",
+                "no_matching_audio_files": "Нет подходящих аудиофайлов.",
+                "no_segments_exported": "Сегменты ещё не экспортированы.",
+                "no_matching_segments": "Нет подходящих сегментов.",
+                "add_tag": "+ Добавить тег",
+                "delete_segment_title": "Удалить сегмент"
             }
         };
 
@@ -5258,6 +5327,9 @@
             if (currentPlaybackStatus) {
                 updatePlayerUI(currentPlaybackStatus);
                 updateParseUI(currentPlaybackStatus.latest_parse);
+            }
+            if (audioLibraryFiles) {
+                renderAudioFiles();
             }
         }
 
