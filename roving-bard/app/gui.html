@@ -1703,8 +1703,6 @@
                     let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
                     // A raw file is active if current_track matches AND start_time is roughly 0
                     const isFileActive = (activeTrack === file && Math.abs(activeStart) < 0.05);
-                    const badgeVisibility = isFileActive ? 'visible' : 'hidden';
-                    let badgeHtml = `<span style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; letter-spacing: 0.05em; visibility: ${badgeVisibility};">ACTIVE</span>`;
 
                     if (isFileActive) {
                         item.classList.add('selected-track');
@@ -1747,10 +1745,7 @@
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${file}</div>
                             ${tagsHtml}
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; min-width: 70px;">
-                            ${badgeHtml}
-                            <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                        </div>
+                        <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
                     `;
                     list.appendChild(item);
                 });
@@ -1795,11 +1790,9 @@
                     const isSegActive = (activeTrack === segment.track_file && Math.abs(activeStart - segment.start_time) < 0.05 && Math.abs((currentPlaybackStatus ? (currentPlaybackStatus.end_time || duration) : duration) - segEnd) < 0.05);
                     
                     let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
-                    let badgeHtml = '';
 
                     if (isSegActive) {
                         item.classList.add('selected-track');
-                        badgeHtml = `<span style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.15); color: var(--neon-pink); border: 1px solid var(--neon-pink); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; margin-right: 0.4rem; letter-spacing: 0.05em;">ACTIVE</span>`;
                         
                         if (isPaused) {
                             if (wasStopped) {
@@ -1844,7 +1837,7 @@
 
                     item.innerHTML = `
                         <div class="mapping-item-details" style="cursor: pointer; flex: 1; min-width: 0;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${segment.name}${badgeHtml}</div>
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${segment.name}</div>
                             <div class="mapping-item-sub">${subtitleText}</div>
                             ${tagsHtml}
                         </div>
