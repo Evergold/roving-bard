@@ -2432,7 +2432,7 @@
         async function selectSegment(name, trackFile, startTime, endTime, volume) {
             try {
                 const segmentObj = segments.find(s => s.name === name);
-                const savedEq = segmentObj ? segmentObj.eq : null;
+                const savedEq = (segmentObj && segmentObj.eq) ? segmentObj.eq : 'flat';
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume, eq: savedEq };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
@@ -2471,7 +2471,7 @@
         async function playSegment(name, trackFile, startTime, endTime, volume) {
             try {
                 const segmentObj = segments.find(s => s.name === name);
-                const savedEq = segmentObj ? segmentObj.eq : null;
+                const savedEq = (segmentObj && segmentObj.eq) ? segmentObj.eq : 'flat';
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume, eq: savedEq };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
