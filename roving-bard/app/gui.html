@@ -231,6 +231,12 @@
             box-shadow: 0 4px 15px rgba(124, 77, 255, 0.3);
         }
 
+        .music-note-char {
+            display: inline-block;
+            transform: scaleX(1.45);
+            line-height: 1;
+        }
+
         .now-playing-info {
             flex: 1;
         }
@@ -1946,7 +1952,7 @@
                 </div>
                 <div class="player-widget">
                     <div class="now-playing">
-                        <div class="music-icon">♫</div>
+                        <div class="music-icon"><span class="music-note-char">♫</span></div>
                         <div class="now-playing-info">
                             <div id="track-title" class="track-title">Silent (No Track Active)</div>
                             <div id="track-status" class="track-status">Mixer ready · Stop</div>
