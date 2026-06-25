@@ -23,7 +23,7 @@ from app.player import LocalOCRParser, SafeMusicPlayer, ScreenGrabber, TrackMapp
 
 # Load configuration
 CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mapping.yaml"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "mapping.yaml"
 )
 SEGMENTS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "segments.yaml"

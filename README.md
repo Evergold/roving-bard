@@ -14,9 +14,12 @@ capstone/
 ├── README.md            # Root GitHub repository documentation (this file)
 └── roving-bard/         # Core agent project folder
     ├── app/             # Agent codebase (agent, tools, player logic, FastAPI backend)
+    ├── audio/           # Audio files, segments, tags, and mapping config
+    │   ├── mapping.yaml # Coordinate-to-music mapping configuration
+    │   ├── segments.yaml# Exported audio segments
+    │   └── file_tags.yaml# Per-file tag metadata
     ├── tests/           # Unit, integration, and end-to-end server tests
     ├── pyproject.toml   # Python project dependencies and configuration
-    ├── mapping.yaml     # Coordinate-to-music mapping configuration
     ├── run_player.py    # Main screen monitoring loop runner
     └── simulated_game.py# Tkinter GUI simulating a video game screen for local testing
 ```
@@ -110,7 +113,7 @@ uv run pytest tests/unit tests/integration
 
 ## ⚙️ Configuration (`mapping.yaml`)
 
-Specify transitions, bounding boxes, and locations in `roving-bard/mapping.yaml`:
+Specify transitions, bounding boxes, and locations in `roving-bard/audio/mapping.yaml`:
 ```yaml
 minimap_bounds:
   x: 0.8         # Top-left corner coordinates (0.0 to 1.0)
