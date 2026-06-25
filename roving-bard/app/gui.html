@@ -564,13 +564,17 @@
             -webkit-appearance: none;
             top: 12px;
         }
-        .seek-slider-input::-webkit-slider-runnable-track {
+        body .seek-slider-input::-webkit-slider-runnable-track,
+        body.light-theme .seek-slider-input::-webkit-slider-runnable-track {
             background: transparent !important;
             border: none !important;
+            box-shadow: none !important;
         }
-        .seek-slider-input::-moz-range-track {
+        body .seek-slider-input::-moz-range-track,
+        body.light-theme .seek-slider-input::-moz-range-track {
             background: transparent !important;
             border: none !important;
+            box-shadow: none !important;
         }
 
         #seek-slider {
