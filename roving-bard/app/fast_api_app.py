@@ -416,13 +416,13 @@ class SegmentModel(BaseModel):
 
 @app.get("/api/segments", dependencies=[Depends(verify_api_key)])
 def get_segments():
-    """Lists all segments from music/segments.yaml."""
+    """Lists all segments from audio/segments.yaml."""
     return {"status": "success", "segments": tools.load_segments()}
 
 
 @app.post("/api/segments", dependencies=[Depends(verify_api_key)])
 def add_segment(req: SegmentModel):
-    """Saves or updates a segment in music/segments.yaml."""
+    """Saves or updates a segment in audio/segments.yaml."""
     segments = tools.load_segments()
     
     # Find existing segment with the same name to preserve order and fields
@@ -467,7 +467,7 @@ def add_segment(req: SegmentModel):
 
 @app.delete("/api/segments", dependencies=[Depends(verify_api_key)])
 def delete_segment(name: str = Query(...)):
-    """Deletes a segment from music/segments.yaml by its name."""
+    """Deletes a segment from audio/segments.yaml by its name."""
     segments = tools.load_segments()
     initial_len = len(segments)
     segments = [s for s in segments if s.get("name") != name]
