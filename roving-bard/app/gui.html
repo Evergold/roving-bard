@@ -437,6 +437,13 @@
             transition: all 0.15s ease;
         }
         .eq-reset-btn:hover { background: rgba(255,77,77,0.22); border-color: #ff6b6b; }
+        .eq-slider:disabled,
+        .eq-preset-select:disabled,
+        .eq-reset-btn:disabled {
+            cursor: not-allowed !important;
+            opacity: 0.35 !important;
+            pointer-events: none !important;
+        }
 
         .eq-bands {
             display: flex;
@@ -2140,6 +2147,21 @@
         }
 
         function updatePlayerUI(status) {
+            // Disable EQ settings if .abc is selected
+            const isAbc = status.current_track && status.current_track.toLowerCase().endsWith('.abc');
+            const sliders = document.querySelectorAll('.eq-slider');
+            sliders.forEach(s => {
+                s.disabled = isAbc;
+            });
+            const presetSelect = document.getElementById('eq-preset-select');
+            if (presetSelect) {
+                presetSelect.disabled = isAbc;
+            }
+            const resetBtn = document.querySelector('.eq-reset-btn');
+            if (resetBtn) {
+                resetBtn.disabled = isAbc;
+            }
+
             const trackTitle = document.getElementById('track-title');
             const trackStatus = document.getElementById('track-status');
             const wave = document.getElementById('audio-wave');
@@ -4102,7 +4124,12 @@
             });
         }
 
+        function isABCTrackActive() {
+            return currentPlaybackStatus && currentPlaybackStatus.current_track && currentPlaybackStatus.current_track.toLowerCase().endsWith('.abc');
+        }
+
         function onEQSliderInput(freq, rawVal) {
+            if (isABCTrackActive()) return;
             const val = parseFloat(rawVal);
             eqGains[freq] = val;
             const label = document.getElementById(`eq-db-${freq}`);
@@ -4147,7 +4174,8 @@
             }
         }
 
-        function applyEQGains(gains, presetName) {
+        function applyEQGains(gains, presetName, force = false) {
+            if (isABCTrackActive() && !force) return;
             EQ_BANDS.forEach(freq => {
                 eqGains[freq] = gains[freq] !== undefined ? parseFloat(gains[freq]) : 0;
                 const slider = document.getElementById(`eq-slider-${freq}`);
@@ -4164,13 +4192,15 @@
             updateExportButtonState();
         }
 
-        function applyEQPreset(presetName) {
+        function applyEQPreset(presetName, force = false) {
+            if (isABCTrackActive() && !force) return;
             const preset = EQ_PRESETS[presetName];
             if (!preset) return;
-            applyEQGains(preset, presetName);
+            applyEQGains(preset, presetName, force);
         }
 
         function resetEQ() {
+            if (isABCTrackActive()) return;
             document.getElementById('eq-preset-select').value = 'flat';
             applyEQPreset('flat');
         }
@@ -4179,7 +4209,7 @@
         function resetEQToFlat() {
             // Clear session-only custom state (don't touch localStorage preset key)
             localStorage.removeItem(EQ_STORAGE_KEY);
-            applyEQPreset('flat');
+            applyEQPreset('flat', true);
             document.getElementById('eq-preset-select').value = 'flat';
         }
 
