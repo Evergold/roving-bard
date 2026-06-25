@@ -38,10 +38,23 @@ def load_segments() -> list:
         try:
             with open(SEGMENTS_PATH, "r") as f:
                 data = yaml.safe_load(f)
+                segments = []
                 if isinstance(data, dict) and "segments" in data:
-                    return data["segments"] or []
+                    segments = data["segments"] or []
                 elif isinstance(data, list):
-                    return data
+                    segments = data
+                
+                # Check for missing EQ configurations and default to 'flat'
+                modified = False
+                for s in segments:
+                    if s.get("eq") is None:
+                        s["eq"] = "flat"
+                        modified = True
+                
+                if modified:
+                    save_segments(segments)
+                
+                return segments
         except Exception as e:
             print(f"Error loading segments.yaml: {e}")
     return []

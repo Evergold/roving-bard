@@ -415,7 +415,36 @@ def test_segments_api(tmp_path) -> None:
         f.write(b"dummy")
 
     try:
-        # 1. GET /api/segments (should be empty initially)
+        # Pre-populate segments.yaml with a legacy segment containing no EQ configuration
+        import yaml
+        with open(test_segments_file, "w") as f:
+            yaml.safe_dump({"segments": [{
+                "name": "Legacy Segment",
+                "track_file": "test_track.mp3",
+                "start_time": 0.0,
+                "end_time": 10.0,
+                "volume": 1.0
+            }]}, f)
+
+        # 1. GET /api/segments (should load Legacy Segment and default its EQ to flat, writing it back to yaml)
+        response = client.get("/api/segments", headers=headers)
+        assert response.status_code == 200
+        segments_list = response.json()["segments"]
+        assert len(segments_list) == 1
+        assert segments_list[0]["name"] == "Legacy Segment"
+        assert segments_list[0]["eq"] == "flat"
+
+        # Verify it was written back to the yaml file
+        with open(test_segments_file, "r") as f:
+            written_data = yaml.safe_load(f)
+            assert isinstance(written_data, dict)
+            assert written_data["segments"][0]["eq"] == "flat"
+
+        # Clean up Legacy Segment to keep the rest of the test flow identical
+        delete_response = client.delete("/api/segments?name=Legacy%20Segment", headers=headers)
+        assert delete_response.status_code == 200
+
+        # Confirm it is empty again
         response = client.get("/api/segments", headers=headers)
         assert response.status_code == 200
         assert response.json() == {"status": "success", "segments": []}
