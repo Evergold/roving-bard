@@ -122,7 +122,7 @@ transitions:
   fade_out_ms: 1500
   fade_in_ms: 1500
 
-playlist_directory: "music"
+playlist_directory: "audio"
 model_name: "gemini/gemini-1.5-flash"
 polling_interval: 2.0
 

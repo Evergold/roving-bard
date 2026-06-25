@@ -13,7 +13,7 @@ transitions:
   fade_in_ms: 1500
 
 # Directory within the project scope where tracks are located
-playlist_directory: "music"
+playlist_directory: "audio"
 
 # Default multimodal model to use for fallback visual parsing via LiteLLM
 # Supported formats: gemini/gemini-1.5-flash, openai/gpt-4o, anthropic/claude-3-5-sonnet-20240620
