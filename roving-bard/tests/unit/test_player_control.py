@@ -434,15 +434,35 @@ def test_segments_api(tmp_path) -> None:
         assert response.status_code == 200
         assert response.json()["status"] == "success"
 
-        # 3. GET /api/segments (should contain the added segment)
+        # Add a second segment with custom EQ dictionary
+        segment_data_custom = {
+            "name": "Test Custom EQ",
+            "track_file": "test_track.mp3",
+            "start_time": 10.0,
+            "end_time": 30.0,
+            "volume": 0.5,
+            "tags": ["custom"],
+            "eq": {"32": 2.0, "64": -1.5, "125": 0.0}
+        }
+        response = client.post("/api/segments", headers=headers, json=segment_data_custom)
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+
+        # 3. GET /api/segments (should contain the added segments)
         response = client.get("/api/segments", headers=headers)
         assert response.status_code == 200
-        assert len(response.json()["segments"]) == 1
+        assert len(response.json()["segments"]) == 2
         assert response.json()["segments"][0]["name"] == "Test Intro"
         assert response.json()["segments"][0]["start_time"] == 5.5
         assert response.json()["segments"][0]["volume"] == 0.8
         assert response.json()["segments"][0]["tags"] == ["intro", "ambient"]
         assert response.json()["segments"][0]["eq"] == "bass_boost"
+
+        assert response.json()["segments"][1]["name"] == "Test Custom EQ"
+        assert response.json()["segments"][1]["start_time"] == 10.0
+        assert response.json()["segments"][1]["volume"] == 0.5
+        assert response.json()["segments"][1]["tags"] == ["custom"]
+        assert response.json()["segments"][1]["eq"] == {"32": 2.0, "64": -1.5, "125": 0.0}
 
         # 4. Select the segment via POST /api/control (action=select)
         tools.player.simulated = True
@@ -479,8 +499,12 @@ def test_segments_api(tmp_path) -> None:
         assert tools.player.end_time == 20.0
         assert tools.player.volume == 0.6
 
-        # 6. DELETE /api/segments to remove it
+        # 6. DELETE /api/segments to remove them
         delete_response = client.delete("/api/segments?name=Test%20Intro", headers=headers)
+        assert delete_response.status_code == 200
+        assert delete_response.json()["status"] == "success"
+
+        delete_response = client.delete("/api/segments?name=Test%20Custom%20EQ", headers=headers)
         assert delete_response.status_code == 200
         assert delete_response.json()["status"] == "success"
 

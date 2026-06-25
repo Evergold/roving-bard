@@ -2431,18 +2431,19 @@
 
         async function selectSegment(name, trackFile, startTime, endTime, volume) {
             try {
-                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume };
+                const segmentObj = segments.find(s => s.name === name);
+                const savedEq = segmentObj ? segmentObj.eq : null;
+                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume, eq: savedEq };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
                 
                 // Restore saved EQ if present, otherwise reset to flat
-                const segmentObj = segments.find(s => s.name === name);
-                if (segmentObj && segmentObj.eq) {
-                    if (typeof segmentObj.eq === 'string') {
-                        applyEQPreset(segmentObj.eq);
-                    } else if (typeof segmentObj.eq === 'object') {
-                        applyEQGains(segmentObj.eq, 'custom');
+                if (savedEq) {
+                    if (typeof savedEq === 'string') {
+                        applyEQPreset(savedEq);
+                    } else if (typeof savedEq === 'object') {
+                        applyEQGains(savedEq, 'custom');
                     }
                 } else {
                     resetEQToFlat();
@@ -2469,18 +2470,19 @@
 
         async function playSegment(name, trackFile, startTime, endTime, volume) {
             try {
-                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume };
+                const segmentObj = segments.find(s => s.name === name);
+                const savedEq = segmentObj ? segmentObj.eq : null;
+                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume, eq: savedEq };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
                 
                 // Restore saved EQ if present, otherwise reset to flat
-                const segmentObj = segments.find(s => s.name === name);
-                if (segmentObj && segmentObj.eq) {
-                    if (typeof segmentObj.eq === 'string') {
-                        applyEQPreset(segmentObj.eq);
-                    } else if (typeof segmentObj.eq === 'object') {
-                        applyEQGains(segmentObj.eq, 'custom');
+                if (savedEq) {
+                    if (typeof savedEq === 'string') {
+                        applyEQPreset(savedEq);
+                    } else if (typeof savedEq === 'object') {
+                        applyEQGains(savedEq, 'custom');
                     }
                 } else {
                     resetEQToFlat();
@@ -2522,6 +2524,39 @@
                 console.error("Error deleting segment:", err);
                 alert("Failed to delete segment.");
             }
+        }
+
+        function isEQChangedFrom(savedEQ) {
+            const presetSelect = document.getElementById('eq-preset-select');
+            const currentPreset = presetSelect ? presetSelect.value : 'flat';
+            
+            if (!savedEQ) {
+                if (currentPreset !== 'flat') {
+                    if (currentPreset === 'custom') {
+                        return EQ_BANDS.some(freq => Math.abs(eqGains[freq] || 0) > 0.01);
+                    }
+                    return true;
+                }
+                return false;
+            }
+            
+            if (typeof savedEQ === 'string') {
+                if (currentPreset !== savedEQ) {
+                    if (currentPreset === 'custom') {
+                        const savedPresetGains = EQ_PRESETS[savedEQ] || {};
+                        return EQ_BANDS.some(freq => Math.abs((eqGains[freq] || 0) - (savedPresetGains[freq] || 0)) > 0.01);
+                    }
+                    return true;
+                }
+                return false;
+            } else if (typeof savedEQ === 'object') {
+                if (currentPreset !== 'custom') {
+                    const currentPresetGains = EQ_PRESETS[currentPreset] || {};
+                    return EQ_BANDS.some(freq => Math.abs((currentPresetGains[freq] || 0) - (savedEQ[freq] || 0)) > 0.01);
+                }
+                return EQ_BANDS.some(freq => Math.abs((eqGains[freq] || 0) - (savedEQ[freq] || 0)) > 0.01);
+            }
+            return false;
         }
 
         function updateExportButtonState() {
@@ -2578,7 +2613,8 @@
                 
                 const isChanged = Math.abs(startVal - activeSegment.start_time) > 0.01 || 
                                   Math.abs(endVal - activeSegment.end_time) > 0.01 ||
-                                  Math.abs(currentVol - activeVol) > 0.01;
+                                  Math.abs(currentVol - activeVol) > 0.01 ||
+                                  isEQChangedFrom(activeSegment.eq);
                 exportBtn.disabled = !isChanged;
             } else {
                 exportBtn.innerText = 'Export';
@@ -2589,7 +2625,11 @@
                 const currentVol = (currentPlaybackStatus.volume !== undefined && currentPlaybackStatus.volume !== null) ? currentPlaybackStatus.volume : 1.0;
                 const volDiff = Math.abs(currentVol - 1.0);
                 
-                if (startDiff > 0.01 || endDiff > 0.01 || volDiff > 0.01) {
+                const presetSelect = document.getElementById('eq-preset-select');
+                const currentPreset = presetSelect ? presetSelect.value : 'flat';
+                const isEQNonFlat = (currentPreset !== 'flat') && (currentPreset !== 'custom' || EQ_BANDS.some(freq => Math.abs(eqGains[freq] || 0) > 0.01));
+
+                if (startDiff > 0.01 || endDiff > 0.01 || volDiff > 0.01 || isEQNonFlat) {
                     exportBtn.disabled = false;
                 } else {
                     exportBtn.disabled = true;
@@ -2605,6 +2645,16 @@
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
             const volumeVal = currentPlaybackStatus.volume;
 
+            // Include current EQ settings in the saved segment
+            const presetSelect = document.getElementById('eq-preset-select');
+            const currentPreset = presetSelect ? presetSelect.value : 'flat';
+            let eqVal = null;
+            if (currentPreset !== 'custom') {
+                eqVal = currentPreset;
+            } else {
+                eqVal = { ...eqGains };
+            }
+
             try {
                 const response = await apiFetch('/api/segments', {
                     method: 'POST',
@@ -2614,7 +2664,8 @@
                         track_file: currentPlaybackStatus.current_track,
                         start_time: startVal,
                         end_time: endVal,
-                        volume: volumeVal
+                        volume: volumeVal,
+                        eq: eqVal
                     })
                 });
                 const result = await response.json();
@@ -2623,6 +2674,7 @@
                     activeSegment.start_time = startVal;
                     activeSegment.end_time = endVal;
                     activeSegment.volume = volumeVal;
+                    activeSegment.eq = eqVal;
                     localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                     await loadAudioLibrary();
                     updateExportButtonState();
@@ -3696,6 +3748,7 @@
             // Debounce API call
             clearTimeout(eqDebounceTimer);
             eqDebounceTimer = setTimeout(sendEQToBackend, 300);
+            updateExportButtonState();
         }
 
         async function sendEQToBackend() {
@@ -3728,6 +3781,7 @@
             document.getElementById('eq-preset-select').value = presetName || 'custom';
             clearTimeout(eqDebounceTimer);
             eqDebounceTimer = setTimeout(sendEQToBackend, 300);
+            updateExportButtonState();
         }
 
         function applyEQPreset(presetName) {
