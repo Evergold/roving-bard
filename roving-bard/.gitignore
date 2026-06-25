@@ -204,14 +204,14 @@ my_env.tfvars
 tools/a2a-inspector/
 
 # App-specific runtime directories
-roving-bard/music/*
-!roving-bard/music/.gitkeep
+roving-bard/audio/*
+!roving-bard/audio/.gitkeep
 
 roving-bard/capture/*
 !roving-bard/capture/.gitkeep
 
 # Exclude local segment definitions
-music/segments.yaml
+audio/segments.yaml
 
 # Exclude local file tags definitions
-music/file_tags.yaml
+audio/file_tags.yaml

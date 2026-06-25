@@ -25,7 +25,7 @@ from tinytag import TinyTag
 
 # Safe pygame mixer initialization
 class SafeMusicPlayer:
-    def __init__(self, playlist_dir="music"):
+    def __init__(self, playlist_dir="audio"):
         self.playlist_dir = playlist_dir
         self.current_track = None
         self.volume = 1.0

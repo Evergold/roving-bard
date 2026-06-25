@@ -35,7 +35,7 @@ def get_headers():
 
 def test_player_pause_resume() -> None:
     """Test pause and resume methods on SafeMusicPlayer."""
-    player = SafeMusicPlayer(playlist_dir="music")
+    player = SafeMusicPlayer(playlist_dir="audio")
     player.simulated = True
     player.current_track = "mock_track.mp3"
     player.paused = False
@@ -179,7 +179,7 @@ def test_player_transition_no_delay_when_fadeout_zero(tmp_path) -> None:
 
 def test_player_stop_restarts_from_beginning() -> None:
     """Test that stop sets the was_stopped flag and resume resets it, resetting position to start_time."""
-    player = SafeMusicPlayer(playlist_dir="music")
+    player = SafeMusicPlayer(playlist_dir="audio")
     player.simulated = True
     player.current_track = "mock_track.mp3"
     player.paused = False
@@ -240,7 +240,7 @@ def test_api_stop_control() -> None:
 
 def test_player_seek() -> None:
     """Test seeking functionality on SafeMusicPlayer."""
-    player = SafeMusicPlayer(playlist_dir="music")
+    player = SafeMusicPlayer(playlist_dir="audio")
     player.simulated = True
     player.current_track = "mock_track.mp3"
     player.track_duration = 180.0

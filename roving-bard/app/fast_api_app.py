@@ -323,7 +323,7 @@ def api_config(req: ConfigUpdateRequest):
 
         # Hot-reload settings
         tools.config = new_config
-        tools.player.playlist_dir = new_config.get("playlist_directory", "music")
+        tools.player.playlist_dir = new_config.get("playlist_directory", "audio")
         tools.grabber.bounds = new_config.get("minimap_bounds")
         tools.mapper.mappings = new_config.get("mappings", [])
 

@@ -48,7 +48,7 @@ In another terminal, start the automatic screen monitoring loop:
 uv run python run_player.py
 ```
 The runner will:
-- Auto-generate test audio files (`town.wav`, `forest.wav`, `boss.wav`, `cave.wav`) in the `music/` directory.
+- Auto-generate test audio files (`town.wav`, `forest.wav`, `boss.wav`, `cave.wav`) in the `audio/` directory.
 - Capture the screen, crop it to the mini-map area, and run local OCR (Tesseract) to parse location and coordinates.
 - Smoothly transition the background music tracks based on the active region using `pygame.mixer`.
 - Automatically fallback to Gemini Vision via LiteLLM if local OCR is inconclusive.

@@ -70,7 +70,7 @@ def main():
     from app.tools import check_screen_and_update_music, config, stop_music
 
     # Generate mock tracks if they don't exist
-    playlist_dir = config.get("playlist_directory", "music")
+    playlist_dir = config.get("playlist_directory", "audio")
     generate_mock_tracks(playlist_dir)
 
     polling_interval = config.get("polling_interval", 2.0)

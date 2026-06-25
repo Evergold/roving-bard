@@ -26,10 +26,10 @@ CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mapping.yaml"
 )
 SEGMENTS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "music", "segments.yaml"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "segments.yaml"
 )
 FILE_TAGS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "music", "file_tags.yaml"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "file_tags.yaml"
 )
 
 
@@ -83,7 +83,7 @@ def load_config():
     return {
         "minimap_bounds": {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15},
         "transitions": {"fade_out_ms": 1500, "fade_in_ms": 1500},
-        "playlist_directory": "music",
+        "playlist_directory": "audio",
         "model_name": "gemini/gemini-1.5-flash",
         "polling_interval": 2.0,
         "mappings": [],
@@ -94,7 +94,7 @@ def load_config():
 config = load_config()
 
 # Initialize core player elements
-player = SafeMusicPlayer(playlist_dir=config.get("playlist_directory", "music"))
+player = SafeMusicPlayer(playlist_dir=config.get("playlist_directory", "audio"))
 grabber = ScreenGrabber(bounds_config=config.get("minimap_bounds"))
 ocr_parser = LocalOCRParser()
 mapper = TrackMapper(mappings=config.get("mappings", []))
