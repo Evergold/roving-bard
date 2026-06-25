@@ -1527,7 +1527,11 @@
             if (numVal > 0) {
                 isMuted = false;
             }
+            if (currentPlaybackStatus) {
+                currentPlaybackStatus.volume = numVal;
+            }
             updateVolumeIconAndText(numVal);
+            updateExportButtonState();
             try {
                 await apiFetch('/api/control', {
                     method: 'POST',
