@@ -14,6 +14,7 @@
             --accent-glow: rgba(124, 77, 255, 0.4);
             --neon-blue: #00f2fe;
             --neon-green: #39ff14;
+            --neon-pink: #e405f0;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
             --border: rgba(255, 255, 255, 0.08);
@@ -1674,14 +1675,13 @@
                     let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
                     let btnClass = 'btn btn-secondary';
                     let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
-                    let badgeHtml = '';
-
                     // A raw file is active if current_track matches AND start_time is roughly 0
                     const isFileActive = (activeTrack === file && Math.abs(activeStart) < 0.05);
+                    const badgeVisibility = isFileActive ? 'visible' : 'hidden';
+                    let badgeHtml = `<span style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; margin-right: 0.4rem; letter-spacing: 0.05em; visibility: ${badgeVisibility};">ACTIVE</span>`;
 
                     if (isFileActive) {
                         item.classList.add('selected-track');
-                        badgeHtml = `<span style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; letter-spacing: 0.05em;">ACTIVE</span>`;
                         
                         if (isPaused) {
                             if (wasStopped) {
@@ -1744,7 +1744,7 @@
 
                     if (isSegActive) {
                         item.classList.add('selected-track');
-                        badgeHtml = `<span style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.15); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; letter-spacing: 0.05em;">ACTIVE</span>`;
+                        badgeHtml = `<span style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.15); color: var(--neon-pink); border: 1px solid var(--neon-pink); border-radius: 4px; padding: 0.1rem 0.3rem; font-weight: bold; margin-left: 0.5rem; margin-right: 0.4rem; letter-spacing: 0.05em;">ACTIVE</span>`;
                         
                         if (isPaused) {
                             if (wasStopped) {
