@@ -260,6 +260,10 @@
         }
 
         .header-volume-control #volume-mute-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.1rem !important;
             cursor: pointer;
             user-select: none;
@@ -268,6 +272,20 @@
 
         .header-volume-control #volume-mute-btn:hover {
             transform: scale(1.2);
+        }
+
+        .header-volume-control #volume-mute-btn.muted::after {
+            content: "";
+            position: absolute;
+            width: 140%;
+            height: 2px;
+            background-color: #ff4d4d;
+            transform: rotate(-45deg);
+            top: 50%;
+            left: -20%;
+            margin-top: -1px;
+            box-shadow: 0 0 4px rgba(255, 77, 77, 0.6);
+            pointer-events: none;
         }
 
         /* Capture & Parsing Dashboard */
@@ -1084,14 +1102,24 @@
             document.getElementById('volume-slider').value = val;
             
             const muteBtn = document.getElementById('volume-mute-btn');
-            if (val === 0 || isMuted) {
-                muteBtn.innerText = '🔇';
-            } else if (val < 0.3) {
+            
+            let displayVal = val;
+            if ((val === 0 || isMuted) && preMuteVolume > 0) {
+                displayVal = preMuteVolume;
+            }
+            
+            if (displayVal < 0.3) {
                 muteBtn.innerText = '🔈';
-            } else if (val < 0.7) {
+            } else if (displayVal < 0.7) {
                 muteBtn.innerText = '🔉';
             } else {
                 muteBtn.innerText = '🔊';
+            }
+            
+            if (val === 0 || isMuted) {
+                muteBtn.classList.add('muted');
+            } else {
+                muteBtn.classList.remove('muted');
             }
         }
 
