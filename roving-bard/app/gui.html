@@ -624,7 +624,7 @@
             -webkit-appearance: none;
             width: 18px;
             height: 18px;
-            background: #ff4d4d;
+            background: var(--neon-pink);
             clip-path: polygon(50% 0%, 100% 100%, 50% 65%, 0% 100%);
             cursor: default;
             pointer-events: none;
@@ -668,7 +668,7 @@
         #seek-end-slider::-moz-range-thumb {
             width: 18px;
             height: 18px;
-            background: #ff4d4d;
+            background: var(--neon-pink);
             clip-path: polygon(50% 0%, 100% 100%, 50% 65%, 0% 100%);
             border: none;
             cursor: default;
@@ -1600,6 +1600,49 @@
             color: var(--accent) !important;
             text-shadow: 0 0 8px rgba(46, 93, 168, 0.2);
         }
+
+        /* Accessible Color Scheme (CVD Mode) Overrides */
+        body.cvd-accessible:not(.light-theme) {
+            --neon-green: #00e5ff !important;
+            --neon-pink: #ff9100 !important;
+        }
+
+        body.light-theme.cvd-accessible {
+            --neon-green: #0077b6 !important;
+            --neon-pink: #d9480f !important;
+        }
+
+        /* CVD Accessible mode: chevron replacement with brackets [ ] */
+        body.cvd-accessible #seek-start-slider::-webkit-slider-thumb,
+        body.cvd-accessible #seek-start-slider::-moz-range-thumb {
+            clip-path: polygon(100% 0%, 0% 0%, 0% 100%, 100% 100%, 100% 75%, 25% 75%, 25% 25%, 100% 25%) !important;
+        }
+        body.cvd-accessible #seek-end-slider::-webkit-slider-thumb,
+        body.cvd-accessible #seek-end-slider::-moz-range-thumb {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 75%, 75% 75%, 75% 25%, 0% 25%) !important;
+        }
+
+        /* CVD Accessible mode status badge overrides */
+        body.cvd-accessible .status-badge.online {
+            color: var(--neon-green) !important;
+            border-color: var(--neon-green) !important;
+            background-color: rgba(0, 229, 255, 0.1) !important;
+        }
+        body.cvd-accessible .status-badge.offline {
+            color: var(--neon-pink) !important;
+            border-color: var(--neon-pink) !important;
+            background-color: rgba(255, 145, 0, 0.1) !important;
+        }
+        body.light-theme.cvd-accessible .status-badge.online {
+            color: var(--neon-green) !important;
+            border-color: var(--neon-green) !important;
+            background-color: rgba(0, 119, 182, 0.08) !important;
+        }
+        body.light-theme.cvd-accessible .status-badge.offline {
+            color: var(--neon-pink) !important;
+            border-color: var(--neon-pink) !important;
+            background-color: rgba(217, 72, 15, 0.08) !important;
+        }
     </style>
 </head>
 <body>
@@ -1607,6 +1650,7 @@
         (function() {
             const savedTheme = localStorage.getItem('theme');
             const savedFontSize = localStorage.getItem('font-size');
+            const savedCVD = localStorage.getItem('cvd-accessible');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-theme');
             }
@@ -1614,6 +1658,9 @@
                 document.documentElement.classList.add('font-size-m');
             } else if (savedFontSize === 'lg') {
                 document.documentElement.classList.add('font-size-lg');
+            }
+            if (savedCVD === 'true') {
+                document.body.classList.add('cvd-accessible');
             }
         })();
     </script>
@@ -1641,6 +1688,18 @@
                     <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Medium Sizing">+</button>
                     <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Large Sizing">++</button>
                 </div>
+                <!-- Accessible Mode Toggle -->
+                <div class="cvd-toggle-container" style="display: flex; align-items: center; gap: 8px; margin-left: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; text-transform: uppercase; user-select: none;">Accessible Mode</span>
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
+                        <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible()" title="Accessible Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="switch-container">
@@ -1652,7 +1711,7 @@
             <div class="badge-dropdown-container" style="position: relative; display: inline-block;">
                 <div id="status-badge" class="status-badge online" onclick="toggleBadgeDropdown(event)">
                     <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
-                    READY
+                    ✓ READY
                 </div>
                 <div id="api-key-dropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
                     <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
@@ -2122,7 +2181,7 @@
                     const badge = document.getElementById('status-badge');
                     if (badge) {
                         badge.className = "status-badge offline";
-                        badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-red); border-radius:50%;"></span> UNAUTHORIZED`;
+                        badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-pink); border-radius:50%;"></span> ⚠ UNAUTHORIZED`;
                     }
                     console.error("Authentication failed. No valid API key provided.");
                     isTransitioningTrack = false;
@@ -2133,7 +2192,7 @@
                     const badge = document.getElementById('status-badge');
                     if (badge) {
                         badge.className = "status-badge offline";
-                        badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-red); border-radius:50%;"></span> OFFLINE`;
+                        badge.innerHTML = `<span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-pink); border-radius:50%;"></span> ⚠ OFFLINE`;
                     }
                     console.error("Failed to load status:", response.status);
                     isTransitioningTrack = false;
@@ -3873,7 +3932,7 @@
                 document.getElementById('status-badge').className = "status-badge online";
                 document.getElementById('status-badge').innerHTML = `
                     <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
-                    AUTO SCANNING
+                    ✓ AUTO SCANNING
                 `;
             } else {
                 if (pollingIntervalId) {
@@ -3883,7 +3942,7 @@
                 document.getElementById('status-badge').className = "status-badge online";
                 document.getElementById('status-badge').innerHTML = `
                     <span style="display:inline-block; width: 6px; height: 6px; background-color: var(--neon-green); border-radius:50%;"></span>
-                    READY
+                    ✓ READY
                 `;
             }
         }
@@ -4387,6 +4446,21 @@
             }
         }
 
+        function toggleCVDAccessible() {
+            const body = document.body;
+            const btn = document.getElementById('cvd-toggle-btn');
+            if (!btn) return;
+            const isAccessible = body.classList.toggle('cvd-accessible');
+            
+            if (isAccessible) {
+                btn.classList.add('active');
+                localStorage.setItem('cvd-accessible', 'true');
+            } else {
+                btn.classList.remove('active');
+                localStorage.setItem('cvd-accessible', 'false');
+            }
+        }
+
         function restoreCardCollapses() {
             document.querySelectorAll('.card[id]').forEach(card => {
                 const saved = localStorage.getItem(`card_collapsed_${card.id}`);
@@ -4407,6 +4481,19 @@
             setTheme(savedTheme);
             const savedFontSize = localStorage.getItem('font-size') || 's';
             setFontSize(savedFontSize);
+
+            // Restore Accessible/CVD Mode
+            const savedCVD = localStorage.getItem('cvd-accessible') === 'true';
+            const cvdBtn = document.getElementById('cvd-toggle-btn');
+            if (cvdBtn) {
+                if (savedCVD) {
+                    document.body.classList.add('cvd-accessible');
+                    cvdBtn.classList.add('active');
+                } else {
+                    document.body.classList.remove('cvd-accessible');
+                    cvdBtn.classList.remove('active');
+                }
+            }
 
             restoreCardCollapses();
             loadDashboard();
