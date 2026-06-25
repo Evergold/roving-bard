@@ -1438,6 +1438,18 @@
                 isMuted = false;
             }
             updateVolumeIconAndText(status.volume);
+
+            // Update stop button state and glow styling based on playing/paused status
+            const isPlayingOrPaused = status.current_track && !(status.paused && status.was_stopped);
+            if (isPlayingOrPaused) {
+                stopBtn.disabled = false;
+                stopBtn.style.borderColor = '#ef4444';
+                stopBtn.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.4)';
+            } else {
+                stopBtn.disabled = true;
+                stopBtn.style.borderColor = '';
+                stopBtn.style.boxShadow = '';
+            }
         }
 
         function updateParseUI(parse) {
