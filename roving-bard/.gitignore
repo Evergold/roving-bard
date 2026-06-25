@@ -212,3 +212,6 @@ roving-bard/capture/*
 
 # Exclude local segment definitions
 segments.yaml
+
+# Exclude local file tags definitions
+music/file_tags.yaml
