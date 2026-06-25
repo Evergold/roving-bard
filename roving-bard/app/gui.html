@@ -1143,7 +1143,7 @@
                 </div>
                 <!-- FILTER & SEARCH BAR -->
                 <div style="display: flex; gap: 0.5rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); align-items: center; background: rgba(255, 255, 255, 0.01);">
-                    <input type="text" id="audio-search-input" placeholder="Search by title..." style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()">
+                    <input type="text" id="audio-search-input" placeholder="Search by title or tag..." style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()">
                     <select id="audio-tag-filter" style="width: 120px; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; cursor: pointer; outline: none;" onchange="filterAudioLibrary()">
                         <option value="">All Tags</option>
                     </select>
@@ -1678,8 +1678,8 @@
             list.appendChild(filesHeader);
             
             const matchedFiles = audioLibraryFiles.filter(file => {
-                const matchesSearch = file.toLowerCase().includes(searchVal);
                 const fileTags = audioLibraryFileTags[file] || [];
+                const matchesSearch = file.toLowerCase().includes(searchVal) || fileTags.some(tag => tag.toLowerCase().includes(searchVal));
                 const matchesTag = !tagVal || fileTags.includes(tagVal);
                 return matchesSearch && matchesTag;
             });
@@ -1760,8 +1760,8 @@
             list.appendChild(segmentsHeader);
             
             const matchedSegments = segments.filter(segment => {
-                const matchesSearch = segment.name.toLowerCase().includes(searchVal);
                 const segTags = segment.tags || [];
+                const matchesSearch = segment.name.toLowerCase().includes(searchVal) || segTags.some(tag => tag.toLowerCase().includes(searchVal));
                 const matchesTag = !tagVal || segTags.includes(tagVal);
                 return matchesSearch && matchesTag;
             });
