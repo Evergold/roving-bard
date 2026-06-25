@@ -260,6 +260,8 @@ def api_control(req: ControlRequest):
     """Handles manual player actions (play, stop, set volume, scan screen, seek, set_bounds)."""
     if req.action == "play":
         if req.track_file:
+            if req.volume is not None:
+                tools.set_volume(req.volume)
             start_time = req.start_time if req.start_time is not None else 0.0
             return tools.play_track(req.track_file, start_time=start_time, end_time=req.end_time)
         return {"status": "error", "message": "track_file is required for play action."}
@@ -300,6 +302,8 @@ def api_control(req: ControlRequest):
         return {"status": "error", "message": "start_time or end_time is required for set_bounds."}
     elif req.action == "select":
         if req.track_file:
+            if req.volume is not None:
+                tools.set_volume(req.volume)
             start_time = req.start_time if req.start_time is not None else 0.0
             success = tools.player.select_track(req.track_file, start_time=start_time, end_time=req.end_time)
             if success:
@@ -400,6 +404,7 @@ class SegmentModel(BaseModel):
     track_file: str
     start_time: float
     end_time: float
+    volume: float | None = None
 
 
 @app.get("/api/segments", dependencies=[Depends(verify_api_key)])
@@ -414,12 +419,15 @@ def add_segment(req: SegmentModel):
     segments = tools.load_segments()
     # Check if duplicate name, overwrite it
     segments = [s for s in segments if s.get("name") != req.name]
-    segments.append({
+    segment_data = {
         "name": req.name,
         "track_file": req.track_file,
         "start_time": req.start_time,
         "end_time": req.end_time,
-    })
+    }
+    if req.volume is not None:
+        segment_data["volume"] = req.volume
+    segments.append(segment_data)
     tools.save_segments(segments)
     return {"status": "success", "message": "Segment saved."}
 

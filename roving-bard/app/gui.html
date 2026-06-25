@@ -1716,10 +1716,11 @@
                     
                     const duration = currentPlaybackStatus ? (currentPlaybackStatus.duration || 180.0) : 180.0;
                     const segEnd = segment.end_time;
+                    const segVolume = (segment.volume !== undefined && segment.volume !== null) ? segment.volume : null;
                     
                     const isSegActive = (activeTrack === segment.track_file && Math.abs(activeStart - segment.start_time) < 0.05 && Math.abs((currentPlaybackStatus ? (currentPlaybackStatus.end_time || duration) : duration) - segEnd) < 0.05);
                     
-                    let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd})`;
+                    let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
                     let badgeHtml = '';
 
                     if (isSegActive) {
@@ -1731,7 +1732,7 @@
                                 btnText = 'Play';
                                 btnStyle += ' background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%); color: white; border: 1px solid transparent;';
                                 btnClass = 'btn';
-                                btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd})`;
+                                btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
                             } else {
                                 btnText = 'Resume';
                                 btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
@@ -1747,12 +1748,15 @@
                     }
 
                     let subtitleText = `Track: ${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
+                    if (segVolume !== null) {
+                        subtitleText += ` · Vol: ${parseInt(segVolume * 100)}%`;
+                    }
                     if (isSegActive) {
                         subtitleText = `ACTIVE · ${subtitleText}`;
                     }
 
                     item.innerHTML = `
-                        <div class="mapping-item-details" style="cursor: pointer;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd})">
+                        <div class="mapping-item-details" style="cursor: pointer;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})">
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${segment.name}${badgeHtml}</div>
                             <div class="mapping-item-sub">${subtitleText}</div>
                         </div>
@@ -1778,6 +1782,7 @@
             const startVal = currentPlaybackStatus.start_time || 0.0;
             const duration = currentPlaybackStatus.duration || 180.0;
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
+            const volumeVal = currentPlaybackStatus.volume;
 
             try {
                 const response = await apiFetch('/api/segments', {
@@ -1787,7 +1792,8 @@
                         name: trimmedName,
                         track_file: currentPlaybackStatus.current_track,
                         start_time: startVal,
-                        end_time: endVal
+                        end_time: endVal,
+                        volume: volumeVal
                     })
                 });
                 const result = await response.json();
@@ -1803,9 +1809,9 @@
             }
         }
 
-        async function selectSegment(name, trackFile, startTime, endTime) {
+        async function selectSegment(name, trackFile, startTime, endTime, volume) {
             try {
-                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
+                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
@@ -1816,7 +1822,8 @@
                         action: 'select',
                         track_file: trackFile,
                         start_time: startTime,
-                        end_time: endTime
+                        end_time: endTime,
+                        volume: volume
                     })
                 });
                 loadDashboard();
@@ -1827,9 +1834,9 @@
             }
         }
 
-        async function playSegment(name, trackFile, startTime, endTime) {
+        async function playSegment(name, trackFile, startTime, endTime, volume) {
             try {
-                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
+                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume };
                 localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 isTransitioningTrack = true;
                 updateExportButtonState();
@@ -1840,7 +1847,8 @@
                         action: 'play',
                         track_file: trackFile,
                         start_time: startTime,
-                        end_time: endTime
+                        end_time: endTime,
+                        volume: volume
                     })
                 });
                 loadDashboard();
@@ -1906,7 +1914,12 @@
                 exportBtn.innerText = 'Save';
                 exportBtn.onclick = saveSegment;
                 
-                const isChanged = Math.abs(startVal - activeSegment.start_time) > 0.01 || Math.abs(endVal - activeSegment.end_time) > 0.01;
+                const currentVol = (currentPlaybackStatus.volume !== undefined && currentPlaybackStatus.volume !== null) ? currentPlaybackStatus.volume : 1.0;
+                const activeVol = (activeSegment.volume !== undefined && activeSegment.volume !== null) ? activeSegment.volume : 1.0;
+                
+                const isChanged = Math.abs(startVal - activeSegment.start_time) > 0.01 || 
+                                  Math.abs(endVal - activeSegment.end_time) > 0.01 ||
+                                  Math.abs(currentVol - activeVol) > 0.01;
                 exportBtn.disabled = !isChanged;
             } else {
                 exportBtn.innerText = 'Export';
@@ -1928,6 +1941,7 @@
             const startVal = currentPlaybackStatus.start_time || 0.0;
             const duration = currentPlaybackStatus.duration || 180.0;
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
+            const volumeVal = currentPlaybackStatus.volume;
 
             try {
                 const response = await apiFetch('/api/segments', {
@@ -1937,7 +1951,8 @@
                         name: activeSegment.name,
                         track_file: currentPlaybackStatus.current_track,
                         start_time: startVal,
-                        end_time: endVal
+                        end_time: endVal,
+                        volume: volumeVal
                     })
                 });
                 const result = await response.json();
@@ -1945,6 +1960,7 @@
                     alert("Segment saved successfully.");
                     activeSegment.start_time = startVal;
                     activeSegment.end_time = endVal;
+                    activeSegment.volume = volumeVal;
                     localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                     await loadAudioLibrary();
                     updateExportButtonState();

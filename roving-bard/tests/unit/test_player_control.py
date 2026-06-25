@@ -425,7 +425,8 @@ def test_segments_api(tmp_path) -> None:
             "name": "Test Intro",
             "track_file": "test_track.mp3",
             "start_time": 5.5,
-            "end_time": 20.0
+            "end_time": 20.0,
+            "volume": 0.8
         }
         response = client.post("/api/segments", headers=headers, json=segment_data)
         assert response.status_code == 200
@@ -437,6 +438,7 @@ def test_segments_api(tmp_path) -> None:
         assert len(response.json()["segments"]) == 1
         assert response.json()["segments"][0]["name"] == "Test Intro"
         assert response.json()["segments"][0]["start_time"] == 5.5
+        assert response.json()["segments"][0]["volume"] == 0.8
 
         # 4. Select the segment via POST /api/control (action=select)
         tools.player.simulated = True
@@ -447,12 +449,14 @@ def test_segments_api(tmp_path) -> None:
                 "action": "select",
                 "track_file": "test_track.mp3",
                 "start_time": 5.5,
-                "end_time": 20.0
+                "end_time": 20.0,
+                "volume": 0.8
             }
         )
         assert select_response.status_code == 200
         assert tools.player.start_time == 5.5
         assert tools.player.end_time == 20.0
+        assert tools.player.volume == 0.8
 
         # 5. Play the segment via POST /api/control (action=play)
         play_response = client.post(
@@ -462,12 +466,14 @@ def test_segments_api(tmp_path) -> None:
                 "action": "play",
                 "track_file": "test_track.mp3",
                 "start_time": 5.5,
-                "end_time": 20.0
+                "end_time": 20.0,
+                "volume": 0.6
             }
         )
         assert play_response.status_code == 200
         assert tools.player.start_time == 5.5
         assert tools.player.end_time == 20.0
+        assert tools.player.volume == 0.6
 
         # 6. DELETE /api/segments to remove it
         delete_response = client.delete("/api/segments?name=Test%20Intro", headers=headers)
