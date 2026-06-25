@@ -1255,6 +1255,7 @@
         let isEditingBoundsInput = false;
         let showRemainingTime = localStorage.getItem('showRemainingTime') === 'true';
         let seekTimerId = null;
+        let activeSegment = null;
 
         const EMBEDDED_API_KEY = "{{API_KEY_PLACEHOLDER}}";
 
@@ -1788,6 +1789,8 @@
 
         async function selectSegment(name, trackFile, startTime, endTime) {
             try {
+                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
+                updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -1806,6 +1809,8 @@
 
         async function playSegment(name, trackFile, startTime, endTime) {
             try {
+                activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
+                updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -1846,24 +1851,77 @@
             if (!exportBtn) return;
             if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
                 exportBtn.disabled = true;
+                exportBtn.innerText = 'Export';
+                exportBtn.onclick = exportSegment;
                 return;
             }
+
+            if (activeSegment && activeSegment.track_file !== currentPlaybackStatus.current_track) {
+                activeSegment = null;
+            }
+
             const duration = currentPlaybackStatus.duration || 180.0;
             const startVal = currentPlaybackStatus.start_time || 0.0;
             const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
-            
-            const startDiff = Math.abs(startVal);
-            const endDiff = Math.abs(endVal - duration);
-            
-            if (startDiff > 0.01 || endDiff > 0.01) {
-                exportBtn.disabled = false;
+
+            if (activeSegment) {
+                exportBtn.innerText = 'Save';
+                exportBtn.onclick = saveSegment;
+                
+                const isChanged = Math.abs(startVal - activeSegment.start_time) > 0.01 || Math.abs(endVal - activeSegment.end_time) > 0.01;
+                exportBtn.disabled = !isChanged;
             } else {
-                exportBtn.disabled = true;
+                exportBtn.innerText = 'Export';
+                exportBtn.onclick = exportSegment;
+
+                const startDiff = Math.abs(startVal);
+                const endDiff = Math.abs(endVal - duration);
+                if (startDiff > 0.01 || endDiff > 0.01) {
+                    exportBtn.disabled = false;
+                } else {
+                    exportBtn.disabled = true;
+                }
+            }
+        }
+
+        async function saveSegment() {
+            if (!activeSegment || !currentPlaybackStatus || !currentPlaybackStatus.current_track) return;
+            
+            const startVal = currentPlaybackStatus.start_time || 0.0;
+            const duration = currentPlaybackStatus.duration || 180.0;
+            const endVal = (currentPlaybackStatus.end_time !== undefined && currentPlaybackStatus.end_time !== null) ? currentPlaybackStatus.end_time : duration;
+
+            try {
+                const response = await apiFetch('/api/segments', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: activeSegment.name,
+                        track_file: currentPlaybackStatus.current_track,
+                        start_time: startVal,
+                        end_time: endVal
+                    })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert("Segment saved successfully.");
+                    activeSegment.start_time = startVal;
+                    activeSegment.end_time = endVal;
+                    await loadAudioLibrary();
+                    updateExportButtonState();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (err) {
+                console.error("Error saving segment:", err);
+                alert("Failed to save segment.");
             }
         }
 
         async function selectAudioFile(filename) {
             try {
+                activeSegment = null;
+                updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -1878,6 +1936,8 @@
 
         async function playAudioFile(filename) {
             try {
+                activeSegment = null;
+                updateExportButtonState();
                 const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
                 const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
                 const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
