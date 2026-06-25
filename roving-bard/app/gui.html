@@ -15,6 +15,7 @@
             --neon-blue: #00f2fe;
             --neon-green: #39ff14;
             --neon-pink: #e405f0;
+            --neon-red: #ff4d4d;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
             --border: rgba(255, 255, 255, 0.08);
@@ -624,7 +625,7 @@
             -webkit-appearance: none;
             width: 18px;
             height: 18px;
-            background: var(--neon-pink);
+            background: #ff4d4d;
             clip-path: polygon(50% 0%, 100% 100%, 50% 65%, 0% 100%);
             cursor: default;
             pointer-events: none;
@@ -668,7 +669,7 @@
         #seek-end-slider::-moz-range-thumb {
             width: 18px;
             height: 18px;
-            background: var(--neon-pink);
+            background: #ff4d4d;
             clip-path: polygon(50% 0%, 100% 100%, 50% 65%, 0% 100%);
             border: none;
             cursor: default;
@@ -1269,6 +1270,7 @@
             --neon-blue: #1a73e8;
             --neon-green: #1e8e3e;
             --neon-pink: #b81d24;
+            --neon-red: #b81d24;
             --text-main: #191c20;
             --text-muted: #43474e;
             --border: #b4b8c0;
@@ -1605,11 +1607,13 @@
         body.cvd-accessible:not(.light-theme) {
             --neon-green: #00e5ff !important;
             --neon-pink: #ff9100 !important;
+            --neon-red: #ff9100 !important;
         }
 
         body.light-theme.cvd-accessible {
             --neon-green: #0077b6 !important;
             --neon-pink: #d9480f !important;
+            --neon-red: #d9480f !important;
         }
 
         /* CVD Accessible mode: chevron replacement with brackets [ ] */
@@ -1620,6 +1624,7 @@
         body.cvd-accessible #seek-end-slider::-webkit-slider-thumb,
         body.cvd-accessible #seek-end-slider::-moz-range-thumb {
             clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 75%, 75% 75%, 75% 25%, 0% 25%) !important;
+            background: var(--neon-pink) !important;
         }
 
         /* CVD Accessible mode status badge overrides */
