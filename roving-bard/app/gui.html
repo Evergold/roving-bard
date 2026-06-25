@@ -326,9 +326,15 @@
         .seek-slider-container {
             position: relative;
             flex: 1;
-            height: 20px;
+            height: 30px;
             display: flex;
             align-items: center;
+        }
+
+        .seek-track-bg,
+        #seek-range-highlight,
+        #seek-progress-fill {
+            top: 12px !important;
         }
 
         .seek-slider-input {
@@ -340,6 +346,12 @@
             margin: 0;
             pointer-events: none;
             -webkit-appearance: none;
+            top: 12px;
+        }
+
+        .stopped-state #seek-start-slider,
+        .stopped-state #seek-end-slider {
+            top: 22px;
         }
 
         /* Webkit Thumbs */
