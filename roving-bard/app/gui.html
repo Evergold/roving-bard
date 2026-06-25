@@ -1322,6 +1322,11 @@
             color: #191c20 !important;
         }
 
+        option {
+            background-color: var(--bg-base) !important;
+            color: var(--text-main) !important;
+        }
+
         body.light-theme .btn {
             background: var(--accent) !important;
             box-shadow: none !important;
@@ -1850,39 +1855,55 @@
             </button>
             <div>
                 <h1>Roving Bard</h1>
-                <p>Adaptive, location-aware audio in LOTRO</p>
+                <p data-loc="subtitle">Adaptive, location-aware audio in LOTRO</p>
             </div>
             <div class="accessibility-controls" style="display: flex; align-items: center; gap: 1rem; border-left: 1px solid var(--border); padding-left: 1.8rem; margin-left: 0.8rem;">
                 <!-- Theme toggle buttons -->
                 <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
                     <!-- Dark theme button (moon icon) -->
-                    <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" title="Dark Theme">
+                    <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" data-loc-title="dark_theme_title" title="Dark Theme">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                     </button>
                     <!-- Light theme button (sun with rays icon) -->
-                    <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" title="Light Theme">
+                    <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" data-loc-title="light_theme_title" title="Light Theme">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     </button>
                 </div>
                 <!-- Font size control button group -->
                 <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
-                    <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" title="Normal">abc</button>
-                    <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Larger">+</button>
-                    <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Largest">++</button>
+                    <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" data-loc-title="font_normal" title="Normal">abc</button>
+                    <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" data-loc-title="font_larger" title="Larger">+</button>
+                    <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" data-loc-title="font_largest" title="Largest">++</button>
                 </div>
                 <!-- Accessible Mode Toggle -->
                 <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; margin-left: 0.5rem;">
-                    <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible()" title="Accessible Mode">
+                    <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible()" data-loc-title="accessible_mode_title" title="Accessible Mode">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
                     </button>
                 </div>
+                <!-- Language Selector Dropdown -->
+                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px 8px; margin-left: 0.5rem; height: 52px; box-sizing: border-box;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.95rem; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; height: 100%; padding-right: 4px;">
+                        <option value="en-US">EN (US)</option>
+                        <option value="en-GB">EN (UK)</option>
+                        <option value="fr-FR">FR (FR)</option>
+                        <option value="de-DE">DE (DE)</option>
+                        <option value="es-ES">ES (ES)</option>
+                        <option value="it-IT">IT (IT)</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div class="switch-container">
-            <span class="auto-polling-label">AUTO-POLLING SCREEN</span>
+            <span class="auto-polling-label" data-loc="auto_polling">AUTO-POLLING SCREEN</span>
             <label class="switch">
                 <input type="checkbox" id="polling-toggle" onchange="togglePolling(this.checked)">
                 <span class="slider"></span>
@@ -1890,13 +1911,13 @@
             <div class="badge-dropdown-container" style="position: relative; display: inline-block;">
                 <div id="status-badge" class="status-badge online" onclick="toggleBadgeDropdown(event)">
                     <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
-                    <span class="badge-symbol">✓</span> READY
+                    <span class="badge-symbol">✓</span> <span data-loc="ready">READY</span>
                 </div>
                 <div id="api-key-dropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
-                    <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;" data-loc="api_key_detection">
                         API Key Detection
                     </div>
-                    <div id="api-key-detection-status" style="font-family: inherit; margin-top: 0.5rem;">
+                    <div id="api-key-detection-status" style="font-family: inherit; margin-top: 0.5rem;" data-loc="loading_status">
                         Loading status...
                     </div>
                 </div>
@@ -1910,7 +1931,7 @@
             <!-- NOW PLAYING CARD -->
             <div class="card">
                 <div class="card-title">
-                    NOW PLAYING
+                    <span data-loc="now_playing">NOW PLAYING</span>
                     <div class="header-volume-control">
                         <!-- EQ Button -->
                         <div class="eq-anchor">
@@ -1950,18 +1971,18 @@
                             <!-- EQ Panel (popover) -->
                             <div id="eq-panel">
                                 <div class="eq-header">
-                                    <span class="eq-title">EQUALIZER</span>
+                                    <span class="eq-title" data-loc="equalizer_title">EQUALIZER</span>
                                     <div class="eq-header-actions">
                                         <select id="eq-preset-select" class="eq-preset-select" onchange="applyEQPreset(this.value)">
-                                            <option value="flat">Flat</option>
-                                            <option value="bass_boost">Bass Boost</option>
-                                            <option value="treble_boost">Treble Boost</option>
-                                            <option value="vocal">Vocal</option>
-                                            <option value="loudness">Loudness</option>
-                                            <option value="acoustic">Acoustic</option>
-                                            <option value="custom" hidden>Custom</option>
+                                            <option value="flat" data-loc="eq_flat">Flat</option>
+                                            <option value="bass_boost" data-loc="eq_bass_boost">Bass Boost</option>
+                                            <option value="treble_boost" data-loc="eq_treble_boost">Treble Boost</option>
+                                            <option value="vocal" data-loc="eq_vocal">Vocal</option>
+                                            <option value="loudness" data-loc="eq_loudness">Loudness</option>
+                                            <option value="acoustic" data-loc="eq_acoustic">Acoustic</option>
+                                            <option value="custom" data-loc="eq_custom" hidden>Custom</option>
                                         </select>
-                                        <button class="eq-reset-btn" onclick="resetEQ()">Reset</button>
+                                        <button class="eq-reset-btn" onclick="resetEQ()" data-loc="reset_btn">Reset</button>
                                     </div>
                                 </div>
                                 <div class="eq-bands" id="eq-bands-container">
@@ -1969,7 +1990,7 @@
                                 </div>
                             </div>
                         </div>
-                        <span id="volume-mute-btn" class="vol-high" onclick="toggleMute()" title="Mute / Unmute">
+                        <span id="volume-mute-btn" class="vol-high" onclick="toggleMute()" data-loc-title="mute_unmute_title" title="Mute / Unmute">
                             <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
                                 <defs>
                                     <linearGradient id="spkGrad" x1="0" y1="0" x2="1" y2="1">
@@ -2079,9 +2100,9 @@
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
-                        REGION MUSIC MAPPINGS
+                        <span data-loc="region_music_mappings">REGION MUSIC MAPPINGS</span>
                     </div>
-                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="openAddMappingModal()">Add Mapping</button>
+                    <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="openAddMappingModal()" data-loc="add_mapping">Add Mapping</button>
                 </div>
                 <div class="card-body-wrapper">
                     <div class="form-section">
@@ -2090,8 +2111,8 @@
                         </div>
                         
                         <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                            <button class="btn btn-secondary" onclick="loadDashboard()">Reset Config</button>
-                            <button class="btn" onclick="saveConfiguration()">Save Changes to Disk</button>
+                            <button class="btn btn-secondary" onclick="loadDashboard()" data-loc="reset_config">Reset Config</button>
+                            <button class="btn" onclick="saveConfiguration()" data-loc="save_changes_to_disk">Save Changes to Disk</button>
                         </div>
                     </div>
                 </div>
@@ -2104,33 +2125,33 @@
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
-                        ACTIVE SCREEN DETECTION
+                        <span data-loc="active_screen_detection">ACTIVE SCREEN DETECTION</span>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="refreshScreenshot()">Refresh Capture</button>
-                        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="scanScreenNow()">Scan Screen</button>
+                        <button class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="refreshScreenshot()" data-loc="refresh_capture">Refresh Capture</button>
+                        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="scanScreenNow()" data-loc="scan_screen">Scan Screen</button>
                     </div>
                 </div>
                 <div class="card-body-wrapper">
                     <div class="capture-grid">
                         <div class="screenshot-container">
                             <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onerror="showNoScreenshot()">
-                            <div id="no-screenshot-message" class="no-screenshot" style="display: none;">
+                            <div id="no-screenshot-message" class="no-screenshot" style="display: none;" data-loc="no_screen_captures">
                                 No screen captures cached yet.<br><span style="font-size: 0.8rem; opacity: 0.7;">Click Scan Screen to capture.</span>
                             </div>
                         </div>
                         <div class="parse-data">
                             <div class="data-item active-state">
-                                <div class="label">Matched Location</div>
+                                <div class="label" data-loc="matched_location">Matched Location</div>
                                 <div id="parse-location" class="value">Unknown</div>
                             </div>
                             <div class="data-item">
-                                <div class="label">Parsed Coordinates</div>
+                                <div class="label" data-loc="parsed_coordinates">Parsed Coordinates</div>
                                 <div id="parse-coords" class="value coords-font">None</div>
                             </div>
                             <div class="data-item">
-                                <div class="label">Extraction Route</div>
-                                <div id="parse-route" class="value" style="font-size: 0.9rem;">Waiting for scan...</div>
+                                <div class="label" data-loc="extraction_route">Extraction Route</div>
+                                <div id="parse-route" class="value" style="font-size: 0.9rem;" data-loc="waiting_for_scan">Waiting for scan...</div>
                             </div>
                             <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between;">
                                 <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
@@ -2148,7 +2169,7 @@
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
-                        BOUNDING BOX SELECTOR
+                        <span data-loc="bounding_box_selector">BOUNDING BOX SELECTOR</span>
                     </div>
                     <span>mapping.yaml</span>
                 </div>
@@ -2156,26 +2177,26 @@
                     <div class="form-section">
                         <div class="bounds-visualizer">
                             <div class="bounds-visualizer-grid"></div>
-                            <div id="visual-crop-box" class="visual-crop-box">
+                            <div id="visual-crop-box" class="visual-crop-box" data-loc="minimap_crop_box">
                                 MINIMAP CROP BOX
                             </div>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="bounds-x">X Position (0-1)</label>
+                                <label for="bounds-x" data-loc="x_position_label">X Position (0-1)</label>
                                 <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
                             </div>
                             <div class="form-group">
-                                <label for="bounds-y">Y Position (0-1)</label>
+                                <label for="bounds-y" data-loc="y_position_label">Y Position (0-1)</label>
                                 <input type="number" id="bounds-y" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
                             </div>
                             <div class="form-group">
-                                <label for="bounds-w">Width (0-1)</label>
+                                <label for="bounds-w" data-loc="width_label">Width (0-1)</label>
                                 <input type="number" id="bounds-w" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
                             </div>
                             <div class="form-group">
-                                <label for="bounds-h">Height (0-1)</label>
+                                <label for="bounds-h" data-loc="height_label">Height (0-1)</label>
                                 <input type="number" id="bounds-h" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
                             </div>
                         </div>
@@ -2191,17 +2212,17 @@
             <!-- AUDIO LIBRARY CARD -->
             <div class="card">
                 <div class="card-title">
-                    AUDIO LIBRARY
+                    <span data-loc="audio_library">AUDIO LIBRARY</span>
                     <div>
                         <input type="file" id="audio-file-input" accept=".wav,.mp3,.ogg,.flac,.mp4,.abc" style="display: none;" onchange="uploadAudioFile(this)">
-                        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="document.getElementById('audio-file-input').click()">+ Add File</button>
+                        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="document.getElementById('audio-file-input').click()" data-loc="add_file">+ Add File</button>
                     </div>
                 </div>
                 <!-- FILTER & SEARCH BAR -->
                 <div style="display: flex; gap: 0.5rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); align-items: center; background: rgba(255, 255, 255, 0.01);">
-                    <input type="text" id="audio-search-input" placeholder="Search by title or tag..." style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()">
+                    <input type="text" id="audio-search-input" placeholder="Search by title or tag..." data-loc="search_placeholder" style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()">
                     <select id="audio-tag-filter" style="width: 120px; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; cursor: pointer; outline: none;" onchange="filterAudioLibrary()">
-                        <option value="">All Tags</option>
+                        <option value="" data-loc="all_tags">All Tags</option>
                     </select>
                     <datalist id="all-existing-tags-list"></datalist>
                 </div>
@@ -2223,52 +2244,52 @@
     <!-- POPUP MODAL FOR ADDING/EDITING MAPPING -->
     <div id="mapping-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
         <div class="card" style="width: 500px; max-width: 90%;">
-            <div class="card-title" id="modal-title">ADD REGION MAPPING</div>
+            <div class="card-title" id="modal-title" data-loc="add_region_mapping">ADD REGION MAPPING</div>
             <div class="form-section">
                 <div class="form-group">
-                    <label for="map-type">Match Type</label>
+                    <label for="map-type" data-loc="match_type">Match Type</label>
                     <select id="map-type" onchange="toggleModalFields(this.value)">
-                        <option value="location">Location Name Match (OCR/Vision)</option>
-                        <option value="coordinates">Coordinate Range Match (N/S, E/W)</option>
+                        <option value="location" data-loc="location_match_opt">Location Name Match (OCR/Vision)</option>
+                        <option value="coordinates" data-loc="coordinate_match_opt">Coordinate Range Match (N/S, E/W)</option>
                     </select>
                 </div>
                 
                 <div id="modal-location-group" class="form-group">
-                    <label for="map-loc-name">Location Name Text (e.g. Town, Forest)</label>
+                    <label for="map-loc-name" data-loc="location_name_label">Location Name Text (e.g. Town, Forest)</label>
                     <input type="text" id="map-loc-name" placeholder="Town">
                 </div>
 
                 <div id="modal-coords-group" style="display: none; flex-direction: column; gap: 0.75rem;">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="map-ns-min">N/S Min (South is negative)</label>
+                            <label for="map-ns-min" data-loc="ns_min_label">N/S Min (South is negative)</label>
                             <input type="number" id="map-ns-min" step="0.1" value="0.0">
                         </div>
                         <div class="form-group">
-                            <label for="map-ns-max">N/S Max</label>
+                            <label for="map-ns-max" data-loc="ns_max_label">N/S Max</label>
                             <input type="number" id="map-ns-max" step="0.1" value="0.0">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="map-ew-min">E/W Min (West is negative)</label>
+                            <label for="map-ew-min" data-loc="ew_min_label">E/W Min (West is negative)</label>
                             <input type="number" id="map-ew-min" step="0.1" value="0.0">
                         </div>
                         <div class="form-group">
-                            <label for="map-ew-max">E/W Max</label>
+                            <label for="map-ew-max" data-loc="ew_max_label">E/W Max</label>
                             <input type="number" id="map-ew-max" step="0.1" value="0.0">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="map-track-file">Audio Track Filename (e.g. town.wav)</label>
+                    <label for="map-track-file" data-loc="audio_track_label">Audio Track Filename (e.g. town.wav)</label>
                     <input type="text" id="map-track-file" placeholder="town.wav">
                 </div>
 
                 <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                    <button class="btn btn-secondary" onclick="closeMappingModal()">Cancel</button>
-                    <button class="btn" onclick="saveMappingItem()">Apply Item</button>
+                    <button class="btn btn-secondary" onclick="closeMappingModal()" data-loc="cancel">Cancel</button>
+                    <button class="btn" onclick="saveMappingItem()" data-loc="apply_item">Apply Item</button>
                 </div>
             </div>
         </div>
@@ -2330,15 +2351,15 @@
                 let html = '';
                 if (isCvd) {
                     if (anyDetected) {
-                        html += `<div class="api-key-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.85rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✓</span> API Key Detected</div>`;
+                        html += `<div class="api-key-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.85rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✓</span> ${t('api_key_detected')}</div>`;
                         html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
                         html += `  <div><span class="api-key-symbol ${hasAgent ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasAgent ? '✓' : '✗'}</span> AGENT_API_KEY</div>`;
                         html += `  <div><span class="api-key-symbol ${hasGoogle ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasGoogle ? '✓' : '✗'}</span> GOOGLE_API_KEY</div>`;
                         html += `  <div><span class="api-key-symbol ${hasGemini ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasGemini ? '✓' : '✗'}</span> GEMINI_API_KEY</div>`;
                         html += `</div>`;
                     } else {
-                        html += `<div class="api-key-not-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.85rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✗</span> API Key Not Detected</div>`;
-                        html += `<div class="api-key-not-detected" style="margin-bottom: 0.5rem; font-size: 0.8rem;">A supported API key was not detected.</div>`;
+                        html += `<div class="api-key-not-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.85rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✗</span> ${t('api_key_not_detected')}</div>`;
+                        html += `<div class="api-key-not-detected" style="margin-bottom: 0.5rem; font-size: 0.8rem;">${t('api_key_support_warning')}</div>`;
                         html += `<div class="api-key-not-detected" style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
                         html += `  <div><span class="api-key-symbol not-detected" style="font-weight: bold; margin-right: 4px;">✗</span> AGENT_API_KEY</div>`;
                         html += `  <div><span class="api-key-symbol not-detected" style="font-weight: bold; margin-right: 4px;">✗</span> GOOGLE_API_KEY</div>`;
@@ -2347,15 +2368,15 @@
                     }
                 } else {
                     if (anyDetected) {
-                        html += `<div style="color: #4caf50; font-weight: bold; margin-bottom: 0.5rem;">✔️ API Key Detected</div>`;
+                        html += `<div style="color: #4caf50; font-weight: bold; margin-bottom: 0.5rem;">✔️ ${t('api_key_detected')}</div>`;
                         html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
                         html += `  <div>${hasAgent ? '✔️' : '❌'} AGENT_API_KEY</div>`;
                         html += `  <div>${hasGoogle ? '✔️' : '❌'} GOOGLE_API_KEY</div>`;
                         html += `  <div>${hasGemini ? '✔️' : '❌'} GEMINI_API_KEY</div>`;
                         html += `</div>`;
                     } else {
-                        html += `<div style="color: #f44336; font-weight: bold; margin-bottom: 0.5rem;">❌ API Key Not Detected</div>`;
-                        html += `<div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #f44336;">A supported API key was not detected.</div>`;
+                        html += `<div style="color: #f44336; font-weight: bold; margin-bottom: 0.5rem;">❌ ${t('api_key_not_detected')}</div>`;
+                        html += `<div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #f44336;">${t('api_key_support_warning')}</div>`;
                         html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.65; margin-left: 0.5rem;">`;
                         html += `  <div>❌ AGENT_API_KEY</div>`;
                         html += `  <div>❌ GOOGLE_API_KEY</div>`;
@@ -2484,15 +2505,15 @@
 
                 if (status.paused) {
                     if (status.was_stopped) {
-                        trackStatus.innerText = `Stopped · Vol: ${parseInt(status.volume * 100)}%`;
-                        toggleBtn.innerText = 'Play';
+                        trackStatus.innerText = `${t('stopped')} · ${t('vol_label')}: ${parseInt(status.volume * 100)}%`;
+                        toggleBtn.innerText = t('play');
                         toggleBtn.className = 'btn playback-play';
                         toggleBtn.style.background = '';
                         toggleBtn.style.borderColor = '';
                         toggleBtn.style.color = '';
                     } else {
-                        trackStatus.innerText = `Paused · Vol: ${parseInt(status.volume * 100)}%`;
-                        toggleBtn.innerText = 'Resume';
+                        trackStatus.innerText = `${t('paused')} · ${t('vol_label')}: ${parseInt(status.volume * 100)}%`;
+                        toggleBtn.innerText = t('resume');
                         toggleBtn.className = 'btn playback-resume';
                         toggleBtn.style.background = '';
                         toggleBtn.style.borderColor = '';
@@ -2500,8 +2521,8 @@
                     }
                     setWaveformPlaying(false);
                 } else {
-                    trackStatus.innerText = `Playing · Vol: ${parseInt(status.volume * 100)}%`;
-                    toggleBtn.innerText = 'Pause';
+                    trackStatus.innerText = `${t('playing')} · ${t('vol_label')}: ${parseInt(status.volume * 100)}%`;
+                    toggleBtn.innerText = t('pause');
                     toggleBtn.className = 'btn playback-pause';
                     toggleBtn.style.background = '';
                     toggleBtn.style.borderColor = '';
@@ -2509,10 +2530,10 @@
                     setWaveformPlaying(true);
                 }
             } else {
-                trackTitle.innerText = "Silent (No Track Active)";
-                trackStatus.innerText = "Stopped";
+                trackTitle.innerText = t('silent_no_track');
+                trackStatus.innerText = t('stopped');
                 setWaveformPlaying(false);
-                toggleBtn.innerText = 'Play';
+                toggleBtn.innerText = t('play');
                 toggleBtn.disabled = true;
                 toggleBtn.className = 'btn';
                 toggleBtn.style.background = '';
@@ -2547,10 +2568,17 @@
                 return;
             }
 
-            document.getElementById('parse-location').innerText = parse.parsed_location || "Unknown/Out of Bounds";
-            document.getElementById('parse-coords').innerText = parse.parsed_coordinates || "None";
-            document.getElementById('parse-route').innerText = parse.method || "None";
-            document.getElementById('matched-track-file').innerText = parse.matched_track || "None";
+            document.getElementById('parse-location').innerText = parse.parsed_location || t("unknown_out_of_bounds");
+            document.getElementById('parse-coords').innerText = parse.parsed_coordinates || t("none");
+            
+            let methodText = parse.method || "None";
+            if (methodText === "Local OCR") methodText = t("method_local_ocr");
+            else if (methodText === "Gemini Vision Fallback") methodText = t("method_gemini_fallback");
+            else if (methodText === "Simulation") methodText = t("method_simulation");
+            else if (methodText === "None") methodText = t("none");
+            document.getElementById('parse-route').innerText = methodText;
+
+            document.getElementById('matched-track-file').innerText = parse.matched_track || t("none");
             document.getElementById('parse-timestamp').innerText = parse.timestamp || "--:--:--";
             
             // Toggle screenshot view
@@ -4610,6 +4638,551 @@
             }
         }
 
+        const LOCALIZATION = {
+            "en-US": {
+                "subtitle": "Adaptive, location-aware audio in LOTRO",
+                "auto_polling": "AUTO-POLLING SCREEN",
+                "ready": "READY",
+                "unauthorized": "UNAUTHORIZED",
+                "offline": "OFFLINE",
+                "api_key_detection": "API Key Detection",
+                "loading_status": "Loading status...",
+                "now_playing": "NOW PLAYING",
+                "region_music_mappings": "REGION MUSIC MAPPINGS",
+                "add_mapping": "Add Mapping",
+                "reset_config": "Reset Config",
+                "save_changes_to_disk": "Save Changes to Disk",
+                "active_screen_detection": "ACTIVE SCREEN DETECTION",
+                "refresh_capture": "Refresh Capture",
+                "scan_screen": "Scan Screen",
+                "no_screen_captures": "No screen captures cached yet.<br><span style=\"font-size: 0.8rem; opacity: 0.7;\">Click Scan Screen to capture.</span>",
+                "matched_location": "Matched Location",
+                "parsed_coordinates": "Parsed Coordinates",
+                "extraction_route": "Extraction Route",
+                "waiting_for_scan": "Waiting for scan...",
+                "bounding_box_selector": "BOUNDING BOX SELECTOR",
+                "minimap_crop_box": "MINIMAP CROP BOX",
+                "audio_library": "AUDIO LIBRARY",
+                "add_file": "+ Add File",
+                "search_placeholder": "Search by title or tag...",
+                "all_tags": "All Tags",
+                "add_region_mapping": "ADD REGION MAPPING",
+                "edit_region_mapping": "EDIT REGION MAPPING",
+                "match_type": "Match Type",
+                "location_match_opt": "Location Name Match (OCR/Vision)",
+                "coordinate_match_opt": "Coordinate Range Match (N/S, E/W)",
+                "location_name_label": "Location Name Text (e.g. Town, Forest)",
+                "audio_track_label": "Audio Track Filename (e.g. town.wav)",
+                "cancel": "Cancel",
+                "apply_item": "Apply Item",
+                "location_match_details": "LOCATION MATCH",
+                "coordinate_range_block": "Coordinate Range Block",
+                "dark_theme_title": "Dark Theme",
+                "light_theme_title": "Light Theme",
+                "accessible_mode_title": "Accessible Mode",
+                "mute_unmute_title": "Mute / Unmute",
+                "x_position_label": "X Position (0-1)",
+                "y_position_label": "Y Position (0-1)",
+                "width_label": "Width (0-1)",
+                "height_label": "Height (0-1)",
+                "ns_min_label": "N/S Min (South is negative)",
+                "ns_max_label": "N/S Max",
+                "ew_min_label": "E/W Min (West is negative)",
+                "ew_max_label": "E/W Max",
+                "equalizer_title": "EQUALIZER",
+                "reset_btn": "Reset",
+                "playing": "Playing",
+                "paused": "Paused",
+                "stopped": "Stopped",
+                "vol_label": "Vol",
+                "play": "Play",
+                "pause": "Pause",
+                "resume": "Resume",
+                "stop": "Stop",
+                "unknown_out_of_bounds": "Unknown/Out of Bounds",
+                "auto_scanning": "AUTO SCANNING",
+                "api_key_detected": "API Key Detected",
+                "api_key_not_detected": "API Key Not Detected",
+                "api_key_support_warning": "A supported API key was not detected.",
+                "failed_load_status": "Failed to load status",
+                "silent_no_track": "Silent (No Track Active)",
+                "font_normal": "Normal",
+                "font_larger": "Larger",
+                "font_largest": "Largest",
+                "method_local_ocr": "Local OCR",
+                "method_gemini_fallback": "Gemini Vision Fallback",
+                "method_simulation": "Simulation",
+                "none": "None",
+                "eq_flat": "Flat",
+                "eq_bass_boost": "Bass Boost",
+                "eq_treble_boost": "Treble Boost",
+                "eq_vocal": "Vocal",
+                "eq_loudness": "Loudness",
+                "eq_acoustic": "Acoustic",
+                "eq_custom": "Custom"
+            },
+            "en-GB": {
+                "subtitle": "Adaptive, location-aware audio in LOTRO",
+                "auto_polling": "AUTO-POLLING SCREEN",
+                "ready": "READY",
+                "unauthorized": "UNAUTHORIZED",
+                "offline": "OFFLINE",
+                "api_key_detection": "API Key Detection",
+                "loading_status": "Loading status...",
+                "now_playing": "NOW PLAYING",
+                "region_music_mappings": "REGION MUSIC MAPPINGS",
+                "add_mapping": "Add Mapping",
+                "reset_config": "Reset Config",
+                "save_changes_to_disk": "Save Changes to Disk",
+                "active_screen_detection": "ACTIVE SCREEN DETECTION",
+                "refresh_capture": "Refresh Capture",
+                "scan_screen": "Scan Screen",
+                "no_screen_captures": "No screen captures cached yet.<br><span style=\"font-size: 0.8rem; opacity: 0.7;\">Click Scan Screen to capture.</span>",
+                "matched_location": "Matched Location",
+                "parsed_coordinates": "Parsed Coordinates",
+                "extraction_route": "Extraction Route",
+                "waiting_for_scan": "Waiting for scan...",
+                "bounding_box_selector": "BOUNDING BOX SELECTOR",
+                "minimap_crop_box": "MINIMAP CROP BOX",
+                "audio_library": "AUDIO LIBRARY",
+                "add_file": "+ Add File",
+                "search_placeholder": "Search by title or tag...",
+                "all_tags": "All Tags",
+                "add_region_mapping": "ADD REGION MAPPING",
+                "edit_region_mapping": "EDIT REGION MAPPING",
+                "match_type": "Match Type",
+                "location_match_opt": "Location Name Match (OCR/Vision)",
+                "coordinate_match_opt": "Coordinate Range Match (N/S, E/W)",
+                "location_name_label": "Location Name Text (e.g. Town, Forest)",
+                "audio_track_label": "Audio Track Filename (e.g. town.wav)",
+                "cancel": "Cancel",
+                "apply_item": "Apply Item",
+                "location_match_details": "LOCATION MATCH",
+                "coordinate_range_block": "Coordinate Range Block",
+                "dark_theme_title": "Dark Theme",
+                "light_theme_title": "Light Theme",
+                "accessible_mode_title": "Accessible Mode",
+                "mute_unmute_title": "Mute / Unmute",
+                "x_position_label": "X Position (0-1)",
+                "y_position_label": "Y Position (0-1)",
+                "width_label": "Width (0-1)",
+                "height_label": "Height (0-1)",
+                "ns_min_label": "N/S Min (South is negative)",
+                "ns_max_label": "N/S Max",
+                "ew_min_label": "E/W Min (West is negative)",
+                "ew_max_label": "E/W Max",
+                "equalizer_title": "EQUALIZER",
+                "reset_btn": "Reset",
+                "playing": "Playing",
+                "paused": "Paused",
+                "stopped": "Stopped",
+                "vol_label": "Vol",
+                "play": "Play",
+                "pause": "Pause",
+                "resume": "Resume",
+                "stop": "Stop",
+                "unknown_out_of_bounds": "Unknown/Out of Bounds",
+                "auto_scanning": "AUTO SCANNING",
+                "api_key_detected": "API Key Detected",
+                "api_key_not_detected": "API Key Not Detected",
+                "api_key_support_warning": "A supported API key was not detected.",
+                "failed_load_status": "Failed to load status",
+                "silent_no_track": "Silent (No Track Active)",
+                "font_normal": "Normal",
+                "font_larger": "Larger",
+                "font_largest": "Largest",
+                "method_local_ocr": "Local OCR",
+                "method_gemini_fallback": "Gemini Vision Fallback",
+                "method_simulation": "Simulation",
+                "none": "None",
+                "eq_flat": "Flat",
+                "eq_bass_boost": "Bass Boost",
+                "eq_treble_boost": "Treble Boost",
+                "eq_vocal": "Vocal",
+                "eq_loudness": "Loudness",
+                "eq_acoustic": "Acoustic",
+                "eq_custom": "Custom"
+            },
+            "fr-FR": {
+                "subtitle": "Audio adaptatif et sensible à la localisation dans LOTRO",
+                "auto_polling": "ANALYSE AUTO DE L'ÉCRAN",
+                "ready": "PRÊT",
+                "unauthorized": "NON AUTORISÉ",
+                "offline": "HORS LIGNE",
+                "api_key_detection": "Détection de Clé API",
+                "loading_status": "Chargement du statut...",
+                "now_playing": "LECTURE EN COURS",
+                "region_music_mappings": "CORRESPONDANCES MUSICALES DES RÉGIONS",
+                "add_mapping": "Ajouter la correspondance",
+                "reset_config": "Réinitialiser la config",
+                "save_changes_to_disk": "Enregistrer les modifications sur le disque",
+                "active_screen_detection": "DÉTECTION DE L'ÉCRAN ACTIF",
+                "refresh_capture": "Actualiser la capture",
+                "scan_screen": "Analyser l'écran",
+                "no_screen_captures": "Aucune capture d'écran en cache.<br><span style=\"font-size: 0.8rem; opacity: 0.7;\">Cliquez sur Analyser l'écran.</span>",
+                "matched_location": "Emplacement correspondant",
+                "parsed_coordinates": "Coordonnées analysées",
+                "extraction_route": "Route d'extraction",
+                "waiting_for_scan": "En attente d'analyse...",
+                "bounding_box_selector": "SÉLECTEUR DE ZONE DE CAPTURE",
+                "minimap_crop_box": "ZONE DE COUPE DE LA MINICARTE",
+                "audio_library": "BIBLIOTHÈQUE AUDIO",
+                "add_file": "+ Ajouter",
+                "search_placeholder": "Rechercher par titre ou tag...",
+                "all_tags": "Tous les tags",
+                "add_region_mapping": "AJOUTER UNE CORRESPONDANCE DE RÉGION",
+                "edit_region_mapping": "MODIFIER LA CORRESPONDANCE DE RÉGION",
+                "match_type": "Type de correspondance",
+                "location_match_opt": "Nom de l'emplacement (OCR/Vision)",
+                "coordinate_match_opt": "Plage de coordonnées (N/S, E/O)",
+                "location_name_label": "Nom de l'emplacement (ex: Town, Forest)",
+                "audio_track_label": "Nom du fichier audio (ex: town.wav)",
+                "cancel": "Annuler",
+                "apply_item": "Appliquer",
+                "location_match_details": "CORRESPONDANCE DE LIEU",
+                "coordinate_range_block": "Zone de coordonnées",
+                "dark_theme_title": "Thème sombre",
+                "light_theme_title": "Thème clair",
+                "accessible_mode_title": "Mode accessible",
+                "mute_unmute_title": "Muet / Activer le son",
+                "x_position_label": "Position X (0-1)",
+                "y_position_label": "Position Y (0-1)",
+                "width_label": "Largeur (0-1)",
+                "height_label": "Hauteur (0-1)",
+                "ns_min_label": "N/S Min (Le sud est négatif)",
+                "ns_max_label": "N/S Max",
+                "ew_min_label": "E/O Min (L'ouest est négatif)",
+                "ew_max_label": "E/O Max",
+                "equalizer_title": "ÉGALISEUR",
+                "reset_btn": "Réinitialiser",
+                "playing": "Lecture en cours",
+                "paused": "En pause",
+                "stopped": "Arrêté",
+                "vol_label": "Vol",
+                "play": "Lecture",
+                "pause": "Pause",
+                "resume": "Reprendre",
+                "stop": "Arrêter",
+                "unknown_out_of_bounds": "Inconnu/Hors limites",
+                "auto_scanning": "ANALYSE AUTO",
+                "api_key_detected": "Clé API détectée",
+                "api_key_not_detected": "Clé API non détectée",
+                "api_key_support_warning": "Aucune clé API supportée n'a été détectée.",
+                "failed_load_status": "Échec du chargement du statut",
+                "silent_no_track": "Silencieux (aucune piste active)",
+                "font_normal": "Normal",
+                "font_larger": "Plus grand",
+                "font_largest": "Le plus grand",
+                "method_local_ocr": "OCR Local",
+                "method_gemini_fallback": "Remplacement Vision Gemini",
+                "method_simulation": "Simulation",
+                "none": "Aucun",
+                "eq_flat": "Plat",
+                "eq_bass_boost": "Amplification des basses",
+                "eq_treble_boost": "Amplification des aigus",
+                "eq_vocal": "Vocal",
+                "eq_loudness": "Sonie",
+                "eq_acoustic": "Acoustique",
+                "eq_custom": "Personnalisé"
+            },
+            "de-DE": {
+                "subtitle": "Adaptiver, standortbezogener Ton in LOTRO",
+                "auto_polling": "AUTOMATISCHE BILDSCHIRMERFASSUNG",
+                "ready": "BEREIT",
+                "unauthorized": "NICHT AUTORISIERT",
+                "offline": "OFFLINE",
+                "api_key_detection": "API-Schlüsselerkennung",
+                "loading_status": "Lade Status...",
+                "now_playing": "AKTUELLE WIEDERGABE",
+                "region_music_mappings": "REGION-MUSIKZUORDNUNGEN",
+                "add_mapping": "Zuordnung hinzufügen",
+                "reset_config": "Zurücksetzen",
+                "save_changes_to_disk": "Änderungen auf Festplatte speichern",
+                "active_screen_detection": "AKTIVE BILDSCHIRMERKENNUNG",
+                "refresh_capture": "Erfassen aktualisieren",
+                "scan_screen": "Bildschirm scannen",
+                "no_screen_captures": "Noch keine Bildschirmfotos zwischengespeichert.<br><span style=\"font-size: 0.8rem; opacity: 0.7;\">Klicken Sie auf Bildschirm scannen.</span>",
+                "matched_location": "Erkannter Standort",
+                "parsed_coordinates": "Analysierte Koordinaten",
+                "extraction_route": "Extraktionsroute",
+                "waiting_for_scan": "Warte auf Scan...",
+                "bounding_box_selector": "BEGRENZUNGSRAHMEN-AUSWAHL",
+                "minimap_crop_box": "MINIKARTEN-AUSSCHNITT",
+                "audio_library": "AUDIOBIBLIOTHEK",
+                "add_file": "+ Datei hinzufügen",
+                "search_placeholder": "Suche nach Titel oder Tag...",
+                "all_tags": "Alle Tags",
+                "add_region_mapping": "REGION-ZUORDNUNG HINZUFÜGEN",
+                "edit_region_mapping": "REGION-ZUORDNUNG BEARBEITEN",
+                "match_type": "Erkennungstyp",
+                "location_match_opt": "Standortname (OCR/Vision)",
+                "coordinate_match_opt": "Koordinatenbereich (N/S, O/W)",
+                "location_name_label": "Standortname (z.B. Town, Forest)",
+                "audio_track_label": "Audiodateiname (z.B. town.wav)",
+                "cancel": "Abbrechen",
+                "apply_item": "Übernehmen",
+                "location_match_details": "STANDORT-ZUORDNUNG",
+                "coordinate_range_block": "Koordinatenbereichsblock",
+                "dark_theme_title": "Dunkles Design",
+                "light_theme_title": "Helles Design",
+                "accessible_mode_title": "Barrierefreier Modus",
+                "mute_unmute_title": "Stummschalten / Ton einschalten",
+                "x_position_label": "X-Position (0-1)",
+                "y_position_label": "Y-Position (0-1)",
+                "width_label": "Breite (0-1)",
+                "height_label": "Höhe (0-1)",
+                "ns_min_label": "N/S Min (Süden ist negativ)",
+                "ns_max_label": "N/S Max",
+                "ew_min_label": "O/W Min (Westen ist negativ)",
+                "ew_max_label": "O/W Max",
+                "equalizer_title": "EQUALIZER",
+                "reset_btn": "Reset",
+                "playing": "Spielt",
+                "paused": "Pausiert",
+                "stopped": "Angehalten",
+                "vol_label": "Lautst",
+                "play": "Spielen",
+                "pause": "Pause",
+                "resume": "Fortsetzen",
+                "stop": "Stopp",
+                "unknown_out_of_bounds": "Unbekannt/Außerhalb der Grenzen",
+                "auto_scanning": "AUTO-SCANNING",
+                "api_key_detected": "API-Schlüssel erkannt",
+                "api_key_not_detected": "API-Schlüssel nicht erkannt",
+                "api_key_support_warning": "Es wurde kein unterstützter API-Schlüssel erkannt.",
+                "failed_load_status": "Status laden fehlgeschlagen",
+                "silent_no_track": "Stumm (keine aktive Spur)",
+                "font_normal": "Normal",
+                "font_larger": "Größer",
+                "font_largest": "Am größten",
+                "method_local_ocr": "Lokale OCR",
+                "method_gemini_fallback": "Gemini-Vision-Fallback",
+                "method_simulation": "Simulation",
+                "none": "Keine",
+                "eq_flat": "Flach",
+                "eq_bass_boost": "Bass-Verstärkung",
+                "eq_treble_boost": "Höhen-Verstärkung",
+                "eq_vocal": "Stimme",
+                "eq_loudness": "Lautheit",
+                "eq_acoustic": "Akustisch",
+                "eq_custom": "Benutzerdefiniert"
+            },
+            "es-ES": {
+                "subtitle": "Audio adaptativo y consciente de la ubicación en LOTRO",
+                "auto_polling": "ANÁLISIS AUTOMÁTICO DE PANTALLA",
+                "ready": "LISTO",
+                "unauthorized": "NO AUTORIZADO",
+                "offline": "DESCONECTADO",
+                "api_key_detection": "Detección de Clave API",
+                "loading_status": "Cargando estado...",
+                "now_playing": "REPRODUCIENDO AHORA",
+                "region_music_mappings": "ASIGNACIONES DE MÚSICA DE REGIÓN",
+                "add_mapping": "Añadir asignación",
+                "reset_config": "Reiniciar config",
+                "save_changes_to_disk": "Guardar cambios en disco",
+                "active_screen_detection": "DETECCIÓN DE PANTALLA ACTIVA",
+                "refresh_capture": "Actualizar captura",
+                "scan_screen": "Escanear pantalla",
+                "no_screen_captures": "No hay capturas almacenadas.<br><span style=\"font-size: 0.8rem; opacity: 0.7;\">Haz clic en Escanear pantalla para capturar.</span>",
+                "matched_location": "Ubicación coincidente",
+                "parsed_coordinates": "Coordenadas extraídas",
+                "extraction_route": "Ruta de extracción",
+                "waiting_for_scan": "Esperando escaneo...",
+                "bounding_box_selector": "SELECTOR DE ÁREA DE CAPTURE",
+                "minimap_crop_box": "CUADRO DE RECORTE DE MINIMAPA",
+                "audio_library": "BIBLIOTECA DE AUDIO",
+                "add_file": "+ Añadir archivo",
+                "search_placeholder": "Buscar por título o etiqueta...",
+                "all_tags": "Todas las etiquetas",
+                "add_region_mapping": "AÑADIR ASIGNACIÓN DE REGIÓN",
+                "edit_region_mapping": "EDITAR ASIGNACIÓN DE REGIÓN",
+                "match_type": "Tipo de coincidencia",
+                "location_match_opt": "Nombre de la ubicación (OCR/Visión)",
+                "coordinate_match_opt": "Rango de coordenadas (N/S, E/O)",
+                "location_name_label": "Nombre de la ubicación (ej. Town, Forest)",
+                "audio_track_label": "Nombre de archivo de audio (ej. town.wav)",
+                "cancel": "Cancelar",
+                "apply_item": "Aplicar item",
+                "location_match_details": "COINCIDENCIA DE UBICACIÓN",
+                "coordinate_range_block": "Bloque de rango de coordenadas",
+                "dark_theme_title": "Tema oscuro",
+                "light_theme_title": "Tema claro",
+                "accessible_mode_title": "Modo accesible",
+                "mute_unmute_title": "Silenciar / Activar sonido",
+                "x_position_label": "Posición X (0-1)",
+                "y_position_label": "Posición Y (0-1)",
+                "width_label": "Ancho (0-1)",
+                "height_label": "Alto (0-1)",
+                "ns_min_label": "N/S Mín (El sur es negativo)",
+                "ns_max_label": "N/S Máx",
+                "ew_min_label": "E/O Mín (El oeste es negativo)",
+                "ew_max_label": "E/O Máx",
+                "equalizer_title": "ECUALIZADOR",
+                "reset_btn": "Restablecer",
+                "playing": "Reproduciendo",
+                "paused": "Pausado",
+                "stopped": "Detenido",
+                "vol_label": "Vol",
+                "play": "Reproducir",
+                "pause": "Pausar",
+                "resume": "Reanudar",
+                "stop": "Detener",
+                "unknown_out_of_bounds": "Desconocido/Fuera de límites",
+                "auto_scanning": "ESCANEO AUTO",
+                "api_key_detected": "Clave API detectada",
+                "api_key_not_detected": "Clave API no detectada",
+                "api_key_support_warning": "No se detectó ninguna clave API compatible.",
+                "failed_load_status": "Error al cargar el estado",
+                "silent_no_track": "Silencio (sin pista activa)",
+                "font_normal": "Normal",
+                "font_larger": "Más grande",
+                "font_largest": "El más grande",
+                "method_local_ocr": "OCR Local",
+                "method_gemini_fallback": "Alternativa Gemini Vision",
+                "method_simulation": "Simulación",
+                "none": "Ninguno",
+                "eq_flat": "Plano",
+                "eq_bass_boost": "Refuerzo de graves",
+                "eq_treble_boost": "Refuerzo de agudos",
+                "eq_vocal": "Vocal",
+                "eq_loudness": "Sonoridad",
+                "eq_acoustic": "Acústico",
+                "eq_custom": "Personalizado"
+            },
+            "it-IT": {
+                "subtitle": "Audio adattivo e sensibile alla posizione in LOTRO",
+                "auto_polling": "RILEVAMENTO AUTOMATICO SCHERMO",
+                "ready": "PRONTO",
+                "unauthorized": "NON AUTORIZZATO",
+                "offline": "DISCONNESSO",
+                "api_key_detection": "Rilevamento Chiave API",
+                "loading_status": "Caricamento dello stato...",
+                "now_playing": "IN RIPRODUZIONE",
+                "region_music_mappings": "MAPPATURE DELLA MUSICA DELLE REGIONI",
+                "add_mapping": "Aggiungi mappatura",
+                "reset_config": "Reimposta config",
+                "save_changes_to_disk": "Salva modifiche su disco",
+                "active_screen_detection": "RILEVAMENTO SCHERMO ATTIVO",
+                "refresh_capture": "Aggiorna cattura",
+                "scan_screen": "Scansiona schermo",
+                "no_screen_captures": "Nessuna cattura dello schermo memorizzata.<br><span style=\"font-size: 0.8rem; opacity: 0.7;\">Fai clic su Scansiona schermo.</span>",
+                "matched_location": "Posizione corrispondente",
+                "parsed_coordinates": "Coordinate analizzate",
+                "extraction_route": "Metodo di estrazione",
+                "waiting_for_scan": "In attesa di scansione...",
+                "bounding_box_selector": "SELETTORE RETTANGOLO SELEZIONE",
+                "minimap_crop_box": "RETICOLO RITAGLIO MINIMAPPA",
+                "audio_library": "LIBRERIA AUDIO",
+                "add_file": "+ Aggiungi file",
+                "search_placeholder": "Cerca per titolo o tag...",
+                "all_tags": "Tutti i tag",
+                "add_region_mapping": "AGGIUNGI MAPPATURA REGIONE",
+                "edit_region_mapping": "MODIFICA MAPPATURA REGIONE",
+                "match_type": "Tipo di corrispondenza",
+                "location_match_opt": "Nome della posizione (OCR/Visione)",
+                "coordinate_match_opt": "Intervallo di coordinate (N/S, E/O)",
+                "location_name_label": "Nome della posizione (es. Town, Forest)",
+                "audio_track_label": "Nome del file audio (es. town.wav)",
+                "cancel": "Annulla",
+                "apply_item": "Applica voce",
+                "location_match_details": "CORRISPONDENZA POSIZIONE",
+                "coordinate_range_block": "Blocco intervallo di coordinate",
+                "dark_theme_title": "Tema scuro",
+                "light_theme_title": "Tema chiaro",
+                "accessible_mode_title": "Modalità accessibile",
+                "mute_unmute_title": "Disattiva / Attiva audio",
+                "x_position_label": "Posizione X (0-1)",
+                "y_position_label": "Posizione Y (0-1)",
+                "width_label": "Larghezza (0-1)",
+                "height_label": "Altezza (0-1)",
+                "ns_min_label": "N/S Min (Il sud è negativo)",
+                "ns_max_label": "N/S Max",
+                "ew_min_label": "E/O Min (L'ovest è negativo)",
+                "ew_max_label": "E/O Max",
+                "equalizer_title": "EQUALIZZATORE",
+                "reset_btn": "Ripristina",
+                "playing": "In riproduzione",
+                "paused": "In pausa",
+                "stopped": "Interrotto",
+                "vol_label": "Vol",
+                "play": "Riproduci",
+                "pause": "Pausa",
+                "resume": "Riprendi",
+                "stop": "Interrompi",
+                "unknown_out_of_bounds": "Sconosciuto/Fuori dai limiti",
+                "auto_scanning": "SCANSIONE AUTO",
+                "api_key_detected": "Chiave API rilevata",
+                "api_key_not_detected": "Chiave API non rilevata",
+                "api_key_support_warning": "Non è stata rilevata una chiave API supportata.",
+                "failed_load_status": "Errore caricamento stato",
+                "silent_no_track": "Silenzioso (nessuna traccia attiva)",
+                "font_normal": "Normale",
+                "font_larger": "Più grande",
+                "font_largest": "Il più grande",
+                "method_local_ocr": "OCR Locale",
+                "method_gemini_fallback": "Ripiego Gemini Vision",
+                "method_simulation": "Simulazione",
+                "none": "Nessuno",
+                "eq_flat": "Piatto",
+                "eq_bass_boost": "Rinforzo bassi",
+                "eq_treble_boost": "Rinforzo alti",
+                "eq_vocal": "Vocale",
+                "eq_loudness": "Sonorità",
+                "eq_acoustic": "Acustico",
+                "eq_custom": "Personalizzato"
+            }
+        };
+
+        function t(key, defaultValue = "") {
+            const currentLang = localStorage.getItem('lang') || 'en-US';
+            const dict = LOCALIZATION[currentLang] || LOCALIZATION['en-US'];
+            return dict[key] || LOCALIZATION['en-US'][key] || defaultValue || key;
+        }
+
+        function applyLocalization() {
+            const currentLang = localStorage.getItem('lang') || 'en-US';
+            const langSelect = document.getElementById('lang-select');
+            if (langSelect) {
+                langSelect.value = currentLang;
+            }
+
+            // Translate static elements using data-loc
+            document.querySelectorAll('[data-loc]').forEach(el => {
+                const key = el.getAttribute('data-loc');
+                const val = t(key);
+                if (val) {
+                    if (el.tagName === 'INPUT') {
+                        el.placeholder = val;
+                    } else {
+                        el.innerHTML = val;
+                    }
+                }
+            });
+
+            // Translate titles / tooltips
+            document.querySelectorAll('[data-loc-title]').forEach(el => {
+                const key = el.getAttribute('data-loc-title');
+                const val = t(key);
+                if (val) {
+                    el.title = val;
+                }
+            });
+
+            // Re-render components with localized dynamic strings
+            if (configData) {
+                renderMappings();
+            }
+            if (currentPlaybackStatus) {
+                updatePlayerUI(currentPlaybackStatus);
+                updateParseUI(currentPlaybackStatus.latest_parse);
+            }
+        }
+
+        function changeLanguage(lang) {
+            localStorage.setItem('lang', lang);
+            applyLocalization();
+        }
+
         function setTheme(theme) {
             if (theme === 'light') {
                 document.body.classList.add('light-theme');
@@ -4725,6 +5298,7 @@
             loadDashboard();
             startSeekTimer();
             initEQ();
+            applyLocalization();
         };
     </script>
 </body>
