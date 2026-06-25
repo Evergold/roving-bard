@@ -1147,6 +1147,7 @@
                     <select id="audio-tag-filter" style="width: 120px; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; cursor: pointer; outline: none;" onchange="filterAudioLibrary()">
                         <option value="">All Tags</option>
                     </select>
+                    <datalist id="all-existing-tags-list"></datalist>
                 </div>
                 <div class="form-section" style="gap: 0;">
                     <div id="audio-library-resizable" class="audio-library-resizable" style="height: 200px;">
@@ -1733,10 +1734,10 @@
                     if (fileTags.length > 0 || isFileActive) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         fileTags.forEach(tag => {
-                            tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeFileTag(event, '${file.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
+                            tagsHtml += `<span class="badge-tag" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.12rem 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeFileTag(event, '${file.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
                         });
                         if (isFileActive) {
-                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
+                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.75rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
                         }
                         tagsHtml += `</div>`;
                     }
@@ -1828,10 +1829,10 @@
                     if (segTags.length > 0 || isSegActive) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         segTags.forEach(tag => {
-                            tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeSegmentTag(event, '${segment.name.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
+                            tagsHtml += `<span class="badge-tag" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.12rem 0.35rem; display: inline-flex; align-items: center; gap: 0.25rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeSegmentTag(event, '${segment.name.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
                         });
                         if (isSegActive) {
-                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
+                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.75rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
                         }
                         tagsHtml += `</div>`;
                     }
@@ -1880,6 +1881,15 @@
                     filterDropdown.appendChild(opt);
                 });
             }
+            const datalist = document.getElementById('all-existing-tags-list');
+            if (datalist) {
+                datalist.innerHTML = '';
+                Array.from(uniqueTags).sort().forEach(tag => {
+                    const opt = document.createElement('option');
+                    opt.value = tag;
+                    datalist.appendChild(opt);
+                });
+            }
         }
 
         function showAddTagInput(event, type, key) {
@@ -1890,17 +1900,17 @@
             const input = document.createElement('input');
             input.type = 'text';
             input.placeholder = 'Tag...';
-            input.style = `width: 70px; font-size: 0.65rem; background: rgba(0, 0, 0, 0.4); border: 1px solid ${type === 'file' ? 'var(--neon-blue)' : 'var(--neon-pink)'}; border-radius: 4px; padding: 0.05rem 0.25rem; color: white; outline: none; font-family: 'Space Mono', monospace;`;
+            input.setAttribute('list', 'all-existing-tags-list');
+            input.style = `width: 95px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid ${type === 'file' ? 'var(--neon-blue)' : 'var(--neon-pink)'}; border-radius: 4px; padding: 0.12rem 0.35rem; color: white; outline: none; font-family: 'Space Mono', monospace;`;
             
-            // On blur, revert back to the badge
+            // Use blurred flag and setTimeout to avoid race conditions between events
+            let blurred = false;
             input.onblur = () => {
-                input.replaceWith(badgeAdd);
-            };
-            
-            // On keydown (Enter to save, Escape to cancel)
-            input.onkeydown = async (e) => {
-                if (e.key === 'Enter') {
+                if (blurred) return;
+                blurred = true;
+                setTimeout(async () => {
                     const val = input.value.trim().toLowerCase();
+                    input.replaceWith(badgeAdd);
                     if (val) {
                         if (type === 'file') {
                             await addFileTag(key, val);
@@ -1908,14 +1918,28 @@
                             await addSegmentTag(key, val);
                         }
                     }
+                }, 200);
+            };
+            
+            // On keydown (Enter to save, Escape to cancel)
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
                     input.blur();
                 } else if (e.key === 'Escape') {
+                    input.value = '';
                     input.blur();
                 }
             };
             
             badgeAdd.replaceWith(input);
             input.focus();
+            if (typeof input.showPicker === 'function') {
+                try {
+                    input.showPicker();
+                } catch (e) {
+                    console.error("showPicker error:", e);
+                }
+            }
         }
 
         async function addFileTag(filename, tagName) {
