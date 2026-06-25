@@ -1322,7 +1322,7 @@
         .theme-btn, .font-size-btn {
             background: none;
             border: none;
-            height: 32px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1331,15 +1331,15 @@
             transition: all 0.2s ease;
         }
         .theme-btn {
-            width: 32px;
+            width: 48px;
             border-radius: 50%;
         }
         .font-size-btn {
-            min-width: 32px;
-            padding: 0 6px;
-            border-radius: 16px;
+            min-width: 48px;
+            padding: 0 16px;
+            border-radius: 24px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 1.15rem;
         }
         .theme-btn:hover, .font-size-btn:hover {
             color: var(--text-main);
@@ -1389,20 +1389,20 @@
                 <h1>Roving Bard</h1>
                 <p>Adaptive, location-aware audio in LOTRO</p>
             </div>
-            <div class="accessibility-controls" style="display: flex; align-items: center; gap: 0.8rem; border-left: 1px solid var(--border); padding-left: 1.5rem; margin-left: 0.5rem;">
+            <div class="accessibility-controls" style="display: flex; align-items: center; gap: 1rem; border-left: 1px solid var(--border); padding-left: 1.8rem; margin-left: 0.8rem;">
                 <!-- Theme toggle buttons -->
-                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px;">
+                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
                     <!-- Dark theme button (moon icon) -->
                     <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" title="Dark Theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                     </button>
                     <!-- Light theme button (sun with rays icon) -->
                     <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" title="Light Theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     </button>
                 </div>
                 <!-- Font size control button group -->
-                <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px;">
+                <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
                     <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" title="Normal/Small Sizing">abc</button>
                     <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Medium Sizing">+</button>
                     <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Large Sizing">++</button>
