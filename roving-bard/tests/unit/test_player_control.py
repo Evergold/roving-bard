@@ -343,5 +343,60 @@ def test_api_bounds_control() -> None:
     assert status_data["current_position"] == 10.0
 
 
+def test_player_select_track(tmp_path) -> None:
+    """Test select_track method on SafeMusicPlayer."""
+    track = tmp_path / "mock_track.mp3"
+    track.write_bytes(b"dummy")
+
+    player = SafeMusicPlayer(playlist_dir=str(tmp_path))
+    player.simulated = True
+    player.current_track = None
+    player.paused = False
+    player.was_stopped = False
+
+    # Select track
+    assert player.select_track("mock_track.mp3") is True
+    assert player.current_track == "mock_track.mp3"
+    assert player.paused is True
+    assert player.was_stopped is True
+
+
+def test_api_select_control() -> None:
+    """Test POST /api/control with select action, and status representation."""
+    headers = get_headers()
+
+    # Create dummy track file in tools.player.playlist_dir
+    os.makedirs(tools.player.playlist_dir, exist_ok=True)
+    dummy_file = os.path.join(tools.player.playlist_dir, "test_track.mp3")
+    with open(dummy_file, "wb") as f:
+        f.write(b"dummy")
+
+    try:
+        # Reset player state
+        tools.player.simulated = True
+        tools.player.current_track = None
+        tools.player.paused = False
+        tools.player.was_stopped = False
+
+        # Send select command
+        select_response = client.post(
+            "/api/control",
+            headers=headers,
+            json={"action": "select", "track_file": "test_track.mp3"},
+        )
+        assert select_response.status_code == 200
+        assert select_response.json() == {"status": "success", "message": "Selected track test_track.mp3."}
+
+        # Verify status after select
+        status_response = client.get("/api/status", headers=headers)
+        assert status_response.status_code == 200
+        assert status_response.json()["paused"] is True
+        assert status_response.json()["was_stopped"] is True
+        assert status_response.json()["current_track"] == "test_track.mp3"
+    finally:
+        if os.path.exists(dummy_file):
+            os.remove(dummy_file)
+
+
 
 

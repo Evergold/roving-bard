@@ -153,7 +153,7 @@ app.description = "API for interacting with the Agent roving-bard"
 
 
 class ControlRequest(BaseModel):
-    action: str  # play, stop, volume, scan, seek, pause, resume, set_bounds
+    action: str  # play, stop, volume, scan, seek, pause, resume, set_bounds, select
     track_file: str | None = None
     volume: float | None = None
     position: float | None = None
@@ -297,6 +297,13 @@ def api_control(req: ControlRequest):
                 tools.player.last_seek_position = tools.player.start_time
             return {"status": "success", "message": "Playback bounds updated."}
         return {"status": "error", "message": "start_time or end_time is required for set_bounds."}
+    elif req.action == "select":
+        if req.track_file:
+            success = tools.player.select_track(req.track_file)
+            if success:
+                return {"status": "success", "message": f"Selected track {req.track_file}."}
+            return {"status": "error", "message": "Failed to select track."}
+        return {"status": "error", "message": "track_file is required for select action."}
     return {"status": "error", "message": f"Unknown action: {req.action}"}
 
 

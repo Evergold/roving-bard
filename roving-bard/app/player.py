@@ -100,7 +100,7 @@ class SafeMusicPlayer:
             self.track_duration = tag.duration
         except Exception as e:
             print(f"Error loading track duration with TinyTag: {e}")
-        if self.track_duration == 0.0:
+        if self.track_duration is None or self.track_duration == 0.0:
             self.track_duration = 180.0
 
         self.start_time = 0.0
@@ -120,6 +120,54 @@ class SafeMusicPlayer:
             return True
         except Exception as e:
             print(f"Error during Pygame playback of {track_file}: {e}")
+            return False
+
+    def select_track(self, track_file):
+        if not track_file:
+            return False
+
+        track_path = os.path.join(self.playlist_dir, track_file)
+        if not os.path.exists(track_path):
+            print(f"Warning: Track file not found: {track_path}")
+            return False
+
+        # If there is currently a track playing or paused, stop it
+        if self.current_track:
+            if not self.simulated and self.mixer_initialized:
+                try:
+                    pygame.mixer.music.stop()
+                except Exception as e:
+                    print(f"Error stopping music: {e}")
+
+        self.current_track = track_file
+        self.paused = True
+        self.was_stopped = True
+        self.seeked_while_paused = False
+
+        # Load track duration
+        self.track_duration = 0.0
+        try:
+            tag = TinyTag.get(track_path)
+            self.track_duration = tag.duration
+        except Exception as e:
+            print(f"Error loading track duration with TinyTag: {e}")
+        if self.track_duration is None or self.track_duration == 0.0:
+            self.track_duration = 180.0
+
+        self.start_time = 0.0
+        self.end_time = None
+        self.last_seek_position = self.start_time
+        self.last_play_time = None
+
+        if self.simulated:
+            print(f"[Playback SIMULATED] Selected track (stopped): {track_file}")
+            return True
+
+        try:
+            pygame.mixer.music.load(track_path)
+            return True
+        except Exception as e:
+            print(f"Error loading Pygame track {track_file}: {e}")
             return False
 
     def stop(self, fade_out_ms=1500):

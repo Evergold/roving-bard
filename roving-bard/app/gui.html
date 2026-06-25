@@ -1548,15 +1548,34 @@
                     }
                 }
 
+                let subtitleText = 'Click to select this track';
+                if (activeTrack === file) {
+                    subtitleText = 'Currently selected track';
+                }
+
                 item.innerHTML = `
-                    <div class="mapping-item-details">
+                    <div class="mapping-item-details" style="cursor: pointer;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
                         <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${file}${badgeHtml}</div>
-                        <div class="mapping-item-sub">Click to play this track</div>
+                        <div class="mapping-item-sub">${subtitleText}</div>
                     </div>
                     <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
                 `;
                 list.appendChild(item);
             });
+        }
+
+        async function selectAudioFile(filename) {
+            try {
+                await apiFetch('/api/control', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'select', track_file: filename })
+                });
+                loadDashboard();
+            } catch (err) {
+                console.error("Error selecting audio file:", err);
+                loadDashboard();
+            }
         }
 
         async function playAudioFile(filename) {
