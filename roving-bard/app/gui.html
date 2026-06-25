@@ -1157,6 +1157,15 @@
             cursor: pointer;
         }
 
+        .auto-polling-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            color: #e5e7eb;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 8px rgba(124, 77, 255, 0.4);
+        }
+
         .switch {
             position: relative;
             display: inline-block;
@@ -1480,6 +1489,10 @@
             font-weight: 800 !important;
             text-shadow: none !important;
         }
+        body.light-theme .auto-polling-label {
+            color: var(--text-main) !important;
+            font-weight: 800 !important;
+        }
 
         .theme-btn, .font-size-btn {
             background: none;
@@ -1572,7 +1585,7 @@
             </div>
         </div>
         <div class="switch-container">
-            <span style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--text-muted);">AUTO-POLLING SCREEN</span>
+            <span class="auto-polling-label">AUTO-POLLING SCREEN</span>
             <label class="switch">
                 <input type="checkbox" id="polling-toggle" onchange="togglePolling(this.checked)">
                 <span class="slider"></span>
