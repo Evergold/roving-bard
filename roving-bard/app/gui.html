@@ -3489,17 +3489,51 @@
                 const maxH = getMaxH();
                 applyHeight(Math.min(maxH, Math.max(minH, initialH)));
 
-                let startY = 0;
+                let startPageY = 0;
                 let startH = 0;
                 let dragging = false;
+                let mouseClientY = 0;
+                let scrollLoopId = null;
 
-                function onMouseMove(e) {
-                    if (!dragging) return;
-                    const dy = e.clientY - startY;
+                function updateHeightFromMouse() {
+                    const pageY = mouseClientY + window.scrollY;
+                    const dy = pageY - startPageY;
                     const minH = getMinH();
                     const maxH = getMaxH();
                     const newH = Math.min(maxH, Math.max(minH, startH + dy));
                     applyHeight(newH);
+                }
+
+                function scrollLoop() {
+                    if (!dragging) return;
+
+                    const threshold = 60; // Pixels from bottom/top edge
+                    const viewportH = window.innerHeight;
+                    
+                    let scrolled = false;
+                    if (mouseClientY > viewportH - threshold) {
+                        // Scroll Down
+                        const speed = Math.min(15, (mouseClientY - (viewportH - threshold)) / 3);
+                        window.scrollBy(0, speed);
+                        scrolled = true;
+                    } else if (mouseClientY < threshold && window.scrollY > 0) {
+                        // Scroll Up
+                        const speed = Math.min(15, (threshold - mouseClientY) / 3);
+                        window.scrollBy(0, -speed);
+                        scrolled = true;
+                    }
+
+                    if (scrolled) {
+                        updateHeightFromMouse();
+                    }
+
+                    scrollLoopId = requestAnimationFrame(scrollLoop);
+                }
+
+                function onMouseMove(e) {
+                    if (!dragging) return;
+                    mouseClientY = e.clientY;
+                    updateHeightFromMouse();
                 }
 
                 function onMouseUp() {
@@ -3508,6 +3542,11 @@
                     bar.classList.remove('dragging');
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
+                    
+                    if (scrollLoopId) {
+                        cancelAnimationFrame(scrollLoopId);
+                        scrollLoopId = null;
+                    }
                     
                     const currentH = container.offsetHeight;
                     const currentFraction = currentH / window.innerHeight;
@@ -3520,13 +3559,18 @@
                 bar.addEventListener('mousedown', function (e) {
                     e.preventDefault();
                     dragging = true;
-                    startY = e.clientY;
+                    mouseClientY = e.clientY;
+                    startPageY = e.clientY + window.scrollY;
                     startH = container.offsetHeight;
                     bar.classList.add('dragging');
                     document.body.style.cursor = 'ns-resize';
                     document.body.style.userSelect = 'none';
+                    
                     window.addEventListener('mousemove', onMouseMove);
                     window.addEventListener('mouseup', onMouseUp);
+                    
+                    // Start scroll loop
+                    scrollLoopId = requestAnimationFrame(scrollLoop);
                 });
 
                 // Readjust panel height on resize to maintain proportion
