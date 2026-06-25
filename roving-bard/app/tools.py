@@ -218,11 +218,8 @@ def play_track(track_file: str) -> dict:
     Returns:
         dict containing status of playback.
     """
-    transitions = config.get("transitions", {"fade_out_ms": 1500, "fade_in_ms": 1500})
-    fade_in = transitions.get("fade_in_ms", 1500)
-
-    # Manual play transitions stop the currently playing track immediately (no fade out delay)
-    success = player.play_track(track_file, fade_in_ms=fade_in, fade_out_ms=0)
+    # Manual play transitions stop the currently playing track immediately with no fade-in or fade-out delays
+    success = player.play_track(track_file, fade_in_ms=0, fade_out_ms=0)
     if success:
         return {"status": "success", "message": f"Now playing {track_file}"}
     return {"status": "error", "message": f"Failed to play track {track_file}"}
