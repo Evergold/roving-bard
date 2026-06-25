@@ -1322,9 +1322,7 @@
         .theme-btn, .font-size-btn {
             background: none;
             border: none;
-            width: 32px;
             height: 32px;
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1332,7 +1330,14 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+        .theme-btn {
+            width: 32px;
+            border-radius: 50%;
+        }
         .font-size-btn {
+            min-width: 32px;
+            padding: 0 6px;
+            border-radius: 16px;
             font-family: 'Space Mono', monospace;
             font-size: 0.85rem;
         }
@@ -1398,9 +1403,9 @@
                 </div>
                 <!-- Font size control button group -->
                 <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px;">
-                    <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" title="Normal/Small Sizing">S</button>
-                    <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Medium Sizing">M</button>
-                    <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Large Sizing">L</button>
+                    <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" title="Normal/Small Sizing">abc</button>
+                    <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Medium Sizing">+</button>
+                    <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Large Sizing">++</button>
                 </div>
             </div>
         </div>
