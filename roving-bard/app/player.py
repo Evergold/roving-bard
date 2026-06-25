@@ -111,7 +111,10 @@ class SafeMusicPlayer:
 
         try:
             if pygame.mixer.music.get_busy():
-                pygame.mixer.music.fadeout(fade_out_ms)
+                if fade_out_ms > 0:
+                    pygame.mixer.music.fadeout(fade_out_ms)
+                else:
+                    pygame.mixer.music.stop()
         except Exception as e:
             print(f"Error stopping playback: {e}")
 

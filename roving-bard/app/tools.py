@@ -229,14 +229,12 @@ def play_track(track_file: str) -> dict:
 
 
 def stop_music() -> dict:
-    """Stops the current music playback with a smooth fade-out.
+    """Stops the current music playback immediately.
 
     Returns:
         dict containing status of playback.
     """
-    transitions = config.get("transitions", {"fade_out_ms": 1500, "fade_in_ms": 1500})
-    fade_out = transitions.get("fade_out_ms", 1500)
-    player.stop(fade_out_ms=fade_out)
+    player.stop(fade_out_ms=0)
     return {"status": "success", "message": "Music stopped."}
 
 
