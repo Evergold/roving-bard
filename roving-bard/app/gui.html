@@ -2137,12 +2137,9 @@
                         }
                     }
 
-                    let subtitleText = `Track: ${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
+                    let subtitleText = `${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
                     if (segVolume !== null) {
                         subtitleText += ` · Vol: ${parseInt(segVolume * 100)}%`;
-                    }
-                    if (isSegActive) {
-                        subtitleText = `ACTIVE · ${subtitleText}`;
                     }
 
                     const segTags = segment.tags || [];
