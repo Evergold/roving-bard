@@ -1256,6 +1256,12 @@
         let showRemainingTime = localStorage.getItem('showRemainingTime') === 'true';
         let seekTimerId = null;
         let activeSegment = null;
+        try {
+            const savedSeg = localStorage.getItem('activeSegment');
+            if (savedSeg) activeSegment = JSON.parse(savedSeg);
+        } catch (e) {
+            console.error("Error parsing activeSegment from localStorage:", e);
+        }
 
         const EMBEDDED_API_KEY = "{{API_KEY_PLACEHOLDER}}";
 
@@ -1790,6 +1796,7 @@
         async function selectSegment(name, trackFile, startTime, endTime) {
             try {
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
+                localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
@@ -1810,6 +1817,7 @@
         async function playSegment(name, trackFile, startTime, endTime) {
             try {
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime };
+                localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                 updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
@@ -1849,15 +1857,22 @@
         function updateExportButtonState() {
             const exportBtn = document.getElementById('export-segment-btn');
             if (!exportBtn) return;
-            if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
-                exportBtn.disabled = true;
-                exportBtn.innerText = 'Export';
-                exportBtn.onclick = exportSegment;
-                return;
+
+            if (activeSegment && currentPlaybackStatus && currentPlaybackStatus.current_track && activeSegment.track_file !== currentPlaybackStatus.current_track) {
+                activeSegment = null;
+                localStorage.removeItem('activeSegment');
             }
 
-            if (activeSegment && activeSegment.track_file !== currentPlaybackStatus.current_track) {
-                activeSegment = null;
+            if (!currentPlaybackStatus || !currentPlaybackStatus.current_track) {
+                exportBtn.disabled = true;
+                if (activeSegment) {
+                    exportBtn.innerText = 'Save';
+                    exportBtn.onclick = saveSegment;
+                } else {
+                    exportBtn.innerText = 'Export';
+                    exportBtn.onclick = exportSegment;
+                }
+                return;
             }
 
             const duration = currentPlaybackStatus.duration || 180.0;
@@ -1907,6 +1922,7 @@
                     alert("Segment saved successfully.");
                     activeSegment.start_time = startVal;
                     activeSegment.end_time = endVal;
+                    localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
                     await loadAudioLibrary();
                     updateExportButtonState();
                 } else {
@@ -1921,6 +1937,7 @@
         async function selectAudioFile(filename) {
             try {
                 activeSegment = null;
+                localStorage.removeItem('activeSegment');
                 updateExportButtonState();
                 await apiFetch('/api/control', {
                     method: 'POST',
@@ -1937,6 +1954,7 @@
         async function playAudioFile(filename) {
             try {
                 activeSegment = null;
+                localStorage.removeItem('activeSegment');
                 updateExportButtonState();
                 const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
                 const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
