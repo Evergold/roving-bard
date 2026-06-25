@@ -1129,13 +1129,13 @@
                             btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
                         } else {
                             btnText = 'Resume';
-                            btnStyle += ' background-color: #ef4444; color: white; border: 1px solid #ef4444;';
+                            btnStyle += ' background: #ef4444; color: white; border: 1px solid #ef4444;';
                             btnClass = 'btn';
                             btnClick = `resumeAudioFile()`;
                         }
                     } else {
                         btnText = 'Playing';
-                        btnStyle += ' background-color: #10b981; color: white; border: 1px solid #10b981;';
+                        btnStyle += ' background: #10b981; color: white; border: 1px solid #10b981;';
                         btnClass = 'btn';
                         btnClick = `pauseAudioFile()`;
                     }
@@ -1166,7 +1166,7 @@
                         if (btn) {
                             if (titleText === activeTrack && !isPaused) {
                                 btn.innerText = 'Stopping';
-                                btn.style.backgroundColor = '#d97706';
+                                btn.style.background = '#d97706';
                                 btn.style.borderColor = '#d97706';
                                 btn.style.color = 'white';
                             }
