@@ -371,7 +371,8 @@ def api_list_audio_files():
         f for f in os.listdir(playlist_dir)
         if f.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4"))
     ]
-    return {"status": "success", "files": sorted(files)}
+    file_tags = tools.load_file_tags()
+    return {"status": "success", "files": sorted(files), "file_tags": file_tags}
 
 
 @app.post("/api/upload-audio", dependencies=[Depends(verify_api_key)])
@@ -405,6 +406,7 @@ class SegmentModel(BaseModel):
     start_time: float
     end_time: float
     volume: float | None = None
+    tags: list[str] | None = None
 
 
 @app.get("/api/segments", dependencies=[Depends(verify_api_key)])
@@ -427,6 +429,8 @@ def add_segment(req: SegmentModel):
     }
     if req.volume is not None:
         segment_data["volume"] = req.volume
+    if req.tags is not None:
+        segment_data["tags"] = req.tags
     segments.append(segment_data)
     tools.save_segments(segments)
     return {"status": "success", "message": "Segment saved."}
@@ -442,6 +446,20 @@ def delete_segment(name: str = Query(...)):
         raise HTTPException(status_code=404, detail="Segment not found.")
     tools.save_segments(segments)
     return {"status": "success", "message": "Segment deleted."}
+
+
+class FileTagsModel(BaseModel):
+    filename: str
+    tags: list[str]
+
+
+@app.post("/api/file-tags", dependencies=[Depends(verify_api_key)])
+def api_update_file_tags(req: FileTagsModel):
+    """Updates tags associated with a raw audio file."""
+    file_tags = tools.load_file_tags()
+    file_tags[req.filename] = req.tags
+    tools.save_file_tags(file_tags)
+    return {"status": "success", "message": "File tags updated."}
 
 
 # Main execution

@@ -1140,6 +1140,13 @@
                         <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="document.getElementById('audio-file-input').click()">Add File</button>
                     </div>
                 </div>
+                <!-- FILTER & SEARCH BAR -->
+                <div style="display: flex; gap: 0.5rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); align-items: center; background: rgba(255, 255, 255, 0.01);">
+                    <input type="text" id="audio-search-input" placeholder="Search by title..." style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()">
+                    <select id="audio-tag-filter" style="width: 120px; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; cursor: pointer; outline: none;" onchange="filterAudioLibrary()">
+                        <option value="">All Tags</option>
+                    </select>
+                </div>
                 <div class="form-section" style="gap: 0;">
                     <div id="audio-library-resizable" class="audio-library-resizable" style="height: 200px;">
                         <div id="audio-files-list" class="mappings-list audio-list-scroll">
@@ -1269,6 +1276,7 @@
         let isEditIndex = -1;
         let currentPlaybackStatus = null;
         let audioLibraryFiles = [];
+        let audioLibraryFileTags = {};
         let segments = [];
         let isMuted = false;
         let preMuteVolume = 1.0;
@@ -1636,10 +1644,13 @@
                 
                 if (audioRes.status === 'success') {
                     audioLibraryFiles = audioRes.files;
+                    audioLibraryFileTags = audioRes.file_tags || {};
                 }
                 if (segmentsRes.status === 'success') {
                     segments = segmentsRes.segments || [];
                 }
+                
+                populateTagFilterDropdown();
                 renderAudioFiles();
             } catch (err) {
                 console.error("Error loading audio files and segments:", err);
@@ -1649,6 +1660,9 @@
         function renderAudioFiles() {
             const list = document.getElementById('audio-files-list');
             list.innerHTML = '';
+            
+            const searchVal = (document.getElementById('audio-search-input')?.value || '').trim().toLowerCase();
+            const tagVal = document.getElementById('audio-tag-filter')?.value || '';
             
             const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
             const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
@@ -1661,13 +1675,25 @@
             filesHeader.innerText = "Audio Files";
             list.appendChild(filesHeader);
             
+            const matchedFiles = audioLibraryFiles.filter(file => {
+                const matchesSearch = file.toLowerCase().includes(searchVal);
+                const fileTags = audioLibraryFileTags[file] || [];
+                const matchesTag = !tagVal || fileTags.includes(tagVal);
+                return matchesSearch && matchesTag;
+            });
+
             if (audioLibraryFiles.length === 0) {
                 const emptyFiles = document.createElement('div');
                 emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
                 emptyFiles.innerText = "No raw tracks found.";
                 list.appendChild(emptyFiles);
+            } else if (matchedFiles.length === 0) {
+                const emptyFiles = document.createElement('div');
+                emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                emptyFiles.innerText = "No matching audio files.";
+                list.appendChild(emptyFiles);
             } else {
-                audioLibraryFiles.forEach(file => {
+                matchedFiles.forEach(file => {
                     const item = document.createElement('div');
                     item.className = 'mapping-item';
                     
@@ -1703,9 +1729,17 @@
                         }
                     }
 
+                    const fileTags = audioLibraryFileTags[file] || [];
+                    let tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
+                    fileTags.forEach(tag => {
+                        tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeFileTag(event, '${file.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
+                    });
+                    tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span></div>`;
+
                     item.innerHTML = `
-                        <div class="mapping-item-details" style="cursor: pointer;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${file}${badgeHtml}</div>
+                        <div class="mapping-item-details" style="cursor: pointer; flex: 1; min-width: 0;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${file}${badgeHtml}</div>
+                            ${tagsHtml}
                         </div>
                         <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
                     `;
@@ -1719,13 +1753,25 @@
             segmentsHeader.innerText = "Exported Segments";
             list.appendChild(segmentsHeader);
             
+            const matchedSegments = segments.filter(segment => {
+                const matchesSearch = segment.name.toLowerCase().includes(searchVal);
+                const segTags = segment.tags || [];
+                const matchesTag = !tagVal || segTags.includes(tagVal);
+                return matchesSearch && matchesTag;
+            });
+
             if (segments.length === 0) {
                 const emptySegments = document.createElement('div');
                 emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
                 emptySegments.innerText = "No segments exported yet.";
                 list.appendChild(emptySegments);
+            } else if (matchedSegments.length === 0) {
+                const emptySegments = document.createElement('div');
+                emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                emptySegments.innerText = "No matching segments.";
+                list.appendChild(emptySegments);
             } else {
-                segments.forEach(segment => {
+                matchedSegments.forEach(segment => {
                     const item = document.createElement('div');
                     item.className = 'mapping-item';
                     
@@ -1774,10 +1820,18 @@
                         subtitleText = `ACTIVE · ${subtitleText}`;
                     }
 
+                    const segTags = segment.tags || [];
+                    let tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
+                    segTags.forEach(tag => {
+                        tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeSegmentTag(event, '${segment.name.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
+                    });
+                    tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span></div>`;
+
                     item.innerHTML = `
-                        <div class="mapping-item-details" style="cursor: pointer;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center;">${segment.name}${badgeHtml}</div>
+                        <div class="mapping-item-details" style="cursor: pointer; flex: 1; min-width: 0;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${segment.name}${badgeHtml}</div>
                             <div class="mapping-item-sub">${subtitleText}</div>
+                            ${tagsHtml}
                         </div>
                         <div style="display: flex; gap: 0.4rem; align-items: center;">
                             <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
@@ -1789,6 +1843,188 @@
                     list.appendChild(item);
                 });
             }
+        }
+
+        function populateTagFilterDropdown() {
+            const uniqueTags = new Set();
+            segments.forEach(seg => {
+                if (seg.tags) {
+                    seg.tags.forEach(tag => uniqueTags.add(tag));
+                }
+            });
+            if (audioLibraryFileTags) {
+                Object.values(audioLibraryFileTags).forEach(tagsList => {
+                    if (tagsList) {
+                        tagsList.forEach(tag => uniqueTags.add(tag));
+                    }
+                });
+            }
+            const filterDropdown = document.getElementById('audio-tag-filter');
+            if (filterDropdown) {
+                const currentValue = filterDropdown.value;
+                filterDropdown.innerHTML = '<option value="">All Tags</option>';
+                Array.from(uniqueTags).sort().forEach(tag => {
+                    const opt = document.createElement('option');
+                    opt.value = tag;
+                    opt.innerText = tag;
+                    if (tag === currentValue) opt.selected = true;
+                    filterDropdown.appendChild(opt);
+                });
+            }
+        }
+
+        function showAddTagInput(event, type, key) {
+            event.stopPropagation();
+            const badgeAdd = event.currentTarget;
+            
+            // Create inline input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Tag...';
+            input.style = `width: 70px; font-size: 0.65rem; background: rgba(0, 0, 0, 0.4); border: 1px solid ${type === 'file' ? 'var(--neon-blue)' : 'var(--neon-pink)'}; border-radius: 4px; padding: 0.05rem 0.25rem; color: white; outline: none; font-family: 'Space Mono', monospace;`;
+            
+            // On blur, revert back to the badge
+            input.onblur = () => {
+                input.replaceWith(badgeAdd);
+            };
+            
+            // On keydown (Enter to save, Escape to cancel)
+            input.onkeydown = async (e) => {
+                if (e.key === 'Enter') {
+                    const val = input.value.trim().toLowerCase();
+                    if (val) {
+                        if (type === 'file') {
+                            await addFileTag(key, val);
+                        } else {
+                            await addSegmentTag(key, val);
+                        }
+                    }
+                    input.blur();
+                } else if (e.key === 'Escape') {
+                    input.blur();
+                }
+            };
+            
+            badgeAdd.replaceWith(input);
+            input.focus();
+        }
+
+        async function addFileTag(filename, tagName) {
+            const currentTags = audioLibraryFileTags[filename] || [];
+            if (!currentTags.includes(tagName)) {
+                const newTags = [...currentTags, tagName];
+                try {
+                    const response = await apiFetch('/api/file-tags', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ filename, tags: newTags })
+                    });
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        audioLibraryFileTags[filename] = newTags;
+                        populateTagFilterDropdown();
+                        renderAudioFiles();
+                    } else {
+                        alert("Failed to add tag: " + res.message);
+                    }
+                } catch (err) {
+                    console.error("Error adding file tag:", err);
+                }
+            }
+        }
+
+        async function removeFileTag(event, filename, tagName) {
+            event.stopPropagation();
+            const currentTags = audioLibraryFileTags[filename] || [];
+            const newTags = currentTags.filter(t => t !== tagName);
+            try {
+                const response = await apiFetch('/api/file-tags', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename, tags: newTags })
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    audioLibraryFileTags[filename] = newTags;
+                    populateTagFilterDropdown();
+                    renderAudioFiles();
+                } else {
+                    alert("Failed to remove tag: " + res.message);
+                }
+            } catch (err) {
+                console.error("Error removing file tag:", err);
+            }
+        }
+
+        async function addSegmentTag(segmentName, tagName) {
+            const seg = segments.find(s => s.name === segmentName);
+            if (seg) {
+                const currentTags = seg.tags || [];
+                if (!currentTags.includes(tagName)) {
+                    const newTags = [...currentTags, tagName];
+                    try {
+                        const response = await apiFetch('/api/segments', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                name: seg.name,
+                                track_file: seg.track_file,
+                                start_time: seg.start_time,
+                                end_time: seg.end_time,
+                                volume: seg.volume,
+                                tags: newTags
+                            })
+                        });
+                        const res = await response.json();
+                        if (res.status === 'success') {
+                            seg.tags = newTags;
+                            populateTagFilterDropdown();
+                            renderAudioFiles();
+                        } else {
+                            alert("Failed to add segment tag: " + res.message);
+                        }
+                    } catch (err) {
+                        console.error("Error adding segment tag:", err);
+                    }
+                }
+            }
+        }
+
+        async function removeSegmentTag(event, segmentName, tagName) {
+            event.stopPropagation();
+            const seg = segments.find(s => s.name === segmentName);
+            if (seg) {
+                const currentTags = seg.tags || [];
+                const newTags = currentTags.filter(t => t !== tagName);
+                try {
+                    const response = await apiFetch('/api/segments', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            name: seg.name,
+                            track_file: seg.track_file,
+                            start_time: seg.start_time,
+                            end_time: seg.end_time,
+                            volume: seg.volume,
+                            tags: newTags
+                        })
+                    });
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        seg.tags = newTags;
+                        populateTagFilterDropdown();
+                        renderAudioFiles();
+                    } else {
+                        alert("Failed to remove segment tag: " + res.message);
+                    }
+                } catch (err) {
+                    console.error("Error removing segment tag:", err);
+                }
+            }
+        }
+
+        function filterAudioLibrary() {
+            renderAudioFiles();
         }
 
         async function exportSegment() {

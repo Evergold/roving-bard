@@ -426,7 +426,8 @@ def test_segments_api(tmp_path) -> None:
             "track_file": "test_track.mp3",
             "start_time": 5.5,
             "end_time": 20.0,
-            "volume": 0.8
+            "volume": 0.8,
+            "tags": ["intro", "ambient"]
         }
         response = client.post("/api/segments", headers=headers, json=segment_data)
         assert response.status_code == 200
@@ -439,6 +440,7 @@ def test_segments_api(tmp_path) -> None:
         assert response.json()["segments"][0]["name"] == "Test Intro"
         assert response.json()["segments"][0]["start_time"] == 5.5
         assert response.json()["segments"][0]["volume"] == 0.8
+        assert response.json()["segments"][0]["tags"] == ["intro", "ambient"]
 
         # 4. Select the segment via POST /api/control (action=select)
         tools.player.simulated = True
@@ -489,6 +491,41 @@ def test_segments_api(tmp_path) -> None:
         tools.SEGMENTS_PATH = orig_segments_path
         if os.path.exists(dummy_file):
             os.remove(dummy_file)
+
+
+def test_file_tags_api(tmp_path) -> None:
+    """Test raw file tags API endpoints."""
+    headers = get_headers()
+    
+    # Save original FILE_TAGS_PATH
+    orig_file_tags_path = tools.FILE_TAGS_PATH
+    # Override with temporary path
+    test_file_tags_file = os.path.join(tmp_path, "test_file_tags.yaml")
+    tools.FILE_TAGS_PATH = test_file_tags_file
+    
+    try:
+        # 1. GET /api/audio-files (should have empty file_tags)
+        response = client.get("/api/audio-files", headers=headers)
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+        assert response.json()["file_tags"] == {}
+
+        # 2. POST /api/file-tags to add tags for a file
+        tag_data = {
+            "filename": "non_existent_track.mp3",
+            "tags": ["ambient", "calm"]
+        }
+        response = client.post("/api/file-tags", headers=headers, json=tag_data)
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+
+        # 3. GET /api/audio-files (should now contain the added tags)
+        response = client.get("/api/audio-files", headers=headers)
+        assert response.status_code == 200
+        assert response.json()["file_tags"] == {"non_existent_track.mp3": ["ambient", "calm"]}
+        
+    finally:
+        tools.FILE_TAGS_PATH = orig_file_tags_path
 
 
 
