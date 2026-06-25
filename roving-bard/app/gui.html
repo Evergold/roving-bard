@@ -1242,7 +1242,7 @@
         body.light-theme input[type="text"],
         body.light-theme input[type="number"],
         body.light-theme select {
-            background-color: #f0f4f8 !important;
+            background: #f0f4f8 !important;
             color: #191c20 !important;
             border-color: #c3c7cf !important;
         }
@@ -1367,6 +1367,99 @@
         body.light-theme ::placeholder {
             color: #43474e !important;
             opacity: 1;
+        }
+
+        /* Android Style Panel / Widget Overrides (No Bright White / Soft Matte Surfaces) */
+        body.light-theme .now-playing {
+            background: #e1e3e6 !important;
+            border-color: #c3c7cf !important;
+        }
+
+        body.light-theme .music-icon {
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        body.light-theme .seek-track-bg {
+            background: #c3c7cf !important;
+        }
+
+        body.light-theme #seek-range-highlight {
+            background: rgba(46, 93, 168, 0.3) !important;
+        }
+
+        body.light-theme #seek-progress-fill {
+            background: var(--neon-blue) !important;
+        }
+
+        body.light-theme .manual-time-input {
+            background: #f0f4f8 !important;
+            border-color: #c3c7cf !important;
+            color: #191c20 !important;
+        }
+
+        body.light-theme .data-item {
+            background: #e1e3e6 !important;
+        }
+
+        body.light-theme .eq-reset-btn {
+            background: #f9d8d6 !important;
+            border-color: #e5b9b6 !important;
+            color: #690005 !important;
+        }
+
+        body.light-theme .eq-reset-btn:hover {
+            background: #f4bebb !important;
+            border-color: #d88e89 !important;
+        }
+
+        body.light-theme .eq-slider-wrap::before {
+            background: #c3c7cf !important;
+        }
+
+        body.light-theme .audio-library-resize-bar:hover {
+            border-color: rgba(46, 93, 168, 0.4) !important;
+            background: rgba(46, 93, 168, 0.04) !important;
+        }
+
+        body.light-theme .audio-library-resize-bar.dragging {
+            border-color: var(--accent) !important;
+            background: rgba(46, 93, 168, 0.08) !important;
+        }
+
+        body.light-theme .resize-grip {
+            background: #e1e3e6 !important;
+            border-color: #c3c7cf !important;
+            box-shadow: none !important;
+        }
+
+        body.light-theme .audio-library-resize-bar:hover .resize-grip {
+            background: rgba(46, 93, 168, 0.15) !important;
+            border-color: rgba(46, 93, 168, 0.4) !important;
+            box-shadow: none !important;
+        }
+
+        body.light-theme .audio-library-resize-bar.dragging .resize-grip {
+            background: rgba(46, 93, 168, 0.25) !important;
+            border-color: var(--accent) !important;
+            box-shadow: none !important;
+        }
+
+        body.light-theme .visual-crop-box {
+            background-color: rgba(46, 93, 168, 0.1) !important;
+            box-shadow: none !important;
+            border-color: var(--neon-blue) !important;
+        }
+
+        body.light-theme .mapping-item.selected-track {
+            border-color: var(--neon-blue) !important;
+            background: rgba(46, 93, 168, 0.08) !important;
+            box-shadow: none !important;
+        }
+
+        body.light-theme .manual-bounds-container input[type="text"]:disabled {
+            border-color: rgba(0, 0, 0, 0.06) !important;
         }
 
         .theme-btn, .font-size-btn {
