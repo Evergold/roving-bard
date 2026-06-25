@@ -67,7 +67,7 @@
         }
 
         header {
-            padding: 2rem 4rem;
+            padding: 2rem 2rem;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -101,10 +101,8 @@
 
         main {
             flex: 1;
-            max-width: 1600px;
             width: 100%;
-            margin: 0 auto;
-            padding: 2rem 4rem;
+            padding: 2rem 2rem;
             display: grid;
             grid-template-columns: 1fr 1.2fr;
             gap: 2rem;
@@ -1624,6 +1622,56 @@
             text-shadow: 0 0 8px rgba(46, 93, 168, 0.2);
         }
 
+        .menu-btn {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0;
+            outline: none;
+            flex-shrink: 0;
+        }
+        .menu-btn .bar {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background-color: var(--text-muted);
+            border-radius: 1px;
+            transition: all 0.2s ease;
+        }
+        .menu-btn:hover {
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px solid rgba(0, 242, 254, 0.3) !important;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2) !important;
+        }
+        .menu-btn:hover .bar {
+            background-color: var(--neon-blue) !important;
+            box-shadow: 0 0 4px var(--neon-blue) !important;
+        }
+        body.light-theme .menu-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid #b4b8c0;
+        }
+        body.light-theme .menu-btn .bar {
+            background-color: var(--text-muted);
+        }
+        body.light-theme .menu-btn:hover {
+            background: var(--accent-glow) !important;
+            border: 1px solid rgba(46, 93, 168, 0.3) !important;
+            box-shadow: 0 0 8px rgba(46, 93, 168, 0.15) !important;
+        }
+        body.light-theme .menu-btn:hover .bar {
+            background-color: var(--accent) !important;
+        }
+
         /* Accessible Color Scheme (CVD Mode) Overrides */
         body.cvd-accessible:not(.light-theme) {
             --neon-green: #00e5ff !important;
@@ -1795,6 +1843,11 @@
     </script>
     <header>
         <div class="logo-container" style="display: flex; align-items: center; gap: 1.5rem;">
+            <button id="menu-scroll-top-btn" class="menu-btn" onclick="scrollToTop()" title="Scroll to Top">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
             <div>
                 <h1>Roving Bard</h1>
                 <p>Adaptive, location-aware audio in LOTRO</p>
@@ -4606,6 +4659,32 @@
                 localStorage.setItem('cvd-accessible', 'false');
             }
             checkApiKeyEnvStatus();
+        }
+
+        function scrollToTop() {
+            const start = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+            if (start === 0) return;
+            
+            const duration = 400; // duration in ms
+            const startTime = performance.now();
+
+            function easeOutQuad(t) {
+                return t * (2 - t);
+            }
+
+            function animate(currentTime) {
+                const elapsedTime = currentTime - startTime;
+                const progress = Math.min(elapsedTime / duration, 1);
+                const easedProgress = easeOutQuad(progress);
+
+                window.scrollTo(0, start * (1 - easedProgress));
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            requestAnimationFrame(animate);
         }
 
         function restoreCardCollapses() {
