@@ -493,6 +493,32 @@ def test_segments_api(tmp_path) -> None:
         assert response.json()["segments"][1]["tags"] == ["custom"]
         assert response.json()["segments"][1]["eq"] == {"32": 2.0, "64": -1.5, "125": 0.0}
 
+        # Test updating a segment in-place (should preserve order and unspecified fields like tags/volume)
+        update_data = {
+            "name": "Test Intro",
+            "track_file": "test_track.mp3",
+            "start_time": 5.5,
+            "end_time": 25.0  # modified end_time
+        }
+        response = client.post("/api/segments", headers=headers, json=update_data)
+        assert response.status_code == 200
+
+        # GET /api/segments to verify order is preserved and fields like tags, volume, and eq are kept
+        response = client.get("/api/segments", headers=headers)
+        assert response.status_code == 200
+        segments_list = response.json()["segments"]
+        assert len(segments_list) == 2
+        
+        # Test Intro should still be at index 0 (preserving order!)
+        assert segments_list[0]["name"] == "Test Intro"
+        assert segments_list[0]["end_time"] == 25.0
+        assert segments_list[0]["volume"] == 0.8  # preserved
+        assert segments_list[0]["tags"] == ["intro", "ambient"]  # preserved
+        assert segments_list[0]["eq"] == "bass_boost"  # preserved
+
+        # Test Custom EQ should still be at index 1
+        assert segments_list[1]["name"] == "Test Custom EQ"
+
         # 4. Select the segment via POST /api/control (action=select)
         tools.player.simulated = True
         select_response = client.post(

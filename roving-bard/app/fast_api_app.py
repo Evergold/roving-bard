@@ -424,21 +424,43 @@ def get_segments():
 def add_segment(req: SegmentModel):
     """Saves or updates a segment in music/segments.yaml."""
     segments = tools.load_segments()
-    # Check if duplicate name, overwrite it
-    segments = [s for s in segments if s.get("name") != req.name]
+    
+    # Find existing segment with the same name to preserve order and fields
+    existing_segment = None
+    index = -1
+    for i, s in enumerate(segments):
+        if s.get("name") == req.name:
+            existing_segment = s
+            index = i
+            break
+
     segment_data = {
         "name": req.name,
         "track_file": req.track_file,
         "start_time": req.start_time,
         "end_time": req.end_time,
     }
+    
     if req.volume is not None:
         segment_data["volume"] = req.volume
+    elif existing_segment and "volume" in existing_segment:
+        segment_data["volume"] = existing_segment["volume"]
+        
     if req.tags is not None:
         segment_data["tags"] = req.tags
+    elif existing_segment and "tags" in existing_segment:
+        segment_data["tags"] = existing_segment["tags"]
+        
     if req.eq is not None:
         segment_data["eq"] = req.eq
-    segments.append(segment_data)
+    elif existing_segment and "eq" in existing_segment:
+        segment_data["eq"] = existing_segment["eq"]
+
+    if index != -1:
+        segments[index] = segment_data
+    else:
+        segments.append(segment_data)
+        
     tools.save_segments(segments)
     return {"status": "success", "message": "Segment saved."}
 
