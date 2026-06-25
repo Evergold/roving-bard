@@ -1169,6 +1169,15 @@
             filter: brightness(1.2);
         }
 
+        .status-badge .badge-symbol {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-right: 4px;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+
         .status-badge.online {
             background-color: rgba(57, 255, 20, 0.1);
             color: var(--neon-green);
@@ -1638,36 +1647,52 @@
         }
 
         /* CVD Accessible mode status badge overrides */
+        body.cvd-accessible .status-badge {
+            font-weight: 800 !important;
+            border: 2px solid transparent !important;
+        }
+        body.cvd-accessible .status-dot {
+            width: 12px !important;
+            height: 12px !important;
+        }
+        body.cvd-accessible .status-badge .badge-symbol {
+            font-size: 1.45rem !important;
+            font-weight: 900 !important;
+            margin-right: 6px !important;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
         body.cvd-accessible .status-badge.online {
             color: #00e5ff !important;
             border-color: #00e5ff !important;
-            background-color: rgba(0, 229, 255, 0.1) !important;
+            background-color: rgba(0, 229, 255, 0.18) !important;
         }
-        body.cvd-accessible .status-badge.online span {
+        body.cvd-accessible .status-badge.online .status-dot {
             background-color: #00e5ff !important;
         }
         body.cvd-accessible .status-badge.offline {
             color: #ff9100 !important;
             border-color: #ff9100 !important;
-            background-color: rgba(255, 145, 0, 0.1) !important;
+            background-color: rgba(255, 145, 0, 0.18) !important;
         }
-        body.cvd-accessible .status-badge.offline span {
+        body.cvd-accessible .status-badge.offline .status-dot {
             background-color: #ff9100 !important;
         }
         body.light-theme.cvd-accessible .status-badge.online {
             color: #0077b6 !important;
             border-color: #0077b6 !important;
-            background-color: rgba(0, 119, 182, 0.08) !important;
+            background-color: rgba(0, 119, 182, 0.15) !important;
         }
-        body.light-theme.cvd-accessible .status-badge.online span {
+        body.light-theme.cvd-accessible .status-badge.online .status-dot {
             background-color: #0077b6 !important;
         }
         body.light-theme.cvd-accessible .status-badge.offline {
             color: #d9480f !important;
             border-color: #d9480f !important;
-            background-color: rgba(217, 72, 15, 0.08) !important;
+            background-color: rgba(217, 72, 15, 0.15) !important;
         }
-        body.light-theme.cvd-accessible .status-badge.offline span {
+        body.light-theme.cvd-accessible .status-badge.offline .status-dot {
             background-color: #d9480f !important;
         }
 
@@ -1773,8 +1798,8 @@
             </label>
             <div class="badge-dropdown-container" style="position: relative; display: inline-block;">
                 <div id="status-badge" class="status-badge online" onclick="toggleBadgeDropdown(event)">
-                    <span style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
-                    ✓ READY
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    <span class="badge-symbol">✓</span> READY
                 </div>
                 <div id="api-key-dropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
                     <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
@@ -2244,7 +2269,7 @@
                     const badge = document.getElementById('status-badge');
                     if (badge) {
                         badge.className = "status-badge offline";
-                        badge.innerHTML = `<span style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span> ⚠ UNAUTHORIZED`;
+                        badge.innerHTML = `<span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span> <span class="badge-symbol">⚠</span> UNAUTHORIZED`;
                     }
                     console.error("Authentication failed. No valid API key provided.");
                     isTransitioningTrack = false;
@@ -2255,7 +2280,7 @@
                     const badge = document.getElementById('status-badge');
                     if (badge) {
                         badge.className = "status-badge offline";
-                        badge.innerHTML = `<span style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span> ⚠ OFFLINE`;
+                        badge.innerHTML = `<span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span> <span class="badge-symbol">⚠</span> OFFLINE`;
                     }
                     console.error("Failed to load status:", response.status);
                     isTransitioningTrack = false;
@@ -3994,8 +4019,8 @@
                 }, configData.polling_interval * 1000 || 2000);
                 document.getElementById('status-badge').className = "status-badge online";
                 document.getElementById('status-badge').innerHTML = `
-                    <span style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
-                    ✓ AUTO SCANNING
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
+                    <span class="badge-symbol">✓</span> AUTO SCANNING
                 `;
             } else {
                 if (pollingIntervalId) {
@@ -4004,8 +4029,8 @@
                 }
                 document.getElementById('status-badge').className = "status-badge online";
                 document.getElementById('status-badge').innerHTML = `
-                    <span style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
-                    ✓ READY
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    <span class="badge-symbol">✓</span> READY
                 `;
             }
         }
