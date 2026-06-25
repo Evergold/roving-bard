@@ -1194,13 +1194,203 @@
         input:checked + .slider:before {
             transform: translateX(22px);
         }
+
+        /* Accessibility Overrides & Theme System */
+        html {
+            font-size: 16px;
+            transition: font-size 0.2s ease;
+        }
+        html.font-size-m {
+            font-size: 18px;
+        }
+        html.font-size-lg {
+            font-size: 20px;
+        }
+
+        body.light-theme {
+            --bg-base: #f0f2f5;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-hover: rgba(255, 255, 255, 0.95);
+            --accent: #6200ea;
+            --accent-glow: rgba(98, 0, 234, 0.12);
+            --neon-blue: #008ba3;
+            --neon-green: #2e7d32;
+            --neon-pink: #c2185b;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: rgba(0, 0, 0, 0.08);
+            --border-glow: rgba(98, 0, 234, 0.15);
+        }
+
+        body.light-theme header {
+            background: rgba(240, 242, 245, 0.8);
+        }
+
+        body.light-theme .dropdown-content {
+            background: rgba(255, 255, 255, 0.98) !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        body.light-theme input[type="text"],
+        body.light-theme input[type="number"],
+        body.light-theme select {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #1f2937 !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+
+        body.light-theme option {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+        }
+
+        body.light-theme .btn-secondary {
+            background: rgba(0, 0, 0, 0.04) !important;
+            color: var(--text-main) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        body.light-theme .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.08) !important;
+            border-color: rgba(0, 0, 0, 0.2) !important;
+        }
+
+        body.light-theme .mapping-item {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        body.light-theme .mapping-item:hover {
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        body.light-theme #mapping-modal {
+            background: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        body.light-theme #mapping-modal .card {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        body.light-theme .bounds-visualizer {
+            background: #f0f2f5;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .bounds-visualizer-grid {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+        }
+
+        body.light-theme .status-badge.online {
+            background: rgba(67, 160, 71, 0.1) !important;
+            border-color: rgba(67, 160, 71, 0.3) !important;
+            color: var(--neon-green) !important;
+        }
+
+        body.light-theme .status-badge.offline {
+            background: rgba(216, 27, 96, 0.1) !important;
+            border-color: rgba(216, 27, 96, 0.3) !important;
+            color: var(--neon-pink) !important;
+        }
+
+        body.light-theme input[type="range"]::-webkit-slider-runnable-track {
+            background: rgba(0, 0, 0, 0.08) !important;
+        }
+        body.light-theme input[type="range"]::-moz-range-track {
+            background: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        body.light-theme ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15) !important;
+        }
+        body.light-theme ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25) !important;
+        }
+
+        body.light-theme #eq-panel {
+            background: rgba(255, 255, 255, 0.98) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        body.light-theme ::placeholder {
+            color: #9ca3af !important;
+            opacity: 1;
+        }
+
+        .theme-btn, .font-size-btn {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .theme-btn:hover, .font-size-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        body.light-theme .theme-btn:hover, body.light-theme .font-size-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .theme-btn.active, .font-size-btn.active {
+            color: var(--neon-blue) !important;
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        }
+        body.light-theme .theme-btn.active, body.light-theme .font-size-btn.active {
+            color: var(--accent) !important;
+            background: var(--accent-glow) !important;
+            border: 1px solid rgba(94, 53, 177, 0.3) !important;
+        }
     </style>
 </head>
 <body>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const savedFontSize = localStorage.getItem('font-size');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            if (savedFontSize === 'm') {
+                document.documentElement.classList.add('font-size-m');
+            } else if (savedFontSize === 'lg') {
+                document.documentElement.classList.add('font-size-lg');
+            }
+        })();
+    </script>
     <header>
-        <div class="logo-container">
-            <h1>Roving Bard</h1>
-            <p>Adaptive, location-aware audio in LOTRO</p>
+        <div class="logo-container" style="display: flex; align-items: center; gap: 1.5rem;">
+            <div>
+                <h1>Roving Bard</h1>
+                <p>Adaptive, location-aware audio in LOTRO</p>
+            </div>
+            <div class="accessibility-controls" style="display: flex; align-items: center; gap: 0.8rem; border-left: 1px solid var(--border); padding-left: 1.5rem; margin-left: 0.5rem;">
+                <!-- Theme toggle buttons -->
+                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px;">
+                    <!-- Dark theme button (moon icon) -->
+                    <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" title="Dark Theme">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
+                    <!-- Light theme button (sun with rays icon) -->
+                    <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" title="Light Theme">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    </button>
+                </div>
+                <!-- Font size control button group -->
+                <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px;">
+                    <button id="font-size-l-btn" class="font-size-btn active" onclick="setFontSize('l')" title="Normal/Low Sizing">L</button>
+                    <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Medium Sizing">M</button>
+                    <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Large Sizing">L</button>
+                </div>
+            </div>
         </div>
         <div class="switch-container">
             <span style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--text-muted);">AUTO-POLLING SCREEN</span>
@@ -3890,6 +4080,41 @@
             }
         }
 
+        function setTheme(theme) {
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+                document.getElementById('theme-light-btn').classList.add('active');
+                document.getElementById('theme-dark-btn').classList.remove('active');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.remove('light-theme');
+                document.getElementById('theme-dark-btn').classList.add('active');
+                document.getElementById('theme-light-btn').classList.remove('active');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function setFontSize(size) {
+            const html = document.documentElement;
+            html.classList.remove('font-size-m', 'font-size-lg');
+            document.getElementById('font-size-l-btn').classList.remove('active');
+            document.getElementById('font-size-m-btn').classList.remove('active');
+            document.getElementById('font-size-lg-btn').classList.remove('active');
+
+            if (size === 'm') {
+                html.classList.add('font-size-m');
+                document.getElementById('font-size-m-btn').classList.add('active');
+                localStorage.setItem('font-size', 'm');
+            } else if (size === 'lg') {
+                html.classList.add('font-size-lg');
+                document.getElementById('font-size-lg-btn').classList.add('active');
+                localStorage.setItem('font-size', 'lg');
+            } else {
+                document.getElementById('font-size-l-btn').classList.add('active');
+                localStorage.setItem('font-size', 'l');
+            }
+        }
+
         function restoreCardCollapses() {
             document.querySelectorAll('.card[id]').forEach(card => {
                 const saved = localStorage.getItem(`card_collapsed_${card.id}`);
@@ -3905,6 +4130,12 @@
         // Initial load
         // ============================================================
         window.onload = () => {
+            // Restore theme & font size
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            setTheme(savedTheme);
+            const savedFontSize = localStorage.getItem('font-size') || 'l';
+            setFontSize(savedFontSize);
+
             restoreCardCollapses();
             loadDashboard();
             startSeekTimer();
