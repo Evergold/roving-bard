@@ -613,6 +613,65 @@
             gap: 1rem;
         }
 
+        /* Audio Library resizable list */
+        .audio-library-resizable {
+            position: relative;
+            min-height: 80px;
+            overflow: hidden;
+        }
+
+        .audio-library-resizable .audio-list-scroll {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .audio-library-resize-bar {
+            position: relative;
+            height: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 2px;
+            margin-top: 2px;
+            cursor: ns-resize;
+            user-select: none;
+        }
+
+        .audio-library-resize-bar .resize-grip {
+            width: 20px;
+            height: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            justify-content: flex-end;
+            opacity: 0.35;
+            transition: opacity 0.2s;
+        }
+
+        .audio-library-resize-bar:hover .resize-grip {
+            opacity: 0.75;
+        }
+
+        .audio-library-resize-bar.dragging .resize-grip {
+            opacity: 1;
+        }
+
+        .resize-grip span {
+            display: block;
+            height: 2px;
+            border-radius: 1px;
+            background: var(--text-muted);
+        }
+
+        .resize-grip span:nth-child(1) { width: 100%; }
+        .resize-grip span:nth-child(2) { width: 70%; }
+        .resize-grip span:nth-child(3) { width: 40%; }
+
+        .resize-grip.grip-left span { margin-left: auto; }
+        .resize-grip.grip-left span:nth-child(1) { width: 100%; }
+        .resize-grip.grip-left span:nth-child(2) { width: 70%; margin-left: 30%; }
+        .resize-grip.grip-left span:nth-child(3) { width: 40%; margin-left: 60%; }
+
         .form-row {
             display: flex;
             gap: 1rem;
@@ -1048,9 +1107,15 @@
                         <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="document.getElementById('audio-file-input').click()">Add File</button>
                     </div>
                 </div>
-                <div class="form-section">
-                    <div id="audio-files-list" class="mappings-list" style="max-height: 200px; overflow-y: auto;">
-                        <!-- Audio files rendered here -->
+                <div class="form-section" style="gap: 0;">
+                    <div id="audio-library-resizable" class="audio-library-resizable" style="height: 200px;">
+                        <div id="audio-files-list" class="mappings-list audio-list-scroll">
+                            <!-- Audio files rendered here -->
+                        </div>
+                    </div>
+                    <div id="audio-library-resize-bar" class="audio-library-resize-bar" title="Drag to resize">
+                        <div class="resize-grip grip-left"><span></span><span></span><span></span></div>
+                        <div class="resize-grip grip-right"><span></span><span></span><span></span></div>
                     </div>
                 </div>
             </div>
@@ -2412,6 +2477,70 @@
             }
         `;
         document.head.appendChild(style);
+
+        // ── Audio Library resize handle ──────────────────────────────────────
+        (function () {
+            const STORAGE_KEY = 'audioLibraryHeight';
+            const MIN_H = 80;
+            const MAX_H = 700;
+
+            function applyHeight(h) {
+                const el = document.getElementById('audio-library-resizable');
+                if (el) el.style.height = h + 'px';
+            }
+
+            function initResizeBar() {
+                const bar = document.getElementById('audio-library-resize-bar');
+                const container = document.getElementById('audio-library-resizable');
+                if (!bar || !container) return;
+
+                // Restore saved height
+                const saved = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+                if (saved && saved >= MIN_H && saved <= MAX_H) applyHeight(saved);
+
+                let startY = 0;
+                let startH = 0;
+                let dragging = false;
+
+                function onMouseMove(e) {
+                    if (!dragging) return;
+                    const dy = e.clientY - startY;
+                    const newH = Math.min(MAX_H, Math.max(MIN_H, startH + dy));
+                    applyHeight(newH);
+                }
+
+                function onMouseUp() {
+                    if (!dragging) return;
+                    dragging = false;
+                    bar.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    const h = parseInt(container.style.height, 10);
+                    localStorage.setItem(STORAGE_KEY, h);
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                }
+
+                bar.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    dragging = true;
+                    startY = e.clientY;
+                    startH = container.offsetHeight;
+                    bar.classList.add('dragging');
+                    document.body.style.cursor = 'ns-resize';
+                    document.body.style.userSelect = 'none';
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+            }
+
+            // Run after DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initResizeBar);
+            } else {
+                initResizeBar();
+            }
+        })();
 
         // Initial load
         window.onload = () => {
