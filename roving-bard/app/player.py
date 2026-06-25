@@ -20,6 +20,7 @@ import numpy as np
 import pygame
 import pytesseract
 from PIL import Image
+from tinytag import TinyTag
 
 
 # Safe pygame mixer initialization
@@ -90,12 +91,11 @@ class SafeMusicPlayer:
 
         # Load track duration
         self.track_duration = 0.0
-        if self.mixer_initialized:
-            try:
-                sound = pygame.mixer.Sound(track_path)
-                self.track_duration = sound.get_length()
-            except Exception as e:
-                print(f"Error loading sound for length: {e}")
+        try:
+            tag = TinyTag.get(track_path)
+            self.track_duration = tag.duration
+        except Exception as e:
+            print(f"Error loading track duration with TinyTag: {e}")
         if self.track_duration == 0.0:
             self.track_duration = 180.0
 
