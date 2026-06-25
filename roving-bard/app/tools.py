@@ -26,7 +26,7 @@ CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mapping.yaml"
 )
 SEGMENTS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "segments.yaml"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "music", "segments.yaml"
 )
 FILE_TAGS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "music", "file_tags.yaml"
