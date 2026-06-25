@@ -1730,11 +1730,17 @@
                     }
 
                     const fileTags = audioLibraryFileTags[file] || [];
-                    let tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
-                    fileTags.forEach(tag => {
-                        tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeFileTag(event, '${file.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
-                    });
-                    tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span></div>`;
+                    let tagsHtml = '';
+                    if (fileTags.length > 0 || isFileActive) {
+                        tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
+                        fileTags.forEach(tag => {
+                            tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeFileTag(event, '${file.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
+                        });
+                        if (isFileActive) {
+                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.65rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
+                        }
+                        tagsHtml += `</div>`;
+                    }
 
                     item.innerHTML = `
                         <div class="mapping-item-details" style="cursor: pointer; flex: 1; min-width: 0;" onclick="selectAudioFile('${file.replace(/\'/g, "\\\'")}')">
@@ -1821,11 +1827,17 @@
                     }
 
                     const segTags = segment.tags || [];
-                    let tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
-                    segTags.forEach(tag => {
-                        tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeSegmentTag(event, '${segment.name.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
-                    });
-                    tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span></div>`;
+                    let tagsHtml = '';
+                    if (segTags.length > 0 || isSegActive) {
+                        tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
+                        segTags.forEach(tag => {
+                            tagsHtml += `<span class="badge-tag" style="font-size: 0.65rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; padding: 0.05rem 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; font-family: 'Space Mono', monospace; color: var(--text-muted);">${tag}<span class="delete-tag-btn" onclick="removeSegmentTag(event, '${segment.name.replace(/\'/g, "\\\'")}', '${tag.replace(/\'/g, "\\\'")}')" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';" style="cursor: pointer; font-weight: bold; color: #ef4444; opacity: 0.7; transition: all 0.1s ease;">&times;</span></span>`;
+                        });
+                        if (isSegActive) {
+                            tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.65rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.05rem 0.25rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">+ Add Tag</span>`;
+                        }
+                        tagsHtml += `</div>`;
+                    }
 
                     item.innerHTML = `
                         <div class="mapping-item-details" style="cursor: pointer; flex: 1; min-width: 0;" onclick="selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})">
