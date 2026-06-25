@@ -1386,7 +1386,7 @@
                 </div>
                 <!-- Font size control button group -->
                 <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px;">
-                    <button id="font-size-l-btn" class="font-size-btn active" onclick="setFontSize('l')" title="Normal/Low Sizing">L</button>
+                    <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" title="Normal/Small Sizing">S</button>
                     <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" title="Medium Sizing">M</button>
                     <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" title="Large Sizing">L</button>
                 </div>
@@ -4097,7 +4097,7 @@
         function setFontSize(size) {
             const html = document.documentElement;
             html.classList.remove('font-size-m', 'font-size-lg');
-            document.getElementById('font-size-l-btn').classList.remove('active');
+            document.getElementById('font-size-s-btn').classList.remove('active');
             document.getElementById('font-size-m-btn').classList.remove('active');
             document.getElementById('font-size-lg-btn').classList.remove('active');
 
@@ -4110,8 +4110,8 @@
                 document.getElementById('font-size-lg-btn').classList.add('active');
                 localStorage.setItem('font-size', 'lg');
             } else {
-                document.getElementById('font-size-l-btn').classList.add('active');
-                localStorage.setItem('font-size', 'l');
+                document.getElementById('font-size-s-btn').classList.add('active');
+                localStorage.setItem('font-size', 's');
             }
         }
 
@@ -4133,7 +4133,7 @@
             // Restore theme & font size
             const savedTheme = localStorage.getItem('theme') || 'dark';
             setTheme(savedTheme);
-            const savedFontSize = localStorage.getItem('font-size') || 'l';
+            const savedFontSize = localStorage.getItem('font-size') || 's';
             setFontSize(savedFontSize);
 
             restoreCardCollapses();
