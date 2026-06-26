@@ -2133,7 +2133,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <div id="now-playing-buttons-container" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                             <button id="now-playing-toggle-btn" class="btn" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="toggleNowPlayingPlayback()">Play</button>
                             <button id="now-playing-stop-btn" class="btn btn-secondary" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="stopMusic()" data-loc="stop">Stop</button>
                             <button id="export-segment-btn" class="btn" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px; transition: all 0.2s ease;" onclick="exportSegment()" disabled>Export</button>
@@ -2651,6 +2651,7 @@
                 stopBtn.style.borderColor = '';
                 stopBtn.style.boxShadow = '';
             }
+            checkAndAdaptPlayButtonsOverflow();
         }
 
         function updateParseUI(parse) {
@@ -3464,6 +3465,7 @@
                     exportBtn.disabled = true;
                 }
             }
+            checkAndAdaptPlayButtonsOverflow();
         }
 
         async function saveSegment() {
@@ -5454,6 +5456,7 @@
             }
             updateStatusBadgeUI();
             checkApiKeyEnvStatus();
+            checkAndAdaptPlayButtonsOverflow();
         }
 
         function changeLanguage(lang) {
@@ -5472,6 +5475,54 @@
                 document.getElementById('theme-dark-btn').classList.add('active');
                 document.getElementById('theme-light-btn').classList.remove('active');
                 localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function checkAndAdaptPlayButtonsOverflow() {
+            const container = document.getElementById('now-playing-buttons-container');
+            const toggleBtn = document.getElementById('now-playing-toggle-btn');
+            const stopBtn = document.getElementById('now-playing-stop-btn');
+            const exportBtn = document.getElementById('export-segment-btn');
+            if (!toggleBtn || !stopBtn || !exportBtn || !container) return;
+
+            if (container.offsetWidth === 0) return;
+
+            exportBtn.style.flexBasis = '';
+
+            const stopBtnWidth = stopBtn.offsetWidth;
+            if (stopBtnWidth === 0) return;
+
+            const originalToggleText = toggleBtn.innerText;
+            const originalExportText = exportBtn.innerText;
+
+            const toggleTexts = [t('play'), t('pause'), t('resume')];
+            let maxToggleWidth = 0;
+            toggleTexts.forEach(txt => {
+                toggleBtn.innerText = txt;
+                const w = toggleBtn.offsetWidth;
+                if (w > maxToggleWidth) maxToggleWidth = w;
+            });
+            toggleBtn.innerText = originalToggleText;
+
+            const exportTexts = [t('save_btn', 'Save'), t('export_btn', 'Export')];
+            let maxExportWidth = 0;
+            exportTexts.forEach(txt => {
+                exportBtn.innerText = txt;
+                const w = exportBtn.offsetWidth;
+                if (w > maxExportWidth) maxExportWidth = w;
+            });
+            exportBtn.innerText = originalExportText;
+
+            if (maxToggleWidth === 0 || maxExportWidth === 0) return;
+
+            const gap = 0.75 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+            const totalWidth = maxToggleWidth + stopBtnWidth + maxExportWidth + (2 * gap);
+            const containerWidth = container.offsetWidth;
+
+            if (totalWidth > containerWidth) {
+                exportBtn.style.flexBasis = '100%';
+            } else {
+                exportBtn.style.flexBasis = '';
             }
         }
 
@@ -5494,6 +5545,7 @@
                 document.getElementById('font-size-s-btn').classList.add('active');
                 localStorage.setItem('font-size', 's');
             }
+            checkAndAdaptPlayButtonsOverflow();
         }
 
         function toggleCVDAccessible() {
@@ -5577,6 +5629,8 @@
             startSeekTimer();
             initEQ();
             applyLocalization();
+            checkAndAdaptPlayButtonsOverflow();
+            window.addEventListener('resize', checkAndAdaptPlayButtonsOverflow);
         };
     </script>
 </body>
