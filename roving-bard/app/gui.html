@@ -77,6 +77,8 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            flex-wrap: wrap;
+            gap: 1.5rem;
         }
 
         .logo-container h1 {
@@ -1217,6 +1219,8 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
+            margin-left: auto;
+            flex-shrink: 0;
         }
 
         .auto-polling-label {
@@ -1226,6 +1230,7 @@
             font-weight: 600;
             letter-spacing: 1.5px;
             text-shadow: 0 0 8px rgba(124, 77, 255, 0.4);
+            text-align: right;
         }
 
         .switch {
@@ -1609,6 +1614,8 @@
             border-radius: 24px;
             font-family: 'Space Mono', monospace;
             font-size: 1.15rem;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .theme-btn:hover, .font-size-btn:hover {
             color: var(--text-main);
@@ -1862,53 +1869,55 @@
                 <span class="bar"></span>
                 <span class="bar"></span>
             </button>
-            <div>
-                <h1>Roving Bard</h1>
-                <p data-loc="subtitle">Adaptive, location-aware audio in LOTRO</p>
-            </div>
-            <div class="accessibility-controls" style="display: flex; align-items: center; gap: 1rem; border-left: 1px solid var(--border); padding-left: 1.8rem; margin-left: 0.8rem;">
-                <!-- Theme toggle buttons -->
-                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
-                    <!-- Dark theme button (moon icon) -->
-                    <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" data-loc-title="dark_theme_title" title="Dark Theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </button>
-                    <!-- Light theme button (sun with rays icon) -->
-                    <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" data-loc-title="light_theme_title" title="Light Theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                    </button>
+            <div class="header-main-content" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; flex: 1;">
+                <div>
+                    <h1>Roving Bard</h1>
+                    <p data-loc="subtitle">Adaptive, location-aware audio in LOTRO</p>
                 </div>
-                <!-- Font size control button group -->
-                <div class="font-size-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
-                    <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" data-loc-title="font_normal" title="Normal">abc</button>
-                    <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" data-loc-title="font_larger" title="Larger">+</button>
-                    <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" data-loc-title="font_largest" title="Largest">++</button>
-                </div>
-                <!-- Accessible Mode Toggle -->
-                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; margin-left: 0.5rem;">
-                    <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible()" data-loc-title="accessible_mode_title" title="Accessible Mode">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
+                <div class="accessibility-controls" style="display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; border-left: 1px solid var(--border); padding-left: 1.8rem; margin-left: 0;">
+                    <!-- Theme toggle buttons -->
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
+                        <!-- Dark theme button (moon icon) -->
+                        <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" data-loc-title="dark_theme_title" title="Dark Theme">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        </button>
+                        <!-- Light theme button (sun with rays icon) -->
+                        <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" data-loc-title="light_theme_title" title="Light Theme">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                        </button>
+                    </div>
+                    <!-- Font size control button group -->
+                    <div class="font-size-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
+                        <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" data-loc-title="font_normal" title="Normal">abc</button>
+                        <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" data-loc-title="font_larger" title="Larger">+</button>
+                        <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" data-loc-title="font_largest" title="Largest">++</button>
+                    </div>
+                    <!-- Accessible Mode Toggle -->
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; margin-left: 0.5rem;">
+                        <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible()" data-loc-title="accessible_mode_title" title="Accessible Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Language Selector Dropdown -->
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px 8px; margin-left: 0.5rem; height: 52px; box-sizing: border-box;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                         </svg>
-                    </button>
-                </div>
-                <!-- Language Selector Dropdown -->
-                <div class="theme-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px 8px; margin-left: 0.5rem; height: 52px; box-sizing: border-box;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
-                    <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.95rem; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; height: 100%; padding-right: 4px;">
-                        <option value="en-US">EN (US)</option>
-                        <option value="en-GB">EN (UK)</option>
-                        <option value="fr-FR">FR (FR)</option>
-                        <option value="de-DE">DE (DE)</option>
-                        <option value="es-ES">ES (ES)</option>
-                        <option value="it-IT">IT (IT)</option>
-                        <option value="ru-RU">RU (RU)</option>
-                    </select>
+                        <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.95rem; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; padding-right: 4px;">
+                            <option value="en-US">EN (US)</option>
+                            <option value="en-GB">EN (UK)</option>
+                            <option value="fr-FR">FR (FR)</option>
+                            <option value="de-DE">DE (DE)</option>
+                            <option value="es-ES">ES (ES)</option>
+                            <option value="it-IT">IT (IT)</option>
+                            <option value="ru-RU">RU (RU)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2094,10 +2103,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
-                            <button id="export-segment-btn" class="btn" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px; transition: all 0.2s ease;" onclick="exportSegment()" disabled>Export</button>
-                            <button id="now-playing-toggle-btn" class="btn" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="toggleNowPlayingPlayback()">Play</button>
-                            <button id="now-playing-stop-btn" class="btn btn-secondary" style="width: 100px; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="stopMusic()" data-loc="stop">Stop</button>
+                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                            <button id="export-segment-btn" class="btn" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px; transition: all 0.2s ease;" onclick="exportSegment()" disabled>Export</button>
+                            <button id="now-playing-toggle-btn" class="btn" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="toggleNowPlayingPlayback()">Play</button>
+                            <button id="now-playing-stop-btn" class="btn btn-secondary" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="stopMusic()" data-loc="stop">Stop</button>
                         </div>
                     </div>
                 </div>
