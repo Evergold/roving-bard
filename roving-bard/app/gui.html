@@ -1624,21 +1624,29 @@
         body.light-theme .theme-btn:hover, body.light-theme .font-size-btn:hover {
             background: rgba(0, 0, 0, 0.05);
         }
-        .lang-select-group {
+        #lang-select {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: 600;
+            outline: none;
             cursor: pointer;
+            height: 48px;
+            padding: 0 16px 0 12px;
+            border-radius: 24px;
             transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
-        .lang-select-group:hover {
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-color: var(--text-muted) !important;
-        }
-        body.light-theme .lang-select-group:hover {
-            background: rgba(0, 0, 0, 0.08) !important;
-            border-color: var(--border) !important;
-        }
-        .lang-select-group:hover svg,
-        .lang-select-group:hover #lang-select {
+        #lang-select:hover {
             color: var(--text-main) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+        body.light-theme #lang-select:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
         }
         .theme-btn.active, .font-size-btn.active {
             color: var(--neon-blue) !important;
@@ -1918,13 +1926,13 @@
                         </button>
                     </div>
                     <!-- Language Selector Dropdown -->
-                    <div class="theme-toggle-group lang-select-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px 8px; margin-left: 0.5rem; height: 52px; box-sizing: border-box; transition: all 0.2s ease;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px; transition: color 0.2s ease;">
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 10px; margin-left: 0.5rem; height: 52px; box-sizing: border-box;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 2px;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="2" y1="12" x2="22" y2="12"></line>
                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                         </svg>
-                        <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.95rem; font-family: inherit; font-weight: 600; outline: none; cursor: pointer; padding-right: 4px; transition: color 0.2s ease;">
+                        <select id="lang-select" onchange="changeLanguage(this.value)">
                             <option value="en-US">EN (US)</option>
                             <option value="en-GB">EN (UK)</option>
                             <option value="fr-FR">FR (FR)</option>
