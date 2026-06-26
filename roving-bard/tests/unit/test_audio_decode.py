@@ -105,6 +105,8 @@ def test_player_playback_decoding(audio_fixtures):
             # play_track/select_track returns True if loading/playing succeeds
             filename = os.path.basename(path)
             assert player.select_track(filename) is True
+            if ext == ".abc":
+                assert player.track_duration == 2.0
             
         # MP4 is not natively supported by standard pygame mixer backend, so it should fail to load/decode
         mp4_filename = os.path.basename(audio_fixtures[".mp4"])
@@ -116,6 +118,8 @@ def test_player_playback_decoding(audio_fixtures):
         for ext in audio_fixtures:
             filename = os.path.basename(audio_fixtures[ext])
             assert player.select_track(filename) is True
+            if ext == ".abc":
+                assert player.track_duration == 2.0
 
 
 def test_eq_audio_decoding(audio_fixtures):

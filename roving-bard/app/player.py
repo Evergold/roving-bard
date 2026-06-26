@@ -25,6 +25,292 @@ from PIL import Image
 from tinytag import TinyTag
 
 
+
+
+def abc_to_midi_bytes(abc_text: str) -> bytes:
+    meter = 1.0
+    unit_note_len = None
+    program = 0  # Default to Piano
+    
+    headers_done = False
+    notes_parts = []
+    
+    header_pattern = re.compile(r'^([A-Z]):\s*(.*)$')
+    midi_program_pattern = re.compile(r'(?:%%MIDI\s+program|I:MIDI\s+program)\s+(\d+)', re.IGNORECASE)
+    
+    for line in abc_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Parse %%MIDI program from comment lines
+        if line.startswith('%') or line.startswith('I:'):
+            m_prog = midi_program_pattern.search(line)
+            if m_prog:
+                program = int(m_prog.group(1))
+            if line.startswith('%'):
+                continue
+                
+        match = header_pattern.match(line)
+        if match and not headers_done:
+            key, val = match.group(1), match.group(2).strip()
+            if key == 'M':
+                if val.lower() in ('c', '4/4'):
+                    meter = 1.0
+                elif val.lower() == 'c|':
+                    meter = 1.0
+                else:
+                    m = re.match(r'(\d+)/(\d+)', val)
+                    if m:
+                        meter = float(m.group(1)) / float(m.group(2))
+            elif key == 'L':
+                m = re.match(r'(\d+)/(\d+)', val)
+                if m:
+                    unit_note_len = float(m.group(1)) / float(m.group(2))
+            elif key == 'K':
+                headers_done = True
+        else:
+            cleaned_line = line.split('%')[0]
+            cleaned_line = re.sub(r'"[^"]*"', '', cleaned_line)
+            cleaned_line = re.sub(r'\[[A-Za-z]:[^\]]*\]', '', cleaned_line)
+            notes_parts.append(cleaned_line)
+            
+    if unit_note_len is None:
+        unit_note_len = 0.0625 if meter < 0.75 else 0.125
+        
+    ticks_per_quarter = 480
+    unit_ticks = int(1920 * unit_note_len)
+    
+    # MIDI track events bytes
+    track_events = bytearray()
+    
+    # 1. Delta-time 0, Program Change (C0 <program>)
+    track_events.append(0x00)
+    track_events.extend([0xC0, program])
+    
+    # Parse notes and chords
+    pattern = re.compile(r'\[([^\]]+)\]|([_^^=]*)([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
+    note_pattern = re.compile(r'([_^^=]*)([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
+    
+    PITCH_MAP = {
+        'C': 60, 'D': 62, 'E': 64, 'F': 65, 'G': 67, 'A': 69, 'B': 71,
+        'c': 72, 'd': 74, 'e': 76, 'f': 77, 'g': 79, 'a': 81, 'b': 83
+    }
+    
+    def parse_multiplier(num_str, slash_str):
+        num = float(num_str) if num_str else 1.0
+        if not slash_str:
+            return num
+        slash_count = slash_str.count('/')
+        m = re.search(r'(\d+)$', slash_str)
+        if m:
+            denom = float(m.group(1))
+            return num / denom
+        else:
+            return num / (2 ** slash_count)
+            
+    def get_midi_note(acc, pitch, octaves):
+        if pitch in ('z', 'x', 'Z', 'X'):
+            return None
+        note = PITCH_MAP.get(pitch, 60)
+        note += acc.count('^')
+        note += 2 * acc.count('^^')
+        note -= acc.count('_')
+        note -= 2 * acc.count('__')
+        note -= 12 * octaves.count(',')
+        note += 12 * octaves.count("'")
+        return max(0, min(127, note))
+
+    def to_vlq(n: int) -> bytes:
+        out = bytearray()
+        while True:
+            out.append((n & 0x7f) | (0x80 if out else 0))
+            n >>= 7
+            if n == 0:
+                break
+        return bytes(reversed(out))
+
+    accumulated_delta = 0
+    
+    for part in notes_parts:
+        for m in pattern.finditer(part):
+            chord_content = m.group(1)
+            if chord_content:
+                chord_notes = []
+                max_mult = 0.0
+                for cn in note_pattern.finditer(chord_content):
+                    acc = cn.group(1) or ""
+                    pitch = cn.group(2)
+                    octaves = cn.group(3) or ""
+                    suffix = cn.group(4) or ""
+                    
+                    midi_note = get_midi_note(acc, pitch, octaves)
+                    suffix_match = re.match(r'^(\d+)?((?:/+\d*)*)$', suffix)
+                    mult = 1.0
+                    if suffix_match:
+                        mult = parse_multiplier(suffix_match.group(1), suffix_match.group(2))
+                    if mult > max_mult:
+                        max_mult = mult
+                    if midi_note is not None:
+                        chord_notes.append(midi_note)
+                        
+                chord_ticks = int(max_mult * unit_ticks)
+                
+                if chord_notes:
+                    for idx, note in enumerate(chord_notes):
+                        delta = accumulated_delta if idx == 0 else 0
+                        track_events.extend(to_vlq(delta))
+                        track_events.extend([0x90, note, 96])
+                    accumulated_delta = 0
+                    
+                    for idx, note in enumerate(chord_notes):
+                        delta = chord_ticks if idx == 0 else 0
+                        track_events.extend(to_vlq(delta))
+                        track_events.extend([0x80, note, 0])
+                else:
+                    accumulated_delta += chord_ticks
+            else:
+                acc = m.group(2) or ""
+                pitch = m.group(3)
+                octaves = m.group(4) or ""
+                suffix = m.group(5) or ""
+                
+                midi_note = get_midi_note(acc, pitch, octaves)
+                suffix_match = re.match(r'^(\d+)?((?:/+\d*)*)$', suffix)
+                mult = 1.0
+                if suffix_match:
+                    mult = parse_multiplier(suffix_match.group(1), suffix_match.group(2))
+                note_ticks = int(mult * unit_ticks)
+                
+                if midi_note is not None:
+                    track_events.extend(to_vlq(accumulated_delta))
+                    track_events.extend([0x90, midi_note, 96])
+                    accumulated_delta = 0
+                    
+                    track_events.extend(to_vlq(note_ticks))
+                    track_events.extend([0x80, midi_note, 0])
+                else:
+                    accumulated_delta += note_ticks
+                    
+    track_events.extend(to_vlq(accumulated_delta))
+    track_events.extend([0xFF, 0x2F, 0x00])
+    
+    midi_file = bytearray()
+    midi_file.extend(b'MThd')
+    midi_file.extend((6).to_bytes(4, byteorder='big'))
+    midi_file.extend((0).to_bytes(2, byteorder='big'))
+    midi_file.extend((1).to_bytes(2, byteorder='big'))
+    midi_file.extend(ticks_per_quarter.to_bytes(2, byteorder='big'))
+    
+    midi_file.extend(b'MTrk')
+    midi_file.extend(len(track_events).to_bytes(4, byteorder='big'))
+    midi_file.extend(track_events)
+    
+    return bytes(midi_file)
+
+
+def get_abc_duration(filepath: str) -> float:
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            abc_text = f.read()
+    except Exception as e:
+        print(f"Error reading ABC file {filepath}: {e}")
+        return 180.0
+
+    meter = 1.0  # Default: 4/4
+    unit_note_len = None
+    bpm = 120.0
+    beat_fraction = None
+    
+    headers_done = False
+    notes_parts = []
+    
+    header_pattern = re.compile(r'^([A-Z]):\s*(.*)$')
+    
+    for line in abc_text.splitlines():
+        line = line.strip()
+        if not line or line.startswith('%'):
+            continue
+            
+        match = header_pattern.match(line)
+        if match and not headers_done:
+            key, val = match.group(1), match.group(2).strip()
+            if key == 'M':
+                if val.lower() in ('c', '4/4'):
+                    meter = 1.0
+                elif val.lower() == 'c|':
+                    meter = 1.0
+                else:
+                    m = re.match(r'(\d+)/(\d+)', val)
+                    if m:
+                        meter = float(m.group(1)) / float(m.group(2))
+            elif key == 'L':
+                m = re.match(r'(\d+)/(\d+)', val)
+                if m:
+                    unit_note_len = float(m.group(1)) / float(m.group(2))
+            elif key == 'Q':
+                bpm_match = re.search(r'(\d+)\s*$', val)
+                if bpm_match:
+                    bpm = float(bpm_match.group(1))
+                frac_match = re.search(r'(\d+)/(\d+)\s*=', val)
+                if frac_match:
+                    beat_fraction = float(frac_match.group(1)) / float(frac_match.group(2))
+            elif key == 'K':
+                headers_done = True
+        else:
+            cleaned_line = line.split('%')[0]
+            cleaned_line = re.sub(r'"[^"]*"', '', cleaned_line)
+            cleaned_line = re.sub(r'\[[A-Za-z]:[^\]]*\]', '', cleaned_line)
+            notes_parts.append(cleaned_line)
+            
+    if unit_note_len is None:
+        unit_note_len = 0.0625 if meter < 0.75 else 0.125
+            
+    if beat_fraction is None:
+        beat_fraction = unit_note_len
+        
+    total_multipliers = 0.0
+    
+    pattern = re.compile(r'\[([^\]]+)\]|([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
+    note_pattern = re.compile(r'([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
+    
+    def parse_multiplier(num_str, slash_str):
+        num = float(num_str) if num_str else 1.0
+        if not slash_str:
+            return num
+        slash_count = slash_str.count('/')
+        m = re.search(r'(\d+)$', slash_str)
+        if m:
+            denom = float(m.group(1))
+            return num / denom
+        else:
+            return num / (2 ** slash_count)
+
+    for part in notes_parts:
+        for m in pattern.finditer(part):
+            chord_content = m.group(1)
+            if chord_content:
+                max_mult = 0.0
+                chord_notes = note_pattern.findall(chord_content)
+                for cn in chord_notes:
+                    suffix = cn[2]
+                    suffix_match = re.match(r'^(\d+)?((?:/+\d*)*)$', suffix)
+                    if suffix_match:
+                        mult = parse_multiplier(suffix_match.group(1), suffix_match.group(2))
+                        if mult > max_mult:
+                            max_mult = mult
+                total_multipliers += max_mult
+            else:
+                suffix = m.group(4)
+                suffix_match = re.match(r'^(\d+)?((?:/+\d*)*)$', suffix)
+                if suffix_match:
+                    mult = parse_multiplier(suffix_match.group(1), suffix_match.group(2))
+                    total_multipliers += mult
+                    
+    duration = (total_multipliers * unit_note_len) * 60.0 / (bpm * beat_fraction)
+    return duration
+
+
 # Safe pygame mixer initialization
 class SafeMusicPlayer:
     def __init__(self, playlist_dir="audio"):
@@ -49,6 +335,23 @@ class SafeMusicPlayer:
         }
         self._eq_tmp_path: str | None = None  # path to the currently loaded temp EQ file
         self._eq_lock = threading.Lock()
+        self._abc_tmp_path: str | None = None  # path to the currently compiled MIDI file
+
+        # Set SDL_SOUNDFONTS to enable correct MIDI instrument synthesis on Linux
+        soundfont_paths = [
+            "/usr/share/sounds/sf2/FluidR3_GM.sf2",
+            "/usr/share/sounds/sf2/default-GM.sf2",
+            "/usr/share/sounds/sf2/TimGM6mb.sf2",
+            "/usr/share/sounds/sf3/FluidR3_GM.sf3",
+            "/usr/share/sounds/sf3/default.sf3",
+            "/usr/share/midi/soundfont/FluidR3_GM.sf2",
+            "/usr/share/midi/soundfont/default.sf2",
+        ]
+        for path in soundfont_paths:
+            if os.path.exists(path):
+                os.environ["SDL_SOUNDFONTS"] = path
+                print(f"Set SDL_SOUNDFONTS environment variable to {path}")
+                break
 
         try:
             pygame.mixer.init()
@@ -59,6 +362,15 @@ class SafeMusicPlayer:
             print(
                 f"Warning: Could not initialize Pygame mixer (running in simulated mode): {e}"
             )
+
+    def __del__(self):
+        # Clean up any leftover temporary files when player is destroyed
+        for path in (getattr(self, "_eq_tmp_path", None), getattr(self, "_abc_tmp_path", None)):
+            if path and os.path.exists(path):
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
 
     @property
     def playlist_dir(self):
@@ -118,11 +430,31 @@ class SafeMusicPlayer:
 
         # Load track duration
         self.track_duration = 0.0
-        try:
-            tag = TinyTag.get(track_path)
-            self.track_duration = tag.duration
-        except Exception as e:
-            print(f"Error loading track duration with TinyTag: {e}")
+        if track_file.lower().endswith(".abc"):
+            self.track_duration = get_abc_duration(track_path)
+            try:
+                with open(track_path, "r", encoding="utf-8") as f:
+                    abc_text = f.read()
+                midi_bytes = abc_to_midi_bytes(abc_text)
+                tmp = tempfile.NamedTemporaryFile(suffix=".mid", delete=False, prefix="abc_tmp_")
+                tmp_path = tmp.name
+                tmp.close()
+                with open(tmp_path, "wb") as f_midi:
+                    f_midi.write(midi_bytes)
+                if self._abc_tmp_path and os.path.exists(self._abc_tmp_path):
+                    try:
+                        os.unlink(self._abc_tmp_path)
+                    except OSError:
+                        pass
+                self._abc_tmp_path = tmp_path
+            except Exception as e:
+                print(f"Error compiling ABC to MIDI: {e}")
+        else:
+            try:
+                tag = TinyTag.get(track_path)
+                self.track_duration = tag.duration
+            except Exception as e:
+                print(f"Error loading track duration with TinyTag: {e}")
         if self.track_duration is None or self.track_duration == 0.0:
             self.track_duration = 180.0
 
@@ -137,7 +469,8 @@ class SafeMusicPlayer:
             return True
 
         try:
-            pygame.mixer.music.load(track_path)
+            load_path = self._abc_tmp_path if track_file.lower().endswith(".abc") else track_path
+            pygame.mixer.music.load(load_path)
             pygame.mixer.music.play(loops=-1, start=self.start_time, fade_ms=fade_in_ms)
             pygame.mixer.music.set_volume(self.volume)
             return True
@@ -169,11 +502,31 @@ class SafeMusicPlayer:
 
         # Load track duration
         self.track_duration = 0.0
-        try:
-            tag = TinyTag.get(track_path)
-            self.track_duration = tag.duration
-        except Exception as e:
-            print(f"Error loading track duration with TinyTag: {e}")
+        if track_file.lower().endswith(".abc"):
+            self.track_duration = get_abc_duration(track_path)
+            try:
+                with open(track_path, "r", encoding="utf-8") as f:
+                    abc_text = f.read()
+                midi_bytes = abc_to_midi_bytes(abc_text)
+                tmp = tempfile.NamedTemporaryFile(suffix=".mid", delete=False, prefix="abc_tmp_")
+                tmp_path = tmp.name
+                tmp.close()
+                with open(tmp_path, "wb") as f_midi:
+                    f_midi.write(midi_bytes)
+                if self._abc_tmp_path and os.path.exists(self._abc_tmp_path):
+                    try:
+                        os.unlink(self._abc_tmp_path)
+                    except OSError:
+                        pass
+                self._abc_tmp_path = tmp_path
+            except Exception as e:
+                print(f"Error compiling ABC to MIDI: {e}")
+        else:
+            try:
+                tag = TinyTag.get(track_path)
+                self.track_duration = tag.duration
+            except Exception as e:
+                print(f"Error loading track duration with TinyTag: {e}")
         if self.track_duration is None or self.track_duration == 0.0:
             self.track_duration = 180.0
 
@@ -187,7 +540,8 @@ class SafeMusicPlayer:
             return True
 
         try:
-            pygame.mixer.music.load(track_path)
+            load_path = self._abc_tmp_path if track_file.lower().endswith(".abc") else track_path
+            pygame.mixer.music.load(load_path)
             return True
         except Exception as e:
             print(f"Error loading Pygame track {track_file}: {e}")
@@ -269,7 +623,8 @@ class SafeMusicPlayer:
                 if start_pos < self.start_time:
                     start_pos = self.start_time
                 track_path = os.path.join(self.playlist_dir, self.current_track)
-                pygame.mixer.music.load(track_path)
+                load_path = self._abc_tmp_path if self.current_track.lower().endswith(".abc") else track_path
+                pygame.mixer.music.load(load_path)
                 pygame.mixer.music.play(loops=-1, start=start_pos, fade_ms=1500)
                 pygame.mixer.music.set_volume(self.volume)
                 self.was_stopped = False
@@ -309,7 +664,8 @@ class SafeMusicPlayer:
 
         try:
             track_path = os.path.join(self.playlist_dir, self.current_track)
-            pygame.mixer.music.load(track_path)
+            load_path = self._abc_tmp_path if self.current_track.lower().endswith(".abc") else track_path
+            pygame.mixer.music.load(load_path)
             pygame.mixer.music.play(loops=-1, start=position)
             pygame.mixer.music.set_volume(self.volume)
             return True
