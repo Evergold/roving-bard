@@ -234,6 +234,16 @@ def get_gui():
         }
         return HTMLResponse(content=content, headers=headers)
     return HTMLResponse(content="<h3>Error: gui.html not found!</h3>", status_code=404)
+@app.get("/locales/{locale_name}.json")
+def get_locale_json(locale_name: str):
+    """Serves a localization JSON file."""
+    locale_file = os.path.join(AGENT_DIR, "app", "locales", f"{locale_name}.json")
+    if os.path.exists(locale_file):
+        with open(locale_file, encoding="utf-8") as f:
+            import json
+            return json.load(f)
+    raise HTTPException(status_code=404, detail="Locale not found")
+
 
 
 @app.get("/api/env-status")
