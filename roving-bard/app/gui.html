@@ -197,7 +197,6 @@
         .card-title span {
             color: var(--neon-blue);
             font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
         }
 
         /* Audio Player Widget */
@@ -1305,6 +1304,12 @@
         html.font-size-lg .auto-polling-label {
             max-width: 250px;
         }
+        html.font-size-m .card-title {
+            font-size: 1.3rem;
+        }
+        html.font-size-lg .card-title {
+            font-size: 1.4rem;
+        }
 
         body.light-theme {
             --bg-base: #d2d5d8;
@@ -1328,6 +1333,12 @@
         body.light-theme header {
             background: #d2d5d8;
             border-bottom: 1px solid #b4b8c0;
+        }
+
+        /* Lighten the accessibility control pills in light theme */
+        body.light-theme .theme-toggle-group,
+        body.light-theme .font-size-group {
+            background: rgba(0, 0, 0, 0.06) !important;
         }
 
         body.light-theme .dropdown-content {
