@@ -488,20 +488,33 @@ class SafeMusicPlayer:
         self._abc_tmp_path: str | None = None  # path to the currently compiled MIDI file
 
         # Set SDL_SOUNDFONTS to enable correct MIDI instrument synthesis on Linux
-        soundfont_paths = [
-            "/usr/share/sounds/sf2/FluidR3_GM.sf2",
-            "/usr/share/sounds/sf2/default-GM.sf2",
-            "/usr/share/sounds/sf2/TimGM6mb.sf2",
-            "/usr/share/sounds/sf3/FluidR3_GM.sf3",
-            "/usr/share/sounds/sf3/default.sf3",
-            "/usr/share/midi/soundfont/FluidR3_GM.sf2",
-            "/usr/share/midi/soundfont/default.sf2",
-        ]
-        for path in soundfont_paths:
-            if os.path.exists(path):
-                os.environ["SDL_SOUNDFONTS"] = path
-                print(f"Set SDL_SOUNDFONTS environment variable to {path}")
-                break
+        env_soundfont = os.environ.get("SDL_SOUNDFONTS")
+        if env_soundfont and os.path.exists(env_soundfont):
+            print(f"Using pre-configured SDL_SOUNDFONTS: {env_soundfont}")
+        else:
+            soundfont_paths = []
+            if self.playlist_dir and os.path.exists(self.playlist_dir):
+                try:
+                    for filename in sorted(os.listdir(self.playlist_dir)):
+                        if filename.lower().endswith((".sf2", ".sf3")):
+                            soundfont_paths.append(os.path.join(self.playlist_dir, filename))
+                except Exception as e:
+                    print(f"Error scanning playlist_dir for soundfonts: {e}")
+
+            soundfont_paths.extend([
+                "/usr/share/sounds/sf2/FluidR3_GM.sf2",
+                "/usr/share/sounds/sf2/default-GM.sf2",
+                "/usr/share/sounds/sf2/TimGM6mb.sf2",
+                "/usr/share/sounds/sf3/FluidR3_GM.sf3",
+                "/usr/share/sounds/sf3/default.sf3",
+                "/usr/share/midi/soundfont/FluidR3_GM.sf2",
+                "/usr/share/midi/soundfont/default.sf2",
+            ])
+            for path in soundfont_paths:
+                if os.path.exists(path):
+                    os.environ["SDL_SOUNDFONTS"] = path
+                    print(f"Set SDL_SOUNDFONTS environment variable to {path}")
+                    break
 
         try:
             pygame.mixer.init()
