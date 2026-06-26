@@ -28,9 +28,13 @@ from tinytag import TinyTag
 
 
 def abc_to_midi_bytes(abc_text: str) -> bytes:
-    meter = 1.0
+    meter_num = 4
+    meter_den = 4
     unit_note_len = None
     program = 0  # Default to Piano
+    bpm = 120.0
+    beat_fraction = None
+    has_tempo_header = False
     
     headers_done = False
     notes_parts = []
@@ -56,17 +60,26 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
             key, val = match.group(1), match.group(2).strip()
             if key == 'M':
                 if val.lower() in ('c', '4/4'):
-                    meter = 1.0
+                    meter_num, meter_den = 4, 4
                 elif val.lower() == 'c|':
-                    meter = 1.0
+                    meter_num, meter_den = 2, 2
                 else:
                     m = re.match(r'(\d+)/(\d+)', val)
                     if m:
-                        meter = float(m.group(1)) / float(m.group(2))
+                        meter_num = int(m.group(1))
+                        meter_den = int(m.group(2))
             elif key == 'L':
                 m = re.match(r'(\d+)/(\d+)', val)
                 if m:
                     unit_note_len = float(m.group(1)) / float(m.group(2))
+            elif key == 'Q':
+                has_tempo_header = True
+                bpm_match = re.search(r'(\d+)\s*$', val)
+                if bpm_match:
+                    bpm = float(bpm_match.group(1))
+                frac_match = re.search(r'(\d+)/(\d+)\s*=', val)
+                if frac_match:
+                    beat_fraction = float(frac_match.group(1)) / float(frac_match.group(2))
             elif key == 'K':
                 headers_done = True
         else:
@@ -76,17 +89,71 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
             notes_parts.append(cleaned_line)
             
     if unit_note_len is None:
-        unit_note_len = 0.0625 if meter < 0.75 else 0.125
+        unit_note_len = 0.0625 if (meter_num / meter_den) < 0.75 else 0.125
+        
+    if beat_fraction is None:
+        if has_tempo_header:
+            beat_fraction = unit_note_len
+        else:
+            if meter_den == 8 and meter_num in (6, 9, 12):
+                beat_fraction = 0.375
+            elif meter_den == 2:
+                beat_fraction = 0.5
+            else:
+                beat_fraction = 0.25
         
     ticks_per_quarter = 480
-    unit_ticks = int(1920 * unit_note_len)
+    unit_ticks = int(ticks_per_quarter * unit_note_len / beat_fraction)
+    tempo_us = int(60000000 / bpm)
     
     # MIDI track events bytes
     track_events = bytearray()
     
-    # 1. Delta-time 0, Program Change (C0 <program>)
+    # Write MIDI Tempo event (FF 51 03 tttttt) at delta-time 0
+    track_events.append(0x00)
+    track_events.extend([0xFF, 0x51, 0x03])
+    track_events.extend(tempo_us.to_bytes(3, byteorder='big'))
+    
+    # Write Program Change (C0 <program>) at delta-time 0
     track_events.append(0x00)
     track_events.extend([0xC0, program])
+    
+    # Join note parts, remove grace notes, and expand repeats
+    notes_str = " ".join(notes_parts)
+    notes_str = re.sub(r'{[^}]*}', '', notes_str)
+    
+    # Repeat expansion logic
+    bar_pattern = re.compile(r'(\|:\s*\[\d|\|:\s*|:\s*\|:\s*|:\s*\||::|\|\]|\|\||\|)')
+    parts = bar_pattern.split(notes_str)
+    measures = []
+    current_repeat_block = []
+    
+    for i in range(0, len(parts), 2):
+        notes = parts[i].strip()
+        bar = parts[i+1].strip() if i+1 < len(parts) else ""
+        measure_data = (notes, bar)
+        
+        is_repeat_start = "|:" in bar
+        is_repeat_end = ":|" in bar or "::" in bar
+        
+        current_repeat_block.append(measure_data)
+        
+        if is_repeat_end:
+            for nd in current_repeat_block:
+                measures.append(nd)
+            for nd in current_repeat_block:
+                measures.append(nd)
+            current_repeat_block = []
+        elif bar in ("||", "|]", ""):
+            for nd in current_repeat_block:
+                measures.append(nd)
+            current_repeat_block = []
+            
+        if is_repeat_start or bar == "::":
+            current_repeat_block = []
+            
+    for nd in current_repeat_block:
+        measures.append(nd)
     
     # Parse notes and chords
     pattern = re.compile(r'\[([^\]]+)\]|([_^^=]*)([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
@@ -132,8 +199,8 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
 
     accumulated_delta = 0
     
-    for part in notes_parts:
-        for m in pattern.finditer(part):
+    for notes, _ in measures:
+        for m in pattern.finditer(notes):
             chord_content = m.group(1)
             if chord_content:
                 chord_notes = []
@@ -217,10 +284,12 @@ def get_abc_duration(filepath: str) -> float:
         print(f"Error reading ABC file {filepath}: {e}")
         return 180.0
 
-    meter = 1.0  # Default: 4/4
+    meter_num = 4
+    meter_den = 4
     unit_note_len = None
     bpm = 120.0
     beat_fraction = None
+    has_tempo_header = False
     
     headers_done = False
     notes_parts = []
@@ -237,18 +306,20 @@ def get_abc_duration(filepath: str) -> float:
             key, val = match.group(1), match.group(2).strip()
             if key == 'M':
                 if val.lower() in ('c', '4/4'):
-                    meter = 1.0
+                    meter_num, meter_den = 4, 4
                 elif val.lower() == 'c|':
-                    meter = 1.0
+                    meter_num, meter_den = 2, 2
                 else:
                     m = re.match(r'(\d+)/(\d+)', val)
                     if m:
-                        meter = float(m.group(1)) / float(m.group(2))
+                        meter_num = int(m.group(1))
+                        meter_den = int(m.group(2))
             elif key == 'L':
                 m = re.match(r'(\d+)/(\d+)', val)
                 if m:
                     unit_note_len = float(m.group(1)) / float(m.group(2))
             elif key == 'Q':
+                has_tempo_header = True
                 bpm_match = re.search(r'(\d+)\s*$', val)
                 if bpm_match:
                     bpm = float(bpm_match.group(1))
@@ -263,16 +334,64 @@ def get_abc_duration(filepath: str) -> float:
             cleaned_line = re.sub(r'\[[A-Za-z]:[^\]]*\]', '', cleaned_line)
             notes_parts.append(cleaned_line)
             
+    # Resolve default unit note length
     if unit_note_len is None:
-        unit_note_len = 0.0625 if meter < 0.75 else 0.125
+        meter_val = meter_num / meter_den
+        unit_note_len = 0.0625 if meter_val < 0.75 else 0.125
             
+    # Resolve default beat fraction for tempo
     if beat_fraction is None:
-        beat_fraction = unit_note_len
+        if has_tempo_header:
+            beat_fraction = unit_note_len
+        else:
+            if meter_den == 8 and meter_num in (6, 9, 12):
+                beat_fraction = 0.375
+            elif meter_den == 2:
+                beat_fraction = 0.5
+            else:
+                beat_fraction = 0.25
         
-    total_multipliers = 0.0
+    # Join note parts, remove grace notes, and expand repeats
+    notes_str = " ".join(notes_parts)
+    notes_str = re.sub(r'{[^}]*}', '', notes_str)
     
-    pattern = re.compile(r'\[([^\]]+)\]|([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
-    note_pattern = re.compile(r'([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
+    # Repeat expansion logic
+    bar_pattern = re.compile(r'(\|:\s*\[\d|\|:\s*|:\s*\|:\s*|:\s*\||::|\|\]|\|\||\|)')
+    parts = bar_pattern.split(notes_str)
+    measures = []
+    current_repeat_block = []
+    
+    for i in range(0, len(parts), 2):
+        notes = parts[i].strip()
+        bar = parts[i+1].strip() if i+1 < len(parts) else ""
+        measure_data = (notes, bar)
+        
+        is_repeat_start = "|:" in bar
+        is_repeat_end = ":|" in bar or "::" in bar
+        
+        current_repeat_block.append(measure_data)
+        
+        if is_repeat_end:
+            for nd in current_repeat_block:
+                measures.append(nd)
+            for nd in current_repeat_block:
+                measures.append(nd)
+            current_repeat_block = []
+        elif bar in ("||", "|]", ""):
+            for nd in current_repeat_block:
+                measures.append(nd)
+            current_repeat_block = []
+            
+        if is_repeat_start or bar == "::":
+            current_repeat_block = []
+            
+    for nd in current_repeat_block:
+        measures.append(nd)
+        
+    # Sum note multipliers of expanded measures
+    total_multipliers = 0.0
+    pattern = re.compile(r'\[([^\]]+)\]|([_^^=]*)([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
+    note_pattern = re.compile(r'([_^^=]*)([A-Ga-gxzXZ])([,\']*)(\d*(?:/+\d*)*)')
     
     def parse_multiplier(num_str, slash_str):
         num = float(num_str) if num_str else 1.0
@@ -286,8 +405,8 @@ def get_abc_duration(filepath: str) -> float:
         else:
             return num / (2 ** slash_count)
 
-    for part in notes_parts:
-        for m in pattern.finditer(part):
+    for notes, _ in measures:
+        for m in pattern.finditer(notes):
             chord_content = m.group(1)
             if chord_content:
                 max_mult = 0.0
@@ -301,7 +420,7 @@ def get_abc_duration(filepath: str) -> float:
                             max_mult = mult
                 total_multipliers += max_mult
             else:
-                suffix = m.group(4)
+                suffix = m.group(5)
                 suffix_match = re.match(r'^(\d+)?((?:/+\d*)*)$', suffix)
                 if suffix_match:
                     mult = parse_multiplier(suffix_match.group(1), suffix_match.group(2))
