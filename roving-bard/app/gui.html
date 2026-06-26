@@ -3557,6 +3557,15 @@
             if (event.target.closest('button, input, select, .delete-tag-btn, .badge-tag-add')) {
                 return;
             }
+            // Optimistic UI: immediately highlight the clicked item so
+            // selection feels instant rather than waiting for the API round-trip
+            const clickedItem = event.currentTarget;
+            if (clickedItem) {
+                document.querySelectorAll('#audio-files-list .mapping-item').forEach(el => {
+                    el.classList.remove('selected-track');
+                });
+                clickedItem.classList.add('selected-track');
+            }
             selectAction();
         }
 
