@@ -309,8 +309,8 @@
         }
 
         .header-volume-control input[type="range"] {
-            flex: 1;
-            max-width: 300px;
+            width: 200px;
+            flex-shrink: 0;
             accent-color: var(--accent);
             cursor: pointer;
         }
@@ -1078,6 +1078,18 @@
             pointer-events: none;
         }
 
+        /* Export/Save button: match EQ & speaker icon gradient */
+        #export-segment-btn:not(:disabled) {
+            background: linear-gradient(135deg, #00f2fe 0%, #7c4dff 100%) !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: 0 2px 10px rgba(0, 242, 254, 0.25), 0 2px 8px rgba(124, 77, 255, 0.2) !important;
+        }
+        #export-segment-btn:not(:disabled):hover {
+            filter: brightness(1.15);
+            box-shadow: 0 4px 16px rgba(0, 242, 254, 0.35), 0 4px 12px rgba(124, 77, 255, 0.3) !important;
+        }
+
         .btn-danger {
             background: linear-gradient(135deg, #ff4d4d 0%, #d50000 100%);
             box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2);
@@ -1362,6 +1374,17 @@
             background: rgba(0, 0, 0, 0.04) !important;
             border: 1px solid rgba(0, 0, 0, 0.06) !important;
             color: var(--text-muted) !important;
+        }
+
+        /* Light theme: keep export button gradient */
+        body.light-theme #export-segment-btn:not(:disabled) {
+            background: linear-gradient(135deg, #00c4cc 0%, #6a3de8 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 2px 8px rgba(0, 196, 204, 0.3), 0 2px 6px rgba(106, 61, 232, 0.2) !important;
+        }
+        body.light-theme #export-segment-btn:not(:disabled):hover {
+            filter: brightness(1.1);
+            box-shadow: 0 4px 14px rgba(0, 196, 204, 0.4), 0 4px 10px rgba(106, 61, 232, 0.3) !important;
         }
 
         body.light-theme .btn-secondary {
@@ -1983,7 +2006,7 @@
                     <span data-loc="now_playing">NOW PLAYING</span>
                     <div class="header-volume-control">
                         <!-- Export Button -->
-                        <button id="export-segment-btn" class="btn" style="width: auto; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; height: 32px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;" onclick="exportSegment()" disabled>Export</button>
+                        <button id="export-segment-btn" class="btn" style="width: auto; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; height: 32px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px;" onclick="exportSegment()" disabled>Export</button>
                         <!-- EQ Button -->
                         <div class="eq-anchor">
                             <span id="eq-btn" onclick="toggleEQPanel()" data-loc-title="equalizer_tooltip" title="Equalizer">
@@ -2073,7 +2096,7 @@
                             </svg>
                         </span>
                         <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1.0" oninput="changeVolume(this.value)">
-                        <span id="volume-pct" style="font-family: 'Space Mono', monospace; font-size: 0.9rem; min-width: 35px;">100%</span>
+                        <span id="volume-pct" style="font-family: 'Space Mono', monospace; font-size: 0.9rem; width: 3.5ch; text-align: right; flex-shrink: 0;">100%</span>
                     </div>
                 </div>
                 <div class="player-widget">
@@ -5497,29 +5520,9 @@
             const exportBtn = document.getElementById('export-segment-btn');
             if (!exportBtn) return;
 
-            // Reset width properties to get natural measurements
+            // Let the button fit its current text content naturally
             exportBtn.style.width = 'auto';
-            exportBtn.style.minWidth = '0px';
-
-            const originalText = exportBtn.innerText;
-
-            // Measure 'Save' text width
-            exportBtn.innerText = t('save_btn', 'Save');
-            const saveWidth = exportBtn.offsetWidth;
-
-            // Measure 'Export' text width
-            exportBtn.innerText = t('export_btn', 'Export');
-            const exportWidth = exportBtn.offsetWidth;
-
-            // Restore original text
-            exportBtn.innerText = originalText;
-
-            // Set the constant width to the larger of the two
-            const maxWidth = Math.max(saveWidth, exportWidth);
-            if (maxWidth > 0) {
-                exportBtn.style.width = maxWidth + 'px';
-                exportBtn.style.minWidth = maxWidth + 'px';
-            }
+            exportBtn.style.minWidth = 'auto';
         }
 
         function setFontSize(size) {
