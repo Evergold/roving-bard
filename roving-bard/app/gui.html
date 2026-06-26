@@ -1918,8 +1918,8 @@
                     <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;" data-loc="api_key_detection">
                         API Key Detection
                     </div>
-                    <div id="api-key-detection-status" style="font-family: inherit; margin-top: 0.5rem;" data-loc="loading_status">
-                        Loading status...
+                    <div id="api-key-detection-status" style="font-family: inherit; margin-top: 0.5rem;">
+                        <span data-loc="loading_status">Loading status...</span>
                     </div>
                 </div>
             </div>
@@ -2313,6 +2313,38 @@
         let seekTimerId = null;
         let isTransitioningTrack = false;
         let activeSegment = null;
+        let currentConnectionStatus = "ready"; // "ready", "auto_scanning", "unauthorized", "offline"
+
+        function updateStatusBadgeUI() {
+            const badge = document.getElementById('status-badge');
+            if (!badge) return;
+
+            if (currentConnectionStatus === "auto_scanning") {
+                badge.className = "status-badge online";
+                badge.innerHTML = `
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
+                    <span class="badge-symbol">✓</span> ${t('auto_scanning', 'AUTO SCANNING')}
+                `;
+            } else if (currentConnectionStatus === "unauthorized") {
+                badge.className = "status-badge offline";
+                badge.innerHTML = `
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span>
+                    <span class="badge-symbol">⚠</span> ${t('unauthorized', 'UNAUTHORIZED')}
+                `;
+            } else if (currentConnectionStatus === "offline") {
+                badge.className = "status-badge offline";
+                badge.innerHTML = `
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span>
+                    <span class="badge-symbol">⚠</span> ${t('offline', 'OFFLINE')}
+                `;
+            } else {
+                badge.className = "status-badge online";
+                badge.innerHTML = `
+                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    <span class="badge-symbol">✓</span> ${t('ready', 'READY')}
+                `;
+            }
+        }
         try {
             const savedSeg = localStorage.getItem('activeSegment');
             if (savedSeg) activeSegment = JSON.parse(savedSeg);
@@ -2335,10 +2367,18 @@
             return await fetch(url, options);
         }
 
+        let cachedEnvStatus = null;
+
         async function checkApiKeyEnvStatus() {
             try {
-                const response = await fetch('/api/env-status');
-                const res = await response.json();
+                let res;
+                if (cachedEnvStatus) {
+                    res = cachedEnvStatus;
+                } else {
+                    const response = await fetch('/api/env-status');
+                    res = await response.json();
+                    cachedEnvStatus = res;
+                }
                 
                 const container = document.getElementById('api-key-detection-status');
                 
@@ -2399,22 +2439,16 @@
             try {
                 const response = await apiFetch('/api/status');
                 if (response.status === 401) {
-                    const badge = document.getElementById('status-badge');
-                    if (badge) {
-                        badge.className = "status-badge offline";
-                        badge.innerHTML = `<span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span> <span class="badge-symbol">⚠</span> UNAUTHORIZED`;
-                    }
+                    currentConnectionStatus = "unauthorized";
+                    updateStatusBadgeUI();
                     console.error("Authentication failed. No valid API key provided.");
                     isTransitioningTrack = false;
                     updateExportButtonState();
                     return;
                 }
                 if (!response.ok) {
-                    const badge = document.getElementById('status-badge');
-                    if (badge) {
-                        badge.className = "status-badge offline";
-                        badge.innerHTML = `<span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span> <span class="badge-symbol">⚠</span> OFFLINE`;
-                    }
+                    currentConnectionStatus = "offline";
+                    updateStatusBadgeUI();
                     console.error("Failed to load status:", response.status);
                     isTransitioningTrack = false;
                     updateExportButtonState();
@@ -2425,6 +2459,13 @@
                 currentPlaybackStatus = status;
                 isTransitioningTrack = false;
                 lastStatusTime = Date.now();
+                
+                // Restore connection status if it was offline/unauthorized
+                if (currentConnectionStatus === "offline" || currentConnectionStatus === "unauthorized") {
+                    const pollingToggle = document.getElementById('polling-toggle');
+                    currentConnectionStatus = (pollingToggle && pollingToggle.checked) ? "auto_scanning" : "ready";
+                    updateStatusBadgeUI();
+                }
                 
                 configData = status.config_data;
                 
@@ -4156,21 +4197,15 @@
                 pollingIntervalId = setInterval(async () => {
                     await scanScreenNow();
                 }, configData.polling_interval * 1000 || 2000);
-                document.getElementById('status-badge').className = "status-badge online";
-                document.getElementById('status-badge').innerHTML = `
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
-                    <span class="badge-symbol">✓</span> AUTO SCANNING
-                `;
+                currentConnectionStatus = "auto_scanning";
+                updateStatusBadgeUI();
             } else {
                 if (pollingIntervalId) {
                     clearInterval(pollingIntervalId);
                     pollingIntervalId = null;
                 }
-                document.getElementById('status-badge').className = "status-badge online";
-                document.getElementById('status-badge').innerHTML = `
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
-                    <span class="badge-symbol">✓</span> READY
-                `;
+                currentConnectionStatus = "ready";
+                updateStatusBadgeUI();
             }
         }
 
@@ -5331,6 +5366,8 @@
             if (audioLibraryFiles) {
                 renderAudioFiles();
             }
+            updateStatusBadgeUI();
+            checkApiKeyEnvStatus();
         }
 
         function changeLanguage(lang) {
