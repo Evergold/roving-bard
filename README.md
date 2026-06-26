@@ -1,151 +1,276 @@
-# Roving Bard: Adaptive, location-aware audio in LOTRO
+# Roving Bard: Adaptive, Location-Aware Audio for LOTRO
 
-Roving Bard is an autonomous, screen-aware agent built with the Google Agent Development Kit (ADK). It monitors a video game screen in real-time, extracts in-game locations and coordinates, and dynamically transitions background music tracks (using crossfade effects) to match the player's current location or coordinate hotspot.
+A game-aware music player agent that captures the screen, recognises the in-game
+location via OCR (with Gemini Vision fallback), and seamlessly transitions
+background music to match the environment. Built on Google ADK with a
+full-featured browser GUI.
 
-The agent uses local OCR (Tesseract) for latency-sensitive local processing and automatically falls back to Gemini Vision for complex screen layouts.
+## Project Structure
 
----
-
-## 📂 Project Structure
-
-```text
-capstone/
-├── .agents-cli-spec.md  # Original agent project specification
-├── README.md            # Root GitHub repository documentation (this file)
-└── roving-bard/         # Core agent project folder
-    ├── app/             # Agent codebase (agent, tools, player logic, FastAPI backend)
-    ├── audio/           # Audio files, segments, tags, and mapping config
-    │   ├── mapping.yaml # Coordinate-to-music mapping configuration
-    │   ├── segments.yaml# Exported audio segments
-    │   └── file_tags.yaml# Per-file tag metadata
-    ├── tests/           # Unit, integration, and end-to-end server tests
-    ├── pyproject.toml   # Python project dependencies and configuration
-    ├── run_player.py    # Main screen monitoring loop runner
-    └── simulated_game.py# Tkinter GUI simulating a video game screen for local testing
+```
+roving-bard/
+├── app/                          # Core application code
+│   ├── __init__.py               #   Package init & metadata
+│   ├── agent.py                  #   ADK ReAct agent definition
+│   ├── tools.py                  #   Agent tools (screen check, playback, Gemini Vision)
+│   ├── player.py                 #   SafeMusicPlayer, ScreenGrabber, LocalOCRParser, TrackMapper
+│   ├── fast_api_app.py           #   FastAPI server & REST endpoints
+│   ├── gui.html                  #   Browser dashboard (262 KB single-file app)
+│   └── app_utils/                #   Shared utilities
+│       ├── telemetry.py          #     OpenTelemetry / Cloud Trace setup
+│       └── typing.py             #     Shared type definitions
+│
+├── audio/                        #  Audio library directory
+│   ├── .gitkeep                  #   Keeps directory in version control
+│   ├── mapping.yaml              #   Location → track mapping rules & config
+│   ├── segments.yaml             #   Saved segment definitions (git-ignored)
+│   ├── file_tags.yaml            #   Per-file tag metadata (git-ignored)
+│   ├── *.wav / *.mp3 / *.ogg     #   Audio tracks (git-ignored)
+│   ├── *.flac / *.mp4            #   Audio tracks (git-ignored)
+│   ├── *.abc                     #   ABC notation files (auto-converted to MIDI)
+│   └── *.sf2 / *.sf3             #   SoundFont files for MIDI playback (optional)
+│
+├── capture/                      #  Screen capture staging directory
+│   └── .gitkeep                  #   Also accepts manually placed screenshots
+│
+├── tests/                        #  Test suite
+│   ├── conftest.py               #   Shared pytest fixtures
+│   ├── unit/                     #   Unit tests (auth, player, audio formats, ABC/MIDI)
+│   ├── integration/              #   Integration tests (agent, FastAPI e2e)
+│   └── eval/                     #   ADK evaluation configs & datasets
+│
+├── run_player.py                 #  CLI entry point — standalone polling loop
+├── simulated_game.py             #  Tkinter game client simulator
+├── pyproject.toml                #  Dependencies & tool config (uv / hatch)
+├── uv.lock                       #  Locked dependency graph
+├── Dockerfile                    #  Container build (API-server mode)
+├── agents-cli-manifest.yaml      #  agents-cli project manifest
+└── AGENTS.md                     #  AI-assisted development rules
 ```
 
----
+### Key directories
 
-## 🚀 Key Features
+| Directory   | Purpose |
+|-------------|---------|
+| `audio/`    | Drop audio files here. Supports `.wav`, `.mp3`, `.ogg`, `.flac`, `.mp4`, `.abc` (ABC notation), and `.mid` (MIDI). SoundFont files (`.sf2` / `.sf3`) placed here are auto-discovered for MIDI playback. Config files (`mapping.yaml`, `segments.yaml`, `file_tags.yaml`) also live here. |
+| `capture/`  | Staging area for screen captures. The player writes cropped screenshots here; you can also place images manually for offline testing without a live game window. |
+| `tests/`    | `unit/` for isolated tests, `integration/` for server e2e, `eval/` for ADK evaluation datasets. |
 
-*   **Real-time Screen Monitoring**: Captures the game window and crops to the mini-map/coordinate HUD to ensure user privacy.
-*   **Hybrid OCR/Vision Pipeline**:
-    *   *Primary (Local OCR)*: Preprocesses and parses coordinate text locally via Tesseract for speed.
-    *   *Fallback (Gemini Vision)*: Leverages Gemini multimodal models if local OCR fails to parse the coordinates.
-*   **Audio Crossfade Engine**: Smoothly transitions tracks (`fade-in` and `fade-out`) using `pygame.mixer` based on custom coordinate zones or location keywords.
-*   **Secure Authentication**: Fully decoupled from hard-coded keys—uses standard environment variables for backend API access.
+## Features
 
----
+- **Automatic location detection** — captures the game screen, crops the minimap, and parses coordinates + location name via Tesseract OCR
+- **Gemini Vision fallback** — when local OCR is inconclusive, falls back to a multimodal LLM (configurable: Gemini, GPT-4o, Claude)
+- **Smooth crossfade transitions** — configurable fade-in / fade-out between tracks
+- **ABC notation support** — pure-Python ABC → MIDI converter with repeats, chords, grace notes, accidentals, and `%%MIDI program` instrument selection
+- **SoundFont auto-discovery** — scans `audio/` for `.sf2`/`.sf3` files, then falls back to common Linux system paths; honors `SDL_SOUNDFONTS` env var
+- **10-band parametric EQ** — real-time equalizer (32 Hz – 16 kHz) using IIR peaking filters via scipy
+- **Segment system** — save, edit, and export named sub-ranges of tracks with custom volume, bounds, and EQ presets
+- **Browser GUI** — glassmorphism dark/light theme, 7-language localisation (EN-US, EN-UK, FR, DE, ES, IT, RU), interactive EQ panel, seek bar with range highlighting, audio upload, file tagging, mapping editor, and screenshot viewer
+- **REST API** — authenticated FastAPI endpoints for playback control, config management, segments, EQ, file management, and screenshots
+- **ADK agent integration** — agent tools for screen checking, playback, volume control, and status queries; ADK Playground support
 
-## 🛠️ Prerequisites
+## Requirements
 
-Before you begin, ensure you have installed:
-1.  **Python 3.11 - 3.13**
-2.  **uv** (Python packaging & dependency manager): [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
-3.  **Tesseract OCR** (Required for local OCR parsing):
-    *   *Ubuntu/Debian*: `sudo apt install tesseract-ocr`
-    *   *macOS*: `brew install tesseract`
-    *   *Windows*: Download binary from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki).
+### Python
 
----
+- **Python** ≥ 3.11, < 3.14
+- **uv** — Python package manager — [Install](https://docs.astral.sh/uv/getting-started/installation/)
+- **agents-cli** — `uv tool install google-agents-cli`
 
-## 📦 Setup & Installation
+### System dependencies
 
-1.  Clone the repository:
-    ```bash
-    git clone <your-repo-url>
-    cd capstone/roving-bard
-    ```
-2.  Install the **Agents CLI** globally:
-    ```bash
-    uv tool install google-agents-cli
-    ```
-3.  Install project dependencies:
-    ```bash
-    agents-cli install
-    ```
+| Dependency | Purpose | Install (Debian/Ubuntu) |
+|---|---|---|
+| **Tesseract OCR** | Local OCR for minimap text | `sudo apt install tesseract-ocr` |
+| **SDL2 + SDL_mixer** | Audio playback via pygame | Usually bundled with pygame; `sudo apt install libsdl2-mixer-2.0-0` if needed |
+| **libsndfile** | Audio I/O for EQ processing (soundfile) | `sudo apt install libsndfile1` |
+| **FluidSynth** *(optional)* | Higher-quality MIDI synthesis | `sudo apt install fluidsynth` |
+| **SoundFont** *(optional)* | MIDI instrument samples | `sudo apt install fluid-soundfont-gm` or place `.sf2`/`.sf3` files in `audio/` |
 
----
+### Environment variables
 
-## 🎮 How to Run (Local Testing)
+| Variable | Purpose |
+|---|---|
+| `AGENT_API_KEY` | API key for GUI / REST authentication (also checked: `GOOGLE_API_KEY`, `GEMINI_API_KEY`) |
+| `SDL_SOUNDFONTS` | *(optional)* Explicit path to a SoundFont file; overrides auto-discovery |
+| `INTEGRATION_TEST` | Set to `TRUE` to mock LiteLLM responses during testing |
+| `LOGS_BUCKET_NAME` | *(optional)* GCS bucket for artifact / log storage |
 
-This project contains a built-in game simulator and a background music runner for testing:
+### SoundFont setup for MIDI / ABC playback
 
-### 1. Start the Game Simulator
-In one terminal, run:
+MIDI and ABC notation files require a SoundFont (`.sf2` or `.sf3`) for instrument
+synthesis. The player resolves a SoundFont in this order:
+
+1. **`SDL_SOUNDFONTS` env var** — if set and the file exists, used directly
+2. **`audio/` directory** — any `.sf2` / `.sf3` files placed alongside your tracks
+3. **System paths** — scans standard Linux locations:
+   - `/usr/share/sounds/sf2/FluidR3_GM.sf2`
+   - `/usr/share/sounds/sf2/default-GM.sf2`
+   - `/usr/share/sounds/sf2/TimGM6mb.sf2`
+   - `/usr/share/sounds/sf3/FluidR3_GM.sf3`
+   - `/usr/share/midi/soundfont/FluidR3_GM.sf2`
+
+If no SoundFont is found, MIDI playback will use SDL_mixer's default (often
+low-quality) synthesis.
+
+## Quick Start
+
+Install required packages:
+
 ```bash
-cd roving-bard
+agents-cli install
+```
+
+This project includes a simulated game client and a music player runner for local testing.
+
+### 1. Launch the Simulated Game Client
+
+Run the simulated game client in a separate terminal:
+
+```bash
 uv run python simulated_game.py
 ```
-This launches a Tkinter window showing coordinates and region buttons (Town, Forest, Boss Arena, Cave) to simulate moving around in-game.
+
+This opens a Tkinter GUI representing the game screen with a minimap widget
+(positioned at the default `mapping.yaml` bounds). Click region buttons
+(Town, Forest, Boss Arena, Cave, Wastelands) to change the in-game location.
 
 ### 2. Start the Music Player Runner
-In another terminal, export your API key and launch the screen monitor:
+
+In another terminal, start the automatic screen monitoring loop:
+
 ```bash
-export GEMINI_API_KEY="your-gemini-api-key"  # Or GOOGLE_API_KEY
-cd roving-bard
 uv run python run_player.py
 ```
-*   *Note: This automatically creates mock audio files (`town.wav`, `forest.wav`, `boss.wav`, `cave.wav`) inside the `music/` directory if they don't already exist.*
-*   Now, click on different regions in the simulator GUI. You will see the runner capture the screen, parse the coordinates, and trigger smooth crossfades between the tracks.
 
-### 3. Launch the Interactive Playground
-To interact with the agent manually and inspect its status or tools, run:
+The runner will:
+- Auto-generate test audio files (`town.wav`, `forest.wav`, `boss.wav`,
+  `cave.wav`) in the `audio/` directory if they don't exist.
+- Capture the screen, crop to the minimap area, and run local OCR (Tesseract)
+  to parse location and coordinates.
+- Smoothly crossfade background music based on the active region via
+  `pygame.mixer`.
+- Automatically fall back to Gemini Vision via LiteLLM if local OCR is
+  inconclusive.
+
+### 3. Browser GUI
+
+Once the runner or playground is active, open the GUI dashboard:
+
+```
+http://localhost:8000/gui?api_key=YOUR_API_KEY
+```
+
+If you've exported GEMINI_API_KEY or GOOGLE_API_KEY to your 
+environment you can launch without api_key. The exported key will be detected:
+
+```
+http://localhost:8000/gui
+```
+
+The dashboard provides full playback controls, a 10-band EQ, segment management,
+audio upload, live screenshot viewer, and configuration editing — all with
+dark/light theme toggle and 7-language localisation.
+
+### 4. Interactive ADK Playground
+
+To talk directly with the agent (which has tools to play/stop music, set volume,
+check screen, etc.):
+
 ```bash
-export GEMINI_API_KEY="your-gemini-api-key"
-cd roving-bard
 agents-cli playground
 ```
-This opens a local web UI playground at `http://localhost:8000`.
 
----
+## Configuration
 
-## 🧪 Running Tests
+All configuration lives in `audio/mapping.yaml`:
 
-To run the full test suite (unit and integration tests):
-```bash
-export GEMINI_API_KEY="your-gemini-api-key"  # Required for auth validation tests
-cd roving-bard
-uv run pytest tests/unit tests/integration
-```
-
----
-
-## ⚙️ Configuration (`mapping.yaml`)
-
-Specify transitions, bounding boxes, and locations in `roving-bard/audio/mapping.yaml`:
 ```yaml
-minimap_bounds:
-  x: 0.8         # Top-left corner coordinates (0.0 to 1.0)
-  y: 0.05
-  width: 0.15    # Dimensions of the cropped mini-map widget
-  height: 0.15
+minimap_bounds:        # Screen region to crop for OCR
+  x: 0.8              # 80% from left
+  y: 0.05             # 5% from top
+  width: 0.15         # 15% of screen width
+  height: 0.15        # 15% of screen height
 
 transitions:
-  fade_out_ms: 1500
+  fade_out_ms: 1500   # Crossfade timing
   fade_in_ms: 1500
 
 playlist_directory: "audio"
-model_name: "gemini/gemini-1.5-flash"
-polling_interval: 2.0
+model_name: "gemini/gemini-1.5-flash"   # Fallback vision model
+polling_interval: 2.0                    # Seconds between screen checks
 
-mappings:
+mappings:                                # Location → track rules
   - location_name: "Town"
     track_file: "town.wav"
   - location_name: "Forest"
     track_file: "forest.wav"
-  - ns_min: 10.0
+  - ns_min: 10.0                         # Coordinate-range match
     ns_max: 20.0
     ew_min: -80.0
     ew_max: -60.0
     track_file: "cave.wav"
 ```
 
----
+## Commands
 
-## 🔒 Security & Environment Variables
+| Command | Description |
+|---|---|
+| `agents-cli install` | Install dependencies using uv |
+| `agents-cli playground` | Launch local ADK development environment |
+| `agents-cli lint` | Run code quality checks (ruff, ty, codespell) |
+| `agents-cli eval` | Evaluate agent behaviour (see `agents-cli eval --help`) |
+| `uv run pytest tests/unit tests/integration` | Run unit and integration tests |
 
-The agent and server look for the following environment variables.
+## 🛠️ Project Management
 
-*   `GEMINI_API_KEY` or `GOOGLE_API_KEY`: Required for visual fallback queries to Gemini models and playground interaction.
-*   `AGENT_API_KEY`: Custom API key that can be set to override frontend client authorization.
+| Command | What It Does |
+|---|---|
+| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
+| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
+| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customisations |
+
+## REST API
+
+All endpoints require authentication via `X-Api-Key` header or `api_key` query parameter.
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/gui` | GET | Browser dashboard |
+| `/api/status` | GET | Current playback state |
+| `/api/control` | POST | Player actions (play, stop, pause, resume, seek, volume, bounds, select) |
+| `/api/config` | POST | Hot-reload mapping configuration |
+| `/api/screenshot` | GET | Latest cropped screenshot (PNG) |
+| `/api/screenshot/refresh` | POST | Re-capture screen |
+| `/api/audio-files` | GET | List audio files with tags |
+| `/api/upload-audio` | POST | Upload audio file to playlist directory |
+| `/api/segments` | GET/POST/DELETE | Manage saved segments |
+| `/api/file-tags` | POST | Update file tags |
+| `/api/eq` | GET/POST | Read/write 10-band EQ gains |
+| `/api/env-status` | GET | Check configured API key env vars |
+| `/feedback` | POST | Submit structured feedback |
+
+## Development
+
+Edit your agent logic in `app/agent.py` and test with `agents-cli playground` —
+it auto-reloads on save. The GUI at `app/gui.html` is served directly by the
+FastAPI server and requires no build step.
+
+## Deployment
+
+```bash
+gcloud config set project <your-project-id>
+agents-cli deploy
+```
+
+The Dockerfile builds a lightweight API-server container (port 8080). Note that
+the container runs in **simulated audio mode** since it does not include system
+audio libraries or Tesseract — it is designed for serving the API and GUI.
+
+To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
+To set up your production infrastructure, run `agents-cli infra cicd`.
+
+## Observability
+
+Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging via
+OpenTelemetry. Disabled automatically during integration tests.
