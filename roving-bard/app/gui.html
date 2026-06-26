@@ -2935,14 +2935,15 @@
                 matchedSegments.forEach(segment => {
                     const item = document.createElement('div');
                     item.className = 'mapping-item';
-                    item.setAttribute('onclick', `handleAudioItemClick(event, () => selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume}))`);
-                    let btnText = t('play', 'Play');
-                    let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
-                    let btnClass = 'btn btn-secondary';
                     
                     const duration = currentPlaybackStatus ? (currentPlaybackStatus.duration || 180.0) : 180.0;
                     const segEnd = segment.end_time;
                     const segVolume = (segment.volume !== undefined && segment.volume !== null) ? segment.volume : null;
+                    
+                    item.setAttribute('onclick', `handleAudioItemClick(event, () => selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume}))`);
+                    let btnText = t('play', 'Play');
+                    let btnStyle = 'padding: 0.3rem 0.6rem; font-size: 0.75rem; transition: all 0.2s ease; min-width: 70px;';
+                    let btnClass = 'btn btn-secondary';
                     
                     const isSegActive = (activeTrack === segment.track_file && Math.abs(activeStart - segment.start_time) < 0.05 && Math.abs((currentPlaybackStatus ? (currentPlaybackStatus.end_time || duration) : duration) - segEnd) < 0.05);
                     
