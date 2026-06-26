@@ -27,7 +27,7 @@ from tinytag import TinyTag
 
 
 
-def abc_to_midi_bytes(abc_text: str) -> bytes:
+def abc_to_midi_bytes(abc_text: str, start_pos: float = 0.0) -> bytes:
     meter_num = 4
     meter_den = 4
     unit_note_len = None
@@ -71,7 +71,7 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
             elif key == 'L':
                 m = re.match(r'(\d+)/(\d+)', val)
                 if m:
-                    unit_note_len = float(m.group(1)) / float(m.group(2))
+                     unit_note_len = float(m.group(1)) / float(m.group(2))
             elif key == 'Q':
                 has_tempo_header = True
                 bpm_match = re.search(r'(\d+)\s*$', val)
@@ -197,6 +197,9 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
                 break
         return bytes(reversed(out))
 
+    start_pos_ticks = int(start_pos * ticks_per_quarter * bpm / 60.0)
+    current_abs_ticks = 0
+    last_written_abs_ticks = 0
     accumulated_delta = 0
     
     for notes, _ in measures:
@@ -222,20 +225,32 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
                         chord_notes.append(midi_note)
                         
                 chord_ticks = int(max_mult * unit_ticks)
+                start_ticks = current_abs_ticks + accumulated_delta
+                end_ticks = start_ticks + chord_ticks
+                
+                if end_ticks <= start_pos_ticks:
+                    current_abs_ticks = end_ticks
+                    accumulated_delta = 0
+                    continue
+                
+                new_start_ticks = max(0, start_ticks - start_pos_ticks)
+                new_end_ticks = end_ticks - start_pos_ticks
                 
                 if chord_notes:
                     for idx, note in enumerate(chord_notes):
-                        delta = accumulated_delta if idx == 0 else 0
+                        delta = (new_start_ticks - last_written_abs_ticks) if idx == 0 else 0
                         track_events.extend(to_vlq(delta))
                         track_events.extend([0x90, note, 96])
-                    accumulated_delta = 0
+                    last_written_abs_ticks = new_start_ticks
                     
                     for idx, note in enumerate(chord_notes):
-                        delta = chord_ticks if idx == 0 else 0
+                        delta = (new_end_ticks - last_written_abs_ticks) if idx == 0 else 0
                         track_events.extend(to_vlq(delta))
                         track_events.extend([0x80, note, 0])
-                else:
-                    accumulated_delta += chord_ticks
+                    last_written_abs_ticks = new_end_ticks
+                
+                current_abs_ticks = end_ticks
+                accumulated_delta = 0
             else:
                 acc = m.group(2) or ""
                 pitch = m.group(3)
@@ -249,17 +264,33 @@ def abc_to_midi_bytes(abc_text: str) -> bytes:
                     mult = parse_multiplier(suffix_match.group(1), suffix_match.group(2))
                 note_ticks = int(mult * unit_ticks)
                 
-                if midi_note is not None:
-                    track_events.extend(to_vlq(accumulated_delta))
-                    track_events.extend([0x90, midi_note, 96])
+                start_ticks = current_abs_ticks + accumulated_delta
+                end_ticks = start_ticks + note_ticks
+                
+                if end_ticks <= start_pos_ticks:
+                    current_abs_ticks = end_ticks
                     accumulated_delta = 0
+                    continue
+                
+                new_start_ticks = max(0, start_ticks - start_pos_ticks)
+                new_end_ticks = end_ticks - start_pos_ticks
+                
+                if midi_note is not None:
+                    delta = new_start_ticks - last_written_abs_ticks
+                    track_events.extend(to_vlq(delta))
+                    track_events.extend([0x90, midi_note, 96])
+                    last_written_abs_ticks = new_start_ticks
                     
-                    track_events.extend(to_vlq(note_ticks))
+                    delta = new_end_ticks - last_written_abs_ticks
+                    track_events.extend(to_vlq(delta))
                     track_events.extend([0x80, midi_note, 0])
-                else:
-                    accumulated_delta += note_ticks
+                    last_written_abs_ticks = new_end_ticks
+                
+                current_abs_ticks = end_ticks
+                accumulated_delta = 0
                     
-    track_events.extend(to_vlq(accumulated_delta))
+    end_track_abs_ticks = max(0, current_abs_ticks + accumulated_delta - start_pos_ticks)
+    track_events.extend(to_vlq(end_track_abs_ticks - last_written_abs_ticks))
     track_events.extend([0xFF, 0x2F, 0x00])
     
     midi_file = bytearray()
@@ -491,6 +522,27 @@ class SafeMusicPlayer:
                 except OSError:
                     pass
 
+    def _prepare_abc_midi(self, track_path, start_pos):
+        try:
+            with open(track_path, "r", encoding="utf-8") as f:
+                abc_text = f.read()
+            midi_bytes = abc_to_midi_bytes(abc_text, start_pos=start_pos)
+            tmp = tempfile.NamedTemporaryFile(suffix=".mid", delete=False, prefix="abc_tmp_")
+            tmp_path = tmp.name
+            tmp.close()
+            with open(tmp_path, "wb") as f_midi:
+                f_midi.write(midi_bytes)
+            if self._abc_tmp_path and os.path.exists(self._abc_tmp_path):
+                try:
+                    os.unlink(self._abc_tmp_path)
+                except OSError:
+                    pass
+            self._abc_tmp_path = tmp_path
+            return tmp_path
+        except Exception as e:
+            print(f"Error compiling ABC to MIDI: {e}")
+            return self._abc_tmp_path
+
     @property
     def playlist_dir(self):
         return self._playlist_dir
@@ -551,23 +603,7 @@ class SafeMusicPlayer:
         self.track_duration = 0.0
         if track_file.lower().endswith(".abc"):
             self.track_duration = get_abc_duration(track_path)
-            try:
-                with open(track_path, "r", encoding="utf-8") as f:
-                    abc_text = f.read()
-                midi_bytes = abc_to_midi_bytes(abc_text)
-                tmp = tempfile.NamedTemporaryFile(suffix=".mid", delete=False, prefix="abc_tmp_")
-                tmp_path = tmp.name
-                tmp.close()
-                with open(tmp_path, "wb") as f_midi:
-                    f_midi.write(midi_bytes)
-                if self._abc_tmp_path and os.path.exists(self._abc_tmp_path):
-                    try:
-                        os.unlink(self._abc_tmp_path)
-                    except OSError:
-                        pass
-                self._abc_tmp_path = tmp_path
-            except Exception as e:
-                print(f"Error compiling ABC to MIDI: {e}")
+            self._prepare_abc_midi(track_path, start_time)
         else:
             try:
                 tag = TinyTag.get(track_path)
@@ -590,7 +626,8 @@ class SafeMusicPlayer:
         try:
             load_path = self._abc_tmp_path if track_file.lower().endswith(".abc") else track_path
             pygame.mixer.music.load(load_path)
-            pygame.mixer.music.play(loops=-1, start=self.start_time, fade_ms=fade_in_ms)
+            play_start = 0.0 if track_file.lower().endswith(".abc") else self.start_time
+            pygame.mixer.music.play(loops=-1, start=play_start, fade_ms=fade_in_ms)
             pygame.mixer.music.set_volume(self.volume)
             return True
         except Exception as e:
@@ -623,23 +660,7 @@ class SafeMusicPlayer:
         self.track_duration = 0.0
         if track_file.lower().endswith(".abc"):
             self.track_duration = get_abc_duration(track_path)
-            try:
-                with open(track_path, "r", encoding="utf-8") as f:
-                    abc_text = f.read()
-                midi_bytes = abc_to_midi_bytes(abc_text)
-                tmp = tempfile.NamedTemporaryFile(suffix=".mid", delete=False, prefix="abc_tmp_")
-                tmp_path = tmp.name
-                tmp.close()
-                with open(tmp_path, "wb") as f_midi:
-                    f_midi.write(midi_bytes)
-                if self._abc_tmp_path and os.path.exists(self._abc_tmp_path):
-                    try:
-                        os.unlink(self._abc_tmp_path)
-                    except OSError:
-                        pass
-                self._abc_tmp_path = tmp_path
-            except Exception as e:
-                print(f"Error compiling ABC to MIDI: {e}")
+            self._prepare_abc_midi(track_path, start_time)
         else:
             try:
                 tag = TinyTag.get(track_path)
@@ -742,9 +763,15 @@ class SafeMusicPlayer:
                 if start_pos < self.start_time:
                     start_pos = self.start_time
                 track_path = os.path.join(self.playlist_dir, self.current_track)
-                load_path = self._abc_tmp_path if self.current_track.lower().endswith(".abc") else track_path
+                if self.current_track.lower().endswith(".abc"):
+                    self._prepare_abc_midi(track_path, start_pos)
+                    load_path = self._abc_tmp_path
+                    play_start = 0.0
+                else:
+                    load_path = track_path
+                    play_start = start_pos
                 pygame.mixer.music.load(load_path)
-                pygame.mixer.music.play(loops=-1, start=start_pos, fade_ms=1500)
+                pygame.mixer.music.play(loops=-1, start=play_start, fade_ms=1500)
                 pygame.mixer.music.set_volume(self.volume)
                 self.was_stopped = False
                 self.seeked_while_paused = False
@@ -783,9 +810,15 @@ class SafeMusicPlayer:
 
         try:
             track_path = os.path.join(self.playlist_dir, self.current_track)
-            load_path = self._abc_tmp_path if self.current_track.lower().endswith(".abc") else track_path
+            if self.current_track.lower().endswith(".abc"):
+                self._prepare_abc_midi(track_path, position)
+                load_path = self._abc_tmp_path
+                play_start = 0.0
+            else:
+                load_path = track_path
+                play_start = position
             pygame.mixer.music.load(load_path)
-            pygame.mixer.music.play(loops=-1, start=position)
+            pygame.mixer.music.play(loops=-1, start=play_start)
             pygame.mixer.music.set_volume(self.volume)
             return True
         except Exception as e:
@@ -818,7 +851,12 @@ class SafeMusicPlayer:
                 # Update Pygame playback position
                 if not self.simulated and self.mixer_initialized:
                     try:
-                        pygame.mixer.music.play(loops=-1, start=pos)
+                        if self.current_track.lower().endswith(".abc"):
+                            self._prepare_abc_midi(os.path.join(self.playlist_dir, self.current_track), pos)
+                            pygame.mixer.music.load(self._abc_tmp_path)
+                            pygame.mixer.music.play(loops=-1, start=0.0)
+                        else:
+                            pygame.mixer.music.play(loops=-1, start=pos)
                     except Exception as e:
                         print(f"Error during loop seek: {e}")
                 self.last_seek_position = pos

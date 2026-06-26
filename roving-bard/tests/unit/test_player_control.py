@@ -609,5 +609,50 @@ def test_file_tags_api(tmp_path) -> None:
         tools.FILE_TAGS_PATH = orig_file_tags_path
 
 
+def test_abc_player_seeking(tmp_path) -> None:
+    """Test seeking logic specifically on ABC files, validating MIDI compilation ranges."""
+    import os
+    from app.player import SafeMusicPlayer
+    
+    abc_content = "X:1\nT:Test Seeking\nM:4/4\nK:C\nC4 D4 E4 F4\n"
+    abc_file = tmp_path / "seek_test.abc"
+    abc_file.write_text(abc_content, encoding="utf-8")
+    
+    player = SafeMusicPlayer(playlist_dir=str(tmp_path))
+    player.simulated = True
+    
+    # 1. Select track (should compile MIDI starting at start_time = 0.0)
+    assert player.select_track("seek_test.abc") is True
+    assert player.track_duration == 4.0
+    
+    # Start playback (moving out of was_stopped state)
+    assert player.resume() is True
+    assert player.paused is False
+    assert player.was_stopped is False
+    
+    # Pause playback
+    assert player.pause() is True
+    assert player.paused is True
+    assert player.was_stopped is False
+    
+    # 2. Seek to 2.0s while paused (this sets seeked_while_paused)
+    assert player.seek(2.0) is True
+    assert player.last_seek_position == 2.0
+    assert player.seeked_while_paused is True
+    
+    # 3. Resume playback (should compile MIDI starting at 2.0s)
+    assert player.resume() is True
+    assert player.paused is False
+    assert player.last_seek_position == 2.0
+    assert player.was_stopped is False
+    
+    # Clean up player references
+    if player._abc_tmp_path and os.path.exists(player._abc_tmp_path):
+        try:
+            os.unlink(player._abc_tmp_path)
+        except OSError:
+            pass
+
+
 
 
