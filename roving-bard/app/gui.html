@@ -1982,6 +1982,8 @@
                 <div class="card-title">
                     <span data-loc="now_playing">NOW PLAYING</span>
                     <div class="header-volume-control">
+                        <!-- Export Button -->
+                        <button id="export-segment-btn" class="btn" style="width: auto; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; height: 32px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;" onclick="exportSegment()" disabled>Export</button>
                         <!-- EQ Button -->
                         <div class="eq-anchor">
                             <span id="eq-btn" onclick="toggleEQPanel()" data-loc-title="equalizer_tooltip" title="Equalizer">
@@ -2136,7 +2138,6 @@
                         <div id="now-playing-buttons-container" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                             <button id="now-playing-toggle-btn" class="btn" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="toggleNowPlayingPlayback()">Play</button>
                             <button id="now-playing-stop-btn" class="btn btn-secondary" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px;" onclick="stopMusic()" data-loc="stop">Stop</button>
-                            <button id="export-segment-btn" class="btn" style="min-width: 110px; width: auto; white-space: nowrap; padding: 0.75rem 1rem; font-size: 0.95rem; height: 44px; transition: all 0.2s ease;" onclick="exportSegment()" disabled>Export</button>
                         </div>
                     </div>
                 </div>
@@ -2651,7 +2652,7 @@
                 stopBtn.style.borderColor = '';
                 stopBtn.style.boxShadow = '';
             }
-            checkAndAdaptPlayButtonsOverflow();
+            updateExportButtonWidth();
         }
 
         function updateParseUI(parse) {
@@ -3465,7 +3466,7 @@
                     exportBtn.disabled = true;
                 }
             }
-            checkAndAdaptPlayButtonsOverflow();
+            updateExportButtonWidth();
         }
 
         async function saveSegment() {
@@ -5470,7 +5471,7 @@
             }
             updateStatusBadgeUI();
             checkApiKeyEnvStatus();
-            checkAndAdaptPlayButtonsOverflow();
+            updateExportButtonWidth();
         }
 
         function changeLanguage(lang) {
@@ -5492,51 +5493,32 @@
             }
         }
 
-        function checkAndAdaptPlayButtonsOverflow() {
-            const container = document.getElementById('now-playing-buttons-container');
-            const toggleBtn = document.getElementById('now-playing-toggle-btn');
-            const stopBtn = document.getElementById('now-playing-stop-btn');
+        function updateExportButtonWidth() {
             const exportBtn = document.getElementById('export-segment-btn');
-            if (!toggleBtn || !stopBtn || !exportBtn || !container) return;
+            if (!exportBtn) return;
 
-            if (container.offsetWidth === 0) return;
+            // Reset width properties to get natural measurements
+            exportBtn.style.width = 'auto';
+            exportBtn.style.minWidth = '0px';
 
-            exportBtn.style.flexBasis = '';
+            const originalText = exportBtn.innerText;
 
-            const stopBtnWidth = stopBtn.offsetWidth;
-            if (stopBtnWidth === 0) return;
+            // Measure 'Save' text width
+            exportBtn.innerText = t('save_btn', 'Save');
+            const saveWidth = exportBtn.offsetWidth;
 
-            const originalToggleText = toggleBtn.innerText;
-            const originalExportText = exportBtn.innerText;
+            // Measure 'Export' text width
+            exportBtn.innerText = t('export_btn', 'Export');
+            const exportWidth = exportBtn.offsetWidth;
 
-            const toggleTexts = [t('play'), t('pause'), t('resume')];
-            let maxToggleWidth = 0;
-            toggleTexts.forEach(txt => {
-                toggleBtn.innerText = txt;
-                const w = toggleBtn.offsetWidth;
-                if (w > maxToggleWidth) maxToggleWidth = w;
-            });
-            toggleBtn.innerText = originalToggleText;
+            // Restore original text
+            exportBtn.innerText = originalText;
 
-            const exportTexts = [t('save_btn', 'Save'), t('export_btn', 'Export')];
-            let maxExportWidth = 0;
-            exportTexts.forEach(txt => {
-                exportBtn.innerText = txt;
-                const w = exportBtn.offsetWidth;
-                if (w > maxExportWidth) maxExportWidth = w;
-            });
-            exportBtn.innerText = originalExportText;
-
-            if (maxToggleWidth === 0 || maxExportWidth === 0) return;
-
-            const gap = 0.75 * parseFloat(getComputedStyle(document.documentElement).fontSize);
-            const totalWidth = maxToggleWidth + stopBtnWidth + maxExportWidth + (2 * gap);
-            const containerWidth = container.offsetWidth;
-
-            if (totalWidth > containerWidth) {
-                exportBtn.style.flexBasis = '100%';
-            } else {
-                exportBtn.style.flexBasis = '';
+            // Set the constant width to the larger of the two
+            const maxWidth = Math.max(saveWidth, exportWidth);
+            if (maxWidth > 0) {
+                exportBtn.style.width = maxWidth + 'px';
+                exportBtn.style.minWidth = maxWidth + 'px';
             }
         }
 
@@ -5559,7 +5541,7 @@
                 document.getElementById('font-size-s-btn').classList.add('active');
                 localStorage.setItem('font-size', 's');
             }
-            checkAndAdaptPlayButtonsOverflow();
+            updateExportButtonWidth();
         }
 
         function toggleCVDAccessible() {
@@ -5643,8 +5625,8 @@
             startSeekTimer();
             initEQ();
             applyLocalization();
-            checkAndAdaptPlayButtonsOverflow();
-            window.addEventListener('resize', checkAndAdaptPlayButtonsOverflow);
+            updateExportButtonWidth();
+            window.addEventListener('resize', updateExportButtonWidth);
         };
     </script>
 </body>
