@@ -388,10 +388,12 @@ def api_list_audio_files():
     os.makedirs(playlist_dir, exist_ok=True)
     files = [
         f for f in os.listdir(playlist_dir)
-        if f.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4"))
+        if f.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4", ".mid", ".midi"))
     ]
     file_tags = tools.load_file_tags()
-    return {"status": "success", "files": sorted(files), "file_tags": file_tags}
+    tags_registry = tools.load_tags_registry()
+    return {"status": "success", "files": sorted(files), "file_tags": file_tags, "tags_registry": tags_registry}
+
 
 
 @app.post("/api/upload-audio", dependencies=[Depends(verify_api_key)])
@@ -401,7 +403,8 @@ def api_upload_audio(file: UploadFile = File(...)):
     os.makedirs(playlist_dir, exist_ok=True)
     
     filename = os.path.basename(file.filename)
-    if not filename.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4")):
+    if not filename.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4", ".mid", ".midi")):
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unsupported audio file format."
@@ -477,7 +480,21 @@ def add_segment(req: SegmentModel):
         segments.append(segment_data)
         
     tools.save_segments(segments)
+    
+    # Save tags to registry if provided
+    if req.tags is not None:
+        registry = tools.load_tags_registry()
+        registry_changed = False
+        for t in req.tags:
+            t_norm = t.strip().lower()
+            if t_norm and t_norm not in registry:
+                registry.append(t_norm)
+                registry_changed = True
+        if registry_changed:
+            tools.save_tags_registry(registry)
+
     return {"status": "success", "message": "Segment saved."}
+
 
 
 @app.delete("/api/segments", dependencies=[Depends(verify_api_key)])
@@ -503,7 +520,123 @@ def api_update_file_tags(req: FileTagsModel):
     file_tags = tools.load_file_tags()
     file_tags[req.filename] = req.tags
     tools.save_file_tags(file_tags)
+    
+    # Save tags to registry as well
+    registry = tools.load_tags_registry()
+    registry_changed = False
+    for t in req.tags:
+        t_norm = t.strip().lower()
+        if t_norm and t_norm not in registry:
+            registry.append(t_norm)
+            registry_changed = True
+    if registry_changed:
+        tools.save_tags_registry(registry)
+        
     return {"status": "success", "message": "File tags updated."}
+
+
+class RenameTagRequest(BaseModel):
+    old_name: str
+    new_name: str
+
+
+@app.post("/api/tags/rename", dependencies=[Depends(verify_api_key)])
+def api_rename_tag(req: RenameTagRequest):
+    """Renames a tag globally across file_tags.yaml, segments.yaml, and tags_registry.yaml."""
+    old_tag = req.old_name.strip().lower()
+    new_tag = req.new_name.strip().lower()
+    if not old_tag or not new_tag:
+        raise HTTPException(status_code=400, detail="Invalid tag name")
+        
+    # 1. Update file_tags.yaml
+    file_tags = tools.load_file_tags()
+    updated_file_tags = {}
+    for filename, tags in file_tags.items():
+        if isinstance(tags, list):
+            new_tags = []
+            for t in tags:
+                if t == old_tag:
+                    if new_tag not in new_tags:
+                        new_tags.append(new_tag)
+                else:
+                    if t not in new_tags:
+                        new_tags.append(t)
+            updated_file_tags[filename] = new_tags
+        else:
+            updated_file_tags[filename] = tags
+    tools.save_file_tags(updated_file_tags)
+    
+    # 2. Update segments.yaml
+    segments = tools.load_segments()
+    for seg in segments:
+        if "tags" in seg and isinstance(seg["tags"], list):
+            new_tags = []
+            for t in seg["tags"]:
+                if t == old_tag:
+                    if new_tag not in new_tags:
+                        new_tags.append(new_tag)
+                else:
+                    if t not in new_tags:
+                        new_tags.append(t)
+            seg["tags"] = new_tags
+    tools.save_segments(segments)
+    
+    # 3. Update tags_registry.yaml
+    registry = tools.load_tags_registry()
+    if old_tag in registry:
+        registry = [new_tag if t == old_tag else t for t in registry]
+        registry = list(dict.fromkeys(registry))
+    else:
+        if new_tag not in registry:
+            registry.append(new_tag)
+    tools.save_tags_registry(registry)
+    
+    return {"status": "success", "message": f"Tag renamed from {old_tag} to {new_tag}."}
+
+
+class BulkFileTagsModel(BaseModel):
+    filenames: list[str]
+    tags: list[str]
+    action: str  # "add" or "remove"
+
+
+@app.post("/api/file-tags/bulk", dependencies=[Depends(verify_api_key)])
+def api_bulk_file_tags(req: BulkFileTagsModel):
+    """Bulk updates tags associated with multiple raw audio files."""
+    file_tags = tools.load_file_tags()
+    normalized_tags = [t.strip().lower() for t in req.tags if t.strip()]
+    if not normalized_tags:
+        raise HTTPException(status_code=400, detail="No valid tags provided")
+        
+    for filename in req.filenames:
+        current_tags = file_tags.get(filename, [])
+        if not isinstance(current_tags, list):
+            current_tags = []
+            
+        if req.action == "add":
+            for t in normalized_tags:
+                if t not in current_tags:
+                    current_tags.append(t)
+        elif req.action == "remove":
+            current_tags = [t for t in current_tags if t not in normalized_tags]
+            
+        file_tags[filename] = current_tags
+        
+    tools.save_file_tags(file_tags)
+    
+    # Save to global registry as well
+    if req.action == "add":
+        registry = tools.load_tags_registry()
+        registry_changed = False
+        for t in normalized_tags:
+            if t not in registry:
+                registry.append(t)
+                registry_changed = True
+        if registry_changed:
+            tools.save_tags_registry(registry)
+            
+    return {"status": "success", "message": "Bulk file tags updated successfully."}
+
 
 
 @app.get("/api/eq", dependencies=[Depends(verify_api_key)])

@@ -31,6 +31,10 @@ SEGMENTS_PATH = os.path.join(
 FILE_TAGS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "file_tags.yaml"
 )
+TAGS_REGISTRY_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "tags_registry.yaml"
+)
+
 
 
 def load_segments() -> list:
@@ -86,6 +90,33 @@ def save_file_tags(file_tags: dict):
             yaml.safe_dump(file_tags, f)
     except Exception as e:
         print(f"Error saving file_tags.yaml: {e}")
+
+
+def load_tags_registry() -> list:
+    if not os.path.exists(TAGS_REGISTRY_PATH):
+        # Seed with initial tags
+        initial_tags = ["town", "combat", "dungeon", "peaceful", "ambient", "battle", "adventure"]
+        save_tags_registry(initial_tags)
+        return initial_tags
+    try:
+        with open(TAGS_REGISTRY_PATH, "r") as f:
+            data = yaml.safe_load(f)
+            if isinstance(data, list):
+                return data
+            elif isinstance(data, dict) and "tags" in data:
+                return data["tags"] or []
+    except Exception as e:
+        print(f"Error loading tags_registry.yaml: {e}")
+    return []
+
+
+def save_tags_registry(tags: list):
+    try:
+        with open(TAGS_REGISTRY_PATH, "w") as f:
+            yaml.safe_dump(tags, f)
+    except Exception as e:
+        print(f"Error saving tags_registry.yaml: {e}")
+
 
 
 

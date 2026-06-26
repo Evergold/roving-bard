@@ -146,5 +146,8 @@
     "err_set_start_bound": "Error setting start bound:",
     "err_set_end_bound": "Error setting end bound:",
     "err_set_bounds_manually": "Error setting bounds manually:",
-    "warn_eq_send_backend": "[EQ] Could not send to backend:"
+    "warn_eq_send_backend": "[EQ] Could not send to backend:",
+    "rename_tag_prompt": "Введите новое имя для тега:",
+    "failed_rename_tag": "Не удалось переименовать тег: ",
+    "err_rename_tag": "Error renaming tag:"
 }
