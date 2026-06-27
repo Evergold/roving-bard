@@ -155,5 +155,7 @@
     "theme_label": "Design",
     "font_size_label": "Anzeigegröße",
     "language_label": "Sprache",
-    "confirm_delete_segment": "Segment löschen?"
+    "confirm_delete_segment": "Segment löschen?",
+    "export_segment_name_title": "Segmentname:",
+    "ok": "OK"
 }

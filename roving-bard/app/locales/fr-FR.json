@@ -155,5 +155,7 @@
     "theme_label": "Thème",
     "font_size_label": "Taille d'affichage",
     "language_label": "Langue",
-    "confirm_delete_segment": "Supprimer le segment ?"
+    "confirm_delete_segment": "Supprimer le segment ?",
+    "export_segment_name_title": "Nom du segment :",
+    "ok": "OK"
 }

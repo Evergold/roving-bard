@@ -155,5 +155,7 @@
     "theme_label": "Тема",
     "font_size_label": "Размер экрана",
     "language_label": "Язык",
-    "confirm_delete_segment": "Удалить сегмент?"
+    "confirm_delete_segment": "Удалить сегмент?",
+    "export_segment_name_title": "Имя сегмента:",
+    "ok": "ОК"
 }

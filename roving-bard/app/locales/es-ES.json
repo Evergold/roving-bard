@@ -155,5 +155,7 @@
     "theme_label": "Tema",
     "font_size_label": "Tamaño de pantalla",
     "language_label": "Idioma",
-    "confirm_delete_segment": "¿Eliminar segmento?"
+    "confirm_delete_segment": "¿Eliminar segmento?",
+    "export_segment_name_title": "Nombre del segmento:",
+    "ok": "Aceptar"
 }
