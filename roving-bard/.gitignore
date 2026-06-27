@@ -206,7 +206,6 @@ tools/a2a-inspector/
 # App-specific runtime directories
 roving-bard/audio/*
 !roving-bard/audio/.gitkeep
-!roving-bard/audio/mapping.yaml
 
 roving-bard/capture/*
 !roving-bard/capture/.gitkeep
