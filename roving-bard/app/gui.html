@@ -1224,6 +1224,26 @@
             display: none !important;
         }
 
+        .badge-tag.editing {
+            background: rgba(0, 242, 254, 0.15) !important;
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.8) !important;
+            transform: scale(1.08);
+            padding: 0.35rem 0.6rem !important;
+            transition: all 0.2s ease;
+        }
+
+        body.light-theme .badge-tag.editing {
+            background: rgba(46, 93, 168, 0.15) !important;
+            border-color: #2e5da8 !important;
+            box-shadow: 0 0 10px rgba(46, 93, 168, 0.6) !important;
+        }
+
+        .badge-tag.editing .edit-tag-btn,
+        .badge-tag.editing .delete-tag-btn {
+            display: none !important;
+        }
+
         .mapping-item.selected-track {
             border-color: var(--neon-blue) !important;
             background: rgba(0, 242, 254, 0.05);
@@ -5515,7 +5535,7 @@
             const badgeClass = isActive ? "badge-tag active-tag-badge" : "badge-tag";
             
             return `
-                <span class="${badgeClass}" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
+                <span class="${badgeClass}" onclick="event.stopPropagation()" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
                     ${tag}
                     <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag">✏️</span>
                     <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag">
@@ -5531,6 +5551,7 @@
             const badge = btn.closest('.badge-tag');
             if (!badge) return;
             
+            badge.classList.add('editing');
             const originalHtml = badge.innerHTML;
             
             const input = document.createElement('input');
@@ -5545,12 +5566,12 @@
             input.style.outline = 'none';
             input.style.padding = '0';
             input.style.margin = '0';
-            input.style.width = Math.max(oldTag.length * 8, 40) + 'px';
+            input.style.width = Math.max(oldTag.length * 8 + 10, 50) + 'px';
+            input.style.textAlign = 'center';
             
             badge.innerHTML = '';
             badge.appendChild(input);
             input.focus();
-            input.select();
             
             input.addEventListener('click', (e) => e.stopPropagation());
             
@@ -5559,6 +5580,7 @@
             async function finishEdit(save) {
                 if (finished) return;
                 finished = true;
+                badge.classList.remove('editing');
                 
                 if (save) {
                     const newTag = input.value.trim().toLowerCase();
