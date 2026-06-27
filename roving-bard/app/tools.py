@@ -94,8 +94,26 @@ def save_file_tags(file_tags: dict):
 
 def load_tags_registry() -> list:
     if not os.path.exists(TAGS_REGISTRY_PATH):
-        save_tags_registry([])
-        return []
+        in_use_tags = set()
+        
+        # 1. Load tags from files.yaml
+        file_tags = load_file_tags()
+        for tags in file_tags.values():
+            if isinstance(tags, list):
+                for t in tags:
+                    in_use_tags.add(t.strip().lower())
+                    
+        # 2. Load tags from segments.yaml
+        segs = load_segments()
+        for seg in segs:
+            tags = seg.get("tags", [])
+            if isinstance(tags, list):
+                for t in tags:
+                    in_use_tags.add(t.strip().lower())
+                    
+        sorted_tags = sorted(list(in_use_tags))
+        save_tags_registry(sorted_tags)
+        return sorted_tags
     try:
         with open(TAGS_REGISTRY_PATH, "r") as f:
             data = yaml.safe_load(f)
