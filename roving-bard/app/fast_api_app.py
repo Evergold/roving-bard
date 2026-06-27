@@ -509,6 +509,41 @@ def delete_segment(name: str = Query(...)):
     return {"status": "success", "message": "Segment deleted."}
 
 
+class RenameSegmentRequest(BaseModel):
+    old_name: str
+    new_name: str
+
+
+@app.post("/api/segments/rename", dependencies=[Depends(verify_api_key)])
+def api_rename_segment(req: RenameSegmentRequest):
+    """Renames a segment in audio/segments.yaml."""
+    old_name = req.old_name.strip()
+    new_name = req.new_name.strip()
+    if not old_name or not new_name:
+        raise HTTPException(status_code=400, detail="Invalid segment name")
+        
+    segments = tools.load_segments()
+    
+    target_idx = -1
+    for i, s in enumerate(segments):
+        if s.get("name") == old_name:
+            target_idx = i
+            break
+            
+    if target_idx == -1:
+        raise HTTPException(status_code=404, detail="Segment not found")
+        
+    for s in segments:
+        if s.get("name") == new_name:
+            raise HTTPException(status_code=400, detail="A segment with the new name already exists")
+            
+    segments[target_idx]["name"] = new_name
+    tools.save_segments(segments)
+    
+    return {"status": "success", "message": "Segment renamed."}
+
+
+
 class FileTagsModel(BaseModel):
     filename: str
     tags: list[str]

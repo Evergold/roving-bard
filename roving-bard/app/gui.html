@@ -1212,6 +1212,39 @@
             filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 8px rgba(239, 68, 68, 1)) drop-shadow(0 0 16px rgba(239, 68, 68, 0.8));
         }
 
+        .edit-segment-btn {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 15;
+            color: #ffffff;
+            text-shadow: 0 0 3px rgba(0, 242, 254, 0.8), 0 0 8px rgba(0, 242, 254, 0.6);
+        }
+
+        .mapping-item:hover .edit-segment-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        body.light-theme .edit-segment-btn {
+            text-shadow: 0 0 3px rgba(46, 93, 168, 0.7), 0 0 8px rgba(46, 93, 168, 0.5);
+            color: #333333;
+        }
+
+        .edit-segment-btn:hover {
+            transform: scale(1.25);
+            text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(0, 242, 254, 1);
+        }
+
+        body.light-theme .edit-segment-btn:hover {
+            text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(46, 93, 168, 1);
+        }
+
         /* Show on hover of active tag badge */
         .badge-tag.active-tag-badge:hover .edit-tag-btn,
         .badge-tag.active-tag-badge:hover .delete-tag-btn {
@@ -3594,6 +3627,7 @@
 
                     const isChecked = checkedBulkFiles.has(`segment:${segment.name}`);
                     item.innerHTML = `
+                        <span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>
                         <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
                             <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
@@ -6133,6 +6167,98 @@
                 }
             });
             
+            input.addEventListener('blur', async () => {
+                await finishEdit(true);
+            });
+        }
+
+        function startInlineEditSegment(event, oldName) {
+            event.stopPropagation();
+            const btn = event.currentTarget;
+            const item = btn.closest('.mapping-item');
+            if (!item) return;
+            const nameSpan = item.querySelector('.filename-text');
+            if (!nameSpan) return;
+
+            if (nameSpan.querySelector('input')) return;
+
+            const originalWidth = nameSpan.getBoundingClientRect().width;
+            const originalHtml = nameSpan.innerHTML;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = oldName;
+
+            input.style.border = 'none';
+            input.style.background = 'transparent';
+            input.style.color = 'var(--text-main)';
+            input.style.fontFamily = "'Space Mono', monospace";
+            input.style.fontSize = '0.85rem';
+            input.style.outline = 'none';
+            input.style.width = '120px';
+            input.style.boxSizing = 'border-box';
+
+            input.oninput = () => {
+                adjustInputWidth(input, originalWidth);
+                input.scrollLeft = 0;
+            };
+
+            nameSpan.innerHTML = '';
+            nameSpan.appendChild(input);
+            input.focus();
+            adjustInputWidth(input, originalWidth);
+
+            input.addEventListener('click', (e) => e.stopPropagation());
+
+            let finished = false;
+
+            async function finishEdit(save) {
+                if (finished) return;
+                finished = true;
+
+                if (save) {
+                    const newName = input.value.trim();
+                    if (newName && newName !== oldName) {
+                        if (segments.some(s => s.name === newName)) {
+                            showToast(`Segment "${newName}" already exists`, 'warn');
+                            nameSpan.innerHTML = originalHtml;
+                            return;
+                        }
+
+                        try {
+                            const response = await apiFetch('/api/segments/rename', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ old_name: oldName, new_name: newName })
+                            });
+                            const res = await response.json();
+                            if (res.status === 'success') {
+                                if (activeSegment && activeSegment.name === oldName) {
+                                    activeSegment.name = newName;
+                                    localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
+                                }
+                                await loadAudioLibrary();
+                                return;
+                            } else {
+                                alert("Failed to rename segment: " + res.message);
+                            }
+                        } catch (err) {
+                            console.error("Error renaming segment:", err);
+                        }
+                    }
+                }
+
+                nameSpan.innerHTML = originalHtml;
+            }
+
+            input.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter') {
+                    await finishEdit(true);
+                } else if (e.key === 'Escape') {
+                    await finishEdit(false);
+                }
+            });
+
             input.addEventListener('blur', async () => {
                 await finishEdit(true);
             });
