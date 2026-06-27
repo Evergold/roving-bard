@@ -1506,6 +1506,23 @@
             box-shadow: 0 0 8px #ff4d4d;
         }
 
+        #api-key-dropdown {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: scale(0.95) translateY(-10px);
+            transform-origin: top right;
+            transition: opacity 0.2s ease,
+                        transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        #api-key-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: scale(1) translateY(0);
+        }
+
         /* Toggle switches */
         .switch-container {
             display: flex;
@@ -2419,7 +2436,7 @@
                     <span class="status-dot" style="background-color: var(--neon-green);"></span>
                     <span class="badge-symbol">✓</span> <span data-loc="ready">READY</span>
                 </div>
-                <div id="api-key-dropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+                <div id="api-key-dropdown" class="dropdown-content" style="position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
                     <div style="font-family: inherit; font-weight: bold; margin-bottom: 0.5rem; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;" data-loc="api_key_detection">
                         API Key Detection
                     </div>
@@ -4428,21 +4445,18 @@
         }
 
         function toggleBadgeDropdown(event) {
-            event.stopPropagation();
+            if (event) event.stopPropagation();
             const dropdown = document.getElementById('api-key-dropdown');
-            if (dropdown.style.display === 'none') {
-                dropdown.style.display = 'block';
-            } else {
-                dropdown.style.display = 'none';
-            }
+            if (!dropdown) return;
+            dropdown.classList.toggle('active');
         }
 
         window.addEventListener('click', function(event) {
             const dropdown = document.getElementById('api-key-dropdown');
             const badge = document.getElementById('status-badge');
-            if (dropdown && dropdown.style.display === 'block') {
+            if (dropdown && dropdown.classList.contains('active')) {
                 if (!dropdown.contains(event.target) && !badge.contains(event.target)) {
-                    dropdown.style.display = 'none';
+                    dropdown.classList.remove('active');
                 }
             }
             // Close menu popover if clicked outside
