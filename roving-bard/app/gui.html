@@ -5038,56 +5038,104 @@
                 <span class="badge-tag" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 1.6rem 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
                     ${tag}
                     <div style="position: absolute; right: 4px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 100%; padding: 2px 0; box-sizing: border-box;">
-                        <span class="edit-tag-btn" onclick="renameTagPrompt(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag" style="cursor: pointer; font-size: 0.55rem; color: var(--accent); opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">✏️</span>
+                        <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag" style="cursor: pointer; font-size: 0.55rem; color: var(--accent); opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">✏️</span>
                         <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag" style="cursor: pointer; font-size: 0.65rem; color: #ef4444; opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">&times;</span>
                     </div>
                 </span>
             `;
         }
 
-        async function renameTagPrompt(event, oldTag) {
+        function startInlineEditTag(event, oldTag) {
             event.stopPropagation();
-            const newTag = prompt(t("rename_tag_prompt") || `Enter new name for tag '${oldTag}':`, oldTag);
-            if (!newTag) return;
-            const trimmed = newTag.trim().toLowerCase();
-            if (!trimmed || trimmed === oldTag) return;
+            const btn = event.currentTarget;
+            const badge = btn.closest('.badge-tag');
+            if (!badge) return;
             
-            try {
-                const response = await apiFetch('/api/tags/rename', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ old_name: oldTag, new_name: trimmed })
-                });
-                const res = await response.json();
-                if (res.status === 'success') {
-                    // Update client-side state cache incrementally
-                    if (audioLibraryFileTags) {
-                        for (const [file, tags] of Object.entries(audioLibraryFileTags)) {
-                            audioLibraryFileTags[file] = tags.map(t => t === oldTag ? trimmed : t)
-                                .filter((v, i, a) => a.indexOf(v) === i);
+            const originalHtml = badge.innerHTML;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = oldTag;
+            
+            input.style.border = 'none';
+            input.style.background = 'transparent';
+            input.style.color = 'var(--text-main)';
+            input.style.fontFamily = "'Space Mono', monospace";
+            input.style.fontSize = '0.75rem';
+            input.style.outline = 'none';
+            input.style.padding = '0';
+            input.style.margin = '0';
+            input.style.width = Math.max(oldTag.length * 8, 40) + 'px';
+            
+            badge.innerHTML = '';
+            badge.appendChild(input);
+            input.focus();
+            input.select();
+            
+            input.addEventListener('click', (e) => e.stopPropagation());
+            
+            let finished = false;
+            
+            async function finishEdit(save) {
+                if (finished) return;
+                finished = true;
+                
+                if (save) {
+                    const newTag = input.value.trim().toLowerCase();
+                    if (newTag && newTag !== oldTag) {
+                        try {
+                            const response = await apiFetch('/api/tags/rename', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ old_name: oldTag, new_name: newTag })
+                            });
+                            const res = await response.json();
+                            if (res.status === 'success') {
+                                if (audioLibraryFileTags) {
+                                    for (const [file, tags] of Object.entries(audioLibraryFileTags)) {
+                                        audioLibraryFileTags[file] = tags.map(t => t === oldTag ? newTag : t)
+                                            .filter((v, i, a) => a.indexOf(v) === i);
+                                    }
+                                }
+                                if (segments) {
+                                    segments.forEach(seg => {
+                                        if (seg.tags) {
+                                            seg.tags = seg.tags.map(t => t === oldTag ? newTag : t)
+                                                .filter((v, i, a) => a.indexOf(v) === i);
+                                        }
+                                    });
+                                }
+                                if (typeof tagsRegistry !== 'undefined' && Array.isArray(tagsRegistry)) {
+                                    tagsRegistry = tagsRegistry.map(t => t === oldTag ? newTag : t)
+                                        .filter((v, i, a) => a.indexOf(v) === i);
+                                }
+                                
+                                populateTagFilterDropdown();
+                                renderAudioFiles();
+                                return;
+                            } else {
+                                alert((t("failed_rename_tag") || "Failed to rename tag: ") + res.message);
+                            }
+                        } catch (err) {
+                            console.error(t("err_rename_tag") || "Error renaming tag:", err);
                         }
                     }
-                    if (segments) {
-                        segments.forEach(seg => {
-                            if (seg.tags) {
-                                seg.tags = seg.tags.map(t => t === oldTag ? trimmed : t)
-                                    .filter((v, i, a) => a.indexOf(v) === i);
-                            }
-                        });
-                    }
-                    if (typeof tagsRegistry !== 'undefined' && Array.isArray(tagsRegistry)) {
-                        tagsRegistry = tagsRegistry.map(t => t === oldTag ? trimmed : t)
-                            .filter((v, i, a) => a.indexOf(v) === i);
-                    }
-                    
-                    populateTagFilterDropdown();
-                    renderAudioFiles();
-                } else {
-                    alert(t("failed_rename_tag") + res.message);
                 }
-            } catch (err) {
-                console.error(t("err_rename_tag"), err);
+                
+                badge.innerHTML = originalHtml;
             }
+            
+            input.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter') {
+                    await finishEdit(true);
+                } else if (e.key === 'Escape') {
+                    await finishEdit(false);
+                }
+            });
+            
+            input.addEventListener('blur', async () => {
+                await finishEdit(true);
+            });
         }
 
         function updateBulkTagBar() {
