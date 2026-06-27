@@ -5296,6 +5296,7 @@
         function toggleMenuPopOver(event) {
             if (event) event.stopPropagation();
             const popover = document.getElementById('menu-popover');
+            const popoverInner = document.getElementById('menu-popover-inner');
             const menuBtn = document.getElementById('menu-scroll-top-btn');
             if (!popover) return;
             
@@ -5306,6 +5307,11 @@
                 menuPopoverOpen = false;
             } else {
                 // Open it
+                if (popoverInner) {
+                    // Set initial untransformed size instantly before animation starts
+                    popover.style.width = `${popoverInner.offsetWidth}px`;
+                    popover.style.height = `${popoverInner.offsetHeight}px`;
+                }
                 popover.classList.add('active');
                 if (menuBtn) menuBtn.classList.add('active');
                 menuPopoverOpen = true;
@@ -5340,10 +5346,12 @@
             const popoverInner = document.getElementById('menu-popover-inner');
             if (popover && popoverInner) {
                 const resizeObserver = new ResizeObserver(entries => {
+                    if (!menuPopoverOpen) return; // Skip checks if closed/closing to avoid transform scale feedback loops
                     for (let entry of entries) {
-                        const rect = popoverInner.getBoundingClientRect();
-                        popover.style.width = `${rect.width}px`;
-                        popover.style.height = `${rect.height}px`;
+                        const width = popoverInner.offsetWidth;
+                        const height = popoverInner.offsetHeight;
+                        popover.style.width = `${width}px`;
+                        popover.style.height = `${height}px`;
                     }
                 });
                 resizeObserver.observe(popoverInner);
