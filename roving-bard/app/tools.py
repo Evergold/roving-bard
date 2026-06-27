@@ -94,10 +94,8 @@ def save_file_tags(file_tags: dict):
 
 def load_tags_registry() -> list:
     if not os.path.exists(TAGS_REGISTRY_PATH):
-        # Seed with initial tags
-        initial_tags = ["town", "combat", "dungeon", "peaceful", "ambient", "battle", "adventure"]
-        save_tags_registry(initial_tags)
-        return initial_tags
+        save_tags_registry([])
+        return []
     try:
         with open(TAGS_REGISTRY_PATH, "r") as f:
             data = yaml.safe_load(f)
