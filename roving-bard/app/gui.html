@@ -966,6 +966,7 @@
             font-family: inherit;
             font-size: 0.95rem;
             transition: border-color 0.3s;
+            color-scheme: dark;
         }
 
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
@@ -1374,6 +1375,11 @@
             background: #d2d5d8;
             border-bottom: 1px solid #b4b8c0;
         }
+        body.light-theme .menu-popover {
+            background: rgba(210, 213, 216, 0.95) !important;
+            border: 1px solid #b4b8c0 !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+        }
 
         /* Lighten the accessibility control pills in light theme */
         body.light-theme .theme-toggle-group,
@@ -1393,6 +1399,7 @@
             background: #e3e6ea !important;
             color: #191c20 !important;
             border-color: #b4b8c0 !important;
+            color-scheme: light;
         }
 
         body.light-theme option {
@@ -1403,6 +1410,7 @@
         body.light-theme #lang-select {
             background: transparent !important;
             color: var(--text-muted) !important;
+            color-scheme: light;
         }
 
         option {
@@ -1724,6 +1732,7 @@
             white-space: nowrap;
             flex-shrink: 0;
             box-sizing: border-box;
+            color-scheme: dark;
         }
         #lang-select:hover {
             color: var(--text-main) !important;
