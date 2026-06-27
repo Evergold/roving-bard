@@ -4001,9 +4001,10 @@
             // Bind action handlers
             document.getElementById('delete-confirm-yes').onclick = async (e) => {
                 e.stopPropagation();
+                const name = segmentToDelete;
                 closeDeletePopover();
-                if (segmentToDelete) {
-                    await executeDeleteSegment(segmentToDelete);
+                if (name) {
+                    await executeDeleteSegment(name);
                 }
             };
             
