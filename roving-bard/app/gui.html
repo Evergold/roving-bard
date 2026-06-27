@@ -1353,6 +1353,7 @@
             font-size: 1.4rem;
         }
 
+        :root.light-theme,
         body.light-theme {
             color-scheme: light;
             --bg-base: #d2d5d8;
@@ -2038,6 +2039,7 @@
             const savedCVD = localStorage.getItem('cvd-accessible');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-theme');
+                document.documentElement.classList.add('light-theme');
             }
             if (savedFontSize === 'm') {
                 document.documentElement.classList.add('font-size-m');
@@ -5184,11 +5186,13 @@
             }
             if (activeTheme === 'light') {
                 document.body.classList.add('light-theme');
+                document.documentElement.classList.add('light-theme');
                 document.getElementById('theme-light-btn').classList.add('active');
                 document.getElementById('theme-dark-btn').classList.remove('active');
                 localStorage.setItem('theme', 'light');
             } else {
                 document.body.classList.remove('light-theme');
+                document.documentElement.classList.remove('light-theme');
                 document.getElementById('theme-dark-btn').classList.add('active');
                 document.getElementById('theme-light-btn').classList.remove('active');
                 localStorage.setItem('theme', 'dark');
