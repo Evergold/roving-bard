@@ -1847,25 +1847,22 @@
             transform-origin: top left;
         }
 
-        #floating-scroll-top-btn {
-            display: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        header.scrolled {
+            cursor: pointer;
         }
-        #floating-scroll-top-btn:hover {
-            transform: scale(1.1) !important;
-            background: var(--neon-blue) !important;
-            color: #000 !important;
-            box-shadow: 0 0 15px var(--neon-blue) !important;
+        header.scrolled * {
+            cursor: default;
         }
-        body.light-theme #floating-scroll-top-btn {
-            border-color: var(--accent) !important;
-            background: rgba(255, 255, 255, 0.9) !important;
-            color: var(--accent) !important;
-        }
-        body.light-theme #floating-scroll-top-btn:hover {
-            background: var(--accent) !important;
-            color: #fff !important;
-            box-shadow: 0 0 15px var(--accent) !important;
+        header.scrolled button,
+        header.scrolled select,
+        header.scrolled input,
+        header.scrolled label,
+        header.scrolled .slider,
+        header.scrolled #menu-popover,
+        header.scrolled .status-badge,
+        header.scrolled .menu-btn,
+        header.scrolled .menu-btn .bar {
+            cursor: pointer;
         }
 
         /* Accessible Color Scheme (CVD Mode) Overrides */
@@ -5351,24 +5348,24 @@
                 adjustAddTagPlacement();
             });
 
-            // Scroll to top listener
+            // Pinned header scroll-to-top feature
+            const header = document.querySelector('header');
+            if (header) {
+                header.addEventListener('click', (e) => {
+                    if (window.scrollY <= 20) return;
+                    // Skip if clicked inside interactive controls
+                    const interactive = e.target.closest('#menu-scroll-top-btn, #menu-popover, .switch-container, .badge-dropdown-container, button, input, select, a');
+                    if (interactive) return;
+                    scrollToTop();
+                });
+            }
+
             window.addEventListener('scroll', () => {
-                const btn = document.getElementById('floating-scroll-top-btn');
-                if (btn) {
-                    if (window.scrollY > 150) {
-                        btn.style.display = 'flex';
-                        setTimeout(() => {
-                            btn.style.transform = 'translateY(0)';
-                            btn.style.opacity = '1';
-                        }, 10);
+                if (header) {
+                    if (window.scrollY > 20) {
+                        header.classList.add('scrolled');
                     } else {
-                        btn.style.transform = 'translateY(20px)';
-                        btn.style.opacity = '0';
-                        setTimeout(() => {
-                            if (window.scrollY <= 150) {
-                                btn.style.display = 'none';
-                            }
-                        }, 300);
+                        header.classList.remove('scrolled');
                     }
                 }
             });
@@ -5697,9 +5694,5 @@
             });
         }
 </script>
-    <!-- Floating scroll to top button -->
-    <button id="floating-scroll-top-btn" onclick="scrollToTop()" title="Scroll to Top">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-    </button>
 </body>
 </html>
