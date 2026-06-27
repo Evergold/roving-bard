@@ -1174,39 +1174,40 @@
         .edit-tag-btn {
             top: -11px;
             right: -6px;
-            font-size: 11px;
+            color: var(--accent);
             transform: translateY(4px) scale(0.7);
-            text-shadow: 0 0 6px rgba(0, 242, 254, 0.9);
+            filter: drop-shadow(0 0 3px rgba(0, 242, 254, 0.8));
         }
 
         .delete-tag-btn {
             bottom: -11px;
             right: -6px;
-            font-size: 11px;
+            color: #ef4444;
             transform: translateY(-4px) scale(0.7);
-            text-shadow: 0 0 6px rgba(239, 68, 68, 0.9);
+            filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.8));
         }
 
         body.light-theme .edit-tag-btn {
-            text-shadow: 0 0 6px rgba(46, 93, 168, 0.8);
+            color: #2e5da8;
+            filter: drop-shadow(0 0 3px rgba(46, 93, 168, 0.7));
         }
 
         body.light-theme .delete-tag-btn {
-            text-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+            filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.6));
         }
 
         .edit-tag-btn:hover {
             transform: scale(1.3) !important;
-            text-shadow: 0 0 12px rgba(0, 242, 254, 1);
+            filter: drop-shadow(0 0 6px rgba(0, 242, 254, 1));
         }
 
         body.light-theme .edit-tag-btn:hover {
-            text-shadow: 0 0 12px rgba(46, 93, 168, 1);
+            filter: drop-shadow(0 0 6px rgba(46, 93, 168, 1));
         }
 
         .delete-tag-btn:hover {
             transform: scale(1.3) !important;
-            text-shadow: 0 0 12px rgba(239, 68, 68, 1);
+            filter: drop-shadow(0 0 6px rgba(239, 68, 68, 1));
         }
 
         /* Show on hover of active tag badge */
@@ -5516,8 +5517,12 @@
             return `
                 <span class="${badgeClass}" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
                     ${tag}
-                    <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag">✏️</span>
-                    <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag">🗑️</span>
+                    <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </span>
+                    <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </span>
                 </span>
             `;
         }
