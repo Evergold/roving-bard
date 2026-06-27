@@ -2465,6 +2465,29 @@
             color: white !important;
             box-shadow: 0 4px 12px rgba(230, 81, 0, 0.2) !important;
         }
+
+        .audio-tab {
+            flex: 1;
+            padding: 0.6rem;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.01);
+        }
+        .audio-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        body.light-theme .audio-tab {
+            background: rgba(0, 0, 0, 0.02);
+        }
+        body.light-theme .audio-tab:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
     </style>
 </head>
 <body>
@@ -2894,6 +2917,15 @@
                     <datalist id="all-existing-tags-list"></datalist>
                 </div>
                 <div class="form-section" style="gap: 0;">
+                    <!-- TABS BAR -->
+                    <div id="audio-library-tabs" style="display: flex; border-bottom: 1px solid var(--border); background: rgba(0, 0, 0, 0.15); user-select: none;">
+                        <div id="tab-audio-files" class="audio-tab" onclick="selectLibraryTab('files')" style="flex: 1; padding: 0.6rem; text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--neon-blue); cursor: pointer; font-family: 'Space Mono', monospace; text-transform: uppercase; border-bottom: 2px solid var(--neon-blue); transition: all 0.2s ease;">
+                            Audio Files
+                        </div>
+                        <div id="tab-exported-segments" class="audio-tab" onclick="selectLibraryTab('segments')" style="flex: 1; padding: 0.6rem; text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); cursor: pointer; font-family: 'Space Mono', monospace; text-transform: uppercase; border-bottom: 2px solid transparent; transition: all 0.2s ease;">
+                            Exported Segments
+                        </div>
+                    </div>
                     <div id="audio-library-resizable" class="audio-library-resizable">
                         <div id="audio-files-list" class="mappings-list audio-list-scroll">
                             <!-- Audio files rendered here -->
@@ -2985,6 +3017,9 @@
         let seekTimerId = null;
         let isTransitioningTrack = false;
         let activeSegment = null;
+        let currentLibraryTab = 'files'; // 'files' or 'segments'
+        let tabBeforeSearch = 'files';
+        let inSearchMode = false;
         let currentConnectionStatus = "ready"; // "ready", "auto_scanning", "unauthorized", "offline"
 
         function updateStatusBadgeUI() {
@@ -3476,224 +3511,234 @@
             const list = document.getElementById('audio-files-list');
             list.innerHTML = '';
             
+            updateTabUi();
+            
             const searchVal = (document.getElementById('audio-search-input')?.value || '').trim().toLowerCase();
             const tagVal = document.getElementById('audio-tag-filter')?.value || '';
+            const isSearching = searchVal !== '' || tagVal !== '';
             
             const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
             const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
             const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
             
-            // Render section header for Audio Files
-            const filesHeader = document.createElement('div');
-            filesHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-            filesHeader.innerText = t('audio_files_title');
-            list.appendChild(filesHeader);
-            
-            const matchedFiles = audioLibraryFiles.filter(file => {
-                const fileTags = audioLibraryFileTags[file] || [];
-                const matchesSearch = file.toLowerCase().includes(searchVal) || fileTags.some(tag => tag.toLowerCase().includes(searchVal));
-                const matchesTag = !tagVal || fileTags.includes(tagVal);
-                return matchesSearch && matchesTag;
-            });
-
-            if (audioLibraryFiles.length === 0) {
-                const emptyFiles = document.createElement('div');
-                emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptyFiles.innerText = t('no_raw_tracks');
-                list.appendChild(emptyFiles);
-            } else if (matchedFiles.length === 0) {
-                const emptyFiles = document.createElement('div');
-                emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptyFiles.innerText = t('no_matching_audio_files');
-                list.appendChild(emptyFiles);
-            } else {
-                matchedFiles.forEach(file => {
-                    const item = document.createElement('div');
-                    item.className = 'mapping-item';
-                    item.setAttribute('onclick', `handleAudioItemClick(event, () => selectAudioFile('${file.replace(/\'/g, "\\\'")}'))`);
-                    
-                    let btnText = t('play');
-                    let btnStyle = 'padding: 0.45rem 0.9rem; font-size: 0.9rem; transition: all 0.2s ease; min-width: 95px;';
-                    let btnClass = 'btn btn-secondary';
-                    let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
-                    // A raw file is active if current_track matches AND start_time is roughly 0
-                    const isFileActive = (activeTrack === file && !activeSegment);
-
-                    if (isFileActive) {
-                        item.classList.add('selected-track');
-                        
-                        if (isPaused) {
-                            if (wasStopped) {
-                                btnText = t('play');
-                                btnClass = 'btn playback-play';
-                                btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
-                            } else {
-                                btnText = t('resume');
-                                btnClass = 'btn playback-resume';
-                                btnClick = `resumeAudioFile()`;
-                            }
-                        } else {
-                            btnText = t('pause');
-                            btnClass = 'btn playback-pause';
-                            btnClick = `pauseAudioFile()`;
-                        }
-                    }
-
+            // ─── AUDIO FILES SECTION ───
+            if (isSearching || currentLibraryTab === 'files') {
+                if (isSearching) {
+                    const filesHeader = document.createElement('div');
+                    filesHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                    filesHeader.innerText = t('audio_files_title');
+                    list.appendChild(filesHeader);
+                }
+                
+                const matchedFiles = audioLibraryFiles.filter(file => {
                     const fileTags = audioLibraryFileTags[file] || [];
-                    const showInlineAddTag = (isFileActive && fileTags.length === 0);
-                    let inlineAddTagHtml = '';
-                    let tagsHtml = '';
-                    
-                    if (showInlineAddTag) {
-                        inlineAddTagHtml = `<span class="badge-tag-add file-tag" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" style="margin-left: 0.5rem;">${t('add_tag')}</span>`;
-                    }
-                    
-                    if (fileTags.length > 0) {
-                        tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
-                        fileTags.forEach(tag => {
-                            tagsHtml += renderTagBadge(tag, file, false, isFileActive);
-                        });
-                        if (isFileActive) {
-                            tagsHtml += `<span class="badge-tag-add file-tag" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')">${t('add_tag')}</span>`;
-                        }
-                        tagsHtml += `</div>`;
-                    } else if (isFileActive) {
-                        tagsHtml = `<div class="audio-tags-list" style="display: none; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;"></div>`;
-                    }
-
-                    const isChecked = checkedBulkFiles.has(`file:${file}`);
-                    item.innerHTML = `
-                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
-                            <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
-                        </div>
-                        <div class="mapping-item-details" style="flex: 1; min-width: 0;">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden;">
-                                <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file}</span>${inlineAddTagHtml}
-                            </div>
-                            ${tagsHtml}
-                        </div>
-                        <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                    `;
-                    list.appendChild(item);
+                    const matchesSearch = file.toLowerCase().includes(searchVal) || fileTags.some(tag => tag.toLowerCase().includes(searchVal));
+                    const matchesTag = !tagVal || fileTags.includes(tagVal);
+                    return matchesSearch && matchesTag;
                 });
+
+                if (audioLibraryFiles.length === 0) {
+                    const emptyFiles = document.createElement('div');
+                    emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                    emptyFiles.innerText = t('no_raw_tracks');
+                    list.appendChild(emptyFiles);
+                } else if (matchedFiles.length === 0) {
+                    const emptyFiles = document.createElement('div');
+                    emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                    emptyFiles.innerText = t('no_matching_audio_files');
+                    list.appendChild(emptyFiles);
+                } else {
+                    matchedFiles.forEach(file => {
+                        const item = document.createElement('div');
+                        item.className = 'mapping-item';
+                        item.setAttribute('onclick', `handleAudioItemClick(event, () => selectAudioFile('${file.replace(/\'/g, "\\\'")}'))`);
+                        
+                        let btnText = t('play');
+                        let btnStyle = 'padding: 0.45rem 0.9rem; font-size: 0.9rem; transition: all 0.2s ease; min-width: 95px;';
+                        let btnClass = 'btn btn-secondary';
+                        let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                        const isFileActive = (activeTrack === file && !activeSegment);
+
+                        if (isFileActive) {
+                            item.classList.add('selected-track');
+                            
+                            if (isPaused) {
+                                if (wasStopped) {
+                                    btnText = t('play');
+                                    btnClass = 'btn playback-play';
+                                    btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
+                                } else {
+                                    btnText = t('resume');
+                                    btnClass = 'btn playback-resume';
+                                    btnClick = `resumeAudioFile()`;
+                                }
+                            } else {
+                                btnText = t('pause');
+                                btnClass = 'btn playback-pause';
+                                btnClick = `pauseAudioFile()`;
+                            }
+                        }
+
+                        const fileTags = audioLibraryFileTags[file] || [];
+                        const showInlineAddTag = (isFileActive && fileTags.length === 0);
+                        let inlineAddTagHtml = '';
+                        let tagsHtml = '';
+                        
+                        if (showInlineAddTag) {
+                            inlineAddTagHtml = `<span class="badge-tag-add file-tag" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" style="margin-left: 0.5rem;">${t('add_tag')}</span>`;
+                        }
+                        
+                        if (fileTags.length > 0) {
+                            tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
+                            fileTags.forEach(tag => {
+                                tagsHtml += renderTagBadge(tag, file, false, isFileActive);
+                            });
+                            if (isFileActive) {
+                                tagsHtml += `<span class="badge-tag-add file-tag" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')">${t('add_tag')}</span>`;
+                            }
+                            tagsHtml += `</div>`;
+                        } else if (isFileActive) {
+                            tagsHtml = `<div class="audio-tags-list" style="display: none; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;"></div>`;
+                        }
+
+                        const isChecked = checkedBulkFiles.has(`file:${file}`);
+                        item.innerHTML = `
+                            <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
+                                <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
+                            </div>
+                            <div class="mapping-item-details" style="flex: 1; min-width: 0;">
+                                <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden;">
+                                    <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file}</span>${inlineAddTagHtml}
+                                </div>
+                                ${tagsHtml}
+                            </div>
+                            <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
             }
             
-            // Render section header for Exported Segments
-            const segmentsHeader = document.createElement('div');
-            segmentsHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-            segmentsHeader.innerText = t('exported_segments_title');
-            list.appendChild(segmentsHeader);
-            
-            const matchedSegments = segments.filter(segment => {
-                const segTags = segment.tags || [];
-                const matchesSearch = segment.name.toLowerCase().includes(searchVal) || segTags.some(tag => tag.toLowerCase().includes(searchVal));
-                const matchesTag = !tagVal || segTags.includes(tagVal);
-                return matchesSearch && matchesTag;
-            });
-
-            if (segments.length === 0) {
-                const emptySegments = document.createElement('div');
-                emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptySegments.innerText = t('no_segments_exported');
-                list.appendChild(emptySegments);
-            } else if (matchedSegments.length === 0) {
-                const emptySegments = document.createElement('div');
-                emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                emptySegments.innerText = t('no_matching_segments');
-                list.appendChild(emptySegments);
-            } else {
-                matchedSegments.forEach(segment => {
-                    const item = document.createElement('div');
-                    item.className = 'mapping-item';
-                    
-                    const duration = currentPlaybackStatus ? (currentPlaybackStatus.duration || 180.0) : 180.0;
-                    const segEnd = segment.end_time;
-                    const segVolume = (segment.volume !== undefined && segment.volume !== null) ? segment.volume : null;
-                    
-                    item.setAttribute('onclick', `handleAudioItemClick(event, () => selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume}))`);
-                    let btnText = t('play');
-                    let btnStyle = 'padding: 0.45rem 0.9rem; font-size: 0.9rem; transition: all 0.2s ease; min-width: 95px;';
-                    let btnClass = 'btn btn-secondary';
-                    
-                    const isSegActive = (activeSegment && activeSegment.name === segment.name);
-                    
-                    let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
- 
-                    if (isSegActive) {
-                        item.classList.add('selected-track');
-                        
-                        if (isPaused) {
-                            if (wasStopped) {
-                                btnText = t('play');
-                                btnClass = 'btn playback-play';
-                                btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
-                            } else {
-                                btnText = t('resume');
-                                btnClass = 'btn playback-resume';
-                                btnClick = `resumeAudioFile()`;
-                            }
-                        } else {
-                            btnText = t('pause');
-                            btnClass = 'btn playback-pause';
-                            btnClick = `pauseAudioFile()`;
-                        }
-                    }
-
-                    let subtitleText = `${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
-                    if (segVolume !== null) {
-                        subtitleText += ` · ${t('vol_label')}: ${parseInt(segVolume * 100)}%`;
-                    }
-
+            // ─── EXPORTED SEGMENTS SECTION ───
+            if (isSearching || currentLibraryTab === 'segments') {
+                if (isSearching) {
+                    const segmentsHeader = document.createElement('div');
+                    segmentsHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                    segmentsHeader.innerText = t('exported_segments_title');
+                    list.appendChild(segmentsHeader);
+                }
+                
+                const matchedSegments = segments.filter(segment => {
                     const segTags = segment.tags || [];
-                    const showInlineAddTag = (isSegActive && segTags.length === 0);
-                    let inlineAddTagHtml = '';
-                    let tagsHtml = '';
-                    
-                    if (showInlineAddTag) {
-                        inlineAddTagHtml = `<span class="badge-tag-add segment-tag" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" style="margin-left: 0.5rem;">${t('add_tag')}</span>`;
-                    }
-                    
-                    if (segTags.length > 0) {
-                        tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
-                        segTags.forEach(tag => {
-                            tagsHtml += renderTagBadge(tag, segment.name, true, isSegActive);
-                        });
-                        if (isSegActive) {
-                            tagsHtml += `<span class="badge-tag-add segment-tag" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')">${t('add_tag')}</span>`;
-                        }
-                        tagsHtml += `</div>`;
-                    } else if (isSegActive) {
-                        tagsHtml = `<div class="audio-tags-list" style="display: none; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;"></div>`;
-                    }
-
-                    const isChecked = checkedBulkFiles.has(`segment:${segment.name}`);
-                    let editBtnHtml = '';
-                    if (isSegActive) {
-                        editBtnHtml = `<span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>`;
-                    }
-                    item.innerHTML = `
-                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
-                            <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
-                        </div>
-                        <div class="mapping-item-details" style="flex: 1; min-width: 0;">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: visible;">
-                                <span class="filename-container" style="position: relative; display: inline-flex; align-items: center; max-width: 100%; padding-right: 14px;">
-                                    <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${segment.name}</span>
-                                    ${editBtnHtml}
-                                </span>${inlineAddTagHtml}
-                            </div>
-                            <div class="mapping-item-sub">${subtitleText}</div>
-                            ${tagsHtml}
-                        </div>
-                        <div style="display: flex; gap: 0.4rem; align-items: center;">
-                            <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
-                            <button class="btn btn-secondary" style="padding: 0.3rem; min-width: unset; width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="confirmDeleteSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="${t('delete_segment_title')}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                        </div>
-                    `;
-                    list.appendChild(item);
+                    const matchesSearch = segment.name.toLowerCase().includes(searchVal) || segTags.some(tag => tag.toLowerCase().includes(searchVal));
+                    const matchesTag = !tagVal || segTags.includes(tagVal);
+                    return matchesSearch && matchesTag;
                 });
+
+                if (segments.length === 0) {
+                    const emptySegments = document.createElement('div');
+                    emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                    emptySegments.innerText = t('no_segments_exported');
+                    list.appendChild(emptySegments);
+                } else if (matchedSegments.length === 0) {
+                    const emptySegments = document.createElement('div');
+                    emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                    emptySegments.innerText = t('no_matching_segments');
+                    list.appendChild(emptySegments);
+                } else {
+                    matchedSegments.forEach(segment => {
+                        const item = document.createElement('div');
+                        item.className = 'mapping-item';
+                        
+                        const duration = currentPlaybackStatus ? (currentPlaybackStatus.duration || 180.0) : 180.0;
+                        const segEnd = segment.end_time;
+                        const segVolume = (segment.volume !== undefined && segment.volume !== null) ? segment.volume : null;
+                        
+                        item.setAttribute('onclick', `handleAudioItemClick(event, () => selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume}))`);
+                        let btnText = t('play');
+                        let btnStyle = 'padding: 0.45rem 0.9rem; font-size: 0.9rem; transition: all 0.2s ease; min-width: 95px;';
+                        let btnClass = 'btn btn-secondary';
+                        
+                        const isSegActive = (activeSegment && activeSegment.name === segment.name);
+                        
+                        let btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
+     
+                        if (isSegActive) {
+                            item.classList.add('selected-track');
+                            
+                            if (isPaused) {
+                                if (wasStopped) {
+                                    btnText = t('play');
+                                    btnClass = 'btn playback-play';
+                                    btnClick = `playSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume})`;
+                                } else {
+                                    btnText = t('resume');
+                                    btnClass = 'btn playback-resume';
+                                    btnClick = `resumeAudioFile()`;
+                                }
+                            } else {
+                                btnText = t('pause');
+                                btnClass = 'btn playback-pause';
+                                btnClick = `pauseAudioFile()`;
+                            }
+                        }
+
+                        let subtitleText = `${segment.track_file} (${formatTime(segment.start_time)} - ${formatTime(segEnd)})`;
+                        if (segVolume !== null) {
+                            subtitleText += ` · ${t('vol_label')}: ${parseInt(segVolume * 100)}%`;
+                        }
+
+                        const segTags = segment.tags || [];
+                        const showInlineAddTag = (isSegActive && segTags.length === 0);
+                        let inlineAddTagHtml = '';
+                        let tagsHtml = '';
+                        
+                        if (showInlineAddTag) {
+                            inlineAddTagHtml = `<span class="badge-tag-add segment-tag" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" style="margin-left: 0.5rem;">${t('add_tag')}</span>`;
+                        }
+                        
+                        if (segTags.length > 0) {
+                            tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
+                            segTags.forEach(tag => {
+                                tagsHtml += renderTagBadge(tag, segment.name, true, isSegActive);
+                            });
+                            if (isSegActive) {
+                                tagsHtml += `<span class="badge-tag-add segment-tag" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')">${t('add_tag')}</span>`;
+                            }
+                            tagsHtml += `</div>`;
+                        } else if (isSegActive) {
+                            tagsHtml = `<div class="audio-tags-list" style="display: none; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;"></div>`;
+                        }
+
+                        const isChecked = checkedBulkFiles.has(`segment:${segment.name}`);
+                        let editBtnHtml = '';
+                        if (isSegActive) {
+                            editBtnHtml = `<span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>`;
+                        }
+                        item.innerHTML = `
+                            <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
+                                <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
+                            </div>
+                            <div class="mapping-item-details" style="flex: 1; min-width: 0;">
+                                <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: visible;">
+                                    <span class="filename-container" style="position: relative; display: inline-flex; align-items: center; max-width: 100%; padding-right: 14px;">
+                                        <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${segment.name}</span>
+                                        ${editBtnHtml}
+                                    </span>${inlineAddTagHtml}
+                                </div>
+                                <div class="mapping-item-sub">${subtitleText}</div>
+                                ${tagsHtml}
+                            </div>
+                            <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
+                                <button class="btn btn-secondary" style="padding: 0.3rem; min-width: unset; width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="confirmDeleteSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="${t('delete_segment_title')}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
             }
             adjustAddTagPlacement();
         }
@@ -4028,12 +4073,72 @@
             
             const hasSearch = (searchInput?.value || '').trim() !== '';
             const hasTag = (tagFilter?.value || '') !== '';
+            const isSearching = hasSearch || hasTag;
             
             if (clearBtn) {
-                clearBtn.style.display = (hasSearch || hasTag) ? 'flex' : 'none';
+                clearBtn.style.display = isSearching ? 'flex' : 'none';
             }
+
+            // Track search mode transition
+            if (isSearching) {
+                if (!inSearchMode) {
+                    tabBeforeSearch = currentLibraryTab;
+                    inSearchMode = true;
+                }
+            } else {
+                if (inSearchMode) {
+                    currentLibraryTab = tabBeforeSearch;
+                    inSearchMode = false;
+                }
+            }
+            
+            updateTabUi();
             deselectAllBulkFiles();
             renderAudioFiles();
+        }
+
+        function selectLibraryTab(tab) {
+            const searchInput = document.getElementById('audio-search-input');
+            const tagFilter = document.getElementById('audio-tag-filter');
+            if (searchInput) searchInput.value = '';
+            if (tagFilter) tagFilter.value = '';
+            
+            currentLibraryTab = tab;
+            tabBeforeSearch = tab;
+            inSearchMode = false;
+            
+            updateTabUi();
+            deselectAllBulkFiles();
+            renderAudioFiles();
+        }
+
+        function updateTabUi() {
+            const tabFiles = document.getElementById('tab-audio-files');
+            const tabSegments = document.getElementById('tab-exported-segments');
+            if (!tabFiles || !tabSegments) return;
+            
+            const searchInput = document.getElementById('audio-search-input');
+            const tagFilter = document.getElementById('audio-tag-filter');
+            const isSearching = (searchInput?.value || '').trim() !== '' || (tagFilter?.value || '') !== '';
+            
+            if (isSearching) {
+                tabFiles.style.color = 'var(--text-muted)';
+                tabFiles.style.borderBottomColor = 'transparent';
+                tabSegments.style.color = 'var(--text-muted)';
+                tabSegments.style.borderBottomColor = 'transparent';
+            } else {
+                if (currentLibraryTab === 'files') {
+                    tabFiles.style.color = 'var(--neon-blue)';
+                    tabFiles.style.borderBottomColor = 'var(--neon-blue)';
+                    tabSegments.style.color = 'var(--text-muted)';
+                    tabSegments.style.borderBottomColor = 'transparent';
+                } else {
+                    tabFiles.style.color = 'var(--text-muted)';
+                    tabFiles.style.borderBottomColor = 'transparent';
+                    tabSegments.style.color = 'var(--accent)';
+                    tabSegments.style.borderBottomColor = 'var(--accent)';
+                }
+            }
         }
 
         function showExportPopover(event) {
