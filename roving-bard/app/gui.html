@@ -3091,6 +3091,26 @@
                 // Load audio library files
                 loadAudioLibrary();
 
+                // If an activeSegment was restored from localStorage on page load,
+                // sync its stored times/volume against the live server values so that
+                // updateExportButtonState has a correct baseline and doesn't falsely
+                // enable the Save button when nothing has actually changed.
+                if (activeSegment && status.current_track) {
+                    activeSegment.start_time = status.start_time || 0.0;
+                    const dur = status.duration || 180.0;
+                    activeSegment.end_time = (status.end_time !== undefined && status.end_time !== null) ? status.end_time : dur;
+                    activeSegment.volume = status.volume;
+                    localStorage.setItem('activeSegment', JSON.stringify(activeSegment));
+                    // Also restore the saved EQ so the comparison is accurate
+                    if (activeSegment.eq) {
+                        if (typeof activeSegment.eq === 'string') {
+                            applyEQPreset(activeSegment.eq);
+                        } else if (typeof activeSegment.eq === 'object') {
+                            applyEQGains(activeSegment.eq, 'custom');
+                        }
+                    }
+                }
+
                 updateExportButtonState();
             } catch (err) {
                 console.error(t("err_load_dashboard"), err);
