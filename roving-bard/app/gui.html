@@ -3879,7 +3879,7 @@
             const popHeight = popover.offsetHeight || 95;
             
             const leftPos = rect.left + (rect.width / 2) - (popWidth / 2);
-            const topPos = rect.top - popHeight - 8;
+            const topPos = rect.bottom + 8;
             
             popover.style.left = `${leftPos}px`;
             popover.style.top = `${topPos}px`;
