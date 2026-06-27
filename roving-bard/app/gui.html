@@ -3531,7 +3531,10 @@
             
             updateTabUi();
             
-            const searchVal = (document.getElementById('audio-search-input')?.value || '').trim().toLowerCase();
+            let searchVal = (document.getElementById('audio-search-input')?.value || '').trim().toLowerCase();
+            if (searchVal === '*' || searchVal.startsWith('*.') || searchVal.startsWith('.')) {
+                searchVal = '';
+            }
             const tagVal = document.getElementById('audio-tag-filter')?.value || '';
             const isSearching = searchVal !== '' || tagVal !== '' || activeExtensionFilter !== null;
             
@@ -4096,7 +4099,12 @@
             const tagFilter = document.getElementById('audio-tag-filter');
             const clearBtn = document.getElementById('audio-search-clear-btn');
             
-            const hasSearch = (searchInput?.value || '').trim() !== '';
+            let searchVal = (searchInput?.value || '').trim().toLowerCase();
+            if (searchVal === '*' || searchVal.startsWith('*.') || searchVal.startsWith('.')) {
+                searchVal = '';
+            }
+            
+            const hasSearch = searchVal !== '';
             const hasTag = (tagFilter?.value || '') !== '';
             const hasExtension = activeExtensionFilter !== null;
             const isSearching = hasSearch || hasTag || hasExtension;
