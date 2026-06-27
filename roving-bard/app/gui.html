@@ -5696,6 +5696,9 @@
             const badge = btn.closest('.badge-tag');
             if (!badge) return;
             
+            // Measure original bounding box width before clearing contents to prevent width jumps
+            const originalWidth = badge.getBoundingClientRect().width;
+            
             badge.classList.add('editing');
             const originalHtml = badge.innerHTML;
             
@@ -5711,7 +5714,7 @@
             input.style.outline = 'none';
             input.style.padding = '0.2rem 0.4rem'; // Move tag padding directly onto input
             input.style.margin = '0';
-            input.style.width = Math.max(oldTag.length * 8 + 16, 60) + 'px'; // Keep original width ratios
+            input.style.width = originalWidth + 'px'; // Keep the exact same width as standard tag
             input.style.textAlign = 'center';
             input.style.boxSizing = 'border-box';
             
