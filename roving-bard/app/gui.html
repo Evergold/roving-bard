@@ -1225,18 +1225,34 @@
         }
 
         .badge-tag.editing {
-            background: rgba(0, 242, 254, 0.15) !important;
-            border-color: var(--accent) !important;
-            box-shadow: 0 0 10px rgba(0, 242, 254, 0.8) !important;
             transform: scale(1.08);
             padding: 0 !important; /* Zero padding on badge container during edit */
             transition: all 0.2s ease;
+            box-shadow: none !important;
         }
 
-        body.light-theme .badge-tag.editing {
-            background: rgba(46, 93, 168, 0.15) !important;
-            border-color: #2e5da8 !important;
-            box-shadow: 0 0 10px rgba(46, 93, 168, 0.6) !important;
+        .badge-tag.file-tag.editing {
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px dashed var(--neon-blue) !important;
+            color: var(--neon-blue) !important;
+        }
+
+        body.light-theme .badge-tag.file-tag.editing {
+            background: rgba(46, 93, 168, 0.1) !important;
+            border: 1px dashed #2e5da8 !important;
+            color: #2e5da8 !important;
+        }
+
+        .badge-tag.segment-tag.editing {
+            background: rgba(228, 5, 240, 0.15) !important;
+            border: 1px dashed var(--neon-pink) !important;
+            color: var(--neon-pink) !important;
+        }
+
+        body.light-theme .badge-tag.segment-tag.editing {
+            background: rgba(192, 38, 211, 0.1) !important;
+            border: 1px dashed #c026d3 !important;
+            color: #c026d3 !important;
         }
 
         .badge-tag.editing .edit-tag-btn,
@@ -1255,8 +1271,9 @@
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
-            padding: 0 !important;
+            padding: 0.35rem 0.6rem !important;
             margin: 0 !important;
+            color: inherit !important;
         }
 
         .mapping-item.selected-track {
@@ -5547,7 +5564,8 @@
                 ? `removeSegmentTag(event, '${filename.replace(/'/g, "\\'")}', '${tag.replace(/'/g, "\\'")}')`
                 : `removeFileTag(event, '${filename.replace(/'/g, "\\'")}', '${tag.replace(/'/g, "\\'")}')`;
             
-            const badgeClass = isActive ? "badge-tag active-tag-badge" : "badge-tag";
+            const typeClass = isSegment ? "segment-tag" : "file-tag";
+            const badgeClass = isActive ? `badge-tag active-tag-badge ${typeClass}` : `badge-tag ${typeClass}`;
             
             return `
                 <span class="${badgeClass}" onclick="event.stopPropagation()" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
