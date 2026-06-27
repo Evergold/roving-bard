@@ -578,11 +578,11 @@ def test_file_tags_api(tmp_path) -> None:
     """Test raw file tags API endpoints."""
     headers = get_headers()
     
-    # Save original FILE_TAGS_PATH
-    orig_file_tags_path = tools.FILE_TAGS_PATH
+    # Save original FILES_PATH
+    orig_files_path = tools.FILES_PATH
     # Override with temporary path
-    test_file_tags_file = os.path.join(tmp_path, "test_file_tags.yaml")
-    tools.FILE_TAGS_PATH = test_file_tags_file
+    test_files_file = os.path.join(tmp_path, "test_files.yaml")
+    tools.FILES_PATH = test_files_file
     
     try:
         # 1. GET /api/audio-files (should have empty file_tags)
@@ -606,7 +606,7 @@ def test_file_tags_api(tmp_path) -> None:
         assert response.json()["file_tags"] == {"non_existent_track.mp3": ["ambient", "calm"]}
         
     finally:
-        tools.FILE_TAGS_PATH = orig_file_tags_path
+        tools.FILES_PATH = orig_files_path
 
 
 def test_abc_player_seeking(tmp_path) -> None:

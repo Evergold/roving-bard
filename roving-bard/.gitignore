@@ -214,4 +214,4 @@ roving-bard/capture/*
 audio/segments.yaml
 
 # Exclude local file tags definitions
-audio/file_tags.yaml
+audio/files.yaml

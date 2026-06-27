@@ -542,13 +542,13 @@ class RenameTagRequest(BaseModel):
 
 @app.post("/api/tags/rename", dependencies=[Depends(verify_api_key)])
 def api_rename_tag(req: RenameTagRequest):
-    """Renames a tag globally across file_tags.yaml, segments.yaml, and tags_registry.yaml."""
+    """Renames a tag globally across files.yaml, segments.yaml, and tags_registry.yaml."""
     old_tag = req.old_name.strip().lower()
     new_tag = req.new_name.strip().lower()
     if not old_tag or not new_tag:
         raise HTTPException(status_code=400, detail="Invalid tag name")
         
-    # 1. Update file_tags.yaml
+    # 1. Update files.yaml
     file_tags = tools.load_file_tags()
     updated_file_tags = {}
     for filename, tags in file_tags.items():
