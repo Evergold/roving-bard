@@ -5779,28 +5779,6 @@
                 e.preventDefault();
                 toggleMenuPopOver();
             }
-            // Escape: close any active popover panel
-            if (e.key === 'Escape') {
-                // Menu popover
-                if (menuPopoverOpen) {
-                    toggleMenuPopOver();
-                }
-                // Status badge dropdown
-                const dropdown = document.getElementById('api-key-dropdown');
-                if (dropdown && dropdown.classList.contains('active')) {
-                    dropdown.classList.remove('active');
-                }
-                // Delete confirmation popover
-                const deletePopover = document.getElementById('delete-confirm-popover');
-                if (deletePopover && deletePopover.classList.contains('active')) {
-                    closeDeletePopover();
-                }
-                // Export confirmation popover
-                const exportPopover = document.getElementById('export-confirm-popover');
-                if (exportPopover && exportPopover.classList.contains('active')) {
-                    closeExportPopover();
-                }
-            }
         });
 
         function restoreCardCollapses() {
@@ -5818,6 +5796,37 @@
         // Initial load
         // ============================================================
         window.onload = async () => {
+            // Escape key: close any active popover panel
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    let dismissed = false;
+                    // Menu popover
+                    if (menuPopoverOpen) {
+                        toggleMenuPopOver();
+                        dismissed = true;
+                    }
+                    // Status badge dropdown
+                    const dropdown = document.getElementById('api-key-dropdown');
+                    if (dropdown && dropdown.classList.contains('active')) {
+                        dropdown.classList.remove('active');
+                        dismissed = true;
+                    }
+                    // Delete confirmation popover
+                    const deletePopover = document.getElementById('delete-confirm-popover');
+                    if (deletePopover && deletePopover.classList.contains('active')) {
+                        closeDeletePopover();
+                        dismissed = true;
+                    }
+                    // Export confirmation popover
+                    const exportPopover = document.getElementById('export-confirm-popover');
+                    if (exportPopover && exportPopover.classList.contains('active')) {
+                        closeExportPopover();
+                        dismissed = true;
+                    }
+                    if (dismissed) e.preventDefault();
+                }
+            });
+
             // Setup ResizeObserver for fluid preferences panel scaling
             const popover = document.getElementById('menu-popover');
             const popoverInner = document.getElementById('menu-popover-inner');
