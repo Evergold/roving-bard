@@ -3613,7 +3613,7 @@
             
             span.innerText = input.value || input.placeholder || '     ';
             
-            const padding = 16; // Left/right padding + margin in pixels
+            const padding = 28; // Left/right padding + margin in pixels
             const minWidth = customMinWidth || 80;
             const measuredWidth = span.getBoundingClientRect().width + padding;
             input.style.width = `${Math.max(minWidth, measuredWidth)}px`;
