@@ -5586,12 +5586,20 @@
             
             input.addEventListener('click', (e) => e.stopPropagation());
             
+            // Prevent clicking the badge padding from blurring the input
+            const preventBlur = (e) => {
+                if (e.target === input) return;
+                e.preventDefault();
+            };
+            badge.addEventListener('mousedown', preventBlur);
+            
             let finished = false;
             
             async function finishEdit(save) {
                 if (finished) return;
                 finished = true;
                 badge.classList.remove('editing');
+                badge.removeEventListener('mousedown', preventBlur);
                 
                 if (save) {
                     const newTag = input.value.trim().toLowerCase();
