@@ -3982,6 +3982,10 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
+                    // Disable the export button immediately — the segment was just saved,
+                    // so there are no pending changes until the user modifies settings again.
+                    const exportBtn = document.getElementById('export-segment-btn');
+                    if (exportBtn) exportBtn.disabled = true;
                     await loadAudioLibrary();
                 } else {
                     alert(t("error_label") + result.message);
