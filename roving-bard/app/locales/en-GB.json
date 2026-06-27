@@ -149,5 +149,6 @@
     "warn_eq_send_backend": "[EQ] Could not send to backend:",
     "rename_tag_prompt": "Enter new name for tag:",
     "failed_rename_tag": "Failed to rename tag: ",
-    "err_rename_tag": "Error renaming tag:"
+    "err_rename_tag": "Error renaming tag:",
+    "clear_search_title": "Clear Search & Filter"
 }
