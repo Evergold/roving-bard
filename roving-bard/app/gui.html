@@ -3594,6 +3594,31 @@
             }
         }
 
+        function adjustInputWidth(input, customMinWidth) {
+            let span = document.getElementById('tag-input-width-measurer');
+            if (!span) {
+                span = document.createElement('span');
+                span.id = 'tag-input-width-measurer';
+                span.style.position = 'absolute';
+                span.style.visibility = 'hidden';
+                span.style.whiteSpace = 'pre';
+                document.body.appendChild(span);
+            }
+            
+            const style = window.getComputedStyle(input);
+            span.style.fontFamily = style.fontFamily || "'Space Mono', monospace";
+            span.style.fontSize = style.fontSize || '0.75rem';
+            span.style.fontWeight = style.fontWeight || 'normal';
+            span.style.letterSpacing = style.letterSpacing || 'normal';
+            
+            span.innerText = input.value || input.placeholder || '     ';
+            
+            const padding = 16; // Left/right padding + margin in pixels
+            const minWidth = customMinWidth || 80;
+            const measuredWidth = span.getBoundingClientRect().width + padding;
+            input.style.width = `${Math.max(minWidth, measuredWidth)}px`;
+        }
+
         function showAddTagInput(event, type, key) {
             event.stopPropagation();
             const badgeAdd = event.currentTarget;
@@ -3608,6 +3633,9 @@
             const badgeStyle = window.getComputedStyle(badgeAdd);
             input.style.marginLeft = badgeStyle.marginLeft;
             input.style.marginRight = badgeStyle.marginRight;
+            
+            // Bind dynamic auto-resize on input
+            input.oninput = () => adjustInputWidth(input);
             
             // Use blurred flag and setTimeout to avoid race conditions between events
             let blurred = false;
@@ -3672,6 +3700,7 @@
             
             badgeAdd.replaceWith(input);
             input.focus();
+            adjustInputWidth(input);
             if (typeof input.showPicker === 'function') {
                 try {
                     input.showPicker();
@@ -5878,13 +5907,15 @@
             input.style.outline = 'none';
             input.style.padding = '0.2rem 0.4rem'; // Move tag padding directly onto input
             input.style.margin = '0';
-            input.style.width = originalWidth + 'px'; // Keep the exact same width as standard tag
             input.style.textAlign = 'center';
             input.style.boxSizing = 'border-box';
+            
+            input.oninput = () => adjustInputWidth(input, originalWidth);
             
             badge.innerHTML = '';
             badge.appendChild(input);
             input.focus();
+            adjustInputWidth(input, originalWidth);
             
             input.addEventListener('click', (e) => e.stopPropagation());
             
