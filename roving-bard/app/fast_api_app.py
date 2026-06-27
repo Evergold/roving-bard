@@ -218,6 +218,42 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     return {"status": "success"}
 
 
+@app.get("/favicon.ico")
+def get_favicon():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(AGENT_DIR, "app", "static", "favicon.ico"))
+
+
+@app.get("/favicon-32x32.png")
+def get_favicon_32():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(AGENT_DIR, "app", "static", "favicon-32x32.png"))
+
+
+@app.get("/favicon-16x16.png")
+def get_favicon_16():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(AGENT_DIR, "app", "static", "favicon-16x16.png"))
+
+
+@app.get("/apple-touch-icon.png")
+def get_apple_touch_icon():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(AGENT_DIR, "app", "static", "apple-touch-icon.png"))
+
+
+@app.get("/android-chrome-192x192.png")
+def get_android_192():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(AGENT_DIR, "app", "static", "android-chrome-192x192.png"))
+
+
+@app.get("/android-chrome-512x512.png")
+def get_android_512():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(AGENT_DIR, "app", "static", "android-chrome-512x512.png"))
+
+
 @app.get("/gui")
 def get_gui():
     """Serves the music player HTML GUI dashboard with embedded API key."""
