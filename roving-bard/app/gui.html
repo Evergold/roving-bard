@@ -1229,7 +1229,7 @@
             border-color: var(--accent) !important;
             box-shadow: 0 0 10px rgba(0, 242, 254, 0.8) !important;
             transform: scale(1.08);
-            padding: 0.35rem 0.6rem !important;
+            padding: 0 !important; /* Zero padding on badge container during edit */
             transition: all 0.2s ease;
         }
 
@@ -5575,10 +5575,11 @@
             input.style.fontFamily = "'Space Mono', monospace";
             input.style.fontSize = '0.75rem';
             input.style.outline = 'none';
-            input.style.padding = '0';
+            input.style.padding = '0.35rem 0.6rem'; // Move tag padding directly onto input
             input.style.margin = '0';
-            input.style.width = Math.max(oldTag.length * 8 + 10, 50) + 'px';
+            input.style.width = Math.max(oldTag.length * 8 + 30, 80) + 'px'; // Give more room for click targeting
             input.style.textAlign = 'center';
+            input.style.boxSizing = 'border-box';
             
             badge.innerHTML = '';
             badge.appendChild(input);
