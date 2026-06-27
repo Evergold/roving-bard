@@ -1136,34 +1136,73 @@
         }
 
         .badge-tag {
-            transition: padding-right 0.2s ease !important;
+            position: relative;
         }
 
-        .badge-tag:not(.active-tag-badge) {
-            padding-right: 0.4rem !important;
-        }
-
-        .badge-tag:not(.active-tag-badge) .tag-controls {
-            display: none !important;
-        }
-
-        .badge-tag.active-tag-badge {
-            padding-right: 0.4rem !important;
-        }
-
-        .badge-tag.active-tag-badge .tag-controls {
+        .edit-tag-btn, .delete-tag-btn {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-sizing: border-box;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
         }
 
-        .badge-tag.active-tag-badge:hover {
-            padding-right: 1.6rem !important;
+        body.light-theme .edit-tag-btn, 
+        body.light-theme .delete-tag-btn {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #b4b8c0;
         }
 
-        .badge-tag.active-tag-badge:hover .tag-controls {
+        .edit-tag-btn {
+            top: -10px;
+            right: -5px;
+            font-size: 8px;
+            transform: translateY(4px) scale(0.7);
+        }
+
+        .delete-tag-btn {
+            bottom: -10px;
+            right: -5px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #ef4444;
+            transform: translateY(-4px) scale(0.7);
+        }
+
+        .edit-tag-btn:hover {
+            transform: scale(1.25) !important;
+            box-shadow: 0 0 6px var(--accent);
+            border-color: var(--accent);
+        }
+
+        .delete-tag-btn:hover {
+            transform: scale(1.25) !important;
+            box-shadow: 0 0 6px #ef4444;
+            border-color: #ef4444;
+        }
+
+        /* Show on hover of active tag badge */
+        .badge-tag.active-tag-badge:hover .edit-tag-btn,
+        .badge-tag.active-tag-badge:hover .delete-tag-btn {
             opacity: 1;
             pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Hide completely for non-active badges */
+        .badge-tag:not(.active-tag-badge) .edit-tag-btn,
+        .badge-tag:not(.active-tag-badge) .delete-tag-btn {
+            display: none !important;
         }
 
         .mapping-item.selected-track {
@@ -5459,10 +5498,8 @@
             return `
                 <span class="${badgeClass}" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
                     ${tag}
-                    <div class="tag-controls" style="position: absolute; right: 4px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 100%; padding: 2px 0; box-sizing: border-box;">
-                        <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag" style="cursor: pointer; font-size: 0.55rem; color: var(--accent); opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">✏️</span>
-                        <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag" style="cursor: pointer; font-size: 0.65rem; color: #ef4444; opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">&times;</span>
-                    </div>
+                    <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag">✏️</span>
+                    <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag">&times;</span>
                 </span>
             `;
         }
