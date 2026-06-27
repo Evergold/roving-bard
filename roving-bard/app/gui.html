@@ -5199,8 +5199,18 @@
             updateBulkTagBar();
         }
 
+        function isTrackActive(filename) {
+            const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+            const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
+            return (activeTrack === filename && Math.abs(activeStart) < 0.05);
+        }
+
         function handleCheckboxChange(event, filename) {
             const chk = event.currentTarget;
+            if (isTrackActive(filename)) {
+                chk.checked = true;
+                return;
+            }
             if (chk.checked) {
                 checkedBulkFiles.add(filename);
             } else {
@@ -5210,6 +5220,9 @@
         }
 
         function toggleCheckbox(event, filename) {
+            if (isTrackActive(filename)) {
+                return;
+            }
             const cell = event.currentTarget;
             const chk = cell.querySelector('.bulk-select-chk');
             if (chk) {
