@@ -154,5 +154,6 @@
     "preferences_label": "Preferenze",
     "theme_label": "Tema",
     "font_size_label": "Dimensioni schermo",
-    "language_label": "Lingua"
+    "language_label": "Lingua",
+    "confirm_delete_segment": "Eliminare il segmento?"
 }

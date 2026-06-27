@@ -154,5 +154,6 @@
     "preferences_label": "Einstellungen",
     "theme_label": "Design",
     "font_size_label": "Anzeigegröße",
-    "language_label": "Sprache"
+    "language_label": "Sprache",
+    "confirm_delete_segment": "Segment löschen?"
 }

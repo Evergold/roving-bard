@@ -154,5 +154,6 @@
     "preferences_label": "Настройки",
     "theme_label": "Тема",
     "font_size_label": "Размер экрана",
-    "language_label": "Язык"
+    "language_label": "Язык",
+    "confirm_delete_segment": "Удалить сегмент?"
 }
