@@ -1785,6 +1785,23 @@
             background-color: var(--neon-blue) !important;
             box-shadow: 0 0 4px var(--neon-blue) !important;
         }
+        .menu-btn.active {
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        }
+        .menu-btn.active .bar {
+            background-color: var(--neon-blue) !important;
+        }
+        .menu-btn.active .bar:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+        }
+        .menu-btn.active .bar:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-btn.active .bar:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+        }
+
         body.light-theme .menu-btn {
             background: rgba(0, 0, 0, 0.05);
             border: 1px solid #b4b8c0;
@@ -1799,6 +1816,56 @@
         }
         body.light-theme .menu-btn:hover .bar {
             background-color: var(--accent) !important;
+        }
+        body.light-theme .menu-btn.active {
+            background: var(--accent-glow) !important;
+            border: 1px solid rgba(46, 93, 168, 0.3) !important;
+        }
+        body.light-theme .menu-btn.active .bar {
+            background-color: var(--accent) !important;
+        }
+
+        .menu-popover {
+            display: none;
+            position: absolute;
+            top: 75px;
+            left: 2rem;
+            background: rgba(18, 24, 38, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            z-index: 1100;
+            flex-direction: column;
+            gap: 1rem;
+            width: 280px;
+            box-sizing: border-box;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0.95) translateY(-10px);
+            opacity: 0;
+            transform-origin: top left;
+        }
+
+        #floating-scroll-top-btn {
+            display: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #floating-scroll-top-btn:hover {
+            transform: scale(1.1) !important;
+            background: var(--neon-blue) !important;
+            color: #000 !important;
+            box-shadow: 0 0 15px var(--neon-blue) !important;
+        }
+        body.light-theme #floating-scroll-top-btn {
+            border-color: var(--accent) !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            color: var(--accent) !important;
+        }
+        body.light-theme #floating-scroll-top-btn:hover {
+            background: var(--accent) !important;
+            color: #fff !important;
+            box-shadow: 0 0 15px var(--accent) !important;
         }
 
         /* Accessible Color Scheme (CVD Mode) Overrides */
@@ -1971,52 +2038,65 @@
         })();
     </script>
     <header>
-        <div class="logo-container" style="display: flex; align-items: center; gap: 1.5rem;">
-            <button id="menu-scroll-top-btn" class="menu-btn" onclick="scrollToTop()" data-loc-title="scroll_to_top_title" title="Scroll to Top">
+        <div class="logo-container" style="display: flex; align-items: center; gap: 1.5rem; position: relative;">
+            <button id="menu-scroll-top-btn" class="menu-btn" onclick="toggleMenuPopOver(event)" data-loc-title="preferences_title" title="Preferences">
                 <span class="bar"></span>
                 <span class="bar"></span>
                 <span class="bar"></span>
             </button>
-            <div class="header-main-content" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; flex: 1;">
-                <div>
-                    <h1>Roving Bard</h1>
-                    <p data-loc="subtitle">Adaptive, location-aware audio in LOTRO</p>
+            
+            <!-- Menu Popover for Preferences -->
+            <div id="menu-popover" class="menu-popover">
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.2rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span data-loc="preferences_label">PREFERENCES</span>
                 </div>
-                <div class="accessibility-controls" style="display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; border-left: 1px solid var(--border); padding-left: 1.8rem; margin-left: 0;">
-                    <!-- Theme toggle buttons -->
-                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
-                        <!-- Dark theme button (moon icon) -->
-                        <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme('dark')" data-loc-title="dark_theme_title" title="Dark Theme">
+                
+                <!-- Theme option -->
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="theme_label">Theme</span>
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
+                        <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme(event, 'dark')" data-loc-title="dark_theme_title" title="Dark Theme">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                         </button>
-                        <!-- Light theme button (sun with rays icon) -->
-                        <button id="theme-light-btn" class="theme-btn" onclick="setTheme('light')" data-loc-title="light_theme_title" title="Light Theme">
+                        <button id="theme-light-btn" class="theme-btn" onclick="setTheme(event, 'light')" data-loc-title="light_theme_title" title="Light Theme">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                         </button>
                     </div>
-                    <!-- Font size control button group -->
-                    <div class="font-size-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
-                        <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize('s')" data-loc-title="font_normal" data-loc="font_normal_abc" title="Normal">abc</button>
-                        <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize('m')" data-loc-title="font_larger" title="Larger">+</button>
-                        <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize('lg')" data-loc-title="font_largest" title="Largest">++</button>
+                </div>
+
+                <!-- Font Size Option -->
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="font_size_label">Font Size</span>
+                    <div class="font-size-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
+                        <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize(event, 's')" data-loc-title="font_normal" data-loc="font_normal_abc" title="Normal">abc</button>
+                        <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize(event, 'm')" data-loc-title="font_larger" title="Larger">+</button>
+                        <button id="font-size-lg-btn" class="font-size-btn" onclick="setFontSize(event, 'lg')" data-loc-title="font_largest" title="Largest">++</button>
                     </div>
-                    <!-- Accessible Mode Toggle -->
-                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; margin-left: 0.5rem;">
-                        <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible()" data-loc-title="accessible_mode_title" title="Accessible Mode">
+                </div>
+
+                <!-- Accessibility Option -->
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.2rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="accessible_mode_title">Accessible Mode</span>
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
+                        <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible(event)" data-loc-title="accessible_mode_title" title="Accessible Mode">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
                         </button>
                     </div>
-                    <!-- Language Selector Dropdown -->
-                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 10px; margin-left: 0.5rem; height: 52px; box-sizing: border-box;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 2px;">
+                </div>
+
+                <!-- Language Selector -->
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="language_label">Language</span>
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 10px; height: 38px; box-sizing: border-box; width: 100%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px; flex-shrink: 0;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="2" y1="12" x2="22" y2="12"></line>
                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                         </svg>
-                        <select id="lang-select" onchange="changeLanguage(this.value)">
+                        <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.75rem; outline: none; cursor: pointer; width: 100%; height: 100%; padding-right: 1.5rem;">
                             <option value="en-US">EN (US)</option>
                             <option value="en-GB">EN (UK)</option>
                             <option value="fr-FR">FR (FR)</option>
@@ -2026,6 +2106,13 @@
                             <option value="ru-RU">RU (RU)</option>
                         </select>
                     </div>
+                </div>
+            </div>
+
+            <div class="header-main-content" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; flex: 1;">
+                <div>
+                    <h1>Roving Bard</h1>
+                    <p data-loc="subtitle">Adaptive, location-aware audio in LOTRO</p>
                 </div>
             </div>
         </div>
@@ -4062,6 +4149,12 @@
                     dropdown.style.display = 'none';
                 }
             }
+            // Close menu popover if clicked outside
+            const popover = document.getElementById('menu-popover');
+            const menuBtn = document.getElementById('menu-scroll-top-btn');
+            if (menuPopoverOpen && popover && !popover.contains(event.target) && (!menuBtn || !menuBtn.contains(event.target))) {
+                toggleMenuPopOver();
+            }
         });
 
         /* Seek Bar Helper Functions and Event Handlers */
@@ -5070,8 +5163,14 @@
             applyLocalization();
         }
 
-        function setTheme(theme) {
-            if (theme === 'light') {
+        function setTheme(eventOrTheme, theme) {
+            let activeTheme = theme;
+            if (typeof eventOrTheme === 'string') {
+                activeTheme = eventOrTheme;
+            } else if (eventOrTheme && eventOrTheme.stopPropagation) {
+                eventOrTheme.stopPropagation();
+            }
+            if (activeTheme === 'light') {
                 document.body.classList.add('light-theme');
                 document.getElementById('theme-light-btn').classList.add('active');
                 document.getElementById('theme-dark-btn').classList.remove('active');
@@ -5093,18 +5192,24 @@
             exportBtn.style.minWidth = 'auto';
         }
 
-        function setFontSize(size) {
+        function setFontSize(eventOrSize, size) {
+            let activeSize = size;
+            if (typeof eventOrSize === 'string') {
+                activeSize = eventOrSize;
+            } else if (eventOrSize && eventOrSize.stopPropagation) {
+                eventOrSize.stopPropagation();
+            }
             const html = document.documentElement;
             html.classList.remove('font-size-m', 'font-size-lg');
             document.getElementById('font-size-s-btn').classList.remove('active');
             document.getElementById('font-size-m-btn').classList.remove('active');
             document.getElementById('font-size-lg-btn').classList.remove('active');
 
-            if (size === 'm') {
+            if (activeSize === 'm') {
                 html.classList.add('font-size-m');
                 document.getElementById('font-size-m-btn').classList.add('active');
                 localStorage.setItem('font-size', 'm');
-            } else if (size === 'lg') {
+            } else if (activeSize === 'lg') {
                 html.classList.add('font-size-lg');
                 document.getElementById('font-size-lg-btn').classList.add('active');
                 localStorage.setItem('font-size', 'lg');
@@ -5115,7 +5220,10 @@
             updateExportButtonWidth();
         }
 
-        function toggleCVDAccessible() {
+        function toggleCVDAccessible(event) {
+            if (event && event.stopPropagation) {
+                event.stopPropagation();
+            }
             const body = document.body;
             const btn = document.getElementById('cvd-toggle-btn');
             if (!btn) return;
@@ -5156,6 +5264,46 @@
 
             requestAnimationFrame(animate);
         }
+
+        let menuPopoverOpen = false;
+        
+        function toggleMenuPopOver(event) {
+            if (event) event.stopPropagation();
+            const popover = document.getElementById('menu-popover');
+            const menuBtn = document.getElementById('menu-scroll-top-btn');
+            if (!popover) return;
+            
+            if (menuPopoverOpen) {
+                // Close it
+                popover.style.transform = 'scale(0.95) translateY(-10px)';
+                popover.style.opacity = '0';
+                if (menuBtn) menuBtn.classList.remove('active');
+                setTimeout(() => {
+                    if (!menuPopoverOpen) {
+                        popover.style.display = 'none';
+                    }
+                }, 200);
+                menuPopoverOpen = false;
+            } else {
+                // Open it
+                popover.style.display = 'flex';
+                // Trigger reflow/animation
+                setTimeout(() => {
+                    popover.style.transform = 'scale(1) translateY(0)';
+                    popover.style.opacity = '1';
+                }, 10);
+                if (menuBtn) menuBtn.classList.add('active');
+                menuPopoverOpen = true;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            // Check for Ctrl+Shift+P
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+                e.preventDefault();
+                toggleMenuPopOver();
+            }
+        });
 
         function restoreCardCollapses() {
             document.querySelectorAll('.card[id]').forEach(card => {
@@ -5201,6 +5349,28 @@
             window.addEventListener('resize', () => {
                 updateExportButtonWidth();
                 adjustAddTagPlacement();
+            });
+
+            // Scroll to top listener
+            window.addEventListener('scroll', () => {
+                const btn = document.getElementById('floating-scroll-top-btn');
+                if (btn) {
+                    if (window.scrollY > 150) {
+                        btn.style.display = 'flex';
+                        setTimeout(() => {
+                            btn.style.transform = 'translateY(0)';
+                            btn.style.opacity = '1';
+                        }, 10);
+                    } else {
+                        btn.style.transform = 'translateY(20px)';
+                        btn.style.opacity = '0';
+                        setTimeout(() => {
+                            if (window.scrollY <= 150) {
+                                btn.style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                }
             });
         };
     
@@ -5527,5 +5697,9 @@
             });
         }
 </script>
+    <!-- Floating scroll to top button -->
+    <button id="floating-scroll-top-btn" onclick="scrollToTop()" title="Scroll to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
 </body>
 </html>
