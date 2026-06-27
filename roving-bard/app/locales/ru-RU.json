@@ -150,5 +150,9 @@
     "rename_tag_prompt": "Введите новое имя для тега:",
     "failed_rename_tag": "Не удалось переименовать тег: ",
     "err_rename_tag": "Error renaming tag:",
-    "clear_search_title": "Очистить поиск и фильтр"
+    "clear_search_title": "Очистить поиск и фильтр",
+    "preferences_label": "Настройки",
+    "theme_label": "Тема",
+    "font_size_label": "Размер экрана",
+    "language_label": "Язык"
 }

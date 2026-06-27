@@ -150,5 +150,9 @@
     "rename_tag_prompt": "Inserisci il nuovo nome per il tag:",
     "failed_rename_tag": "Impossibile rinominare il tag: ",
     "err_rename_tag": "Error renaming tag:",
-    "clear_search_title": "Cancella ricerca e filtro"
+    "clear_search_title": "Cancella ricerca e filtro",
+    "preferences_label": "Preferenze",
+    "theme_label": "Tema",
+    "font_size_label": "Dimensioni schermo",
+    "language_label": "Lingua"
 }
