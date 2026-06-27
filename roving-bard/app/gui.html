@@ -2981,8 +2981,15 @@
                     }
 
                     const fileTags = audioLibraryFileTags[file] || [];
+                    const showInlineAddTag = (isFileActive && fileTags.length === 0);
+                    let inlineAddTagHtml = '';
                     let tagsHtml = '';
-                    if (fileTags.length > 0 || isFileActive) {
+                    
+                    if (showInlineAddTag) {
+                        inlineAddTagHtml = `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.75rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease; margin-left: 0.5rem;">${t('add_tag')}</span>`;
+                    }
+                    
+                    if (fileTags.length > 0) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         fileTags.forEach(tag => {
                             tagsHtml += renderTagBadge(tag, file, false, isFileActive);
@@ -2999,7 +3006,9 @@
                             <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${file}</div>
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">
+                                ${file}${inlineAddTagHtml}
+                            </div>
                             ${tagsHtml}
                         </div>
                         <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
@@ -3075,8 +3084,15 @@
                     }
 
                     const segTags = segment.tags || [];
+                    const showInlineAddTag = (isSegActive && segTags.length === 0);
+                    let inlineAddTagHtml = '';
                     let tagsHtml = '';
-                    if (segTags.length > 0 || isSegActive) {
+                    
+                    if (showInlineAddTag) {
+                        inlineAddTagHtml = `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.75rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease; margin-left: 0.5rem;">${t('add_tag')}</span>`;
+                    }
+                    
+                    if (segTags.length > 0) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         segTags.forEach(tag => {
                             tagsHtml += renderTagBadge(tag, segment.name, true, isSegActive);
@@ -3093,7 +3109,9 @@
                             <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${segment.name}</div>
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">
+                                ${segment.name}${inlineAddTagHtml}
+                            </div>
                             <div class="mapping-item-sub">${subtitleText}</div>
                             ${tagsHtml}
                         </div>
@@ -3158,7 +3176,7 @@
             input.type = 'text';
             input.placeholder = t('tag_placeholder');
             input.setAttribute('list', 'all-existing-tags-list');
-            input.style = `width: 95px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid ${type === 'file' ? 'var(--neon-blue)' : 'var(--neon-pink)'}; border-radius: 4px; padding: 0.12rem 0.35rem; color: white; outline: none; font-family: 'Space Mono', monospace;`;
+            input.style = `width: 95px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid ${type === 'file' ? 'var(--neon-blue)' : 'var(--neon-pink)'}; border-radius: 4px; padding: 0.12rem 0.35rem; color: white; outline: none; font-family: 'Space Mono', monospace; margin-left: 0.5rem;`;
             
             // Use blurred flag and setTimeout to avoid race conditions between events
             let blurred = false;
