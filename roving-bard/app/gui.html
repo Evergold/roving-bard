@@ -1807,16 +1807,15 @@
         }
         .menu-btn.active .bar {
             background-color: var(--neon-blue) !important;
-            height: 3px;
         }
         .menu-btn.active .bar:nth-child(1) {
-            transform: translateY(6px) rotate(45deg);
+            transform: translateY(6px) rotate(45deg) scaleY(1.5);
         }
         .menu-btn.active .bar:nth-child(2) {
             opacity: 0;
         }
         .menu-btn.active .bar:nth-child(3) {
-            transform: translateY(-6px) rotate(-45deg);
+            transform: translateY(-6px) rotate(-45deg) scaleY(1.5);
         }
 
         body.light-theme .menu-btn {
@@ -1840,7 +1839,6 @@
         }
         body.light-theme .menu-btn.active .bar {
             background-color: var(--accent) !important;
-            height: 3px;
         }
 
         .menu-popover {
