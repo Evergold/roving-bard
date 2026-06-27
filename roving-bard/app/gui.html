@@ -1120,8 +1120,16 @@
             gap: 1rem;
         }
 
-        .mapping-item:hover {
+        .mapping-item:hover:not(:has(.bulk-select-cell:hover)) {
             border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .bulk-select-cell {
+            transition: background 0.2s;
+        }
+
+        .bulk-select-cell:hover {
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .mapping-item.selected-track {
@@ -1455,9 +1463,13 @@
             border: 1px solid #b4b8c0;
         }
 
-        body.light-theme .mapping-item:hover {
+        body.light-theme .mapping-item:hover:not(:has(.bulk-select-cell:hover)) {
             background: #c5c8cc;
             border-color: #a2a6ae;
+        }
+
+        body.light-theme .bulk-select-cell:hover {
+            background: rgba(0, 0, 0, 0.05);
         }
 
         body.light-theme #mapping-modal {
@@ -2961,7 +2973,7 @@
 
                     const isChecked = checkedBulkFiles.has(file);
                     item.innerHTML = `
-                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
                             <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
