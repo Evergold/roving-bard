@@ -3348,7 +3348,7 @@
                     item.setAttribute('onclick', `handleAudioItemClick(event, () => selectAudioFile('${file.replace(/\'/g, "\\\'")}'))`);
                     
                     let btnText = t('play');
-                    let btnStyle = 'padding: 0.3rem 0.65rem; font-size: 0.85rem; transition: all 0.2s ease; min-width: 80px;';
+                    let btnStyle = 'padding: 0.45rem 0.9rem; font-size: 0.9rem; transition: all 0.2s ease; min-width: 95px;';
                     let btnClass = 'btn btn-secondary';
                     let btnClick = `playAudioFile('${file.replace(/\'/g, "\\\'")}')`;
                     // A raw file is active if current_track matches AND start_time is roughly 0
@@ -3447,7 +3447,7 @@
                     
                     item.setAttribute('onclick', `handleAudioItemClick(event, () => selectSegment('${segment.name.replace(/\'/g, "\\\'")}', '${segment.track_file.replace(/\'/g, "\\\'")}', ${segment.start_time}, ${segEnd}, ${segVolume}))`);
                     let btnText = t('play');
-                    let btnStyle = 'padding: 0.3rem 0.65rem; font-size: 0.85rem; transition: all 0.2s ease; min-width: 80px;';
+                    let btnStyle = 'padding: 0.45rem 0.9rem; font-size: 0.9rem; transition: all 0.2s ease; min-width: 95px;';
                     let btnClass = 'btn btn-secondary';
                     
                     const isSegActive = (activeSegment && activeSegment.name === segment.name);
