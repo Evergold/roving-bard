@@ -1133,6 +1133,37 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .badge-tag {
+            transition: padding-right 0.2s ease !important;
+        }
+
+        .badge-tag:not(.active-tag-badge) {
+            padding-right: 0.4rem !important;
+        }
+
+        .badge-tag:not(.active-tag-badge) .tag-controls {
+            display: none !important;
+        }
+
+        .badge-tag.active-tag-badge {
+            padding-right: 0.4rem !important;
+        }
+
+        .badge-tag.active-tag-badge .tag-controls {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .badge-tag.active-tag-badge:hover {
+            padding-right: 1.6rem !important;
+        }
+
+        .badge-tag.active-tag-badge:hover .tag-controls {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .mapping-item.selected-track {
             border-color: var(--neon-blue) !important;
             background: rgba(0, 242, 254, 0.05);
@@ -2954,7 +2985,7 @@
                     if (fileTags.length > 0 || isFileActive) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         fileTags.forEach(tag => {
-                            tagsHtml += renderTagBadge(tag, file, false);
+                            tagsHtml += renderTagBadge(tag, file, false, isFileActive);
                         });
                         if (isFileActive) {
                             tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.75rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">${t('add_tag')}</span>`;
@@ -3048,7 +3079,7 @@
                     if (segTags.length > 0 || isSegActive) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         segTags.forEach(tag => {
-                            tagsHtml += renderTagBadge(tag, segment.name, true);
+                            tagsHtml += renderTagBadge(tag, segment.name, true, isSegActive);
                         });
                         if (isSegActive) {
                             tagsHtml += `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.75rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease;">${t('add_tag')}</span>`;
@@ -5148,14 +5179,17 @@
         };
     
         // Helper to render tag badges with inline rename pencil and delete cross
-        function renderTagBadge(tag, filename, isSegment = false) {
+        function renderTagBadge(tag, filename, isSegment = false, isActive = false) {
             const deleteClick = isSegment 
                 ? `removeSegmentTag(event, '${filename.replace(/'/g, "\\'")}', '${tag.replace(/'/g, "\\'")}')`
                 : `removeFileTag(event, '${filename.replace(/'/g, "\\'")}', '${tag.replace(/'/g, "\\'")}')`;
+            
+            const badgeClass = isActive ? "badge-tag active-tag-badge" : "badge-tag";
+            
             return `
-                <span class="badge-tag" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 1.6rem 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
+                <span class="${badgeClass}" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
                     ${tag}
-                    <div style="position: absolute; right: 4px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 100%; padding: 2px 0; box-sizing: border-box;">
+                    <div class="tag-controls" style="position: absolute; right: 4px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 100%; padding: 2px 0; box-sizing: border-box;">
                         <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag" style="cursor: pointer; font-size: 0.55rem; color: var(--accent); opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">✏️</span>
                         <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag" style="cursor: pointer; font-size: 0.65rem; color: #ef4444; opacity: 0.7; transition: all 0.1s ease; line-height: 1;" onmouseover="this.style.opacity=1; this.style.transform='scale(1.2)';" onmouseout="this.style.opacity=0.7; this.style.transform='none';">&times;</span>
                     </div>
