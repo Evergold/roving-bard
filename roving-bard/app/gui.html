@@ -2910,7 +2910,13 @@
                 <!-- FILTER & SEARCH BAR -->
                 <div style="display: flex; gap: 0.5rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); align-items: center; background: rgba(255, 255, 255, 0.01);">
                     <button id="audio-search-clear-btn" class="btn btn-secondary" onclick="clearAudioSearch()" style="display: none; padding: 0.35rem 0.6rem; font-size: 0.8rem; min-width: unset; height: auto; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-right: 0.2rem;" data-loc-title="clear_search_title" title="Clear Search & Filter">✕</button>
-                    <input type="text" id="audio-search-input" data-loc-placeholder="search_placeholder" style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()">
+                    <div id="audio-search-container" style="flex: 1; display: flex; align-items: center; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden;">
+                        <span id="extension-badge" style="display: none; align-items: center; background: rgba(0, 242, 254, 0.15); color: var(--neon-blue); border: 1px solid rgba(0, 242, 254, 0.3); font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: bold; border-radius: 3px; padding: 0.1rem 0.35rem; margin-left: 0.4rem; user-select: none; white-space: nowrap;">
+                            <span id="extension-badge-text"></span>
+                            <span onclick="removeExtensionFilter(event)" style="margin-left: 6px; cursor: pointer; color: #ef4444; font-weight: bold;">✕</span>
+                        </span>
+                        <input type="text" id="audio-search-input" data-loc-placeholder="search_placeholder" style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; outline: none;" oninput="filterAudioLibrary()" onkeydown="handleSearchKey(event)">
+                    </div>
                     <select id="audio-tag-filter" style="width: 120px; padding: 0.35rem 0.6rem; font-size: 0.8rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: 'Space Mono', monospace; cursor: pointer; outline: none;" onchange="filterAudioLibrary()">
                         <option value="" data-loc="all_tags">All Tags</option>
                     </select>
@@ -3031,6 +3037,7 @@
         let currentLibraryTab = localStorage.getItem('activeLibraryTab') || 'files'; // 'files' or 'segments'
         let tabBeforeSearch = currentLibraryTab;
         let inSearchMode = false;
+        let activeExtensionFilter = null;
         let currentConnectionStatus = "ready"; // "ready", "auto_scanning", "unauthorized", "offline"
 
         function updateStatusBadgeUI() {
@@ -3526,7 +3533,7 @@
             
             const searchVal = (document.getElementById('audio-search-input')?.value || '').trim().toLowerCase();
             const tagVal = document.getElementById('audio-tag-filter')?.value || '';
-            const isSearching = searchVal !== '' || tagVal !== '';
+            const isSearching = searchVal !== '' || tagVal !== '' || activeExtensionFilter !== null;
             
             const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
             const isPaused = currentPlaybackStatus ? currentPlaybackStatus.paused : false;
@@ -3545,7 +3552,8 @@
                     const fileTags = audioLibraryFileTags[file] || [];
                     const matchesSearch = file.toLowerCase().includes(searchVal) || fileTags.some(tag => tag.toLowerCase().includes(searchVal));
                     const matchesTag = !tagVal || fileTags.includes(tagVal);
-                    return matchesSearch && matchesTag;
+                    const matchesExtension = !activeExtensionFilter || getFileExtension(file) === activeExtensionFilter;
+                    return matchesSearch && matchesTag && matchesExtension;
                 });
 
                 if (audioLibraryFiles.length === 0) {
@@ -3631,7 +3639,7 @@
             }
             
             // ─── EXPORTED SEGMENTS SECTION ───
-            if (isSearching || currentLibraryTab === 'segments') {
+            if (!activeExtensionFilter && (isSearching || currentLibraryTab === 'segments')) {
                 if (isSearching) {
                     const segmentsHeader = document.createElement('div');
                     segmentsHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
@@ -4074,6 +4082,12 @@
             const tagFilter = document.getElementById('audio-tag-filter');
             if (searchInput) searchInput.value = '';
             if (tagFilter) tagFilter.value = '';
+            
+            // Remove extension filter
+            activeExtensionFilter = null;
+            const badge = document.getElementById('extension-badge');
+            if (badge) badge.style.display = 'none';
+            
             filterAudioLibrary();
         }
 
@@ -4084,7 +4098,8 @@
             
             const hasSearch = (searchInput?.value || '').trim() !== '';
             const hasTag = (tagFilter?.value || '') !== '';
-            const isSearching = hasSearch || hasTag;
+            const hasExtension = activeExtensionFilter !== null;
+            const isSearching = hasSearch || hasTag || hasExtension;
             
             if (clearBtn) {
                 clearBtn.style.display = isSearching ? 'flex' : 'none';
@@ -4114,6 +4129,10 @@
             if (searchInput) searchInput.value = '';
             if (tagFilter) tagFilter.value = '';
             
+            activeExtensionFilter = null;
+            const badge = document.getElementById('extension-badge');
+            if (badge) badge.style.display = 'none';
+            
             currentLibraryTab = tab;
             tabBeforeSearch = tab;
             inSearchMode = false;
@@ -4132,7 +4151,7 @@
             
             const searchInput = document.getElementById('audio-search-input');
             const tagFilter = document.getElementById('audio-tag-filter');
-            const isSearching = (searchInput?.value || '').trim() !== '' || (tagFilter?.value || '') !== '';
+            const isSearching = (searchInput?.value || '').trim() !== '' || (tagFilter?.value || '') !== '' || activeExtensionFilter !== null;
             
             if (isSearching) {
                 tabsContainer.style.display = 'none';
@@ -4150,6 +4169,44 @@
                     tabSegments.style.borderBottomColor = 'var(--accent)';
                 }
             }
+        }
+
+        function handleSearchKey(event) {
+            if (event.key === ',' || event.key === ' ') {
+                const val = event.target.value.trim().toLowerCase();
+                const match = val.match(/^(?:\*\.|\.)([a-zA-Z0-9]+)$/);
+                if (match) {
+                    event.preventDefault();
+                    const ext = match[1];
+                    applyExtensionFilter(ext);
+                }
+            }
+        }
+
+        function applyExtensionFilter(ext) {
+            activeExtensionFilter = ext;
+            const badge = document.getElementById('extension-badge');
+            const badgeText = document.getElementById('extension-badge-text');
+            const searchInput = document.getElementById('audio-search-input');
+            if (badge && badgeText && searchInput) {
+                badgeText.innerText = `.${ext}`;
+                badge.style.display = 'inline-flex';
+                searchInput.value = '';
+            }
+            filterAudioLibrary();
+        }
+
+        function removeExtensionFilter(event) {
+            if (event) event.stopPropagation();
+            activeExtensionFilter = null;
+            const badge = document.getElementById('extension-badge');
+            if (badge) badge.style.display = 'none';
+            filterAudioLibrary();
+        }
+
+        function getFileExtension(filename) {
+            if (!filename || !filename.includes('.')) return '';
+            return filename.split('.').pop().toLowerCase();
         }
 
         function showExportPopover(event) {
