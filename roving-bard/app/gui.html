@@ -1176,40 +1176,35 @@
         .edit-tag-btn {
             top: -12px;
             right: -7px;
-            font-size: 12px;
-            transform: translateY(4px) scale(0.7);
-            text-shadow: 0 0 3px rgba(0, 242, 254, 0.8), 0 0 8px rgba(0, 242, 254, 0.6);
+            font-size: 14px;
+            transform: translateY(4px) scale(0.85);
             color: #ffffff;
         }
 
         .delete-tag-btn {
             bottom: -12px;
             right: -7px;
+            font-size: 14px;
             color: #ef4444;
-            transform: translateY(-4px) scale(0.7);
-            filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.9)) drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
-        }
-
-        body.light-theme .edit-tag-btn {
-            text-shadow: 0 0 3px rgba(46, 93, 168, 0.7), 0 0 8px rgba(46, 93, 168, 0.5);
-        }
-
-        body.light-theme .delete-tag-btn {
-            filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.8)) drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+            transform: translateY(-4px) scale(0.85);
         }
 
         .edit-tag-btn:hover {
-            transform: scale(1.3) !important;
-            text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(0, 242, 254, 1), 0 0 20px rgba(0, 242, 254, 0.8);
+            transform: translateY(4px) scale(1.15) !important;
+            filter: brightness(1.25);
         }
 
         body.light-theme .edit-tag-btn:hover {
-            text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(46, 93, 168, 1), 0 0 20px rgba(46, 93, 168, 0.7);
+            filter: brightness(1.15);
         }
 
         .delete-tag-btn:hover {
-            transform: scale(1.3) !important;
-            filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 8px rgba(239, 68, 68, 1)) drop-shadow(0 0 16px rgba(239, 68, 68, 0.8));
+            transform: translateY(-4px) scale(1.15) !important;
+            filter: brightness(1.25);
+        }
+
+        body.light-theme .delete-tag-btn:hover {
+            filter: brightness(1.15);
         }
 
         .edit-segment-btn {
