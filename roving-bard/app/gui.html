@@ -4362,7 +4362,6 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    alert(t("segment_save_success"));
                     activeSegment.start_time = startVal;
                     activeSegment.end_time = endVal;
                     activeSegment.volume = volumeVal;
