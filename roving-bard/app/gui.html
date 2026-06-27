@@ -5501,6 +5501,10 @@
                 const tagsList = details.querySelector('.audio-tags-list');
                 if (!title || !fileText || !tagsList) return;
                 
+                // Only adjust untagged entries
+                const hasExistingTags = details.querySelector('.badge-tag') !== null;
+                if (hasExistingTags) return;
+                
                 // Find the badge-tag-add element anywhere in details
                 const badge = details.querySelector('.badge-tag-add');
                 if (!badge) return;
