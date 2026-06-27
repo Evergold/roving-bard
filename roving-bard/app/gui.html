@@ -4028,7 +4028,6 @@
                 });
                 const res = await response.json();
                 if (res.status === 'success') {
-                    alert(t("segment_delete_success"));
                     await loadAudioLibrary();
                 } else {
                     alert(t("error_label") + res.message);
