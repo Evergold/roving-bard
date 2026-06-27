@@ -2059,15 +2059,14 @@
                 <span class="bar"></span>
             </button>
             
-            <!-- Menu Popover for Preferences -->
             <div id="menu-popover" class="menu-popover">
-                <div style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.2rem; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.95rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.2rem; display: flex; justify-content: space-between; align-items: center;">
                     <span data-loc="preferences_label">PREFERENCES</span>
                 </div>
                 
                 <!-- Theme option -->
                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="theme_label">Theme</span>
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="theme_label">Theme</span>
                     <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
                         <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme(event, 'dark')" data-loc-title="dark_theme_title" title="Dark Theme">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
@@ -2080,7 +2079,7 @@
 
                 <!-- Font Size Option -->
                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="font_size_label">Font Size</span>
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="font_size_label">Font Size</span>
                     <div class="font-size-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
                         <button id="font-size-s-btn" class="font-size-btn active" onclick="setFontSize(event, 's')" data-loc-title="font_normal" data-loc="font_normal_abc" title="Normal">abc</button>
                         <button id="font-size-m-btn" class="font-size-btn" onclick="setFontSize(event, 'm')" data-loc-title="font_larger" title="Larger">+</button>
@@ -2090,7 +2089,7 @@
 
                 <!-- Accessibility Option -->
                 <div style="display: block; margin-top: 0.4rem; line-height: 1.8;">
-                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace; margin-right: 0.8rem; vertical-align: middle; display: inline;" data-loc="accessible_mode_title">Accessible Mode</span>
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; margin-right: 0.8rem; vertical-align: middle; display: inline;" data-loc="accessible_mode_title">Accessible Mode</span>
                     <div class="theme-toggle-group" style="display: inline-flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; vertical-align: middle;">
                         <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible(event)" data-loc-title="accessible_mode_title" title="Accessible Mode">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
@@ -2103,14 +2102,14 @@
 
                 <!-- Language Selector -->
                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                    <span style="font-size: 0.75rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="language_label">Language</span>
-                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 10px; padding-right: 8px; height: 38px; box-sizing: border-box; width: fit-content;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px; flex-shrink: 0;">
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace;" data-loc="language_label">Language</span>
+                    <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 32px; padding: 2px; padding-left: 12px; padding-right: 10px; height: 42px; box-sizing: border-box; width: fit-content;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 6px; flex-shrink: 0;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="2" y1="12" x2="22" y2="12"></line>
                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                         </svg>
-                        <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.75rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
+                        <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 0.85rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
                             <option value="en-US">EN (US)</option>
                             <option value="en-GB">EN (UK)</option>
                             <option value="fr-FR">FR (FR)</option>
