@@ -1549,6 +1549,48 @@
             transform: scale(1) translateY(0);
         }
 
+        /* Toast notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+        .toast {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            padding: 0.55rem 1.1rem;
+            border-radius: 8px;
+            color: #fff;
+            background: rgba(30, 36, 48, 0.97);
+            border: 1px solid var(--border);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.toast-error {
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+        .toast.toast-warn {
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+
         /* Toggle switches */
         .switch-container {
             display: flex;
@@ -2859,6 +2901,7 @@
         let audioLibraryFileTags = {};
         let checkedBulkFiles = new Set();
         let segments = [];
+        let lastExportedState = null; // { start, end, volume, eq } — set after each successful export
         let isMuted = false;
         let preMuteVolume = 1.0;
         let lastStatusTime = Date.now();
@@ -3927,6 +3970,12 @@
                     input.style.borderColor = '#ef4444';
                     return;
                 }
+                // Guard against duplicate segment names
+                if (segments.some(s => s.name === segmentName)) {
+                    input.style.borderColor = '#f59e0b';
+                    showToast(`Segment "${segmentName}" already exists`, 'warn');
+                    return;
+                }
                 closeExportPopover();
                 await executeExportSegment(segmentName);
             };
@@ -3948,6 +3997,21 @@
             const popover = document.getElementById('export-confirm-popover');
             if (!popover) return;
             popover.classList.remove('active');
+        }
+
+        function showToast(message, type = 'error', durationMs = 3000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            // Trigger enter animation
+            requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+            }, durationMs);
         }
 
         async function executeExportSegment(trimmedName) {
@@ -3982,8 +4046,14 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    // Disable the export button immediately — the segment was just saved,
-                    // so there are no pending changes until the user modifies settings again.
+                    // Record the exported state as the new baseline so the button
+                    // only re-enables when the user actually changes something.
+                    lastExportedState = {
+                        start: startVal,
+                        end: endVal,
+                        volume: volumeVal,
+                        eq: eqVal
+                    };
                     const exportBtn = document.getElementById('export-segment-btn');
                     if (exportBtn) exportBtn.disabled = true;
                     await loadAudioLibrary();
@@ -4234,20 +4304,27 @@
                 exportBtn.innerText = t('export_btn');
                 exportBtn.onclick = showExportPopover;
 
-                const startDiff = Math.abs(startVal);
-                const endDiff = Math.abs(endVal - duration);
                 const currentVol = (currentPlaybackStatus.volume !== undefined && currentPlaybackStatus.volume !== null) ? currentPlaybackStatus.volume : 1.0;
-                const volDiff = Math.abs(currentVol - 1.0);
-                
                 const presetSelect = document.getElementById('eq-preset-select');
                 const currentPreset = presetSelect ? presetSelect.value : 'flat';
                 const isEQNonFlat = (currentPreset !== 'flat') && (currentPreset !== 'custom' || EQ_BANDS.some(freq => Math.abs(eqGains[freq] || 0) > 0.01));
 
-                if (startDiff > 0.01 || endDiff > 0.01 || volDiff > 0.01 || isEQNonFlat) {
-                    exportBtn.disabled = false;
+                let hasChanges;
+                if (lastExportedState) {
+                    // Compare against what was last exported — only enable on new divergence
+                    const eqChanged = isEQChangedFrom(lastExportedState.eq);
+                    hasChanges = Math.abs(startVal - lastExportedState.start) > 0.01 ||
+                                 Math.abs(endVal - lastExportedState.end) > 0.01 ||
+                                 Math.abs(currentVol - lastExportedState.volume) > 0.01 ||
+                                 eqChanged;
                 } else {
-                    exportBtn.disabled = true;
+                    // No prior export — enable if anything differs from bare defaults
+                    const startDiff = Math.abs(startVal);
+                    const endDiff = Math.abs(endVal - duration);
+                    const volDiff = Math.abs(currentVol - 1.0);
+                    hasChanges = startDiff > 0.01 || endDiff > 0.01 || volDiff > 0.01 || isEQNonFlat;
                 }
+                exportBtn.disabled = !hasChanges;
             }
             updateExportButtonWidth();
         }
@@ -6269,5 +6346,6 @@
             </div>
         </div>
     </div>
+    <div id="toast-container"></div>
 </body>
 </html>
