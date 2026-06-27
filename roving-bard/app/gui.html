@@ -2874,10 +2874,14 @@
                     tagsRegistry = audioRes.tags_registry || [];
                     
                     // Always check the currently selected entry after it's loaded
-                    const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
-                    const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
-                    if (activeTrack && Math.abs(activeStart) < 0.05) {
-                        checkedBulkFiles.add(activeTrack);
+                    if (activeSegment) {
+                        checkedBulkFiles.add(`segment:${activeSegment.name}`);
+                    } else {
+                        const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+                        const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
+                        if (activeTrack && Math.abs(activeStart) < 0.05) {
+                            checkedBulkFiles.add(`file:${activeTrack}`);
+                        }
                     }
                 }
                 if (segmentsRes.status === 'success') {
@@ -2972,10 +2976,10 @@
                         tagsHtml += `</div>`;
                     }
 
-                    const isChecked = checkedBulkFiles.has(file);
+                    const isChecked = checkedBulkFiles.has(`file:${file}`);
                     item.innerHTML = `
-                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
-                            <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
+                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
+                            <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}', 'file')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${file}</div>
@@ -3066,7 +3070,11 @@
                         tagsHtml += `</div>`;
                     }
 
+                    const isChecked = checkedBulkFiles.has(`segment:${segment.name}`);
                     item.innerHTML = `
+                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
+                            <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
+                        </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${segment.name}</div>
                             <div class="mapping-item-sub">${subtitleText}</div>
@@ -3144,18 +3152,43 @@
                     const val = input.value.trim().toLowerCase();
                     input.replaceWith(badgeAdd);
                     if (val) {
+                        const filenames = Array.from(checkedBulkFiles)
+                            .filter(k => k.startsWith('file:'))
+                            .map(k => k.substring(5));
+                        const segNames = Array.from(checkedBulkFiles)
+                            .filter(k => k.startsWith('segment:'))
+                            .map(k => k.substring(8));
+                        
                         if (type === 'file') {
-                            const filenames = Array.from(checkedBulkFiles);
-                            if (filenames.length > 0) {
-                                if (!filenames.includes(key)) {
-                                    filenames.push(key);
+                            if (filenames.length > 0 || segNames.length > 0) {
+                                if (filenames.length > 0) {
+                                    if (!filenames.includes(key)) filenames.push(key);
+                                    await performBulkAddTag(filenames, val);
                                 }
-                                await performBulkAddTag(filenames, val);
+                                if (segNames.length > 0) {
+                                    await performBulkAddSegmentTag(segNames, val);
+                                }
+                                deselectAllBulkFiles();
+                                populateTagFilterDropdown();
+                                renderAudioFiles();
                             } else {
                                 await addFileTag(key, val);
                             }
-                        } else {
-                            await addSegmentTag(key, val);
+                        } else if (type === 'segment') {
+                            if (filenames.length > 0 || segNames.length > 0) {
+                                if (filenames.length > 0) {
+                                    await performBulkAddTag(filenames, val);
+                                }
+                                if (segNames.length > 0) {
+                                    if (!segNames.includes(key)) segNames.push(key);
+                                    await performBulkAddSegmentTag(segNames, val);
+                                }
+                                deselectAllBulkFiles();
+                                populateTagFilterDropdown();
+                                renderAudioFiles();
+                            } else {
+                                await addSegmentTag(key, val);
+                            }
                         }
                     }
                 }, 200);
@@ -3369,6 +3402,8 @@
 
         async function selectSegment(name, trackFile, startTime, endTime, volume) {
             try {
+                checkedBulkFiles.clear();
+                checkedBulkFiles.add(`segment:${name}`);
                 const segmentObj = segments.find(s => s.name === name);
                 const savedEq = (segmentObj && segmentObj.eq) ? segmentObj.eq : 'flat';
                 activeSegment = { name, track_file: trackFile, start_time: startTime, end_time: endTime, volume: volume, eq: savedEq };
@@ -3645,7 +3680,7 @@
         async function selectAudioFile(filename) {
             try {
                 checkedBulkFiles.clear();
-                checkedBulkFiles.add(filename);
+                checkedBulkFiles.add(`file:${filename}`);
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
                 isTransitioningTrack = true;
@@ -3668,7 +3703,7 @@
         async function playAudioFile(filename) {
             try {
                 checkedBulkFiles.clear();
-                checkedBulkFiles.add(filename);
+                checkedBulkFiles.add(`file:${filename}`);
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
                 isTransitioningTrack = true;
@@ -5212,38 +5247,44 @@
             updateBulkTagBar();
         }
 
-        function isTrackActive(filename) {
-            const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
-            const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
-            return (activeTrack === filename && Math.abs(activeStart) < 0.05);
+        function isTrackActive(key, type) {
+            if (type === 'segment') {
+                return (activeSegment && activeSegment.name === key);
+            } else {
+                const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+                const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
+                return (activeTrack === key && Math.abs(activeStart) < 0.05 && !activeSegment);
+            }
         }
 
-        function handleCheckboxChange(event, filename) {
+        function handleCheckboxChange(event, key, type) {
             const chk = event.currentTarget;
-            if (isTrackActive(filename)) {
+            if (isTrackActive(key, type)) {
                 chk.checked = true;
                 return;
             }
+            const bulkKey = `${type}:${key}`;
             if (chk.checked) {
-                checkedBulkFiles.add(filename);
+                checkedBulkFiles.add(bulkKey);
             } else {
-                checkedBulkFiles.delete(filename);
+                checkedBulkFiles.delete(bulkKey);
             }
             updateBulkTagBar();
         }
 
-        function toggleCheckbox(event, filename) {
-            if (isTrackActive(filename)) {
+        function toggleCheckbox(event, key, type) {
+            if (isTrackActive(key, type)) {
                 return;
             }
             const cell = event.currentTarget;
             const chk = cell.querySelector('.bulk-select-chk');
             if (chk) {
                 chk.checked = !chk.checked;
+                const bulkKey = `${type}:${key}`;
                 if (chk.checked) {
-                    checkedBulkFiles.add(filename);
+                    checkedBulkFiles.add(bulkKey);
                 } else {
-                    checkedBulkFiles.delete(filename);
+                    checkedBulkFiles.delete(bulkKey);
                 }
                 updateBulkTagBar();
             }
@@ -5268,15 +5309,75 @@
                     if (typeof tagsRegistry !== 'undefined' && Array.isArray(tagsRegistry) && !tagsRegistry.includes(tagName)) {
                         tagsRegistry.push(tagName);
                     }
-                    
-                    deselectAllBulkFiles();
-                    populateTagFilterDropdown();
-                    renderAudioFiles();
                 } else {
                     alert((t("failed_add_tag") || "Failed to add tag: ") + res.message);
                 }
             } catch (err) {
                 console.error(t("err_add_file_tag") || "Error adding file tag:", err);
+            }
+        }
+
+        async function performBulkAddSegmentTag(segmentNames, tagName) {
+            for (const name of segmentNames) {
+                const seg = segments.find(s => s.name === name);
+                if (seg) {
+                    const currentTags = seg.tags || [];
+                    if (!currentTags.includes(tagName)) {
+                        const newTags = [...currentTags, tagName];
+                        try {
+                            const response = await apiFetch('/api/segments', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    name: seg.name,
+                                    track_file: seg.track_file,
+                                    start_time: seg.start_time,
+                                    end_time: seg.end_time,
+                                    volume: seg.volume,
+                                    tags: newTags
+                                })
+                            });
+                            const res = await response.json();
+                            if (res.status === 'success') {
+                                seg.tags = newTags;
+                            }
+                        } catch (err) {
+                            console.error("Error adding tag to segment: " + name, err);
+                        }
+                    }
+                }
+            }
+        }
+
+        async function performBulkRemoveSegmentTag(segmentNames, tagName) {
+            for (const name of segmentNames) {
+                const seg = segments.find(s => s.name === name);
+                if (seg) {
+                    const currentTags = seg.tags || [];
+                    if (currentTags.includes(tagName)) {
+                        const newTags = currentTags.filter(t => t !== tagName);
+                        try {
+                            const response = await apiFetch('/api/segments', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    name: seg.name,
+                                    track_file: seg.track_file,
+                                    start_time: seg.start_time,
+                                    end_time: seg.end_time,
+                                    volume: seg.volume,
+                                    tags: newTags
+                                })
+                            });
+                            const res = await response.json();
+                            if (res.status === 'success') {
+                                seg.tags = newTags;
+                            }
+                        } catch (err) {
+                            console.error("Error removing tag from segment: " + name, err);
+                        }
+                    }
+                }
             }
         }
 
@@ -5287,9 +5388,24 @@
             const tagName = tagInput.value.trim().toLowerCase();
             if (!tagName) return;
             
-            const filenames = Array.from(checkedBulkFiles);
-            await performBulkAddTag(filenames, tagName);
+            const filenames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('file:'))
+                .map(k => k.substring(5));
+            const segNames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('segment:'))
+                .map(k => k.substring(8));
+            
+            if (filenames.length > 0) {
+                await performBulkAddTag(filenames, tagName);
+            }
+            if (segNames.length > 0) {
+                await performBulkAddSegmentTag(segNames, tagName);
+            }
+            
             tagInput.value = '';
+            deselectAllBulkFiles();
+            populateTagFilterDropdown();
+            renderAudioFiles();
         }
 
         async function bulkRemoveTag() {
@@ -5299,28 +5415,38 @@
             const tagName = tagInput.value.trim().toLowerCase();
             if (!tagName) return;
             
-            const filenames = Array.from(checkedBulkFiles);
+            const filenames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('file:'))
+                .map(k => k.substring(5));
+            const segNames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('segment:'))
+                .map(k => k.substring(8));
             
             try {
-                const response = await apiFetch('/api/file-tags/bulk', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ filenames, tags: [tagName], action: 'remove' })
-                });
-                const res = await response.json();
-                if (res.status === 'success') {
-                    filenames.forEach(file => {
-                        const current = audioLibraryFileTags[file] || [];
-                        audioLibraryFileTags[file] = current.filter(t => t !== tagName);
+                if (filenames.length > 0) {
+                    const response = await apiFetch('/api/file-tags/bulk', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ filenames, tags: [tagName], action: 'remove' })
                     });
-                    
-                    tagInput.value = '';
-                    deselectAllBulkFiles();
-                    populateTagFilterDropdown();
-                    renderAudioFiles();
-                } else {
-                    alert((t("failed_remove_tag") || "Failed to remove tag: ") + res.message);
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        filenames.forEach(file => {
+                            const current = audioLibraryFileTags[file] || [];
+                            audioLibraryFileTags[file] = current.filter(t => t !== tagName);
+                        });
+                    } else {
+                        alert((t("failed_remove_tag") || "Failed to remove tag: ") + res.message);
+                    }
                 }
+                if (segNames.length > 0) {
+                    await performBulkRemoveSegmentTag(segNames, tagName);
+                }
+                
+                tagInput.value = '';
+                deselectAllBulkFiles();
+                populateTagFilterDropdown();
+                renderAudioFiles();
             } catch (err) {
                 console.error(t("err_remove_file_tag") || "Error removing file tag:", err);
             }
