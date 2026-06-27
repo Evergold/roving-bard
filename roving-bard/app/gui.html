@@ -5881,6 +5881,15 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     let dismissed = false;
+                    // EQ panel
+                    if (eqPanelOpen) {
+                        const panel = document.getElementById('eq-panel');
+                        const btn = document.getElementById('eq-btn');
+                        eqPanelOpen = false;
+                        if (panel) panel.classList.remove('eq-panel-open');
+                        if (btn) btn.classList.remove('eq-active');
+                        dismissed = true;
+                    }
                     // Menu popover
                     if (menuPopoverOpen) {
                         toggleMenuPopOver();
