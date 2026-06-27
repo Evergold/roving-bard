@@ -1445,12 +1445,28 @@
             font-weight: 600;
             font-family: 'Space Mono', monospace;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
             user-select: none;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            background: rgba(18, 24, 38, 0.75) !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
         .status-badge:hover {
-            filter: brightness(1.2);
+            background: rgba(18, 24, 38, 0.9) !important;
+            transform: translateY(-1px);
+        }
+
+        body.light-theme .status-badge {
+            background: rgba(210, 213, 216, 0.75) !important;
+            border: 1px solid #b4b8c0 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .status-badge:hover {
+            background: rgba(210, 213, 216, 0.9) !important;
         }
 
         .status-badge .badge-symbol {
@@ -1471,26 +1487,30 @@
             transition: all 0.2s ease;
         }
 
-
-
         .status-badge.online {
-            background-color: rgba(57, 255, 20, 0.1);
-            color: var(--neon-green);
-            border: 1px solid rgba(57, 255, 20, 0.2);
+            color: var(--neon-green) !important;
         }
 
         .status-badge.online:hover {
-            box-shadow: 0 0 10px rgba(57, 255, 20, 0.15);
+            box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2), inset 0 0 8px rgba(57, 255, 20, 0.1) !important;
+        }
+
+        .status-badge.online .status-dot {
+            background-color: var(--neon-green) !important;
+            box-shadow: 0 0 8px var(--neon-green);
         }
 
         .status-badge.offline {
-            background-color: rgba(255, 77, 77, 0.1);
-            color: #ff4d4d;
-            border: 1px solid rgba(255, 77, 77, 0.2);
+            color: #ff4d4d !important;
         }
 
         .status-badge.offline:hover {
-            box-shadow: 0 0 10px rgba(255, 77, 77, 0.15);
+            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2), inset 0 0 8px rgba(255, 77, 77, 0.1) !important;
+        }
+
+        .status-badge.offline .status-dot {
+            background-color: #ff4d4d !important;
+            box-shadow: 0 0 8px #ff4d4d;
         }
 
         /* Toggle switches */
@@ -1791,14 +1811,10 @@
         }
 
         body.light-theme .status-badge.online {
-            background: #d6e4d7 !important;
-            border-color: #b8c8ba !important;
             color: #00531b !important;
         }
 
         body.light-theme .status-badge.offline {
-            background: #f9d8d6 !important;
-            border-color: #e5b9b6 !important;
             color: #690005 !important;
         }
 
