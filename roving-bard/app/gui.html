@@ -2926,6 +2926,17 @@
                             Exported Segments
                         </div>
                     </div>
+                    <script>
+                        (function() {
+                            const activeTab = localStorage.getItem('activeLibraryTab') || 'files';
+                            if (activeTab === 'segments') {
+                                document.getElementById('tab-audio-files').style.color = 'var(--text-muted)';
+                                document.getElementById('tab-audio-files').style.borderBottomColor = 'transparent';
+                                document.getElementById('tab-exported-segments').style.color = 'var(--accent)';
+                                document.getElementById('tab-exported-segments').style.borderBottomColor = 'var(--accent)';
+                            }
+                        })();
+                    </script>
                     <div id="audio-library-resizable" class="audio-library-resizable">
                         <div id="audio-files-list" class="mappings-list audio-list-scroll">
                             <!-- Audio files rendered here -->
