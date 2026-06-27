@@ -1225,7 +1225,6 @@
         }
 
         .badge-tag.editing {
-            transform: scale(1.08);
             padding: 0 !important; /* Zero padding on badge container during edit */
             transition: all 0.2s ease;
             box-shadow: none !important;
@@ -1271,7 +1270,7 @@
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
-            padding: 0.35rem 0.6rem !important;
+            padding: 0.2rem 0.4rem !important; /* Keep original padding sizes */
             margin: 0 !important;
             color: inherit !important;
         }
@@ -5597,9 +5596,9 @@
             input.style.fontFamily = "'Space Mono', monospace";
             input.style.fontSize = '0.75rem';
             input.style.outline = 'none';
-            input.style.padding = '0.35rem 0.6rem'; // Move tag padding directly onto input
+            input.style.padding = '0.2rem 0.4rem'; // Move tag padding directly onto input
             input.style.margin = '0';
-            input.style.width = Math.max(oldTag.length * 8 + 30, 80) + 'px'; // Give more room for click targeting
+            input.style.width = Math.max(oldTag.length * 8 + 16, 60) + 'px'; // Keep original width ratios
             input.style.textAlign = 'center';
             input.style.boxSizing = 'border-box';
             
