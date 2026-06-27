@@ -4125,20 +4125,19 @@
         }
 
         function updateTabUi() {
+            const tabsContainer = document.getElementById('audio-library-tabs');
             const tabFiles = document.getElementById('tab-audio-files');
             const tabSegments = document.getElementById('tab-exported-segments');
-            if (!tabFiles || !tabSegments) return;
+            if (!tabFiles || !tabSegments || !tabsContainer) return;
             
             const searchInput = document.getElementById('audio-search-input');
             const tagFilter = document.getElementById('audio-tag-filter');
             const isSearching = (searchInput?.value || '').trim() !== '' || (tagFilter?.value || '') !== '';
             
             if (isSearching) {
-                tabFiles.style.color = 'var(--text-muted)';
-                tabFiles.style.borderBottomColor = 'transparent';
-                tabSegments.style.color = 'var(--text-muted)';
-                tabSegments.style.borderBottomColor = 'transparent';
+                tabsContainer.style.display = 'none';
             } else {
+                tabsContainer.style.display = 'flex';
                 if (currentLibraryTab === 'files') {
                     tabFiles.style.color = 'var(--neon-blue)';
                     tabFiles.style.borderBottomColor = 'var(--neon-blue)';
