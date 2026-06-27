@@ -2334,19 +2334,7 @@
                         <div class="resize-grip grip-left"><span></span><span></span><span></span></div>
                         <div class="resize-grip grip-right"><span></span><span></span><span></span></div>
                     </div>
-                    <!-- Bulk Tag Bar -->
-                    <div id="bulk-tag-bar" class="bulk-tag-bar" style="display: none; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--neon-blue); border-radius: 8px; padding: 0.6rem 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); align-items: center; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 0.8rem; box-sizing: border-box; margin-top: 10px; color: white; width: 100%;">
-                        <div style="color: white; font-weight: bold; display: flex; align-items: center; gap: 0.5rem;">
-                            <span id="bulk-selected-count" style="color: var(--neon-blue); font-weight: bold;">0</span>
-                            <span>files selected</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: white;">
-                            <input type="text" id="bulk-tag-input" list="all-existing-tags-list" data-loc-placeholder="tag_placeholder" placeholder="Tag..." style="width: 100px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.25rem 0.5rem; color: white; outline: none; font-family: inherit;">
-                            <button class="btn" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: auto;" onclick="bulkAddTag()">+ Add</button>
-                            <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: auto; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="bulkRemoveTag()">- Remove</button>
-                            <span onclick="deselectAllBulkFiles()" style="cursor: pointer; opacity: 0.7; color: white; margin-left: 0.5rem; text-decoration: underline;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">Cancel</span>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -3239,24 +3227,45 @@
 
         async function removeFileTag(event, filename, tagName) {
             event.stopPropagation();
-            const currentTags = audioLibraryFileTags[filename] || [];
-            const newTags = currentTags.filter(t => t !== tagName);
-            try {
-                const response = await apiFetch('/api/file-tags', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ filename, tags: newTags })
-                });
-                const res = await response.json();
-                if (res.status === 'success') {
-                    audioLibraryFileTags[filename] = newTags;
-                    populateTagFilterDropdown();
-                    renderAudioFiles();
-                } else {
-                    alert(t("failed_remove_tag") + res.message);
+            
+            const filenames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('file:'))
+                .map(k => k.substring(5));
+            const segNames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('segment:'))
+                .map(k => k.substring(8));
+                
+            if (filenames.length > 0 || segNames.length > 0) {
+                if (filenames.length > 0) {
+                    if (!filenames.includes(filename)) filenames.push(filename);
+                    await performBulkRemoveTag(filenames, tagName);
                 }
-            } catch (err) {
-                console.error(t("err_remove_file_tag"), err);
+                if (segNames.length > 0) {
+                    await performBulkRemoveSegmentTag(segNames, tagName);
+                }
+                deselectAllBulkFiles();
+                populateTagFilterDropdown();
+                renderAudioFiles();
+            } else {
+                const currentTags = audioLibraryFileTags[filename] || [];
+                const newTags = currentTags.filter(t => t !== tagName);
+                try {
+                    const response = await apiFetch('/api/file-tags', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ filename, tags: newTags })
+                    });
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        audioLibraryFileTags[filename] = newTags;
+                        populateTagFilterDropdown();
+                        renderAudioFiles();
+                    } else {
+                        alert((t("failed_remove_tag") || "Failed to remove tag: ") + res.message);
+                    }
+                } catch (err) {
+                    console.error(t("err_remove_file_tag") || "Error removing file tag:", err);
+                }
             }
         }
 
@@ -3285,10 +3294,10 @@
                             populateTagFilterDropdown();
                             renderAudioFiles();
                         } else {
-                            alert(t("failed_add_segment_tag") + res.message);
+                            alert((t("failed_add_segment_tag") || "Failed to add segment tag: ") + res.message);
                         }
                     } catch (err) {
-                        console.error(t("err_add_segment_tag"), err);
+                        console.error(t("err_add_segment_tag") || "Error adding segment tag:", err);
                     }
                 }
             }
@@ -3296,33 +3305,54 @@
 
         async function removeSegmentTag(event, segmentName, tagName) {
             event.stopPropagation();
-            const seg = segments.find(s => s.name === segmentName);
-            if (seg) {
-                const currentTags = seg.tags || [];
-                const newTags = currentTags.filter(t => t !== tagName);
-                try {
-                    const response = await apiFetch('/api/segments', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            name: seg.name,
-                            track_file: seg.track_file,
-                            start_time: seg.start_time,
-                            end_time: seg.end_time,
-                            volume: seg.volume,
-                            tags: newTags
-                        })
-                    });
-                    const res = await response.json();
-                    if (res.status === 'success') {
-                        seg.tags = newTags;
-                        populateTagFilterDropdown();
-                        renderAudioFiles();
-                    } else {
-                        alert(t("failed_remove_segment_tag") + res.message);
+            
+            const filenames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('file:'))
+                .map(k => k.substring(5));
+            const segNames = Array.from(checkedBulkFiles)
+                .filter(k => k.startsWith('segment:'))
+                .map(k => k.substring(8));
+                
+            if (filenames.length > 0 || segNames.length > 0) {
+                if (filenames.length > 0) {
+                    await performBulkRemoveTag(filenames, tagName);
+                }
+                if (segNames.length > 0) {
+                    if (!segNames.includes(segmentName)) segNames.push(segmentName);
+                    await performBulkRemoveSegmentTag(segNames, tagName);
+                }
+                deselectAllBulkFiles();
+                populateTagFilterDropdown();
+                renderAudioFiles();
+            } else {
+                const seg = segments.find(s => s.name === segmentName);
+                if (seg) {
+                    const currentTags = seg.tags || [];
+                    const newTags = currentTags.filter(t => t !== tagName);
+                    try {
+                        const response = await apiFetch('/api/segments', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                name: seg.name,
+                                track_file: seg.track_file,
+                                start_time: seg.start_time,
+                                end_time: seg.end_time,
+                                volume: seg.volume,
+                                tags: newTags
+                            })
+                        });
+                        const res = await response.json();
+                        if (res.status === 'success') {
+                            seg.tags = newTags;
+                            populateTagFilterDropdown();
+                            renderAudioFiles();
+                        } else {
+                            alert((t("failed_remove_segment_tag") || "Failed to remove segment tag: ") + res.message);
+                        }
+                    } catch (err) {
+                        console.error(t("err_remove_segment_tag") || "Error removing segment tag:", err);
                     }
-                } catch (err) {
-                    console.error(t("err_remove_segment_tag"), err);
                 }
             }
         }
@@ -5226,19 +5256,6 @@
             });
         }
 
-        function updateBulkTagBar() {
-            const count = checkedBulkFiles.size;
-            const bar = document.getElementById('bulk-tag-bar');
-            const countEl = document.getElementById('bulk-selected-count');
-            
-            if (count > 1) {
-                if (countEl) countEl.innerText = count;
-                if (bar) bar.style.display = 'flex';
-            } else {
-                if (bar) bar.style.display = 'none';
-            }
-        }
-        
         function deselectAllBulkFiles() {
             checkedBulkFiles.clear();
             let activeKey = null;
@@ -5260,7 +5277,6 @@
                     chk.checked = false;
                 }
             });
-            updateBulkTagBar();
         }
 
         function isTrackActive(key, type) {
@@ -5284,7 +5300,6 @@
             } else {
                 checkedBulkFiles.delete(bulkKey);
             }
-            updateBulkTagBar();
         }
 
         function toggleCheckbox(event, key, type) {
@@ -5301,7 +5316,6 @@
                 } else {
                     checkedBulkFiles.delete(bulkKey);
                 }
-                updateBulkTagBar();
             }
         }
 
@@ -5329,6 +5343,27 @@
                 }
             } catch (err) {
                 console.error(t("err_add_file_tag") || "Error adding file tag:", err);
+            }
+        }
+
+        async function performBulkRemoveTag(filenames, tagName) {
+            try {
+                const response = await apiFetch('/api/file-tags/bulk', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filenames, tags: [tagName], action: 'remove' })
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    filenames.forEach(file => {
+                        const current = audioLibraryFileTags[file] || [];
+                        audioLibraryFileTags[file] = current.filter(t => t !== tagName);
+                    });
+                } else {
+                    alert((t("failed_remove_tag") || "Failed to remove tag: ") + res.message);
+                }
+            } catch (err) {
+                console.error(t("err_remove_file_tag") || "Error removing file tag:", err);
             }
         }
 
@@ -5393,77 +5428,6 @@
                         }
                     }
                 }
-            }
-        }
-
-        async function bulkAddTag() {
-            const count = checkedBulkFiles.size;
-            if (count === 0) return;
-            const tagInput = document.getElementById('bulk-tag-input');
-            const tagName = tagInput.value.trim().toLowerCase();
-            if (!tagName) return;
-            
-            const filenames = Array.from(checkedBulkFiles)
-                .filter(k => k.startsWith('file:'))
-                .map(k => k.substring(5));
-            const segNames = Array.from(checkedBulkFiles)
-                .filter(k => k.startsWith('segment:'))
-                .map(k => k.substring(8));
-            
-            if (filenames.length > 0) {
-                await performBulkAddTag(filenames, tagName);
-            }
-            if (segNames.length > 0) {
-                await performBulkAddSegmentTag(segNames, tagName);
-            }
-            
-            tagInput.value = '';
-            deselectAllBulkFiles();
-            populateTagFilterDropdown();
-            renderAudioFiles();
-        }
-
-        async function bulkRemoveTag() {
-            const count = checkedBulkFiles.size;
-            if (count === 0) return;
-            const tagInput = document.getElementById('bulk-tag-input');
-            const tagName = tagInput.value.trim().toLowerCase();
-            if (!tagName) return;
-            
-            const filenames = Array.from(checkedBulkFiles)
-                .filter(k => k.startsWith('file:'))
-                .map(k => k.substring(5));
-            const segNames = Array.from(checkedBulkFiles)
-                .filter(k => k.startsWith('segment:'))
-                .map(k => k.substring(8));
-            
-            try {
-                if (filenames.length > 0) {
-                    const response = await apiFetch('/api/file-tags/bulk', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ filenames, tags: [tagName], action: 'remove' })
-                    });
-                    const res = await response.json();
-                    if (res.status === 'success') {
-                        filenames.forEach(file => {
-                            const current = audioLibraryFileTags[file] || [];
-                            audioLibraryFileTags[file] = current.filter(t => t !== tagName);
-                        });
-                    } else {
-                        alert((t("failed_remove_tag") || "Failed to remove tag: ") + res.message);
-                    }
-                }
-                if (segNames.length > 0) {
-                    await performBulkRemoveSegmentTag(segNames, tagName);
-                }
-                
-                tagInput.value = '';
-                deselectAllBulkFiles();
-                populateTagFilterDropdown();
-                renderAudioFiles();
-            } catch (err) {
-                console.error(t("err_remove_file_tag") || "Error removing file tag:", err);
             }
         }
 </script>
