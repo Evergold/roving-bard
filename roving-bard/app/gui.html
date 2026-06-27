@@ -2403,6 +2403,7 @@
         let audioLibraryFiles = [];
         let tagsRegistry = [];
         let audioLibraryFileTags = {};
+        let checkedBulkFiles = new Set();
         let segments = [];
         let isMuted = false;
         let preMuteVolume = 1.0;
@@ -2858,6 +2859,13 @@
                     audioLibraryFiles = audioRes.files;
                     audioLibraryFileTags = audioRes.file_tags || {};
                     tagsRegistry = audioRes.tags_registry || [];
+                    
+                    // Always check the currently selected entry after it's loaded
+                    const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+                    const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
+                    if (activeTrack && Math.abs(activeStart) < 0.05) {
+                        checkedBulkFiles.add(activeTrack);
+                    }
                 }
                 if (segmentsRes.status === 'success') {
                     segments = segmentsRes.segments || [];
@@ -2951,9 +2959,12 @@
                         tagsHtml += `</div>`;
                     }
 
+                    const isChecked = checkedBulkFiles.has(file);
                     item.innerHTML = `
-                        <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); updateBulkTagBar();" style="margin-right: 0.5rem; cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.1); flex-shrink: 0;">
-                        <div class="mapping-item-details"` + `  style="flex: 1; min-width: 0;">
+                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 1rem 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                            <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
+                        </div>
+                        <div class="mapping-item-details" style="flex: 1; min-width: 0;">
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap;">${file}</div>
                             ${tagsHtml}
                         </div>
@@ -3121,7 +3132,15 @@
                     input.replaceWith(badgeAdd);
                     if (val) {
                         if (type === 'file') {
-                            await addFileTag(key, val);
+                            const filenames = Array.from(checkedBulkFiles);
+                            if (filenames.length > 0) {
+                                if (!filenames.includes(key)) {
+                                    filenames.push(key);
+                                }
+                                await performBulkAddTag(filenames, val);
+                            } else {
+                                await addFileTag(key, val);
+                            }
                         } else {
                             await addSegmentTag(key, val);
                         }
@@ -3612,6 +3631,7 @@
 
         async function selectAudioFile(filename) {
             try {
+                checkedBulkFiles.add(filename);
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
                 isTransitioningTrack = true;
@@ -3633,6 +3653,7 @@
 
         async function playAudioFile(filename) {
             try {
+                checkedBulkFiles.add(filename);
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
                 isTransitioningTrack = true;
@@ -5158,33 +5179,49 @@
         }
 
         function updateBulkTagBar() {
-            const chks = document.querySelectorAll('.bulk-select-chk:checked');
-            const count = chks.length;
+            const count = checkedBulkFiles.size;
             const bar = document.getElementById('bulk-tag-bar');
             const countEl = document.getElementById('bulk-selected-count');
             
             if (count > 0) {
-                countEl.innerText = count;
-                bar.style.display = 'flex';
+                if (countEl) countEl.innerText = count;
+                if (bar) bar.style.display = 'flex';
             } else {
-                bar.style.display = 'none';
+                if (bar) bar.style.display = 'none';
             }
         }
         
         function deselectAllBulkFiles() {
+            checkedBulkFiles.clear();
             document.querySelectorAll('.bulk-select-chk').forEach(chk => chk.checked = false);
             updateBulkTagBar();
         }
 
-        async function bulkAddTag() {
-            const chks = document.querySelectorAll('.bulk-select-chk:checked');
-            if (chks.length === 0) return;
-            const tagInput = document.getElementById('bulk-tag-input');
-            const tagName = tagInput.value.trim().toLowerCase();
-            if (!tagName) return;
-            
-            const filenames = Array.from(chks).map(chk => chk.getAttribute('data-file'));
-            
+        function handleCheckboxChange(event, filename) {
+            const chk = event.currentTarget;
+            if (chk.checked) {
+                checkedBulkFiles.add(filename);
+            } else {
+                checkedBulkFiles.delete(filename);
+            }
+            updateBulkTagBar();
+        }
+
+        function toggleCheckbox(event, filename) {
+            const cell = event.currentTarget;
+            const chk = cell.querySelector('.bulk-select-chk');
+            if (chk) {
+                chk.checked = !chk.checked;
+                if (chk.checked) {
+                    checkedBulkFiles.add(filename);
+                } else {
+                    checkedBulkFiles.delete(filename);
+                }
+                updateBulkTagBar();
+            }
+        }
+
+        async function performBulkAddTag(filenames, tagName) {
             try {
                 const response = await apiFetch('/api/file-tags/bulk', {
                     method: 'POST',
@@ -5204,26 +5241,37 @@
                         tagsRegistry.push(tagName);
                     }
                     
-                    tagInput.value = '';
                     deselectAllBulkFiles();
                     populateTagFilterDropdown();
                     renderAudioFiles();
                 } else {
-                    alert(t("failed_add_tag") + res.message);
+                    alert((t("failed_add_tag") || "Failed to add tag: ") + res.message);
                 }
             } catch (err) {
-                console.error(t("err_add_file_tag"), err);
+                console.error(t("err_add_file_tag") || "Error adding file tag:", err);
             }
         }
 
-        async function bulkRemoveTag() {
-            const chks = document.querySelectorAll('.bulk-select-chk:checked');
-            if (chks.length === 0) return;
+        async function bulkAddTag() {
+            const count = checkedBulkFiles.size;
+            if (count === 0) return;
             const tagInput = document.getElementById('bulk-tag-input');
             const tagName = tagInput.value.trim().toLowerCase();
             if (!tagName) return;
             
-            const filenames = Array.from(chks).map(chk => chk.getAttribute('data-file'));
+            const filenames = Array.from(checkedBulkFiles);
+            await performBulkAddTag(filenames, tagName);
+            tagInput.value = '';
+        }
+
+        async function bulkRemoveTag() {
+            const count = checkedBulkFiles.size;
+            if (count === 0) return;
+            const tagInput = document.getElementById('bulk-tag-input');
+            const tagName = tagInput.value.trim().toLowerCase();
+            if (!tagName) return;
+            
+            const filenames = Array.from(checkedBulkFiles);
             
             try {
                 const response = await apiFetch('/api/file-tags/bulk', {
@@ -5243,10 +5291,10 @@
                     populateTagFilterDropdown();
                     renderAudioFiles();
                 } else {
-                    alert(t("failed_remove_tag") + res.message);
+                    alert((t("failed_remove_tag") || "Failed to remove tag: ") + res.message);
                 }
             } catch (err) {
-                console.error(t("err_remove_file_tag"), err);
+                console.error(t("err_remove_file_tag") || "Error removing file tag:", err);
             }
         }
 </script>
