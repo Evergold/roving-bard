@@ -1214,21 +1214,20 @@
 
         .edit-segment-btn {
             position: absolute;
-            top: -10px;
-            right: -2px;
-            font-size: 11px;
+            top: -9px;
+            right: 2px;
+            font-size: 14px;
             cursor: pointer;
             opacity: 0;
             pointer-events: none;
             transition: all 0.2s ease;
             z-index: 15;
             color: #ffffff;
-            text-shadow: 0 0 3px rgba(0, 242, 254, 0.8), 0 0 8px rgba(0, 242, 254, 0.6);
             transform: scale(0.85);
         }
 
         .filename-container:hover .edit-segment-btn {
-            opacity: 1;
+            opacity: 0.85;
             pointer-events: auto;
         }
 
@@ -1237,17 +1236,18 @@
         }
 
         body.light-theme .edit-segment-btn {
-            text-shadow: 0 0 3px rgba(46, 93, 168, 0.7), 0 0 8px rgba(46, 93, 168, 0.5);
             color: #333333;
         }
 
         .edit-segment-btn:hover {
             transform: scale(1.15);
-            text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(0, 242, 254, 1);
+            opacity: 1 !important;
+            filter: brightness(1.25);
         }
 
         body.light-theme .edit-segment-btn:hover {
-            text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(46, 93, 168, 1);
+            opacity: 1 !important;
+            filter: brightness(1.15);
         }
 
         /* Show on hover of active tag badge */
@@ -1420,6 +1420,36 @@
             background-color: rgba(255, 255, 255, 0.9) !important;
             color: #191c20 !important;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23c026d3' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+        }
+
+        .segment-title-edit-input {
+            border: 1px solid transparent !important;
+            box-shadow: none !important;
+            background-repeat: no-repeat !important;
+            background-size: 100% 100% !important;
+            box-sizing: border-box;
+            background-color: rgba(228, 5, 240, 0.1) !important;
+            color: #ff66ff !important;
+            border-radius: 4px;
+            padding: 0 6px !important;
+            height: 1.4rem !important;
+            line-height: 1 !important;
+            margin: 0 !important;
+            outline: none;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23e405f0' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+        }
+
+        body.light-theme .segment-title-edit-input {
+            background-color: rgba(192, 38, 211, 0.08) !important;
+            color: #c026d3 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23c026d3' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+        }
+
+        .filename-container.editing .filename-text {
+            overflow: visible !important;
+            text-overflow: clip !important;
         }
 
         .mapping-item.selected-track {
@@ -3721,7 +3751,7 @@
             
             span.innerText = input.value || input.placeholder || '     ';
             
-            const padding = 48; // Left/right padding + margin in pixels
+            const padding = input.classList.contains('segment-title-edit-input') ? 12 : 48; // Padding of 12px matches the 6px left/right padding to keep spacing even
             const minWidth = customMinWidth || 80;
             const measuredWidth = span.getBoundingClientRect().width + padding;
             input.style.width = `${Math.max(minWidth, measuredWidth)}px`;
@@ -6201,15 +6231,7 @@
             const input = document.createElement('input');
             input.type = 'text';
             input.value = oldName;
-
-            input.style.border = 'none';
-            input.style.background = 'transparent';
-            input.style.color = 'var(--text-main)';
-            input.style.fontFamily = "'Space Mono', monospace";
-            input.style.fontSize = '0.85rem';
-            input.style.outline = 'none';
-            input.style.width = '120px';
-            input.style.boxSizing = 'border-box';
+            input.className = 'segment-title-edit-input';
 
             input.oninput = () => {
                 adjustInputWidth(input, originalWidth);
