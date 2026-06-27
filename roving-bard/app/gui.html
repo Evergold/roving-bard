@@ -3631,6 +3631,7 @@
 
         async function selectAudioFile(filename) {
             try {
+                checkedBulkFiles.clear();
                 checkedBulkFiles.add(filename);
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
@@ -3653,6 +3654,7 @@
 
         async function playAudioFile(filename) {
             try {
+                checkedBulkFiles.clear();
                 checkedBulkFiles.add(filename);
                 activeSegment = null;
                 localStorage.removeItem('activeSegment');
