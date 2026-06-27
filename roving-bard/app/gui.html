@@ -3631,15 +3631,19 @@
                     }
 
                     const isChecked = checkedBulkFiles.has(`segment:${segment.name}`);
+                    let editBtnHtml = '';
+                    if (isSegActive) {
+                        editBtnHtml = `<span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>`;
+                    }
                     item.innerHTML = `
                         <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
                             <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
-                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden;">
+                            <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: visible;">
                                 <span class="filename-container" style="position: relative; display: inline-flex; align-items: center; max-width: 100%; padding-right: 14px;">
                                     <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${segment.name}</span>
-                                    <span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>
+                                    ${editBtnHtml}
                                 </span>${inlineAddTagHtml}
                             </div>
                             <div class="mapping-item-sub">${subtitleText}</div>
