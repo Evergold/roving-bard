@@ -1169,7 +1169,6 @@
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10;
             border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .edit-tag-btn {
@@ -1177,8 +1176,9 @@
             color: #ffffff;
             top: -11px;
             right: -6px;
-            font-size: 9px;
+            font-size: 10px;
             transform: translateY(4px) scale(0.7);
+            box-shadow: 0 0 6px rgba(0, 242, 254, 0.7);
         }
 
         .delete-tag-btn {
@@ -1186,19 +1186,31 @@
             color: #ffffff;
             bottom: -11px;
             right: -6px;
-            font-size: 11px;
-            font-weight: 800;
+            font-size: 10px;
             transform: translateY(-4px) scale(0.7);
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+        }
+
+        body.light-theme .edit-tag-btn {
+            box-shadow: 0 0 6px rgba(46, 93, 168, 0.6);
+        }
+
+        body.light-theme .delete-tag-btn {
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
         }
 
         .edit-tag-btn:hover {
             transform: scale(1.3) !important;
-            box-shadow: 0 0 8px var(--accent);
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.95);
+        }
+
+        body.light-theme .edit-tag-btn:hover {
+            box-shadow: 0 0 12px rgba(46, 93, 168, 0.95);
         }
 
         .delete-tag-btn:hover {
             transform: scale(1.3) !important;
-            box-shadow: 0 0 8px #ef4444;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.95);
         }
 
         /* Show on hover of active tag badge */
@@ -5509,7 +5521,7 @@
                 <span class="${badgeClass}" style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 0.2rem 0.4rem; display: inline-flex; align-items: center; font-family: 'Space Mono', monospace; color: var(--text-main); position: relative; gap: 0.25rem; margin-top: 0.25rem;">
                     ${tag}
                     <span class="edit-tag-btn" onclick="startInlineEditTag(event, '${tag.replace(/'/g, "\\'")}')" title="Rename Tag">✏️</span>
-                    <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag">&times;</span>
+                    <span class="delete-tag-btn" onclick="${deleteClick}" title="Delete Tag">🗑️</span>
                 </span>
             `;
         }
