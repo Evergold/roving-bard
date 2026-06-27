@@ -3613,7 +3613,7 @@
             
             span.innerText = input.value || input.placeholder || '     ';
             
-            const padding = 28; // Left/right padding + margin in pixels
+            const padding = 48; // Left/right padding + margin in pixels
             const minWidth = customMinWidth || 80;
             const measuredWidth = span.getBoundingClientRect().width + padding;
             input.style.width = `${Math.max(minWidth, measuredWidth)}px`;
@@ -3634,8 +3634,11 @@
             input.style.marginLeft = badgeStyle.marginLeft;
             input.style.marginRight = badgeStyle.marginRight;
             
-            // Bind dynamic auto-resize on input
-            input.oninput = () => adjustInputWidth(input);
+            // Bind dynamic auto-resize on input and reset scroll position to prevent clipping scroll offsets
+            input.oninput = () => {
+                adjustInputWidth(input);
+                input.scrollLeft = 0;
+            };
             
             // Use blurred flag and setTimeout to avoid race conditions between events
             let blurred = false;
@@ -5910,7 +5913,10 @@
             input.style.textAlign = 'center';
             input.style.boxSizing = 'border-box';
             
-            input.oninput = () => adjustInputWidth(input, originalWidth);
+            input.oninput = () => {
+                adjustInputWidth(input, originalWidth);
+                input.scrollLeft = 0;
+            };
             
             badge.innerHTML = '';
             badge.appendChild(input);
