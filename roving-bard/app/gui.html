@@ -2961,7 +2961,7 @@
 
                     const isChecked = checkedBulkFiles.has(file);
                     item.innerHTML = `
-                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 1rem 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                        <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${file.replace(/\'/g, "\\\'")}')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
                             <input type="checkbox" class="bulk-select-chk" data-file="${file.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${file.replace(/\'/g, "\\\'")}')" style="cursor: pointer; accent-color: var(--neon-blue); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
