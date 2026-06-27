@@ -1449,24 +1449,11 @@
             user-select: none;
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            background: rgba(18, 24, 38, 0.75) !important;
-            border: 1px solid var(--border) !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .status-badge:hover {
-            background: rgba(18, 24, 38, 0.9) !important;
             transform: translateY(-1px);
-        }
-
-        body.light-theme .status-badge {
-            background: rgba(210, 213, 216, 0.75) !important;
-            border: 1px solid #b4b8c0 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .status-badge:hover {
-            background: rgba(210, 213, 216, 0.9) !important;
         }
 
         .status-badge .badge-symbol {
@@ -1488,11 +1475,14 @@
         }
 
         .status-badge.online {
+            background-color: rgba(57, 255, 20, 0.1) !important;
             color: var(--neon-green) !important;
+            border: 1px solid rgba(57, 255, 20, 0.2) !important;
         }
 
         .status-badge.online:hover {
-            box-shadow: 0 4px 15px rgba(57, 255, 20, 0.2), inset 0 0 8px rgba(57, 255, 20, 0.1) !important;
+            background-color: rgba(57, 255, 20, 0.18) !important;
+            box-shadow: 0 4px 15px rgba(57, 255, 20, 0.25), inset 0 0 8px rgba(57, 255, 20, 0.15) !important;
         }
 
         .status-badge.online .status-dot {
@@ -1501,11 +1491,14 @@
         }
 
         .status-badge.offline {
+            background-color: rgba(255, 77, 77, 0.1) !important;
             color: #ff4d4d !important;
+            border: 1px solid rgba(255, 77, 77, 0.2) !important;
         }
 
         .status-badge.offline:hover {
-            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.2), inset 0 0 8px rgba(255, 77, 77, 0.1) !important;
+            background-color: rgba(255, 77, 77, 0.18) !important;
+            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.25), inset 0 0 8px rgba(255, 77, 77, 0.15) !important;
         }
 
         .status-badge.offline .status-dot {
@@ -1811,10 +1804,14 @@
         }
 
         body.light-theme .status-badge.online {
+            background-color: #d6e4d7 !important;
+            border-color: #b8c8ba !important;
             color: #00531b !important;
         }
 
         body.light-theme .status-badge.offline {
+            background-color: #f9d8d6 !important;
+            border-color: #e5b9b6 !important;
             color: #690005 !important;
         }
 
