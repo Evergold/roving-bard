@@ -5233,7 +5233,7 @@
             const bar = document.getElementById('bulk-tag-bar');
             const countEl = document.getElementById('bulk-selected-count');
             
-            if (count > 0) {
+            if (count > 1) {
                 if (countEl) countEl.innerText = count;
                 if (bar) bar.style.display = 'flex';
             } else {
@@ -5243,7 +5243,26 @@
         
         function deselectAllBulkFiles() {
             checkedBulkFiles.clear();
-            document.querySelectorAll('.bulk-select-chk').forEach(chk => chk.checked = false);
+            let activeKey = null;
+            if (activeSegment) {
+                activeKey = activeSegment.name;
+                checkedBulkFiles.add(`segment:${activeSegment.name}`);
+            } else {
+                const activeTrack = currentPlaybackStatus ? currentPlaybackStatus.current_track : null;
+                const activeStart = currentPlaybackStatus ? (currentPlaybackStatus.start_time || 0.0) : 0.0;
+                if (activeTrack && Math.abs(activeStart) < 0.05) {
+                    activeKey = activeTrack;
+                    checkedBulkFiles.add(`file:${activeTrack}`);
+                }
+            }
+            document.querySelectorAll('.bulk-select-chk').forEach(chk => {
+                const fileAttr = chk.getAttribute('data-file');
+                if (fileAttr === activeKey) {
+                    chk.checked = true;
+                } else {
+                    chk.checked = false;
+                }
+            });
             updateBulkTagBar();
         }
 
