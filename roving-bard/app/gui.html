@@ -1220,10 +1220,10 @@
         .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 18px;
+            gap: 8px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.95rem;
+            font-size: 0.8rem;
             font-weight: 600;
             font-family: 'Space Mono', monospace;
             cursor: pointer;
@@ -1236,12 +1236,21 @@
         }
 
         .status-badge .badge-symbol {
-            font-size: 1.25rem;
+            font-size: 1.05rem;
             font-weight: 800;
-            margin-right: 4px;
+            margin-right: 2px;
             display: inline-block;
             vertical-align: middle;
             line-height: 1;
+        }
+
+        .status-badge .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
         }
 
 
@@ -1351,6 +1360,34 @@
         }
         html.font-size-lg .card-title {
             font-size: 1.4rem;
+        }
+
+        html.font-size-m .status-badge {
+            font-size: 0.88rem;
+            padding: 7px 16px;
+            gap: 9px;
+        }
+        html.font-size-m .status-badge .status-dot {
+            width: 9px;
+            height: 9px;
+        }
+        html.font-size-m .status-badge .badge-symbol {
+            font-size: 1.15rem;
+            margin-right: 3px;
+        }
+
+        html.font-size-lg .status-badge {
+            font-size: 0.95rem;
+            padding: 8px 18px;
+            gap: 10px;
+        }
+        html.font-size-lg .status-badge .status-dot {
+            width: 10px;
+            height: 10px;
+        }
+        html.font-size-lg .status-badge .badge-symbol {
+            font-size: 1.25rem;
+            margin-right: 4px;
         }
 
         :root.light-theme,
@@ -2148,7 +2185,7 @@
             </label>
             <div class="badge-dropdown-container" style="position: relative; display: inline-block;">
                 <div id="status-badge" class="status-badge online" onclick="toggleBadgeDropdown(event)">
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    <span class="status-dot" style="background-color: var(--neon-green);"></span>
                     <span class="badge-symbol">✓</span> <span data-loc="ready">READY</span>
                 </div>
                 <div id="api-key-dropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 120%; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; font-family: 'Space Mono', monospace; font-size: 0.85rem;">
@@ -2566,25 +2603,25 @@
             if (currentConnectionStatus === "auto_scanning") {
                 badge.className = "status-badge online";
                 badge.innerHTML = `
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%; animation: pulse 1s infinite alternate;"></span>
+                    <span class="status-dot" style="background-color: var(--neon-green); animation: pulse 1s infinite alternate;"></span>
                     <span class="badge-symbol">✓</span> ${t('auto_scanning')}
                 `;
             } else if (currentConnectionStatus === "unauthorized") {
                 badge.className = "status-badge offline";
                 badge.innerHTML = `
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span>
+                    <span class="status-dot" style="background-color: var(--neon-pink);"></span>
                     <span class="badge-symbol">⚠</span> ${t('unauthorized')}
                 `;
             } else if (currentConnectionStatus === "offline") {
                 badge.className = "status-badge offline";
                 badge.innerHTML = `
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-pink); border-radius:50%;"></span>
+                    <span class="status-dot" style="background-color: var(--neon-pink);"></span>
                     <span class="badge-symbol">⚠</span> ${t('offline')}
                 `;
             } else {
                 badge.className = "status-badge online";
                 badge.innerHTML = `
-                    <span class="status-dot" style="display:inline-block; width: 10px; height: 10px; background-color: var(--neon-green); border-radius:50%;"></span>
+                    <span class="status-dot" style="background-color: var(--neon-green);"></span>
                     <span class="badge-symbol">✓</span> ${t('ready')}
                 `;
             }
