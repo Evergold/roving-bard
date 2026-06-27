@@ -2322,16 +2322,16 @@
                         <div class="resize-grip grip-right"><span></span><span></span><span></span></div>
                     </div>
                     <!-- Bulk Tag Bar -->
-                    <div id="bulk-tag-bar" class="bulk-tag-bar" style="display: none; position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--neon-blue); border-radius: 8px; padding: 0.6rem 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 0.8rem; box-sizing: border-box; transition: all 0.3s ease;">
+                    <div id="bulk-tag-bar" class="bulk-tag-bar" style="display: none; background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--neon-blue); border-radius: 8px; padding: 0.6rem 1rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); align-items: center; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 0.8rem; box-sizing: border-box; margin-top: 10px; color: white; width: 100%;">
                         <div style="color: white; font-weight: bold; display: flex; align-items: center; gap: 0.5rem;">
                             <span id="bulk-selected-count" style="color: var(--neon-blue); font-weight: bold;">0</span>
                             <span>files selected</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: white;">
                             <input type="text" id="bulk-tag-input" list="all-existing-tags-list" data-loc-placeholder="tag_placeholder" placeholder="Tag..." style="width: 100px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 4px; padding: 0.25rem 0.5rem; color: white; outline: none; font-family: inherit;">
                             <button class="btn" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: auto;" onclick="bulkAddTag()">+ Add</button>
                             <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: auto; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444;" onclick="bulkRemoveTag()">- Remove</button>
-                            <span onclick="deselectAllBulkFiles()" style="cursor: pointer; opacity: 0.6; margin-left: 0.5rem; text-decoration: underline;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">Cancel</span>
+                            <span onclick="deselectAllBulkFiles()" style="cursor: pointer; opacity: 0.7; color: white; margin-left: 0.5rem; text-decoration: underline;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">Cancel</span>
                         </div>
                     </div>
                 </div>
