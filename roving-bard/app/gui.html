@@ -2981,7 +2981,8 @@
                     }
 
                     const fileTags = audioLibraryFileTags[file] || [];
-                    const showInlineAddTag = (isFileActive && fileTags.length === 0);
+                    const isNameShort = (file.length <= 20);
+                    const showInlineAddTag = (isFileActive && fileTags.length === 0 && isNameShort);
                     let inlineAddTagHtml = '';
                     let tagsHtml = '';
                     
@@ -2989,7 +2990,7 @@
                         inlineAddTagHtml = `<span class="badge-tag-add" onclick="showAddTagInput(event, 'file', '${file.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(0, 242, 254, 0.2)'" onmouseout="this.style.background='rgba(0, 242, 254, 0.1)'" style="font-size: 0.75rem; background: rgba(0, 242, 254, 0.1); border: 1px dashed var(--neon-blue); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-blue); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease; margin-left: 0.5rem;">${t('add_tag')}</span>`;
                     }
                     
-                    if (fileTags.length > 0) {
+                    if (fileTags.length > 0 || (isFileActive && !showInlineAddTag)) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         fileTags.forEach(tag => {
                             tagsHtml += renderTagBadge(tag, file, false, isFileActive);
@@ -3084,7 +3085,8 @@
                     }
 
                     const segTags = segment.tags || [];
-                    const showInlineAddTag = (isSegActive && segTags.length === 0);
+                    const isNameShort = (segment.name.length <= 20);
+                    const showInlineAddTag = (isSegActive && segTags.length === 0 && isNameShort);
                     let inlineAddTagHtml = '';
                     let tagsHtml = '';
                     
@@ -3092,7 +3094,7 @@
                         inlineAddTagHtml = `<span class="badge-tag-add" onclick="showAddTagInput(event, 'segment', '${segment.name.replace(/\'/g, "\\\'")}')" onmouseover="this.style.background='rgba(228, 5, 240, 0.2)'" onmouseout="this.style.background='rgba(228, 5, 240, 0.1)'" style="font-size: 0.75rem; background: rgba(228, 5, 240, 0.1); border: 1px dashed var(--neon-pink); border-radius: 4px; padding: 0.12rem 0.35rem; cursor: pointer; color: var(--neon-pink); font-family: 'Space Mono', monospace; font-weight: bold; display: inline-flex; align-items: center; transition: all 0.2s ease; margin-left: 0.5rem;">${t('add_tag')}</span>`;
                     }
                     
-                    if (segTags.length > 0) {
+                    if (segTags.length > 0 || (isSegActive && !showInlineAddTag)) {
                         tagsHtml = `<div class="audio-tags-list" style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; align-items: center;">`;
                         segTags.forEach(tag => {
                             tagsHtml += renderTagBadge(tag, segment.name, true, isSegActive);
