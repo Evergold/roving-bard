@@ -5779,6 +5779,28 @@
                 e.preventDefault();
                 toggleMenuPopOver();
             }
+            // Escape: close any active popover panel
+            if (e.key === 'Escape') {
+                // Menu popover
+                if (menuPopoverOpen) {
+                    toggleMenuPopOver();
+                }
+                // Status badge dropdown
+                const dropdown = document.getElementById('api-key-dropdown');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    dropdown.classList.remove('active');
+                }
+                // Delete confirmation popover
+                const deletePopover = document.getElementById('delete-confirm-popover');
+                if (deletePopover && deletePopover.classList.contains('active')) {
+                    closeDeletePopover();
+                }
+                // Export confirmation popover
+                const exportPopover = document.getElementById('export-confirm-popover');
+                if (exportPopover && exportPopover.classList.contains('active')) {
+                    closeExportPopover();
+                }
+            }
         });
 
         function restoreCardCollapses() {
