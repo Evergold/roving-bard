@@ -1290,9 +1290,12 @@
             font-weight: bold;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             transition: all 0.2s ease;
             white-space: nowrap;
             margin-top: 0.25rem;
+            width: 70px;
+            box-sizing: border-box;
         }
 
         .badge-tag-add.file-tag {
@@ -1342,12 +1345,13 @@
             padding: 0.2rem 0.4rem;
             outline: none;
             font-family: 'Space Mono', monospace;
-            margin-left: 0.5rem;
             margin-top: 0.25rem;
             border: 1px solid transparent !important;
             box-shadow: none !important;
             background-repeat: no-repeat !important;
             background-size: 100% 100% !important;
+            box-sizing: border-box;
+            text-align: center;
         }
 
         .badge-tag-add-input.file-tag {
@@ -3538,6 +3542,10 @@
             input.placeholder = t('tag_placeholder');
             input.setAttribute('list', 'all-existing-tags-list');
             input.className = `badge-tag-add-input ${type === 'file' ? 'file-tag' : 'segment-tag'}`;
+            // Align margins dynamically with the badge element we are replacing
+            const badgeStyle = window.getComputedStyle(badgeAdd);
+            input.style.marginLeft = badgeStyle.marginLeft;
+            input.style.marginRight = badgeStyle.marginRight;
             
             // Use blurred flag and setTimeout to avoid race conditions between events
             let blurred = false;
