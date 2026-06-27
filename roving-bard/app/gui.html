@@ -1214,8 +1214,8 @@
 
         .edit-segment-btn {
             position: absolute;
-            top: 4px;
-            right: 6px;
+            top: -10px;
+            right: -2px;
             font-size: 11px;
             cursor: pointer;
             opacity: 0;
@@ -1224,11 +1224,16 @@
             z-index: 15;
             color: #ffffff;
             text-shadow: 0 0 3px rgba(0, 242, 254, 0.8), 0 0 8px rgba(0, 242, 254, 0.6);
+            transform: scale(0.85);
         }
 
-        .mapping-item:hover .edit-segment-btn {
+        .filename-container:hover .edit-segment-btn {
             opacity: 1;
             pointer-events: auto;
+        }
+
+        .filename-container.editing .edit-segment-btn {
+            display: none !important;
         }
 
         body.light-theme .edit-segment-btn {
@@ -1237,7 +1242,7 @@
         }
 
         .edit-segment-btn:hover {
-            transform: scale(1.25);
+            transform: scale(1.15);
             text-shadow: 0 0 4px #ffffff, 0 0 10px rgba(0, 242, 254, 1);
         }
 
@@ -3627,13 +3632,15 @@
 
                     const isChecked = checkedBulkFiles.has(`segment:${segment.name}`);
                     item.innerHTML = `
-                        <span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>
                         <div class="bulk-select-cell" onclick="event.stopPropagation(); toggleCheckbox(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="margin: -1rem 0.5rem -1rem -1rem; padding: 0 0.75rem; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; align-self: stretch; border-top-left-radius: 7px; border-bottom-left-radius: 7px;">
                             <input type="checkbox" class="bulk-select-chk" data-file="${segment.name.replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); handleCheckboxChange(event, '${segment.name.replace(/\'/g, "\\\'")}', 'segment')" style="cursor: pointer; accent-color: var(--neon-pink); transform: scale(1.15); flex-shrink: 0;" ${isChecked ? 'checked' : ''}>
                         </div>
                         <div class="mapping-item-details" style="flex: 1; min-width: 0;">
                             <div class="mapping-item-title" style="font-family: 'Space Mono', monospace; font-size: 0.85rem; display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden;">
-                                <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${segment.name}</span>${inlineAddTagHtml}
+                                <span class="filename-container" style="position: relative; display: inline-flex; align-items: center; max-width: 100%; padding-right: 14px;">
+                                    <span class="filename-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${segment.name}</span>
+                                    <span class="edit-segment-btn" onclick="startInlineEditSegment(event, '${segment.name.replace(/\'/g, "\\\'")}')" title="Rename Segment">✏️</span>
+                                </span>${inlineAddTagHtml}
                             </div>
                             <div class="mapping-item-sub">${subtitleText}</div>
                             ${tagsHtml}
@@ -6175,15 +6182,17 @@
         function startInlineEditSegment(event, oldName) {
             event.stopPropagation();
             const btn = event.currentTarget;
-            const item = btn.closest('.mapping-item');
-            if (!item) return;
-            const nameSpan = item.querySelector('.filename-text');
+            const container = btn.closest('.filename-container');
+            if (!container) return;
+            const nameSpan = container.querySelector('.filename-text');
             if (!nameSpan) return;
 
             if (nameSpan.querySelector('input')) return;
 
             const originalWidth = nameSpan.getBoundingClientRect().width;
             const originalHtml = nameSpan.innerHTML;
+
+            container.classList.add('editing');
 
             const input = document.createElement('input');
             input.type = 'text';
@@ -6215,6 +6224,7 @@
             async function finishEdit(save) {
                 if (finished) return;
                 finished = true;
+                container.classList.remove('editing');
 
                 if (save) {
                     const newName = input.value.trim();
