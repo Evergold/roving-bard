@@ -1292,15 +1292,12 @@
             align-items: center;
             transition: all 0.2s ease;
             white-space: nowrap;
-            border: 1px solid transparent !important;
-            background-repeat: no-repeat !important;
-            background-size: 100% 100% !important;
         }
 
         .badge-tag-add.file-tag {
             background-color: rgba(0, 242, 254, 0.1) !important;
             color: var(--neon-blue) !important;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%2300f2fe' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+            border: 1px dashed var(--neon-blue) !important;
         }
 
         .badge-tag-add.file-tag:hover {
@@ -1310,7 +1307,7 @@
         body.light-theme .badge-tag-add.file-tag {
             background-color: rgba(46, 93, 168, 0.08) !important;
             color: #2e5da8 !important;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%232e5da8' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+            border: 1px dashed #2e5da8 !important;
         }
 
         body.light-theme .badge-tag-add.file-tag:hover {
@@ -1320,7 +1317,7 @@
         .badge-tag-add.segment-tag {
             background-color: rgba(228, 5, 240, 0.1) !important;
             color: var(--neon-pink) !important;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23e405f0' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+            border: 1px dashed var(--neon-pink) !important;
         }
 
         .badge-tag-add.segment-tag:hover {
@@ -1330,11 +1327,49 @@
         body.light-theme .badge-tag-add.segment-tag {
             background-color: rgba(192, 38, 211, 0.08) !important;
             color: #c026d3 !important;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23c026d3' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+            border: 1px dashed #c026d3 !important;
         }
 
         body.light-theme .badge-tag-add.segment-tag:hover {
             background-color: rgba(192, 38, 211, 0.16) !important;
+        }
+
+        .badge-tag-add-input {
+            width: 95px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            padding: 0.12rem 0.35rem;
+            outline: none;
+            font-family: 'Space Mono', monospace;
+            margin-left: 0.5rem;
+            border: 1px solid transparent !important;
+            box-shadow: none !important;
+            background-repeat: no-repeat !important;
+            background-size: 100% 100% !important;
+        }
+
+        .badge-tag-add-input.file-tag {
+            background-color: rgba(0, 0, 0, 0.4) !important;
+            color: #ffffff !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%2300f2fe' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+        }
+
+        body.light-theme .badge-tag-add-input.file-tag {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #191c20 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%232e5da8' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+        }
+
+        .badge-tag-add-input.segment-tag {
+            background-color: rgba(0, 0, 0, 0.4) !important;
+            color: #ffffff !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23e405f0' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
+        }
+
+        body.light-theme .badge-tag-add-input.segment-tag {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #191c20 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3e%3crect width='100%25' height='100%25' fill='none' rx='4' ry='4' stroke='%23c026d3' stroke-width='2' stroke-dasharray='4%2c 4' stroke-dashoffset='0'%3e%3canimate attributeName='stroke-dashoffset' values='8%3b0' dur='0.5s' repeatCount='indefinite'/%3e%3c/rect%3e%3c/svg%3e") !important;
         }
 
         .mapping-item.selected-track {
@@ -3500,7 +3535,7 @@
             input.type = 'text';
             input.placeholder = t('tag_placeholder');
             input.setAttribute('list', 'all-existing-tags-list');
-            input.style = `width: 95px; font-size: 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid ${type === 'file' ? 'var(--neon-blue)' : 'var(--neon-pink)'}; border-radius: 4px; padding: 0.12rem 0.35rem; color: white; outline: none; font-family: 'Space Mono', monospace; margin-left: 0.5rem;`;
+            input.className = `badge-tag-add-input ${type === 'file' ? 'file-tag' : 'segment-tag'}`;
             
             // Use blurred flag and setTimeout to avoid race conditions between events
             let blurred = false;
