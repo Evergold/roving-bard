@@ -3017,8 +3017,8 @@
         let seekTimerId = null;
         let isTransitioningTrack = false;
         let activeSegment = null;
-        let currentLibraryTab = 'files'; // 'files' or 'segments'
-        let tabBeforeSearch = 'files';
+        let currentLibraryTab = localStorage.getItem('activeLibraryTab') || 'files'; // 'files' or 'segments'
+        let tabBeforeSearch = currentLibraryTab;
         let inSearchMode = false;
         let currentConnectionStatus = "ready"; // "ready", "auto_scanning", "unauthorized", "offline"
 
@@ -4106,6 +4106,7 @@
             currentLibraryTab = tab;
             tabBeforeSearch = tab;
             inSearchMode = false;
+            localStorage.setItem('activeLibraryTab', tab);
             
             updateTabUi();
             deselectAllBulkFiles();
