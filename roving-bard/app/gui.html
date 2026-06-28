@@ -6416,7 +6416,28 @@
                     col1.style.display = '';
 
                     [0, 1].forEach(colIdx => {
-                       // ── Compute drop position from pointer position ──────────────────────
+                        const colEl = getColEl(colIdx);
+                        const panelsInCol = layout.panels
+                            .filter(p => p.col === colIdx)
+                            .sort((a,b) => a.order - b.order);
+                        panelsInCol.forEach(p => {
+                            const el = getCardEl(p.id);
+                            if (el) colEl.appendChild(el);
+                        });
+                    });
+
+                    const col0Count = layout.panels.filter(p => p.col === 0).length;
+                    const col1Count = layout.panels.filter(p => p.col === 1).length;
+                    if (col0Count === 0 || col1Count === 0) {
+                        manuallyForcedSingleCol = true;
+                        applyLayout(false);
+                        return;
+                    }
+                }
+                saveLayout();
+            }
+
+            // ── Compute drop position from pointer position ──────────────────────
             function computeDropTarget(clientX, clientY, draggingPanelId) {
                 const grid = getGrid();
                 const gridRect = grid.getBoundingClientRect();
