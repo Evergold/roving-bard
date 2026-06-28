@@ -412,27 +412,27 @@
             transition: filter 0.2s ease, transform 0.2s ease;
             line-height: 1;
         }
-        .header-volume-control #volume-mute-btn:hover {
+        .header-volume-control .volume-mute-btn:hover {
             transform: scale(1.1);
             filter: drop-shadow(0 0 8px rgba(0,242,254,0.6)) drop-shadow(0 0 14px rgba(124,77,255,0.4));
         }
         /* SVG wave arcs: hidden by default, shown by volume level classes */
-        #spk-wave-lo, #spk-wave-mid, #spk-wave-hi { transition: opacity 0.2s ease; }
-        #volume-mute-btn.vol-muted  #spk-wave-lo,
-        #volume-mute-btn.vol-muted  #spk-wave-mid,
-        #volume-mute-btn.vol-muted  #spk-wave-hi  { opacity: 0; }
-        #volume-mute-btn.vol-low    #spk-wave-lo  { opacity: 1; }
-        #volume-mute-btn.vol-low    #spk-wave-mid { opacity: 0; }
-        #volume-mute-btn.vol-low    #spk-wave-hi  { opacity: 0; }
-        #volume-mute-btn.vol-mid    #spk-wave-lo  { opacity: 1; }
-        #volume-mute-btn.vol-mid    #spk-wave-mid { opacity: 1; }
-        #volume-mute-btn.vol-mid    #spk-wave-hi  { opacity: 0; }
-        #volume-mute-btn.vol-high   #spk-wave-lo  { opacity: 1; }
-        #volume-mute-btn.vol-high   #spk-wave-mid { opacity: 1; }
-        #volume-mute-btn.vol-high   #spk-wave-hi  { opacity: 1; }
+        .spk-wave-lo, .spk-wave-mid, .spk-wave-hi { transition: opacity 0.2s ease; }
+        .volume-mute-btn.vol-muted  .spk-wave-lo,
+        .volume-mute-btn.vol-muted  .spk-wave-mid,
+        .volume-mute-btn.vol-muted  .spk-wave-hi  { opacity: 0; }
+        .volume-mute-btn.vol-low    .spk-wave-lo  { opacity: 1; }
+        .volume-mute-btn.vol-low    .spk-wave-mid { opacity: 0; }
+        .volume-mute-btn.vol-low    .spk-wave-hi  { opacity: 0; }
+        .volume-mute-btn.vol-mid    .spk-wave-lo  { opacity: 1; }
+        .volume-mute-btn.vol-mid    .spk-wave-mid { opacity: 1; }
+        .volume-mute-btn.vol-mid    .spk-wave-hi  { opacity: 0; }
+        .volume-mute-btn.vol-high   .spk-wave-lo  { opacity: 1; }
+        .volume-mute-btn.vol-high   .spk-wave-mid { opacity: 1; }
+        .volume-mute-btn.vol-high   .spk-wave-hi  { opacity: 1; }
         /* Mute slash */
-        #spk-mute-slash { opacity: 0; transition: opacity 0.2s ease; }
-        #volume-mute-btn.vol-muted #spk-mute-slash { opacity: 1; }
+        .spk-mute-slash { opacity: 0; transition: opacity 0.2s ease; }
+        .volume-mute-btn.vol-muted .spk-mute-slash { opacity: 1; }
         /* Extra gap between EQ anchor and speaker */
         .eq-anchor { margin-right: 0.35rem; }
 
@@ -2776,7 +2776,7 @@
                                 </div>
                             </div>
                         </div>
-                        <span id="volume-mute-btn" class="vol-high" onclick="toggleMute()" data-loc-title="mute_unmute_title" title="Mute / Unmute">
+                        <span id="volume-mute-btn" class="volume-mute-btn vol-high" onclick="toggleMute()" data-loc-title="mute_unmute_title" title="Mute / Unmute">
                             <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
                                 <defs>
                                     <linearGradient id="spkGrad" x1="0" y1="0" x2="1" y2="1">
@@ -2792,17 +2792,17 @@
                                 <path d="M8 14 L16 14 L24 7 L24 33 L16 26 L8 26 Z"
                                       fill="url(#spkGrad)" filter="url(#spkGlow)"/>
                                 <!-- Sound wave arcs (low, mid, high) -->
-                                <path id="spk-wave-lo"
+                                <path id="spk-wave-lo" class="spk-wave-lo"
                                       d="M27 16.5 Q30 20 27 23.5"
                                       stroke="url(#spkGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                                <path id="spk-wave-mid"
+                                <path id="spk-wave-mid" class="spk-wave-mid"
                                       d="M30 13 Q35.5 20 30 27"
                                       stroke="url(#spkGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                                <path id="spk-wave-hi"
+                                <path id="spk-wave-hi" class="spk-wave-hi"
                                       d="M33.5 9.5 Q41 20 33.5 30.5"
                                       stroke="url(#spkGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
                                 <!-- Mute slash (red diagonal) -->
-                                <line id="spk-mute-slash" x1="5" y1="35" x2="39" y2="5"
+                                <line id="spk-mute-slash" class="spk-mute-slash" x1="5" y1="35" x2="39" y2="5"
                                       stroke="#ff4d4d" stroke-width="2.5" stroke-linecap="round"
                                       filter="url(#spkGlow)"/>
                             </svg>
