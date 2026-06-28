@@ -6491,7 +6491,7 @@
                 let insertBefore = null;
                 for (const card of cards) {
                     const r = card.getBoundingClientRect();
-                    const isBelow = (r.top + r.height / 2) > clientY;
+                    const isBelow = (r.top + r.height / 2) > dragMidY;
                     
                     if (isBelow) {
                         // Dragging downwards: insert before if the dragged midpoint hasn't crossed this card's top
