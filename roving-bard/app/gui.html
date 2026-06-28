@@ -6545,6 +6545,7 @@
                         const origInputs = cardEl.querySelectorAll('input, select, textarea');
                         const cloneInputs = clone.querySelectorAll('input, select, textarea');
                         origInputs.forEach((input, index) => {
+                            if (input.type === 'file') return;
                             if (input.type === 'checkbox' || input.type === 'radio') {
                                 cloneInputs[index].checked = input.checked;
                             } else {
