@@ -6541,6 +6541,16 @@
                         
                         // 1. Create floating clone
                         const clone = cardEl.cloneNode(true);
+                        // Copy live values of inputs to the clone so header controls (like volume slider) match
+                        const origInputs = cardEl.querySelectorAll('input, select, textarea');
+                        const cloneInputs = clone.querySelectorAll('input, select, textarea');
+                        origInputs.forEach((input, index) => {
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                cloneInputs[index].checked = input.checked;
+                            } else {
+                                cloneInputs[index].value = input.value;
+                            }
+                        });
 
                         // Strip IDs and data-panel-id to prevent duplicates in DOM
                         clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
