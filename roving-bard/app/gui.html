@@ -113,13 +113,148 @@
             display: grid;
             grid-template-columns: 1fr 1.2fr;
             gap: 2rem;
+            align-items: start;
+        }
+
+        main.single-col {
+            grid-template-columns: 1fr;
         }
 
         .dashboard-panel {
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            position: relative;
+            min-width: 0;
         }
+
+        /* ── Drag Handle ──────────────────────────────────────── */
+        .drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            cursor: grab;
+            padding: 0 0.35rem;
+            margin-right: 0.5rem;
+            border-radius: 6px;
+            color: var(--text-muted);
+            transition: opacity 0.18s ease, color 0.18s ease, background 0.18s ease;
+            flex-shrink: 0;
+            touch-action: none;
+            pointer-events: auto;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle svg { display: block; }
+
+        .card-title:hover .drag-handle,
+        .card.dragging .drag-handle {
+            opacity: 1;
+            color: var(--neon-blue);
+        }
+        .drag-handle:hover {
+            background: rgba(0,242,254,0.1);
+            color: var(--neon-blue);
+        }
+
+        /* ── Dragging card ghost ────────────────────────────────── */
+        .card.dragging {
+            opacity: 0.38;
+            pointer-events: none;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ── Drop Slot Indicators (between cards, same column) ─── */
+        .drop-slot {
+            height: 0;
+            width: 100%;
+            position: relative;
+            z-index: 50;
+            transition: height 0.18s ease;
+            pointer-events: none;
+        }
+        .drop-slot.active {
+            height: 48px;
+            pointer-events: none;
+        }
+        .drop-slot.active::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            height: 4px;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #00f2fe, #7c4dff, #e405f0);
+            box-shadow:
+                0 0 12px 3px rgba(0,242,254,0.6),
+                0 0 32px 8px rgba(124,77,255,0.4),
+                0 0 6px 2px rgba(228,5,240,0.5);
+            animation: dropSlotPulse 0.9s ease-in-out infinite alternate;
+        }
+        @keyframes dropSlotPulse {
+            from { opacity: 0.75; box-shadow: 0 0 10px 2px rgba(0,242,254,0.5), 0 0 28px 6px rgba(124,77,255,0.3); }
+            to   { opacity: 1;    box-shadow: 0 0 18px 5px rgba(0,242,254,0.8), 0 0 48px 12px rgba(124,77,255,0.6), 0 0 10px 3px rgba(228,5,240,0.7); }
+        }
+
+        /* ── Column Edge Indicators (cross-column drop) ────────── */
+        .col-drop-indicator {
+            display: none;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            border-radius: 99px;
+            z-index: 9999;
+            pointer-events: none;
+            background: linear-gradient(180deg, #00f2fe 0%, #7c4dff 50%, #e405f0 100%);
+            box-shadow:
+                0 0 16px 5px rgba(0,242,254,0.7),
+                0 0 40px 12px rgba(124,77,255,0.5),
+                0 0 8px 3px rgba(228,5,240,0.5);
+            animation: colIndicatorPulse 0.8s ease-in-out infinite alternate;
+        }
+        .col-drop-indicator.active { display: block; }
+        @keyframes colIndicatorPulse {
+            from { opacity: 0.7; }
+            to   { opacity: 1;  }
+        }
+
+        /* ── Drag-over column highlight ────────────────────────── */
+        .dashboard-panel.drag-over-col {
+            outline: 2px dashed rgba(0,242,254,0.25);
+            outline-offset: 6px;
+            border-radius: 8px;
+        }
+
+        /* ── Responsive Header: compact at ≤768px ──────────────── */
+        @media (max-width: 768px) {
+            header {
+                padding: 0.6rem 1rem;
+                gap: 0.6rem;
+            }
+            .logo-container h1 { font-size: 1.25rem; }
+            .logo-container p  { display: none; }
+            .header-main-content { gap: 0.6rem; }
+            .auto-polling-label  { display: none; }
+            main {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+                gap: 1.2rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            main:not(.single-col) {
+                grid-template-columns: 1fr 1.2fr;
+            }
+            main.single-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
 
         /* Widgets */
         .card {
@@ -2617,12 +2752,19 @@
         </div>
     </header>
 
-    <main>
+    <!-- Column edge drop indicators (injected by JS, referenced here for CSS) -->
+    <div class="col-drop-indicator" id="col-drop-left"></div>
+    <div class="col-drop-indicator" id="col-drop-right"></div>
+
+    <main id="panels-grid">
         <!-- LEFT PANEL: Dashboard details -->
-        <div class="dashboard-panel">
+        <div class="dashboard-panel" id="col-0" data-col="0">
             <!-- NOW PLAYING CARD -->
-            <div class="card">
+            <div class="card" data-panel-id="now-playing">
                 <div class="card-title">
+                    <span class="drag-handle" data-panel-id="now-playing" title="Drag to rearrange">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
+                    </span>
                     <span data-loc="now_playing">NOW PLAYING</span>
                     <div class="header-volume-control">
                         <!-- Export Button -->
@@ -2787,9 +2929,12 @@
             </div>
 
             <!-- REGION & COORDINATE MAPPINGS -->
-            <div class="card collapsed" id="card-region-mappings">
+            <div class="card collapsed" id="card-region-mappings" data-panel-id="region-mappings">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
+                        <span class="drag-handle" data-panel-id="region-mappings" title="Drag to rearrange">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
+                        </span>
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -2812,9 +2957,12 @@
             </div>
 
             <!-- CAPTURE & PARSE WORKFLOW CARD -->
-            <div class="card collapsed" id="card-active-screen">
+            <div class="card collapsed" id="card-active-screen" data-panel-id="active-screen">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
+                        <span class="drag-handle" data-panel-id="active-screen" title="Drag to rearrange">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
+                        </span>
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -2856,9 +3004,12 @@
             </div>
 
             <!-- MINIMAP BOUNDS CARD -->
-            <div class="card collapsed" id="card-bounding-box">
+            <div class="card collapsed" id="card-bounding-box" data-panel-id="bounding-box">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
+                        <span class="drag-handle" data-panel-id="bounding-box" title="Drag to rearrange">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
+                        </span>
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -2901,10 +3052,13 @@
         </div>
 
         <!-- RIGHT PANEL: Configuration editor -->
-        <div class="dashboard-panel">
+        <div class="dashboard-panel" id="col-1" data-col="1">
             <!-- AUDIO LIBRARY CARD -->
-            <div class="card" style="position: relative;">
+            <div class="card" id="card-audio-library" data-panel-id="audio-library" style="position: relative;">
                 <div class="card-title">
+                    <span class="drag-handle" data-panel-id="audio-library" title="Drag to rearrange">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
+                    </span>
                     <span data-loc="audio_library">AUDIO LIBRARY</span>
                     <div>
                         <input type="file" id="audio-file-input" accept=".wav,.mp3,.ogg,.flac,.mp4,.abc,.mid,.midi" style="display: none;" onchange="uploadAudioFile(this)">
@@ -6260,8 +6414,326 @@
                     }
                 }
             });
+            initPanelDrag();
         };
     
+        // ── Panel Drag-and-Drop Engine ───────────────────────────────────────────
+        (function initPanelDrag() {
+            // Default layout: panels[panelId] = { col: 0|1, order: 0..n }
+            const PANEL_DEFAULTS = [
+                { id: 'now-playing',     col: 0, order: 0 },
+                { id: 'region-mappings', col: 0, order: 1 },
+                { id: 'active-screen',   col: 0, order: 2 },
+                { id: 'bounding-box',    col: 0, order: 3 },
+                { id: 'audio-library',   col: 1, order: 0 },
+            ];
+
+            const NARROW_BP = 768; // px – single column below this width
+
+            let layout = loadLayout();
+            let manuallyForcedSingleCol = layout.manuallyForcedSingleCol || false;
+            let dragState = null; // { panelId, sourceCol, ghostEl }
+
+            // ── Persistence ────────────────────────────────────────────────────
+            function loadLayout() {
+                try {
+                    const raw = localStorage.getItem('panelLayout');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        // validate structure
+                        if (parsed.panels && Array.isArray(parsed.panels)) return parsed;
+                    }
+                } catch(e) {}
+                return { panels: JSON.parse(JSON.stringify(PANEL_DEFAULTS)), manuallyForcedSingleCol: false };
+            }
+            function saveLayout() {
+                layout.manuallyForcedSingleCol = manuallyForcedSingleCol;
+                localStorage.setItem('panelLayout', JSON.stringify(layout));
+            }
+            function getPanelState(id) {
+                return layout.panels.find(p => p.id === id);
+            }
+
+            // ── DOM helpers ─────────────────────────────────────────────────────
+            function getGrid() { return document.getElementById('panels-grid'); }
+            function getColEl(col) { return document.getElementById('col-' + col); }
+            function getCardEl(panelId) { return document.querySelector(`[data-panel-id="${panelId}"]`); }
+
+            // ── Apply layout from state ──────────────────────────────────────────
+            function applyLayout(animate) {
+                const grid = getGrid();
+                if (!grid) return;
+                const isNarrow = window.innerWidth <= NARROW_BP;
+                const useSingleCol = isNarrow || manuallyForcedSingleCol;
+
+                grid.classList.toggle('single-col', useSingleCol);
+
+                if (useSingleCol) {
+                    // All panels go into col-0 in flat order
+                    const col0 = getColEl(0);
+                    const col1 = getColEl(1);
+                    if (!col0 || !col1) return;
+
+                    // Gather all panels sorted by col then order
+                    const sorted = [...layout.panels].sort((a,b) => (a.col - b.col) || (a.order - b.order));
+                    sorted.forEach(p => {
+                        const el = getCardEl(p.id);
+                        if (el && el.parentElement !== col0) col0.appendChild(el);
+                    });
+                    col1.style.display = 'none';
+                } else {
+                    const col0 = getColEl(0);
+                    const col1 = getColEl(1);
+                    if (!col0 || !col1) return;
+                    col1.style.display = '';
+
+                    // Sort each column and re-order children
+                    [0, 1].forEach(colIdx => {
+                        const colEl = getColEl(colIdx);
+                        const panelsInCol = layout.panels
+                            .filter(p => p.col === colIdx)
+                            .sort((a,b) => a.order - b.order);
+                        panelsInCol.forEach(p => {
+                            const el = getCardEl(p.id);
+                            if (el) colEl.appendChild(el);
+                        });
+                    });
+
+                    // Check if one col is empty → switch to single col
+                    const col0Count = layout.panels.filter(p => p.col === 0).length;
+                    const col1Count = layout.panels.filter(p => p.col === 1).length;
+                    if (col0Count === 0 || col1Count === 0) {
+                        manuallyForcedSingleCol = true;
+                        applyLayout(false);
+                        return;
+                    }
+                }
+                saveLayout();
+            }
+
+            // ── Drop slot insertion helpers ─────────────────────────────────────
+            function clearDropSlots() {
+                document.querySelectorAll('.drop-slot').forEach(s => s.remove());
+            }
+            function insertDropSlot(beforeEl, colEl) {
+                const slot = document.createElement('div');
+                slot.className = 'drop-slot active';
+                slot.dataset.dropTarget = 'true';
+                colEl.insertBefore(slot, beforeEl || null);
+                return slot;
+            }
+
+            // ── Column edge indicator ───────────────────────────────────────────
+            function showColIndicator(side) {
+                // side = 'left' | 'right' | null
+                const leftEl  = document.getElementById('col-drop-left');
+                const rightEl = document.getElementById('col-drop-right');
+                if (!leftEl || !rightEl) return;
+                leftEl.classList.toggle('active', side === 'left');
+                rightEl.classList.toggle('active', side === 'right');
+
+                if (side === 'left') {
+                    const grid = getGrid();
+                    const rect = grid.getBoundingClientRect();
+                    leftEl.style.left  = (rect.left - 14) + 'px';
+                    leftEl.style.width = '6px';
+                } else if (side === 'right') {
+                    const grid = getGrid();
+                    const rect = grid.getBoundingClientRect();
+                    rightEl.style.left  = (rect.right + 8) + 'px';
+                    rightEl.style.width = '6px';
+                }
+            }
+            function hideColIndicators() {
+                showColIndicator(null);
+            }
+
+            // ── Drag state tracking ─────────────────────────────────────────────
+            let activeDragCol = null; // col being dragged over
+            let activeDragSlot = null; // slot el being targeted (within col)
+            let activeCrossColTarget = null; // 'left-edge' | 'right-edge' | colIdx
+
+            function resetDragVisuals() {
+                clearDropSlots();
+                hideColIndicators();
+                document.querySelectorAll('.dashboard-panel').forEach(p => p.classList.remove('drag-over-col'));
+                activeDragCol = null;
+                activeDragSlot = null;
+                activeCrossColTarget = null;
+            }
+
+            // ── Compute drop position from pointer position ──────────────────────
+            function computeDropTarget(clientX, clientY, draggingPanelId) {
+                const grid = getGrid();
+                const gridRect = grid.getBoundingClientRect();
+                const isNarrow = window.innerWidth <= NARROW_BP;
+
+                // Column edge zones (20% of grid width from edges)
+                const edgeZone = Math.max(gridRect.width * 0.12, 40);
+
+                if (!isNarrow && !manuallyForcedSingleCol) {
+                    // Left edge: move dragged panel to left col, top
+                    if (clientX < gridRect.left + edgeZone) {
+                        return { type: 'col-edge', side: 'left', col: 0 };
+                    }
+                    // Right edge: move dragged panel to right col, bottom
+                    if (clientX > gridRect.right - edgeZone) {
+                        return { type: 'col-edge', side: 'right', col: 1 };
+                    }
+                }
+
+                // Find which column the pointer is in
+                let targetCol = null;
+                [0, 1].forEach(c => {
+                    const colEl = getColEl(c);
+                    if (!colEl || colEl.style.display === 'none') return;
+                    const r = colEl.getBoundingClientRect();
+                    if (clientX >= r.left && clientX <= r.right) targetCol = c;
+                });
+                if (targetCol === null) return null;
+
+                const colEl = getColEl(targetCol);
+                const cards = [...colEl.querySelectorAll('.card:not(.dragging):not([data-drop-target])')];
+
+                // Find which card we're hovering
+                let insertBefore = null; // null = append at end
+                for (const card of cards) {
+                    const r = card.getBoundingClientRect();
+                    const midY = r.top + r.height / 2;
+                    if (clientY < midY) {
+                        insertBefore = card;
+                        break;
+                    }
+                }
+                return { type: 'slot', col: targetCol, insertBefore };
+            }
+
+            // ── Normalise orders within a column ────────────────────────────────
+            function normaliseOrders(col) {
+                const items = layout.panels.filter(p => p.col === col).sort((a,b) => a.order - b.order);
+                items.forEach((p, i) => p.order = i);
+            }
+
+            // ── Apply a drop ─────────────────────────────────────────────────────
+            function applyDrop(draggingPanelId, dropTarget) {
+                if (!dropTarget) return;
+                const ps = getPanelState(draggingPanelId);
+                if (!ps) return;
+
+                if (dropTarget.type === 'col-edge') {
+                    const oldCol = ps.col;
+                    ps.col = dropTarget.col;
+                    ps.order = dropTarget.col === 0 ? -1 : 9999;
+                    normaliseOrders(ps.col);
+                    if (oldCol !== ps.col) normaliseOrders(oldCol);
+                } else if (dropTarget.type === 'slot') {
+                    const oldCol = ps.col;
+                    const newCol = dropTarget.col;
+                    ps.col = newCol;
+
+                    // Determine new order from insertion point
+                    const colCards = [...getColEl(newCol).querySelectorAll('.card:not(.dragging):not([data-drop-target])')];
+                    if (dropTarget.insertBefore) {
+                        const idx = colCards.indexOf(dropTarget.insertBefore);
+                        ps.order = idx; // shift others below
+                    } else {
+                        ps.order = colCards.length;
+                    }
+                    normaliseOrders(newCol);
+                    if (oldCol !== newCol) normaliseOrders(oldCol);
+                }
+
+                // Check if moved all panels to one side → single col
+                const col0Count = layout.panels.filter(p => p.col === 0).length;
+                const col1Count = layout.panels.filter(p => p.col === 1).length;
+                if (col0Count === 0 || col1Count === 0) {
+                    manuallyForcedSingleCol = true;
+                } else {
+                    manuallyForcedSingleCol = false;
+                }
+            }
+
+            // ── Touch / pointer drag logic ───────────────────────────────────────
+            let pendingDropTarget = null;
+
+            function onPointerDown(e) {
+                const handle = e.target.closest('.drag-handle');
+                if (!handle) return;
+                e.preventDefault();
+
+                const panelId = handle.dataset.panelId;
+                const cardEl = getCardEl(panelId);
+                if (!cardEl) return;
+
+                cardEl.classList.add('dragging');
+                dragState = { panelId, cardEl };
+
+                document.addEventListener('pointermove', onPointerMove, { passive: false });
+                document.addEventListener('pointerup', onPointerUp);
+                document.addEventListener('pointercancel', onPointerUp);
+            }
+
+            function onPointerMove(e) {
+                if (!dragState) return;
+                e.preventDefault();
+
+                const dt = computeDropTarget(e.clientX, e.clientY, dragState.panelId);
+                pendingDropTarget = dt;
+
+                clearDropSlots();
+                hideColIndicators();
+                document.querySelectorAll('.dashboard-panel').forEach(p => p.classList.remove('drag-over-col'));
+
+                if (!dt) return;
+
+                if (dt.type === 'col-edge') {
+                    showColIndicator(dt.side);
+                } else if (dt.type === 'slot') {
+                    const colEl = getColEl(dt.col);
+                    if (colEl) {
+                        colEl.classList.add('drag-over-col');
+                        insertDropSlot(dt.insertBefore, colEl);
+                    }
+                }
+            }
+
+            function onPointerUp(e) {
+                if (!dragState) return;
+
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+                document.removeEventListener('pointercancel', onPointerUp);
+
+                const { panelId, cardEl } = dragState;
+                dragState = null;
+
+                applyDrop(panelId, pendingDropTarget);
+                pendingDropTarget = null;
+                cardEl.classList.remove('dragging');
+
+                resetDragVisuals();
+                applyLayout(true);
+            }
+
+            // ── Orientation / resize handler ─────────────────────────────────────
+            let lastWasNarrow = window.innerWidth <= NARROW_BP;
+            window.addEventListener('resize', () => {
+                const nowNarrow = window.innerWidth <= NARROW_BP;
+                if (nowNarrow !== lastWasNarrow) {
+                    lastWasNarrow = nowNarrow;
+                    if (!nowNarrow && manuallyForcedSingleCol) {
+                        // Don't auto-restore if user manually chose single col
+                        // (manuallyForcedSingleCol stays true)
+                    }
+                }
+                applyLayout(false);
+            });
+
+            // ── Bootstrap ───────────────────────────────────────────────────────
+            document.addEventListener('pointerdown', onPointerDown);
+            applyLayout(false);
+        })();
+
         // Helper to render tag badges with inline rename pencil and delete cross
         function renderTagBadge(tag, filename, isSegment = false, isActive = false) {
             const deleteClick = isSegment 
