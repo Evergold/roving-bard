@@ -999,6 +999,7 @@
             min-height: 80px;
             overflow: hidden;
             height: 20vh;
+            padding-bottom: 14px;
         }
 
         .audio-library-resizable .audio-list-scroll {
@@ -1009,15 +1010,15 @@
 
         .audio-library-resize-bar {
             position: relative;
-            height: 20px;
+            height: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 6px;
-            margin-top: 4px;
+            margin-top: 14px;
             cursor: ns-resize;
             user-select: none;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid rgba(124, 77, 255, 0.25);
             border-radius: 0 0 8px 8px;
             transition: border-color 0.2s, background 0.2s;
         }
@@ -1039,26 +1040,27 @@
             flex-direction: column;
             gap: 3px;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(124, 77, 255, 0.08);
+            border: 1px solid rgba(124, 77, 255, 0.25);
             border-radius: 4px;
             padding: 2px 4px;
-            opacity: 0.6;
+            opacity: 0.85;
             transition: opacity 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 6px 1px rgba(124, 77, 255, 0.2), 0 0 2px rgba(0, 242, 254, 0.15);
         }
 
         .audio-library-resize-bar:hover .resize-grip {
             opacity: 1;
-            background: rgba(124, 77, 255, 0.15);
-            border-color: rgba(124, 77, 255, 0.4);
-            box-shadow: 0 0 6px rgba(124, 77, 255, 0.25);
+            background: rgba(124, 77, 255, 0.22);
+            border-color: rgba(124, 77, 255, 0.6);
+            box-shadow: 0 0 10px 2px rgba(124, 77, 255, 0.45), 0 0 4px rgba(0, 242, 254, 0.3);
         }
 
         .audio-library-resize-bar.dragging .resize-grip {
             opacity: 1;
-            background: rgba(124, 77, 255, 0.25);
+            background: rgba(124, 77, 255, 0.32);
             border-color: var(--accent);
-            box-shadow: 0 0 10px rgba(124, 77, 255, 0.45);
+            box-shadow: 0 0 16px 4px rgba(124, 77, 255, 0.6), 0 0 6px rgba(0, 242, 254, 0.4);
         }
 
         .resize-grip span {
@@ -2207,21 +2209,21 @@
         }
 
         body.light-theme .resize-grip {
-            background: #d2d5d8 !important;
-            border-color: #b4b8c0 !important;
-            box-shadow: none !important;
+            background: rgba(46, 93, 168, 0.07) !important;
+            border-color: rgba(46, 93, 168, 0.3) !important;
+            box-shadow: 0 0 5px 1px rgba(46, 93, 168, 0.18), 0 0 2px rgba(46, 93, 168, 0.12) !important;
         }
 
         body.light-theme .audio-library-resize-bar:hover .resize-grip {
-            background: rgba(46, 93, 168, 0.15) !important;
-            border-color: rgba(46, 93, 168, 0.4) !important;
-            box-shadow: none !important;
+            background: rgba(46, 93, 168, 0.18) !important;
+            border-color: rgba(46, 93, 168, 0.5) !important;
+            box-shadow: 0 0 10px 2px rgba(46, 93, 168, 0.3) !important;
         }
 
         body.light-theme .audio-library-resize-bar.dragging .resize-grip {
-            background: rgba(46, 93, 168, 0.25) !important;
+            background: rgba(46, 93, 168, 0.28) !important;
             border-color: var(--accent) !important;
-            box-shadow: none !important;
+            box-shadow: 0 0 14px 3px rgba(46, 93, 168, 0.45) !important;
         }
 
         body.light-theme .visual-crop-box {
