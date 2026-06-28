@@ -162,14 +162,15 @@
             background: var(--bg-card-hover);
             border-color: var(--neon-blue);
             transform: scale(1.02);
-            transition: none !important;
             opacity: 0.95;
             backdrop-filter: blur(16px);
         }
 
         /* Disable card transitions during drag to prevent height recalculation jumps */
         body.dragging-active .card,
-        body.dragging-active .card-body-wrapper {
+        body.dragging-active .card-body-wrapper,
+        .card.drag-floating,
+        .card.drag-floating * {
             transition: none !important;
         }
 
