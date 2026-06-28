@@ -6536,9 +6536,10 @@
                         
                         // 1. Create floating clone
                         const clone = cardEl.cloneNode(true);
-                        // Strip IDs to prevent duplicates in DOM
+                        // Strip IDs and data-panel-id to prevent duplicates in DOM
                         clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
                         clone.removeAttribute('id');
+                        clone.removeAttribute('data-panel-id');
                         clone.className = cardEl.className + ' drag-floating';
                         clone.style.width = rect.width + 'px';
                         clone.style.height = rect.height + 'px';
