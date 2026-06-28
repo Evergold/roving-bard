@@ -6450,17 +6450,6 @@
                 const gridRect = grid.getBoundingClientRect();
                 const isNarrow = window.innerWidth <= NARROW_BP;
 
-                const edgeZone = Math.max(gridRect.width * 0.12, 40);
-
-                if (!isNarrow && !manuallyForcedSingleCol) {
-                    if (clientX < gridRect.left + edgeZone) {
-                        return { type: 'col-edge', col: 0 };
-                    }
-                    if (clientX > gridRect.right - edgeZone) {
-                        return { type: 'col-edge', col: 1 };
-                    }
-                }
-
                 // Find the nearest active column horizontally to prevent any dead zones
                 let targetCol = 0;
                 if (!isNarrow && !manuallyForcedSingleCol) {
@@ -6593,32 +6582,7 @@
 
                 let changed = false;
 
-                if (dt.type === 'col-edge') {
-                    if (ps.col !== dt.col) {
-                        const oldCol = ps.col;
-                        const newCol = dt.col;
-
-                        let targetPanels = layout.panels
-                            .filter(p => p.col === newCol && p.id !== panelId)
-                            .sort((a, b) => a.order - b.order);
-
-                        ps.col = newCol;
-                        if (newCol === 0) {
-                            targetPanels.unshift(ps);
-                        } else {
-                            targetPanels.push(ps);
-                        }
-
-                        targetPanels.forEach((p, i) => p.order = i);
-
-                        let sourcePanels = layout.panels
-                            .filter(p => p.col === oldCol && p.id !== panelId)
-                            .sort((a, b) => a.order - b.order);
-                        sourcePanels.forEach((p, i) => p.order = i);
-
-                        changed = true;
-                    }
-                } else if (dt.type === 'slot') {
+                if (dt.type === 'slot') {
                     let targetPanels = layout.panels
                         .filter(p => p.col === dt.col && p.id !== panelId)
                         .sort((a, b) => a.order - b.order);
