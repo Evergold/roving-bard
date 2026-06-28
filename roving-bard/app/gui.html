@@ -238,8 +238,8 @@
             .logo-container h1 { font-size: 1.25rem; }
             .logo-container p  { display: none; }
             .header-main-content { gap: 0.6rem; }
-            .auto-polling-label  { font-size: 0; letter-spacing: 0; }
-            .auto-polling-label::after { content: 'RUN'; font-size: 0.85rem; letter-spacing: 1.5px; }
+            .auto-polling-full { display: none; }
+            .auto-polling-short { display: inline; }
             main {
                 grid-template-columns: 1fr;
                 padding: 1rem;
@@ -1824,6 +1824,7 @@
             text-shadow: 0 0 8px rgba(124, 77, 255, 0.4);
             text-align: right;
         }
+        .auto-polling-short { display: none; }
 
         .switch {
             position: relative;
@@ -2731,7 +2732,8 @@
             </div>
         </div>
         <div class="switch-container">
-            <span class="auto-polling-label" data-loc="auto_polling">AUTO-POLLING SCREEN</span>
+            <span class="auto-polling-label auto-polling-full" data-loc="auto_polling">AUTO-POLLING SCREEN</span>
+            <span class="auto-polling-label auto-polling-short">RUN</span>
             <label class="switch">
                 <input type="checkbox" id="polling-toggle" onchange="togglePolling(this.checked)">
                 <span class="slider"></span>
