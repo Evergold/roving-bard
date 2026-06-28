@@ -6465,15 +6465,19 @@
                 const gridRect = grid.getBoundingClientRect();
                 const isNarrow = window.innerWidth <= NARROW_BP;
 
-                // Find the nearest active column horizontally to prevent any dead zones
+                // Find the nearest column horizontally, allowing transition between 1-col and 2-col modes
                 let targetCol = 0;
-                if (!isNarrow && !manuallyForcedSingleCol) {
+                if (!isNarrow) {
                     const col0El = getColEl(0);
                     const col1El = getColEl(1);
-                    if (col0El && col1El) {
+                    if (col0El && col1El && col1El.style.display !== 'none') {
                         const r0 = col0El.getBoundingClientRect();
                         const r1 = col1El.getBoundingClientRect();
                         const midX = (r0.right + r1.left) / 2;
+                        targetCol = (clientX < midX) ? 0 : 1;
+                    } else {
+                        // If we are in 1-column mode, use the midpoint of the grid
+                        const midX = gridRect.left + gridRect.width / 2;
                         targetCol = (clientX < midX) ? 0 : 1;
                     }
                 }
