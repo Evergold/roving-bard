@@ -6541,24 +6541,17 @@
                         
                         // 1. Create floating clone
                         const clone = cardEl.cloneNode(true);
-                        // Copy live values of inputs/selects/textareas to the clone since cloneNode doesn't copy them
-                        const origInputs = cardEl.querySelectorAll('input, select, textarea');
-                        const cloneInputs = clone.querySelectorAll('input, select, textarea');
-                        origInputs.forEach((input, index) => {
-                            if (input.type === 'checkbox' || input.type === 'radio') {
-                                cloneInputs[index].checked = input.checked;
-                            } else {
-                                cloneInputs[index].value = input.value;
-                            }
-                        });
 
                         // Strip IDs and data-panel-id to prevent duplicates in DOM
                         clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
                         clone.removeAttribute('id');
                         clone.removeAttribute('data-panel-id');
-                        clone.className = cardEl.className + ' drag-floating';
+                        
+                        // Force the clone to be collapsed during dragging for a clean, compact visual
+                        clone.classList.add('drag-floating', 'collapsed');
+                        
                         clone.style.width = rect.width + 'px';
-                        clone.style.height = rect.height + 'px';
+                        clone.style.height = 'auto';
                         clone.style.left = (ev.clientX - offsetX) + 'px';
                         clone.style.top = (ev.clientY - offsetY) + 'px';
                         document.body.appendChild(clone);
