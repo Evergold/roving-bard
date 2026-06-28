@@ -167,6 +167,12 @@
             backdrop-filter: blur(16px);
         }
 
+        /* Disable card transitions during drag to prevent height recalculation jumps */
+        body.dragging-active .card,
+        body.dragging-active .card-body-wrapper {
+            transition: none !important;
+        }
+
         .auto-polling-short { display: none; }
 
         /* ── Responsive Header: compact at ≤768px ──────────────── */
@@ -6543,6 +6549,7 @@
 
                         // 3. Commit drag state
                         dragState = { panelId, cardEl, clone, offsetX, offsetY };
+                        document.body.classList.add('dragging-active');
 
                         document.addEventListener('pointermove', onPointerMove, { passive: false });
                         document.addEventListener('pointerup', onPointerUp);
@@ -6669,6 +6676,7 @@
                 }
 
                 cardEl.classList.remove('drag-placeholder');
+                document.body.classList.remove('dragging-active');
 
                 cardEl.dataset.preventClick = "true";
                 setTimeout(() => {
