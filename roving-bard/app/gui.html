@@ -128,33 +128,25 @@
             min-width: 0;
         }
 
-        /* ── Drag Handle ──────────────────────────────────────── */
-        .drag-handle {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
+        /* ── Card title acts as drag handle ─────────────────────── */
+        .card-title {
             cursor: grab;
-            padding: 0 0.35rem;
-            margin-right: 0.5rem;
-            border-radius: 6px;
-            color: var(--text-muted);
-            transition: opacity 0.18s ease, color 0.18s ease, background 0.18s ease;
-            flex-shrink: 0;
-            touch-action: none;
-            pointer-events: auto;
+            user-select: none;
         }
-        .drag-handle:active { cursor: grabbing; }
-        .drag-handle svg { display: block; }
-
-        .card-title:hover .drag-handle,
-        .card.dragging .drag-handle {
-            opacity: 1;
-            color: var(--neon-blue);
+        .card-title:active {
+            cursor: grabbing;
         }
-        .drag-handle:hover {
-            background: rgba(0,242,254,0.1);
-            color: var(--neon-blue);
+        /* Buttons and interactive elements inside the title stay pointer */
+        .card-title button,
+        .card-title input,
+        .card-title select,
+        .card-title a,
+        .card-title span[onclick],
+        .card-title label {
+            cursor: pointer;
+        }
+        .card.dragging .card-title {
+            cursor: grabbing;
         }
 
         /* ── Dragging card ghost ────────────────────────────────── */
@@ -2769,9 +2761,6 @@
             <!-- NOW PLAYING CARD -->
             <div class="card" data-panel-id="now-playing">
                 <div class="card-title">
-                    <span class="drag-handle" data-panel-id="now-playing" title="Drag to rearrange">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
-                    </span>
                     <span data-loc="now_playing">NOW PLAYING</span>
                     <div class="header-volume-control">
                         <!-- Export Button -->
@@ -2939,9 +2928,6 @@
             <div class="card collapsed" id="card-region-mappings" data-panel-id="region-mappings">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
-                        <span class="drag-handle" data-panel-id="region-mappings" title="Drag to rearrange">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
-                        </span>
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -2967,9 +2953,6 @@
             <div class="card collapsed" id="card-active-screen" data-panel-id="active-screen">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
-                        <span class="drag-handle" data-panel-id="active-screen" title="Drag to rearrange">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
-                        </span>
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -3014,9 +2997,6 @@
             <div class="card collapsed" id="card-bounding-box" data-panel-id="bounding-box">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
                     <div class="title-text-container">
-                        <span class="drag-handle" data-panel-id="bounding-box" title="Drag to rearrange">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
-                        </span>
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
@@ -3063,9 +3043,6 @@
             <!-- AUDIO LIBRARY CARD -->
             <div class="card" id="card-audio-library" data-panel-id="audio-library" style="position: relative;">
                 <div class="card-title">
-                    <span class="drag-handle" data-panel-id="audio-library" title="Drag to rearrange">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="2" height="2" rx="1"/><rect x="7" y="3" width="2" height="2" rx="1"/><rect x="11" y="3" width="2" height="2" rx="1"/><rect x="3" y="7" width="2" height="2" rx="1"/><rect x="7" y="7" width="2" height="2" rx="1"/><rect x="11" y="7" width="2" height="2" rx="1"/><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="11" width="2" height="2" rx="1"/><rect x="11" y="11" width="2" height="2" rx="1"/></svg>
-                    </span>
                     <span data-loc="audio_library">AUDIO LIBRARY</span>
                     <div>
                         <input type="file" id="audio-file-input" accept=".wav,.mp3,.ogg,.flac,.mp4,.abc,.mid,.midi" style="display: none;" onchange="uploadAudioFile(this)">
@@ -6054,6 +6031,11 @@
             const card = header.closest('.card');
             if (!card) return;
             
+            if (card.dataset.preventClick === 'true') {
+                delete card.dataset.preventClick;
+                return;
+            }
+            
             const isCollapsed = card.classList.toggle('collapsed');
             if (card.id) {
                 localStorage.setItem(`card_collapsed_${card.id}`, isCollapsed ? 'true' : 'false');
@@ -6664,20 +6646,51 @@
             let pendingDropTarget = null;
 
             function onPointerDown(e) {
-                const handle = e.target.closest('.drag-handle');
-                if (!handle) return;
-                e.preventDefault();
+                // Trigger drag from anywhere on the card-title, but skip buttons
+                // and other interactive elements inside it
+                const titleEl = e.target.closest('.card-title');
+                if (!titleEl) return;
+                const interactive = e.target.closest('button, input, select, a, label, [onclick]:not(.card-title):not(.collapsible-header), .eq-anchor, .badge-dropdown-container');
+                if (interactive) return;
 
-                const panelId = handle.dataset.panelId;
-                const cardEl = getCardEl(panelId);
+                // Resolve panelId from the card element
+                const cardEl = titleEl.closest('.card[data-panel-id]');
                 if (!cardEl) return;
+                const panelId = cardEl.dataset.panelId;
 
-                cardEl.classList.add('dragging');
-                dragState = { panelId, cardEl };
+                // Track pointer-down start position for movement threshold
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const THRESHOLD = 5; // px before drag is committed
+                let committed = false;
 
-                document.addEventListener('pointermove', onPointerMove, { passive: false });
-                document.addEventListener('pointerup', onPointerUp);
-                document.addEventListener('pointercancel', onPointerUp);
+                function onEarlyMove(ev) {
+                    const dx = ev.clientX - startX;
+                    const dy = ev.clientY - startY;
+                    if (Math.sqrt(dx*dx + dy*dy) >= THRESHOLD) {
+                        committed = true;
+                        document.removeEventListener('pointermove', onEarlyMove);
+                        // Now commit the drag
+                        cardEl.classList.add('dragging');
+                        dragState = { panelId, cardEl };
+                        document.addEventListener('pointermove', onPointerMove, { passive: false });
+                        document.addEventListener('pointerup', onPointerUp);
+                        document.addEventListener('pointercancel', onPointerUp);
+                        // Immediately process current position
+                        onPointerMove(ev);
+                    }
+                }
+
+                function onEarlyUp() {
+                    document.removeEventListener('pointermove', onEarlyMove);
+                    document.removeEventListener('pointerup', onEarlyUp);
+                    document.removeEventListener('pointercancel', onEarlyUp);
+                    // Not committed = was a plain click, let collapse/other handlers fire
+                }
+
+                document.addEventListener('pointermove', onEarlyMove);
+                document.addEventListener('pointerup', onEarlyUp);
+                document.addEventListener('pointercancel', onEarlyUp);
             }
 
             function onPointerMove(e) {
@@ -6717,6 +6730,12 @@
                 applyDrop(panelId, pendingDropTarget);
                 pendingDropTarget = null;
                 cardEl.classList.remove('dragging');
+
+                // Prevent the click event resulting from drag release from triggering a collapse
+                cardEl.dataset.preventClick = "true";
+                setTimeout(() => {
+                    delete cardEl.dataset.preventClick;
+                }, 150);
 
                 resetDragVisuals();
                 applyLayout(true);
