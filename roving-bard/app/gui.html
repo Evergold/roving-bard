@@ -6467,6 +6467,7 @@
 
                 // Find the nearest column horizontally, allowing transition between 1-col and 2-col modes
                 let targetCol = 0;
+                let forceTwoColLeft = false;
                 if (!isNarrow) {
                     const col0El = getColEl(0);
                     const col1El = getColEl(1);
@@ -6476,9 +6477,17 @@
                         const midX = (r0.right + r1.left) / 2;
                         targetCol = (clientX < midX) ? 0 : 1;
                     } else {
-                        // If we are in 1-column mode, use the midpoint of the grid
-                        const midX = gridRect.left + gridRect.width / 2;
-                        targetCol = (clientX < midX) ? 0 : 1;
+                        // If we are in 1-column mode, check left/right thresholds of the grid
+                        const leftThresh = gridRect.left + gridRect.width * 0.35;
+                        const rightThresh = gridRect.left + gridRect.width * 0.65;
+                        if (clientX < leftThresh) {
+                            targetCol = 0;
+                            forceTwoColLeft = true;
+                        } else if (clientX > rightThresh) {
+                            targetCol = 1;
+                        } else {
+                            targetCol = 0;
+                        }
                     }
                 }
 
@@ -6515,7 +6524,7 @@
                         }
                     }
                 }
-                return { type: 'slot', col: targetCol, insertBefore };
+                return { type: 'slot', col: targetCol, insertBefore, forceTwoColLeft };
             }
 
             // ── Touch / pointer drag logic ───────────────────────────────────────
@@ -6624,9 +6633,26 @@
                 let changed = false;
 
                 if (dt.type === 'slot') {
-                    let targetPanels = layout.panels
-                        .filter(p => p.col === dt.col && p.id !== panelId)
-                        .sort((a, b) => a.order - b.order);
+                    if (dt.forceTwoColLeft) {
+                        const hasOtherPanelsInCol0 = layout.panels.some(p => p.id !== panelId && p.col === 0);
+                        if (hasOtherPanelsInCol0 || ps.col !== 0) {
+                            // Move dragged panel to col 0, order 0
+                            ps.col = 0;
+                            ps.order = 0;
+                            // Move all other panels to col 1
+                            let otherPanels = layout.panels
+                                .filter(p => p.id !== panelId)
+                                .sort((a, b) => (a.col - b.col) || (a.order - b.order));
+                            otherPanels.forEach((p, i) => {
+                                p.col = 1;
+                                p.order = i;
+                            });
+                            changed = true;
+                        }
+                    } else {
+                        let targetPanels = layout.panels
+                            .filter(p => p.col === dt.col && p.id !== panelId)
+                            .sort((a, b) => a.order - b.order);
 
                     let insertIdx = targetPanels.length;
                     if (dt.insertBefore) {
@@ -6656,6 +6682,7 @@
                         changed = true;
                     }
                 }
+            }
 
                 if (changed) {
                     const col0Count = layout.panels.filter(p => p.col === 0).length;
