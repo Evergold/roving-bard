@@ -6470,13 +6470,32 @@
                 const colEl = getColEl(targetCol);
                 const cards = [...colEl.querySelectorAll('.card:not(.drag-placeholder)')];
 
+                // Get floating clone boundaries for edge-based triggering
+                let dragTop = clientY;
+                let dragBottom = clientY;
+                if (dragState && dragState.clone) {
+                    const cloneRect = dragState.clone.getBoundingClientRect();
+                    dragTop = cloneRect.top;
+                    dragBottom = cloneRect.bottom;
+                }
+
                 let insertBefore = null;
                 for (const card of cards) {
                     const r = card.getBoundingClientRect();
-                    const midY = r.top + r.height / 2;
-                    if (clientY < midY) {
-                        insertBefore = card;
-                        break;
+                    const isBelow = (r.top + r.height / 2) > clientY;
+                    
+                    if (isBelow) {
+                        // Dragging downwards: insert before if the dragged bottom hasn't crossed this card's bottom
+                        if (dragBottom <= r.bottom) {
+                            insertBefore = card;
+                            break;
+                        }
+                    } else {
+                        // Dragging upwards: insert before if the dragged top has crossed this card's top
+                        if (dragTop < r.top) {
+                            insertBefore = card;
+                            break;
+                        }
                     }
                 }
                 return { type: 'slot', col: targetCol, insertBefore };
