@@ -6480,7 +6480,7 @@
                         // If we are in 1-column mode, check left/right thresholds of the grid
                         const leftThresh = gridRect.left + gridRect.width * 0.35;
                         const rightThresh = gridRect.left + gridRect.width * 0.65;
-                        if (clientX < leftThresh) {
+                        if (clientX < leftThresh && dragState && dragState.startedInSingleCol) {
                             targetCol = 0;
                             forceTwoColLeft = true;
                         } else if (clientX > rightThresh) {
@@ -6591,7 +6591,7 @@
                         cardEl.classList.add('drag-placeholder');
 
                         // 3. Commit drag state
-                        dragState = { panelId, cardEl, clone, offsetX, offsetY };
+                        dragState = { panelId, cardEl, clone, offsetX, offsetY, startedInSingleCol: manuallyForcedSingleCol };
                         document.body.classList.add('dragging-active');
 
                         document.addEventListener('pointermove', onPointerMove, { passive: false });
