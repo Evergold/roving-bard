@@ -6349,7 +6349,7 @@
         };
     
         // ── Panel Drag-and-Drop Engine ───────────────────────────────────────────
-        (function initPanelDrag() {
+        function initPanelDrag() {
             // Default layout: panels[panelId] = { col: 0|1, order: 0..n }
             const PANEL_DEFAULTS = [
                 { id: 'now-playing',     col: 0, order: 0 },
@@ -6652,7 +6652,7 @@
             // ── Bootstrap ───────────────────────────────────────────────────────
             document.addEventListener('pointerdown', onPointerDown);
             applyLayout(false);
-        })();
+        }
 
         // Helper to render tag badges with inline rename pencil and delete cross
         function renderTagBadge(tag, filename, isSegment = false, isActive = false) {
