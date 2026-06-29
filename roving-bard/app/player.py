@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import os
 import re
 import tempfile
@@ -595,7 +596,13 @@ class SafeMusicPlayer:
         self.active_instrument = program
         if self.current_track and self.current_track.lower().endswith(".abc"):
             track_path = os.path.join(self.playlist_dir, self.current_track)
-            pos = self.get_current_position()
+            # Reset playback to the beginning of the loop (start_time) on instrument change
+            pos = self.start_time
+            
+            # Update timing state immediately to prevent race conditions with concurrent status polls
+            self.last_seek_position = pos
+            self.last_play_time = time.time() if not self.paused else None
+            
             self._prepare_abc_midi(track_path, pos)
             if not self.simulated and self.mixer_initialized:
                 try:
@@ -604,8 +611,6 @@ class SafeMusicPlayer:
                         pygame.mixer.music.play(loops=-1, start=0.0)
                 except Exception as e:
                     print(f"Error changing instrument: {e}")
-            self.last_seek_position = pos
-            self.last_play_time = time.time() if not self.paused else None
 
     def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
         if not track_file:
@@ -813,7 +818,8 @@ class SafeMusicPlayer:
             self.seeked_while_paused = False
             return True
         try:
-            if self.was_stopped or getattr(self, "seeked_while_paused", False):
+            # Always reload and play for ABC files to avoid pygame MIDI unpause bugs
+            if self.current_track.lower().endswith(".abc") or self.was_stopped or getattr(self, "seeked_while_paused", False):
                 start_pos = self.last_seek_position
                 if start_pos < self.start_time:
                     start_pos = self.start_time
@@ -903,19 +909,23 @@ class SafeMusicPlayer:
                 # Loop back to start
                 pos = start + ((pos - start) % range_len)
 
+                # Update timing state immediately to prevent re-entrancy/race conditions
+                self.last_seek_position = pos
+                self.last_play_time = time.time()
+
                 # Update Pygame playback position
                 if not self.simulated and self.mixer_initialized:
                     try:
                         if self.current_track.lower().endswith(".abc"):
                             self._prepare_abc_midi(os.path.join(self.playlist_dir, self.current_track), pos)
                             pygame.mixer.music.load(self._abc_tmp_path)
-                            pygame.mixer.music.play(loops=-1, start=0.0)
+                            if not self.paused:
+                                pygame.mixer.music.play(loops=-1, start=0.0)
                         else:
-                            pygame.mixer.music.play(loops=-1, start=pos)
+                            if not self.paused:
+                                pygame.mixer.music.play(loops=-1, start=pos)
                     except Exception as e:
                         print(f"Error during loop seek: {e}")
-                self.last_seek_position = pos
-                self.last_play_time = time.time()
         else:
             if duration > 0:
                 if pos > duration:
