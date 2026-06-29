@@ -870,7 +870,8 @@ class SafeMusicPlayer:
                         self._sf = sf.SoundFile(actual_track_path)
                         self._sample_rate = self._sf.samplerate
                         self._channels = self._sf.channels
-                        self.track_duration = len(self._sf) / self._sample_rate
+                        if not is_midi_abc:
+                            self.track_duration = len(self._sf) / self._sample_rate
                         self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
                     elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
                         pos_sec = self._playhead / 44100.0
@@ -915,6 +916,8 @@ class SafeMusicPlayer:
                         
                         if self.end_time is not None:
                             end_frame = min(total_frames, int(self.end_time * self._sample_rate))
+                        elif is_midi_abc:
+                            end_frame = min(total_frames, int(self.track_duration * self._sample_rate))
                         else:
                             end_frame = total_frames
                             
@@ -1104,7 +1107,8 @@ class SafeMusicPlayer:
                 self._ffmpeg_proc = None
                 sample_rate = sf_obj.samplerate
                 channels = sf_obj.channels
-                self.track_duration = len(sf_obj) / sample_rate
+                if not is_midi_abc:
+                    self.track_duration = len(sf_obj) / sample_rate
             elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
                 self.track_duration = TinyTag.get(actual_track_path).duration or 180.0
                 cmd = [
