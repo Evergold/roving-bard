@@ -5370,7 +5370,6 @@
                 });
                 const res = await response.json();
                 if (res.status === 'success') {
-                    alert(t("upload_success") + file.name);
                     loadAudioLibrary();
                 } else {
                     alert(t("upload_failed") + res.detail);
