@@ -2878,7 +2878,25 @@
                         <!-- Export Button -->
                         <button id="export-segment-btn" class="btn btn-export" style="width: auto; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; height: 32px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;" onclick="showExportPopover(event)" disabled>Export</button>
                         <!-- EQ / Instrument Buttons & Panels -->
-                        <div class="eq-anchor">
+                        <div class="eq-anchor" style="display: flex; gap: 8px; align-items: center;">
+                            <!-- Instrument Button (ABC tracks) -->
+                            <span id="instrument-btn" onclick="event.stopPropagation(); toggleInstrumentPanel()" data-loc-title="instrument_label" title="Instrument" style="display: none;">
+                                <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                                    <defs>
+                                        <linearGradient id="instGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#00f2fe"/>
+                                            <stop offset="100%" stop-color="#7c4dff"/>
+                                        </linearGradient>
+                                        <filter id="instGlow">
+                                            <feGaussianBlur stdDeviation="1.2" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                    </defs>
+                                    <g filter="url(#instGlow)" stroke="url(#instGrad)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, -2) scale(1.8)">
+                                        <path d="M3 14h18v6H3v-6z M5 14v4 M8 14v4 M11 14v4 M14 14v4 M17 14v4 M20 14v4 M4 14C4 6 8 4 16 4c4 0 4 4 4 10"/>
+                                    </g>
+                                </svg>
+                            </span>
                             <!-- EQ Button (WAV, MP3, etc.) -->
                             <span id="eq-btn" onclick="toggleEQPanel()" data-loc-title="equalizer_tooltip" title="Equalizer">
                                 <!-- EQ SVG Icon: 5 slider bars at staggered positions -->
@@ -2913,24 +2931,7 @@
                                     <circle cx="38" cy="22" r="3.5" fill="white" opacity="0.9"/>
                                 </svg>
                             </span>
-                            <!-- Instrument Button (ABC tracks) -->
-                            <span id="instrument-btn" onclick="event.stopPropagation(); toggleInstrumentPanel()" data-loc-title="instrument_label" title="Instrument" style="display: none;">
-                                <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-                                    <defs>
-                                        <linearGradient id="instGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stop-color="#00f2fe"/>
-                                            <stop offset="100%" stop-color="#7c4dff"/>
-                                        </linearGradient>
-                                        <filter id="instGlow">
-                                            <feGaussianBlur stdDeviation="1.2" result="blur"/>
-                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                                        </filter>
-                                    </defs>
-                                    <g filter="url(#instGlow)" stroke="url(#instGrad)" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, -2) scale(1.8)">
-                                        <path d="M3 14h18v6H3v-6z M5 14v4 M8 14v4 M11 14v4 M14 14v4 M17 14v4 M20 14v4 M4 14C4 6 8 4 16 4c4 0 4 4 4 10"/>
-                                    </g>
-                                </svg>
-                            </span>
+                        </div>
 
                             <!-- EQ Panel (popover) -->
                             <div id="eq-panel">
@@ -3902,8 +3903,8 @@
             const instBtn = document.getElementById('instrument-btn');
             if (eqBtn && instBtn) {
                 if (isAbc) {
-                    // For ABC, hide EQ and show Instrument button
-                    eqBtn.style.display = 'none';
+                    // For ABC, show both EQ and Instrument button
+                    eqBtn.style.display = 'flex';
                     instBtn.style.display = 'flex';
                 } else if (isMidi) {
                     // For MIDI, show EQ (disabled) and hide Instrument button
