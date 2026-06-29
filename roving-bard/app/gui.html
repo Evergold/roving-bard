@@ -6486,7 +6486,7 @@
                         // Use stable relative thresholds based on the initial drag start position
                         const dragStartX = dragState.startX || clientX;
                         const deltaX = clientX - dragStartX;
-                        const THRESHOLD = 150; // pixels of relative movement to trigger a split
+                        const THRESHOLD = 100; // pixels of relative movement to trigger a split
 
                         if (deltaX < -THRESHOLD) {
                             targetCol = 0;
