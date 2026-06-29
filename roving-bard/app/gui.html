@@ -6428,7 +6428,7 @@
                     const sorted = [...layout.panels].sort((a,b) => (a.col - b.col) || (a.order - b.order));
                     sorted.forEach(p => {
                         const el = getCardEl(p.id);
-                        if (el && el.parentElement !== col0) col0.appendChild(el);
+                        if (el) col0.appendChild(el);
                     });
                     col1.style.display = 'none';
                 } else {
