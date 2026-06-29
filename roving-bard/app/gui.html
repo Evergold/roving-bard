@@ -6683,56 +6683,127 @@
                 let changed = false;
 
                 if (dt.type === 'slot') {
-                    if (dt.forceTwoColLeft) {
-                        const hasOtherPanelsInCol0 = layout.panels.some(p => p.id !== panelId && p.col === 0);
-                        if (hasOtherPanelsInCol0 || ps.col !== 0) {
-                            // Move dragged panel to col 0, order 0
-                            ps.col = 0;
-                            ps.order = 0;
-                            // Move all other panels to col 1
-                            let otherPanels = layout.panels
-                                .filter(p => p.id !== panelId)
-                                .sort((a, b) => (a.col - b.col) || (a.order - b.order));
-                            otherPanels.forEach((p, i) => {
-                                p.col = 1;
-                                p.order = i;
+                    if (dragState && dragState.startedInSingleCol) {
+                        if (dt.forceTwoColLeft) {
+                            // Left-split: move dragged panel to Column 0, others to Column 1
+                            if (manuallyForcedSingleCol !== false) {
+                                manuallyForcedSingleCol = false;
+                                changed = true;
+                            }
+                            layout.panels.forEach(p => {
+                                const targetCol = (p.id === panelId) ? 0 : 1;
+                                if (p.col !== targetCol) {
+                                    p.col = targetCol;
+                                    changed = true;
+                                }
                             });
-                            changed = true;
+                        } else if (dt.col === 1) {
+                            // Right-split: move dragged panel to Column 1, others to Column 0
+                            if (manuallyForcedSingleCol !== false) {
+                                manuallyForcedSingleCol = false;
+                                changed = true;
+                            }
+                            layout.panels.forEach(p => {
+                                const targetCol = (p.id === panelId) ? 1 : 0;
+                                if (p.col !== targetCol) {
+                                    p.col = targetCol;
+                                    changed = true;
+                                }
+                            });
+                        } else {
+                            // Center (1-column): move all panels to Column 0
+                            if (manuallyForcedSingleCol !== true) {
+                                manuallyForcedSingleCol = true;
+                                changed = true;
+                            }
+                            layout.panels.forEach(p => {
+                                if (p.id !== panelId && p.col !== 0) {
+                                    p.col = 0;
+                                    changed = true;
+                                }
+                            });
+
+                            // Also handle vertical reordering within Column 0
+                            let targetPanels = layout.panels
+                                .filter(p => p.col === 0 && p.id !== panelId)
+                                .sort((a, b) => a.order - b.order);
+
+                            let insertIdx = targetPanels.length;
+                            if (dt.insertBefore) {
+                                const beforeId = dt.insertBefore.dataset.panelId;
+                                const idx = targetPanels.findIndex(p => p.id === beforeId);
+                                if (idx !== -1) {
+                                    insertIdx = idx;
+                                }
+                            }
+
+                            if (ps.col !== 0 || ps.order !== insertIdx) {
+                                ps.col = 0;
+                                targetPanels.splice(insertIdx, 0, ps);
+                                targetPanels.forEach((p, i) => p.order = i);
+                                changed = true;
+                            }
+                        }
+
+                        if (changed) {
+                            // Normalize orders for both columns
+                            [0, 1].forEach(colIdx => {
+                                let colPanels = layout.panels
+                                    .filter(p => p.col === colIdx)
+                                    .sort((a, b) => a.order - b.order);
+                                colPanels.forEach((p, i) => p.order = i);
+                            });
                         }
                     } else {
-                        let targetPanels = layout.panels
-                            .filter(p => p.col === dt.col && p.id !== panelId)
-                            .sort((a, b) => a.order - b.order);
-
-                    let insertIdx = targetPanels.length;
-                    if (dt.insertBefore) {
-                        const beforeId = dt.insertBefore.dataset.panelId;
-                        const idx = targetPanels.findIndex(p => p.id === beforeId);
-                        if (idx !== -1) {
-                            insertIdx = idx;
-                        }
-                    }
-
-                    if (ps.col !== dt.col || ps.order !== insertIdx) {
-                        const oldCol = ps.col;
-                        const newCol = dt.col;
-
-                        ps.col = newCol;
-                        targetPanels.splice(insertIdx, 0, ps);
-
-                        targetPanels.forEach((p, i) => p.order = i);
-
-                        if (oldCol !== newCol) {
-                            let sourcePanels = layout.panels
-                                .filter(p => p.col === oldCol && p.id !== panelId)
+                        // Drag started in 2-column mode (normal reordering / column crossing)
+                        if (dt.forceTwoColLeft) {
+                            const hasOtherPanelsInCol0 = layout.panels.some(p => p.id !== panelId && p.col === 0);
+                            if (hasOtherPanelsInCol0 || ps.col !== 0) {
+                                ps.col = 0;
+                                ps.order = 0;
+                                let otherPanels = layout.panels
+                                    .filter(p => p.id !== panelId)
+                                    .sort((a, b) => (a.col - b.col) || (a.order - b.order));
+                                otherPanels.forEach((p, i) => {
+                                    p.col = 1;
+                                    p.order = i;
+                                });
+                                changed = true;
+                            }
+                        } else {
+                            let targetPanels = layout.panels
+                                .filter(p => p.col === dt.col && p.id !== panelId)
                                 .sort((a, b) => a.order - b.order);
-                            sourcePanels.forEach((p, i) => p.order = i);
-                        }
 
-                        changed = true;
+                            let insertIdx = targetPanels.length;
+                            if (dt.insertBefore) {
+                                const beforeId = dt.insertBefore.dataset.panelId;
+                                const idx = targetPanels.findIndex(p => p.id === beforeId);
+                                if (idx !== -1) {
+                                    insertIdx = idx;
+                                }
+                            }
+
+                            if (ps.col !== dt.col || ps.order !== insertIdx) {
+                                const oldCol = ps.col;
+                                const newCol = dt.col;
+
+                                ps.col = newCol;
+                                targetPanels.splice(insertIdx, 0, ps);
+                                targetPanels.forEach((p, i) => p.order = i);
+
+                                if (oldCol !== newCol) {
+                                    let sourcePanels = layout.panels
+                                        .filter(p => p.col === oldCol && p.id !== panelId)
+                                        .sort((a, b) => a.order - b.order);
+                                    sourcePanels.forEach((p, i) => p.order = i);
+                                }
+
+                                changed = true;
+                            }
+                        }
                     }
                 }
-            }
 
                 if (changed) {
                     const col0Count = layout.panels.filter(p => p.col === 0).length;
