@@ -9,6 +9,7 @@
     "subtitle": "Audio adaptatif et sensible à la localisation dans LOTRO",
     "auto_polling": "ANALYSE AUTO DE L'ÉCRAN",
     "run_polling": "EXÉCUTER",
+    "instrument_label": "Instrument",
     "ready": "PRÊT",
     "unauthorized": "NON AUTORISÉ",
     "offline": "HORS LIGNE",

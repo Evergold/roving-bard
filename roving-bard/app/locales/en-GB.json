@@ -9,6 +9,7 @@
     "subtitle": "Adaptive, location-aware audio in LOTRO",
     "auto_polling": "AUTO-POLLING SCREEN",
     "run_polling": "RUN",
+    "instrument_label": "Instrument",
     "ready": "READY",
     "unauthorized": "UNAUTHORIZED",
     "offline": "OFFLINE",

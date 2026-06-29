@@ -27,7 +27,7 @@ from tinytag import TinyTag
 
 
 
-def abc_to_midi_bytes(abc_text: str, start_pos: float = 0.0) -> bytes:
+def abc_to_midi_bytes(abc_text: str, start_pos: float = 0.0, instrument: int | None = None) -> bytes:
     meter_num = 4
     meter_den = 4
     unit_note_len = None
@@ -114,6 +114,9 @@ def abc_to_midi_bytes(abc_text: str, start_pos: float = 0.0) -> bytes:
     track_events.extend([0xFF, 0x51, 0x03])
     track_events.extend(tempo_us.to_bytes(3, byteorder='big'))
     
+    if instrument is not None:
+        program = instrument
+
     # Write Program Change (C0 <program>) at delta-time 0
     track_events.append(0x00)
     track_events.extend([0xC0, program])
@@ -486,6 +489,7 @@ class SafeMusicPlayer:
         self._eq_tmp_path: str | None = None  # path to the currently loaded temp EQ file
         self._eq_lock = threading.Lock()
         self._abc_tmp_path: str | None = None  # path to the currently compiled MIDI file
+        self.active_instrument: int | None = None
 
         # Set SDL_SOUNDFONTS to enable correct MIDI instrument synthesis on Linux
         env_soundfont = os.environ.get("SDL_SOUNDFONTS")
@@ -539,7 +543,7 @@ class SafeMusicPlayer:
         try:
             with open(track_path, "r", encoding="utf-8") as f:
                 abc_text = f.read()
-            midi_bytes = abc_to_midi_bytes(abc_text, start_pos=start_pos)
+            midi_bytes = abc_to_midi_bytes(abc_text, start_pos=start_pos, instrument=self.active_instrument)
             tmp = tempfile.NamedTemporaryFile(suffix=".mid", delete=False, prefix="abc_tmp_")
             tmp_path = tmp.name
             tmp.close()
@@ -568,6 +572,38 @@ class SafeMusicPlayer:
             )
         else:
             self._playlist_dir = value
+
+    def get_default_instrument(self) -> int:
+        if not self.current_track or not self.current_track.lower().endswith(".abc"):
+            return 0
+        track_path = os.path.join(self.playlist_dir, self.current_track)
+        if not os.path.exists(track_path):
+            return 0
+        try:
+            with open(track_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('%') or line.startswith('I:'):
+                        m_prog = re.search(r'(?:%%MIDI\s+program|I:MIDI\s+program)\s+(\d+)', line, re.IGNORECASE)
+                        if m_prog:
+                            return int(m_prog.group(1))
+        except Exception:
+            pass
+        return 0
+
+    def set_instrument(self, program: int):
+        self.active_instrument = program
+        if self.current_track and self.current_track.lower().endswith(".abc"):
+            track_path = os.path.join(self.playlist_dir, self.current_track)
+            pos = self.get_current_position()
+            self._prepare_abc_midi(track_path, pos)
+            if not self.simulated and self.mixer_initialized:
+                try:
+                    pygame.mixer.music.load(self._abc_tmp_path)
+                    if not self.paused:
+                        pygame.mixer.music.play(start=0.0)
+                except Exception as e:
+                    print(f"Error changing instrument: {e}")
 
     def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
         if not track_file:
@@ -607,6 +643,8 @@ class SafeMusicPlayer:
                     except Exception as e:
                         print(f"Error stopping music: {e}")
 
+        if self.current_track != track_file:
+            self.active_instrument = None
         self.current_track = track_file
         self.paused = False
         self.was_stopped = False

@@ -159,6 +159,7 @@ class ControlRequest(BaseModel):
     position: float | None = None
     start_time: float | None = None
     end_time: float | None = None
+    instrument: int | None = None
 
 
 class ConfigUpdateRequest(BaseModel):
@@ -328,6 +329,8 @@ def api_status():
         "current_position": tools.player.get_current_position(),
         "start_time": getattr(tools.player, "start_time", 0.0),
         "end_time": getattr(tools.player, "end_time", None) if getattr(tools.player, "end_time", None) is not None else getattr(tools.player, "track_duration", 0.0),
+        "active_instrument": tools.player.active_instrument if tools.player.active_instrument is not None else tools.player.get_default_instrument(),
+        "is_abc": tools.player.current_track.lower().endswith(".abc") if tools.player.current_track else False,
     }
 
 
@@ -386,6 +389,11 @@ def api_control(req: ControlRequest):
                 return {"status": "success", "message": f"Selected track {req.track_file}."}
             return {"status": "error", "message": "Failed to select track."}
         return {"status": "error", "message": "track_file is required for select action."}
+    elif req.action == "instrument":
+        if req.instrument is not None:
+            tools.player.set_instrument(req.instrument)
+            return {"status": "success", "message": f"Instrument set to {req.instrument}."}
+        return {"status": "error", "message": "instrument is required for instrument action."}
     return {"status": "error", "message": f"Unknown action: {req.action}"}
 
 

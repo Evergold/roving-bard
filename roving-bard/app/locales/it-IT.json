@@ -9,6 +9,7 @@
     "subtitle": "Audio adattivo e sensibile alla posizione in LOTRO",
     "auto_polling": "RILEVAMENTO AUTOMATICO SCHERMO",
     "run_polling": "ESEGUI",
+    "instrument_label": "Strumento",
     "ready": "PRONTO",
     "unauthorized": "NON AUTORIZZATO",
     "offline": "DISCONNESSO",
