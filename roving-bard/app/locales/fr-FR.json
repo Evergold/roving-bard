@@ -1,5 +1,11 @@
 {
     "locale_name": "FR (FR)",
+    "trigger_run_width_s": 1080,
+    "trigger_run_width_m": 1200,
+    "trigger_run_width_lg": 1200,
+    "trigger_narrow_width_s": 985,
+    "trigger_narrow_width_m": 985,
+    "trigger_narrow_width_lg": 1280,
     "subtitle": "Audio adaptatif et sensible à la localisation dans LOTRO",
     "auto_polling": "ANALYSE AUTO DE L'ÉCRAN",
     "run_polling": "EXÉCUTER",

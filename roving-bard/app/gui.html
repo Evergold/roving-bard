@@ -72,7 +72,7 @@
         }
 
         header {
-            padding: 0.6rem 1rem;
+            padding: 1rem 2rem;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -83,11 +83,11 @@
             top: 0;
             z-index: 100;
             flex-wrap: wrap;
-            gap: 0.6rem;
+            gap: 1.5rem;
         }
 
         .logo-container h1 {
-            font-size: 1.25rem;
+            font-size: 1.8rem;
             font-weight: 800;
             background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #7c4dff 100%);
             -webkit-background-clip: text;
@@ -104,20 +104,15 @@
             letter-spacing: 1.5px;
             font-family: 'Space Mono', monospace;
             text-shadow: 0 0 8px rgba(124, 77, 255, 0.4);
-            max-width: 220px;
-        }
-
-        .header-main-content {
-            gap: 0.6rem !important;
         }
 
         main {
             flex: 1;
             width: 100%;
-            padding: 1rem;
+            padding: 2rem 2rem;
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.2rem;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
             align-items: start;
         }
 
@@ -182,79 +177,31 @@
         .auto-polling-short { display: none; }
         .auto-polling-full { display: inline; }
 
-        /* Normal Font Size (s): RUN at < 1080px */
-        @media (max-width: 1079px) {
-            html:not(.font-size-m):not(.font-size-lg) .auto-polling-full { display: none; }
-            html:not(.font-size-m):not(.font-size-lg) .auto-polling-short { display: inline; }
+        /* ── Localized Responsive Layout Classes ──────────────── */
+        html.narrow-view header {
+            padding: 0.6rem 1rem;
+            gap: 0.6rem;
+        }
+        html.narrow-view .logo-container h1 {
+            font-size: 1.25rem;
+        }
+        html.narrow-view .logo-container p {
+            max-width: 220px;
+        }
+        html.narrow-view .header-main-content {
+            gap: 0.6rem !important;
+        }
+        html.narrow-view main {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+            gap: 1.2rem;
         }
 
-        /* Larger (m) and Largest (lg) Font Sizes: RUN at < 1200px */
-        @media (max-width: 1199px) {
-            html.font-size-m .auto-polling-full,
-            html.font-size-lg .auto-polling-full { display: none; }
-            html.font-size-m .auto-polling-short,
-            html.font-size-lg .auto-polling-short { display: inline; }
+        html.use-run-label .auto-polling-full {
+            display: none;
         }
-
-        /* ── Wide View Breakpoints based on Font Size ──────────────── */
-
-        /* 1. Normal (s) and Larger (m) Font Sizes: Wide View at >= 985px */
-        @media (min-width: 985px) {
-            html:not(.font-size-lg) header {
-                padding: 1rem 2rem;
-                gap: 1.5rem;
-            }
-            html:not(.font-size-lg) .logo-container h1 {
-                font-size: 1.8rem;
-            }
-            html:not(.font-size-lg) .header-main-content {
-                gap: 1.5rem !important;
-            }
-            html:not(.font-size-lg) main {
-                padding: 2rem 2rem;
-                gap: 2rem;
-            }
-            html:not(.font-size-lg) main:not(.single-col) {
-                grid-template-columns: 1fr 1.2fr;
-            }
-        }
-
-        /* 2. Largest Font Size (lg): Wide View at >= 1280px */
-        @media (min-width: 1280px) {
-            html.font-size-lg header {
-                padding: 1rem 2rem;
-                gap: 1.5rem;
-            }
-            html.font-size-lg .logo-container h1 {
-                font-size: 1.8rem;
-            }
-            html.font-size-lg .header-main-content {
-                gap: 1.5rem !important;
-            }
-            html.font-size-lg main {
-                padding: 2rem 2rem;
-                gap: 2rem;
-            }
-            html.font-size-lg main:not(.single-col) {
-                grid-template-columns: 1fr 1.2fr;
-            }
-        }
-
-        /* ── Subtitle Spacious (max-width: none) triggers ──────────────── */
-
-        /* Normal (s): Spacious at >= 1080px */
-        @media (min-width: 1080px) {
-            html:not(.font-size-m):not(.font-size-lg) .logo-container p {
-                max-width: none;
-            }
-        }
-
-        /* Larger (m) and Largest (lg): Spacious at >= 1200px */
-        @media (min-width: 1200px) {
-            html.font-size-m .logo-container p,
-            html.font-size-lg .logo-container p {
-                max-width: none;
-            }
+        html.use-run-label .auto-polling-short {
+            display: inline;
         }
 
 
@@ -6121,6 +6068,9 @@
                 }
             }
 
+            // Update layout triggers immediately after loading localization
+            updateResponsiveLayout();
+
             if (!LOCALIZATION['en-US']) {
                 try {
                     const res = await fetch('/locales/en-US.json');
@@ -6208,6 +6158,7 @@
             updateStatusBadgeUI();
             checkApiKeyEnvStatus();
             updateExportButtonWidth();
+            updateResponsiveLayout();
         }
 
         async function changeLanguage(lang) {
@@ -6493,13 +6444,22 @@
                 { id: 'audio-library',   col: 1, order: 0 },
             ];
 
-            function isNarrowLayout() {
+            function updateResponsiveLayout() {
                 const width = window.innerWidth;
+                const size = localStorage.getItem('font-size') || 's';
+                const currentLang = localStorage.getItem('lang') || 'en-US';
+                const dict = LOCALIZATION[currentLang] || LOCALIZATION['en-US'] || {};
+                
+                const triggerRun = Number(dict[`trigger_run_width_${size}`]) || (size === 's' ? 1080 : 1200);
+                const triggerNarrow = Number(dict[`trigger_narrow_width_${size}`]) || (size === 'lg' ? 1280 : 985);
+                
                 const html = document.documentElement;
-                if (html.classList.contains('font-size-lg')) {
-                    return width <= 1279;
-                }
-                return width <= 984;
+                html.classList.toggle('use-run-label', width < triggerRun);
+                html.classList.toggle('narrow-view', width < triggerNarrow);
+            }
+
+            function isNarrowLayout() {
+                return document.documentElement.classList.contains('narrow-view');
             }
 
             let layout = loadLayout();
@@ -6963,6 +6923,7 @@
             // ── Orientation / resize handler ─────────────────────────────────────
             let lastWasNarrow = isNarrowLayout();
             window.addEventListener('resize', () => {
+                updateResponsiveLayout();
                 const nowNarrow = isNarrowLayout();
                 if (nowNarrow !== lastWasNarrow) {
                     lastWasNarrow = nowNarrow;
