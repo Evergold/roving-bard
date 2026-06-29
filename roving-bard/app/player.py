@@ -870,6 +870,7 @@ class SafeMusicPlayer:
                         self._sf = sf.SoundFile(actual_track_path)
                         self._sample_rate = self._sf.samplerate
                         self._channels = self._sf.channels
+                        self.track_duration = len(self._sf) / self._sample_rate
                         self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
                     elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
                         pos_sec = self._playhead / 44100.0
@@ -1304,7 +1305,7 @@ class SafeMusicPlayer:
             
             if not self.paused:
                 try:
-                    midi_path = self._prepare_abc_midi(track_path, pos)
+                    midi_path = self._prepare_abc_midi(track_path, 0.0)
                     self._synthesize_midi_to_wav(midi_path, cached_wav)
                     
                     import soundfile as sf
