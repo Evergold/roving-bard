@@ -205,92 +205,114 @@
         }
 
 
-        /* Instrument Chooser Panel */
-        .instrument-chooser-panel {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
-            margin: 1rem 0 0.5rem;
-            backdrop-filter: blur(8px);
+        /* Instrument Popover Panel */
+        #instrument-panel {
+            display: none;
+            position: fixed;   /* escapes card overflow:hidden */
+            z-index: 2000;
+            background: rgba(18, 24, 36, 0.96);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(0, 242, 254, 0.35);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem 1.5rem;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+            min-width: 320px;
+            max-width: 340px;
+            animation: inst-pop-in 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
         }
-        .instrument-chooser-title {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: var(--text-muted);
-            margin-bottom: 0.6rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+        #instrument-panel.instrument-panel-open { display: block; }
+
+        @keyframes inst-pop-in {
+            from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .instrument-options {
+
+        .instrument-header {
             display: flex;
-            gap: 0.5rem;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            scrollbar-width: none; /* Firefox */
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.5rem;
         }
-        .instrument-options::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+        .instrument-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--neon-blue);
+            font-family: 'Space Mono', monospace;
         }
-        .instrument-option {
+        .instrument-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+        }
+        .instrument-card {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 58px;
-            height: 58px;
+            padding: 0.75rem 0.5rem;
             border-radius: 10px;
             background: rgba(0, 0, 0, 0.25);
             border: 1px solid rgba(255, 255, 255, 0.05);
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
             color: var(--text-muted);
         }
-        .instrument-option:hover {
+        .instrument-card:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.15);
             color: var(--text-main);
             transform: translateY(-2px);
         }
-        .instrument-option.active {
+        .instrument-card.active {
             background: rgba(0, 242, 254, 0.12);
             border-color: var(--neon-blue);
             color: var(--neon-blue);
             box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
         }
-        .instrument-option svg {
-            width: 20px;
-            height: 20px;
-            margin-bottom: 4px;
+        .instrument-card svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 6px;
             transition: transform 0.2s;
         }
-        .instrument-option:hover svg {
+        .instrument-card:hover svg {
             transform: scale(1.1);
         }
-        .instrument-option span {
-            font-size: 0.65rem;
+        .instrument-card span {
+            font-size: 0.7rem;
             font-weight: 600;
         }
-        
+
         /* Light theme support */
-        body.light-theme .instrument-chooser-panel {
-            background: rgba(0, 0, 0, 0.02);
-            border-color: rgba(0, 0, 0, 0.08);
+        body.light-theme #instrument-panel {
+            background: rgba(255, 255, 255, 0.98);
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
         }
-        body.light-theme .instrument-option {
-            background: rgba(255, 255, 255, 0.6);
-            border-color: rgba(0, 0, 0, 0.08);
+        body.light-theme .instrument-card {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.06);
+            color: var(--text-muted);
         }
-        body.light-theme .instrument-option:hover {
-            background: rgba(0, 0, 0, 0.04);
+        body.light-theme .instrument-card:hover {
+            background: rgba(0, 0, 0, 0.06);
             border-color: rgba(0, 0, 0, 0.15);
+            color: var(--text-main);
         }
-        body.light-theme .instrument-option.active {
+        body.light-theme .instrument-card.active {
             background: rgba(0, 242, 254, 0.08);
             border-color: var(--neon-blue);
             color: #008fa0;
+        }
+        #instrument-btn {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        #instrument-btn:hover {
+            opacity: 0.8;
         }
 
         /* Widgets */
@@ -2839,8 +2861,9 @@
                     <div class="header-volume-control">
                         <!-- Export Button -->
                         <button id="export-segment-btn" class="btn btn-export" style="width: auto; white-space: nowrap; padding: 0.4rem 1rem; font-size: 0.85rem; height: 32px; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center;" onclick="showExportPopover(event)" disabled>Export</button>
-                        <!-- EQ Button -->
+                        <!-- EQ / Instrument Buttons & Panels -->
                         <div class="eq-anchor">
+                            <!-- EQ Button (WAV, MP3, etc.) -->
                             <span id="eq-btn" onclick="toggleEQPanel()" data-loc-title="equalizer_tooltip" title="Equalizer">
                                 <!-- EQ SVG Icon: 5 slider bars at staggered positions -->
                                 <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
@@ -2874,6 +2897,28 @@
                                     <circle cx="38" cy="22" r="3.5" fill="white" opacity="0.9"/>
                                 </svg>
                             </span>
+                            <!-- Instrument Button (ABC tracks) -->
+                            <span id="instrument-btn" onclick="toggleInstrumentPanel()" data-loc-title="instrument_label" title="Instrument" style="display: none;">
+                                <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                                    <defs>
+                                        <linearGradient id="instGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#00f2fe"/>
+                                            <stop offset="100%" stop-color="#7c4dff"/>
+                                        </linearGradient>
+                                        <filter id="instGlow">
+                                            <feGaussianBlur stdDeviation="1.2" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                    </defs>
+                                    <!-- A beautiful lute icon inside the button -->
+                                    <path d="M12 24 C12 29, 20 29, 20 24 C20 18, 12 18, 12 24 Z" fill="url(#instGrad)" filter="url(#instGlow)"/>
+                                    <path d="M16 19 L16 8" stroke="url(#instGrad)" stroke-width="2" stroke-linecap="round" filter="url(#instGlow)"/>
+                                    <path d="M14 12 L18 12 M14 15 L18 15" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+                                    <circle cx="16" cy="7" r="2" fill="url(#instGrad)"/>
+                                    <path d="M22 28 C26 28, 30 25, 30 20 C30 15, 24 12, 20 18" stroke="url(#instGrad)" stroke-width="1.5" stroke-linecap="round" filter="url(#instGlow)"/>
+                                </svg>
+                            </span>
+
                             <!-- EQ Panel (popover) -->
                             <div id="eq-panel">
                                 <div class="eq-header">
@@ -2893,6 +2938,63 @@
                                 </div>
                                 <div class="eq-bands" id="eq-bands-container">
                                     <!-- bands injected by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Instrument Panel (popover) -->
+                            <div id="instrument-panel" style="display: none;">
+                                <div class="instrument-header">
+                                    <span class="instrument-title" data-loc="instrument_label">INSTRUMENT</span>
+                                </div>
+                                <div class="instrument-grid">
+                                    <div class="instrument-card" data-program="109" onclick="selectInstrument(109)" title="Bagpipe">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 12c-2 0-4 1.5-4 3.5s2 3.5 4 3.5s4-1.5 4-3.5S14 12 12 12z M10 12V4 M14 12V4 M8 13.5l-3-3 M16 13.5l3-3"/></svg>
+                                        <span>Bagpipe</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="70" onclick="selectInstrument(70)" title="Bassoon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 19L19 5 M9 15l1-1 M12 12l1-1 M15 9l1-1 M18 6l1-1 M5 19l-1.5 1.5 M19 5l1.5-1.5"/></svg>
+                                        <span>Bassoon</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="71" onclick="selectInstrument(71)" title="Clarinet">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v15 M9 18h6l-1.5 3h-3L9 18z M12 6h.01 M12 9h.01 M12 12h.01 M12 15h.01"/></svg>
+                                        <span>Clarinet</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="115" onclick="selectInstrument(115)" title="Cowbell">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 10l2-6h6l2 6 M5 10h14l-2 9H7l-2-9z M12 4V2 M12 19v2"/></svg>
+                                        <span>Cowbell</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="116" onclick="selectInstrument(116)" title="Drum">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8a16 8 0 1 0 16 0A16 8 0 1 0 4 8z M4 8v8c0 4.4 3.6 8 8 8s8-3.6 8-8V8 M8 6l8 4 M16 6L8 10"/></svg>
+                                        <span>Drum</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="110" onclick="selectInstrument(110)" title="Fiddle">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v16 M9 7c-1.5 0-2.5 1-2.5 2.5S8 12 9.5 12s2.5 1.5 2.5 3c0 2-2 3.5-3.5 4.5M15 7c1.5 0 2.5 1 2.5 2.5S16 12 14.5 12s-2.5 1.5-2.5 3c0 2 2 3.5 3.5 4.5M4 20L20 4"/></svg>
+                                        <span>Fiddle</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="73" onclick="selectInstrument(73)" title="Flute">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20L20 4 M7 17l.01-.01 M10 14l.01-.01 M13 11l.01-.01 M16 8l.01-.01"/></svg>
+                                        <span>Flute</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="46" onclick="selectInstrument(46)" title="Harp">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4v16h2c2.5-3 5.5-4 9-4.5V4C12.5 4.5 7.5 3 5 4z M5 8h11 M5 12h8.5 M5 16h5"/></svg>
+                                        <span>Harp</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="60" onclick="selectInstrument(60)" title="Horn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M12 6V3 M12 18h6v3 M6 12H3"/></svg>
+                                        <span>Horn</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="24" onclick="selectInstrument(24)" title="Lute">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L14 10 M10 14c-1.5 0-3-1-3-2.5S8 9 9.5 9s2.5 1.5 2.5 3c0 2-2 3.5-3.5 4.5M13 11l4-4M16.5 4.5l3 3"/></svg>
+                                        <span>Lute</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="84" onclick="selectInstrument(84)" title="Pibgorn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6c3 0 6 2 8 5s2 6 5 8 M19 19a2 2 0 1 0 2-2 M6 6L4 4 M8 8l.01-.01 M10 10l.01-.01"/></svg>
+                                        <span>Pibgorn</span>
+                                    </div>
+                                    <div class="instrument-card" data-program="32" onclick="selectInstrument(32)" title="Theorbo">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 3L12 11 M8 15c-1.5 0-3-1-3-2.5S7 10 8.5 10s2.5 1.5 2.5 3c0 2-2 3.5-3.5 4.5M11 12.5l7-7M16.5 3.5l3 3 M14 2v6"/></svg>
+                                        <span>Theorbo</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2944,60 +3046,7 @@
                             </div>
                         </div>
                         
-                        <!-- INSTRUMENT CHOOSER PANEL -->
-                        <div id="instrument-chooser-panel" class="instrument-chooser-panel" style="display: none;">
-                            <div class="instrument-chooser-title" data-loc="instrument_label">Instrument</div>
-                            <div class="instrument-options">
-                                <div class="instrument-option" data-program="109" onclick="selectInstrument(109)" title="Bagpipe">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 12c-2 0-4 1.5-4 3.5s2 3.5 4 3.5s4-1.5 4-3.5S14 12 12 12z M10 12V4 M14 12V4 M8 13.5l-3-3 M16 13.5l3-3"/></svg>
-                                    <span>Bagpipe</span>
-                                </div>
-                                <div class="instrument-option" data-program="70" onclick="selectInstrument(70)" title="Bassoon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 19L19 5 M9 15l1-1 M12 12l1-1 M15 9l1-1 M18 6l1-1 M5 19l-1.5 1.5 M19 5l1.5-1.5"/></svg>
-                                    <span>Bassoon</span>
-                                </div>
-                                <div class="instrument-option" data-program="71" onclick="selectInstrument(71)" title="Clarinet">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v15 M9 18h6l-1.5 3h-3L9 18z M12 6h.01 M12 9h.01 M12 12h.01 M12 15h.01"/></svg>
-                                    <span>Clarinet</span>
-                                </div>
-                                <div class="instrument-option" data-program="115" onclick="selectInstrument(115)" title="Cowbell">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 10l2-6h6l2 6 M5 10h14l-2 9H7l-2-9z M12 4V2 M12 19v2"/></svg>
-                                    <span>Cowbell</span>
-                                </div>
-                                <div class="instrument-option" data-program="116" onclick="selectInstrument(116)" title="Drum">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8a16 8 0 1 0 16 0A16 8 0 1 0 4 8z M4 8v8c0 4.4 3.6 8 8 8s8-3.6 8-8V8 M8 6l8 4 M16 6L8 10"/></svg>
-                                    <span>Drum</span>
-                                </div>
-                                <div class="instrument-option" data-program="110" onclick="selectInstrument(110)" title="Fiddle">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v16 M9 7c-1.5 0-2.5 1-2.5 2.5S8 12 9.5 12s2.5 1.5 2.5 3c0 2-2 3.5-3.5 4.5M15 7c1.5 0 2.5 1 2.5 2.5S16 12 14.5 12s-2.5 1.5-2.5 3c0 2 2 3.5 3.5 4.5M4 20L20 4"/></svg>
-                                    <span>Fiddle</span>
-                                </div>
-                                <div class="instrument-option" data-program="73" onclick="selectInstrument(73)" title="Flute">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20L20 4 M7 17l.01-.01 M10 14l.01-.01 M13 11l.01-.01 M16 8l.01-.01"/></svg>
-                                    <span>Flute</span>
-                                </div>
-                                <div class="instrument-option" data-program="46" onclick="selectInstrument(46)" title="Harp">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4v16h2c2.5-3 5.5-4 9-4.5V4C12.5 4.5 7.5 3 5 4z M5 8h11 M5 12h8.5 M5 16h5"/></svg>
-                                    <span>Harp</span>
-                                </div>
-                                <div class="instrument-option" data-program="60" onclick="selectInstrument(60)" title="Horn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M12 6V3 M12 18h6v3 M6 12H3"/></svg>
-                                    <span>Horn</span>
-                                </div>
-                                <div class="instrument-option" data-program="24" onclick="selectInstrument(24)" title="Lute">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L14 10 M10 14c-1.5 0-3-1-3-2.5S8 9 9.5 9s2.5 1.5 2.5 3c0 2-2 3.5-3.5 4.5M13 11l4-4M16.5 4.5l3 3"/></svg>
-                                    <span>Lute</span>
-                                </div>
-                                <div class="instrument-option" data-program="84" onclick="selectInstrument(84)" title="Pibgorn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6c3 0 6 2 8 5s2 6 5 8 M19 19a2 2 0 1 0 2-2 M6 6L4 4 M8 8l.01-.01 M10 10l.01-.01"/></svg>
-                                    <span>Pibgorn</span>
-                                </div>
-                                <div class="instrument-option" data-program="32" onclick="selectInstrument(32)" title="Theorbo">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 3L12 11 M8 15c-1.5 0-3-1-3-2.5S7 10 8.5 10s2.5 1.5 2.5 3c0 2-2 3.5-3.5 4.5M11 12.5l7-7M16.5 3.5l3 3 M14 2v6"/></svg>
-                                    <span>Theorbo</span>
-                                </div>
-                            </div>
-                        </div>
+
                         <!-- SEEK BAR CONTAINER -->
                         <div class="seek-container">
                             <span id="seek-current-time">00:00:00.00</span>
@@ -3549,30 +3598,52 @@
 
         function updateInstrumentChooser(isAbc, activeInstrument) {
             console.log("[Instrument Chooser] updateInstrumentChooser called with isAbc:", isAbc, "activeInstrument:", activeInstrument);
-            const panel = document.getElementById('instrument-chooser-panel');
-            if (!panel) {
-                console.warn("[Instrument Chooser] instrument-chooser-panel element not found in DOM!");
-                return;
+            
+            // Highlight the active instrument card in the popover
+            document.querySelectorAll('.instrument-card').forEach(card => {
+                const prog = Number(card.getAttribute('data-program'));
+                if (prog === activeInstrument) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        function toggleInstrumentPanel() {
+            const panel = document.getElementById('instrument-panel');
+            if (!panel) return;
+            
+            // Close EQ panel if open
+            const eqPanel = document.getElementById('eq-panel');
+            if (eqPanel && eqPanel.classList.contains('eq-panel-open')) {
+                eqPanelOpen = false;
+                eqPanel.classList.remove('eq-panel-open');
+                const eqBtn = document.getElementById('eq-btn');
+                if (eqBtn) eqBtn.classList.remove('eq-active');
             }
             
-            if (isAbc) {
-                console.log("[Instrument Chooser] Showing instrument panel.");
-                panel.style.display = 'block';
-                document.querySelectorAll('.instrument-option').forEach(opt => {
-                    const prog = Number(opt.getAttribute('data-program'));
-                    if (prog === activeInstrument) {
-                        opt.classList.add('active');
-                    } else {
-                        opt.classList.remove('active');
-                    }
-                });
-            } else {
-                panel.style.display = 'none';
+            panel.classList.toggle('instrument-panel-open');
+            if (panel.classList.contains('instrument-panel-open')) {
+                positionInstrumentPanel();
             }
         }
 
+        function positionInstrumentPanel() {
+            const btn = document.getElementById('instrument-btn');
+            const panel = document.getElementById('instrument-panel');
+            if (!btn || !panel) return;
+            const rect = btn.getBoundingClientRect();
+            const panelW = panel.offsetWidth || 340;
+            // Right-align panel with button's right edge, clamped to viewport
+            let left = rect.right - panelW;
+            if (left < 8) left = 8;
+            panel.style.left = left + 'px';
+            panel.style.top  = (rect.bottom + 10) + 'px';
+        }
+
         async function selectInstrument(program) {
-            document.querySelectorAll('.instrument-option').forEach(opt => {
+            document.querySelectorAll('.instrument-card').forEach(opt => {
                 const prog = Number(opt.getAttribute('data-program'));
                 if (prog === program) {
                     opt.classList.add('active');
@@ -3685,6 +3756,22 @@
                 stopBtn.style.borderColor = '';
                 stopBtn.style.boxShadow = '';
             }
+            const eqBtn = document.getElementById('eq-btn');
+            const instBtn = document.getElementById('instrument-btn');
+            if (eqBtn && instBtn) {
+                if (isAbc) {
+                    eqBtn.style.display = 'none';
+                    instBtn.style.display = 'flex';
+                } else {
+                    eqBtn.style.display = 'flex';
+                    instBtn.style.display = 'none';
+                    const instPanel = document.getElementById('instrument-panel');
+                    if (instPanel) {
+                        instPanel.classList.remove('instrument-panel-open');
+                    }
+                }
+            }
+
             updateExportButtonWidth();
             updateInstrumentChooser(isAbc, status.active_instrument);
         }
@@ -6208,15 +6295,23 @@
             buildEQBands();
         }
 
-        // Close EQ panel on outside click
+        // Close EQ and Instrument panels on outside click
         document.addEventListener('click', (e) => {
-            if (!eqPanelOpen) return;
-            const panel = document.getElementById('eq-panel');
-            const btn = document.getElementById('eq-btn');
-            if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
-                eqPanelOpen = false;
-                panel.classList.remove('eq-panel-open');
-                btn.classList.remove('eq-active');
+            if (eqPanelOpen) {
+                const panel = document.getElementById('eq-panel');
+                const btn = document.getElementById('eq-btn');
+                if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+                    eqPanelOpen = false;
+                    panel.classList.remove('eq-panel-open');
+                    btn.classList.remove('eq-active');
+                }
+            }
+            const instPanel = document.getElementById('instrument-panel');
+            const instBtn = document.getElementById('instrument-btn');
+            if (instPanel && instPanel.classList.contains('instrument-panel-open')) {
+                if (instBtn && !instPanel.contains(e.target) && !instBtn.contains(e.target)) {
+                    instPanel.classList.remove('instrument-panel-open');
+                }
             }
         });
 
