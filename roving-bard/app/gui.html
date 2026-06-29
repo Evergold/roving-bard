@@ -253,7 +253,7 @@
             align-items: center;
             justify-content: center;
             padding: 0.75rem 0.5rem;
-            border-radius: 10px;
+            border-radius: 0;
             background: rgba(0, 0, 0, 0.25);
             border: 1px solid rgba(255, 255, 255, 0.05);
             cursor: pointer;
@@ -2922,8 +2922,8 @@
                                             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
                                         </filter>
                                     </defs>
-                                    <g filter="url(#instGlow)" stroke="url(#instGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 14h18v6H3v-6z M5 14v4 M8 14v4 M11 14v4 M14 14v4 M17 14v4 M20 14v4 M4 14C4 6 8 4 16 4c4 0 4 4 4 10"/>
+                                    <g filter="url(#instGlow)" stroke="url(#instGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(10, 8)">
+                                        <path d="M3 4h18v16H3V4z M7 4v10 M11 4v10 M15 4v10 M19 4v10 M5 14h14 M9 4v6h1 M13 4v6h1"/>
                                     </g>
                                 </svg>
                             </span>
