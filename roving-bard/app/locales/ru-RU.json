@@ -1,8 +1,8 @@
 {
     "locale_name": "RU (RU)",
-    "trigger_run_width_s": 1080,
-    "trigger_run_width_m": 1200,
-    "trigger_run_width_lg": 1200,
+    "trigger_run_width_s": 1190,
+    "trigger_run_width_m": 1320,
+    "trigger_run_width_lg": 1320,
     "trigger_narrow_width_s": 985,
     "trigger_narrow_width_m": 985,
     "trigger_narrow_width_lg": 1280,
