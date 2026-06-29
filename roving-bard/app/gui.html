@@ -6483,17 +6483,18 @@
 
                 if (!isNarrow) {
                     if (dragState && dragState.startedInSingleCol) {
-                        // If we started the drag in 1-column mode, use stable centered zones for the entire drag
-                        const screenMidX = window.innerWidth / 2;
-                        const leftThresh = screenMidX - 120; // 35% of 800px centered
-                        const rightThresh = screenMidX + 120; // 65% of 800px centered
-                        if (clientX < leftThresh) {
+                        // Use stable relative thresholds based on the initial drag start position
+                        const dragStartX = dragState.startX || clientX;
+                        const deltaX = clientX - dragStartX;
+                        const THRESHOLD = 150; // pixels of relative movement to trigger a split
+
+                        if (deltaX < -THRESHOLD) {
                             targetCol = 0;
                             forceTwoColLeft = true;
-                        } else if (clientX > rightThresh) {
+                        } else if (deltaX > THRESHOLD) {
                             targetCol = 1;
                         } else {
-                            targetCol = currentCol;
+                            targetCol = 0;
                         }
                     } else {
                         // If we started in 2-column mode, use normal 2-column hysteresis thresholds
@@ -6621,7 +6622,7 @@
                         cardEl.classList.add('drag-placeholder');
 
                         // 3. Commit drag state
-                        dragState = { panelId, cardEl, clone, offsetX, offsetY, startedInSingleCol: manuallyForcedSingleCol };
+                        dragState = { panelId, cardEl, clone, offsetX, offsetY, startedInSingleCol: manuallyForcedSingleCol, startX };
                         document.body.classList.add('dragging-active');
 
                         document.addEventListener('pointermove', onPointerMove, { passive: false });
