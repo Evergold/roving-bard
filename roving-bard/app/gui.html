@@ -6448,12 +6448,14 @@
                         });
                     });
 
-                    const col0Count = layout.panels.filter(p => p.col === 0).length;
-                    const col1Count = layout.panels.filter(p => p.col === 1).length;
-                    if (col0Count === 0 || col1Count === 0) {
-                        manuallyForcedSingleCol = true;
-                        applyLayout(false);
-                        return;
+                    if (!dragState) {
+                        const col0Count = layout.panels.filter(p => p.col === 0).length;
+                        const col1Count = layout.panels.filter(p => p.col === 1).length;
+                        if (col0Count === 0 || col1Count === 0) {
+                            manuallyForcedSingleCol = true;
+                            applyLayout(false);
+                            return;
+                        }
                     }
                 }
                 saveLayout();
@@ -6705,9 +6707,7 @@
                 if (changed) {
                     const col0Count = layout.panels.filter(p => p.col === 0).length;
                     const col1Count = layout.panels.filter(p => p.col === 1).length;
-                    if (col0Count === 0 || col1Count === 0) {
-                        manuallyForcedSingleCol = true;
-                    } else {
+                    if (col0Count > 0 && col1Count > 0) {
                         manuallyForcedSingleCol = false;
                     }
 
