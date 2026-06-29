@@ -3809,7 +3809,7 @@
             const currentTrackLower = status.current_track ? status.current_track.toLowerCase() : '';
             const isAbc = currentTrackLower.endsWith('.abc');
             const isMidi = currentTrackLower.endsWith('.mid') || currentTrackLower.endsWith('.midi');
-            const disableEQ = isAbc || isMidi;
+            const disableEQ = isAbc; // MIDI now has EQ support via Fluidsynth!
             
             console.log("[Player UI] Computed isAbc:", isAbc, "isMidi:", isMidi, "disableEQ:", disableEQ);
             const sliders = document.querySelectorAll('.eq-slider');

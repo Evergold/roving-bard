@@ -16,11 +16,11 @@ import os
 import re
 import tempfile
 import threading
+import subprocess
 
 import cv2
 import mss
 import numpy as np
-import pygame
 import pytesseract
 from PIL import Image
 from tinytag import TinyTag
@@ -639,7 +639,6 @@ class SafeMusicPlayer:
         self.playlist_dir = playlist_dir
         self.current_track = None
         self.volume = 1.0
-        self.mixer_initialized = False
         self.simulated = False
         self.paused = False
         self.was_stopped = False
@@ -655,15 +654,26 @@ class SafeMusicPlayer:
             32: 0.0, 64: 0.0, 125: 0.0, 250: 0.0, 500: 0.0,
             1000: 0.0, 2000: 0.0, 4000: 0.0, 8000: 0.0, 16000: 0.0,
         }
-        self._eq_tmp_path: str | None = None  # path to the currently loaded temp EQ file
-        self._eq_lock = threading.Lock()
-        self._abc_tmp_path: str | None = None  # path to the currently compiled MIDI file
+        self._abc_tmp_path: str | None = None
         self.active_instrument: int | None = None
+
+        # sounddevice backend fields
+        self._play_thread = None
+        self._play_lock = threading.Lock()
+        self._audio_data = None  # NumPy array of shape (N, channels)
+        self._sf = None  # soundfile.SoundFile object for streaming WAV/OGG/FLAC
+        self._ffmpeg_proc = None  # subprocess.Popen object for streaming MP3/AAC
+        self._sample_rate = 44100
+        self._channels = 2
+        self._playhead = 0
+        self._eq_zi = {}  # band -> zi array for filter state
+        self.soundfont_path = None
 
         # Set SDL_SOUNDFONTS to enable correct MIDI instrument synthesis on Linux
         env_soundfont = os.environ.get("SDL_SOUNDFONTS")
         if env_soundfont and os.path.exists(env_soundfont):
             print(f"Using pre-configured SDL_SOUNDFONTS: {env_soundfont}")
+            self.soundfont_path = env_soundfont
         else:
             soundfont_paths = []
             if self.playlist_dir and os.path.exists(self.playlist_dir):
@@ -686,27 +696,60 @@ class SafeMusicPlayer:
             for path in soundfont_paths:
                 if os.path.exists(path):
                     os.environ["SDL_SOUNDFONTS"] = path
+                    self.soundfont_path = path
                     print(f"Set SDL_SOUNDFONTS environment variable to {path}")
                     break
 
+        # Check if fluidsynth is available on the system for WAV synthesis
+        self.fluidsynth_available = False
         try:
-            pygame.mixer.init()
-            self.mixer_initialized = True
-            print("Successfully initialized Pygame mixer.")
-        except Exception as e:
-            self.simulated = True
-            print(
-                f"Warning: Could not initialize Pygame mixer (running in simulated mode): {e}"
-            )
+            import shutil
+            if shutil.which("fluidsynth") and self.soundfont_path and os.path.exists(self.soundfont_path):
+                self.fluidsynth_available = True
+                print("Fluidsynth detected. MIDI/ABC files will be played via sounddevice backend with full seeking/EQ support!")
+        except Exception:
+            pass
+
+        # Detect best sounddevice output device (prefer 'pulse' on Linux to avoid ALSA exclusive locks)
+        self.sd_device = None
+        try:
+            import sounddevice as sd
+            for i, dev in enumerate(sd.query_devices()):
+                if dev['max_output_channels'] > 0 and 'pulse' in dev['name'].lower():
+                    self.sd_device = i
+                    print(f"Detected PulseAudio device at index {i}. Routing sounddevice output through it.")
+                    break
+        except Exception:
+            pass
 
     def __del__(self):
-        # Clean up any leftover temporary files when player is destroyed
-        for path in (getattr(self, "_eq_tmp_path", None), getattr(self, "_abc_tmp_path", None)):
-            if path and os.path.exists(path):
+        # Stop sounddevice playback thread if active
+        try:
+            self.was_stopped = True
+            if self._play_thread and self._play_thread.is_alive():
+                self._play_thread.join(timeout=0.5)
+        except Exception:
+            pass
+            
+        # Clean up temporary ABC midi file
+        if self._abc_tmp_path and os.path.exists(self._abc_tmp_path):
+            try:
+                os.unlink(self._abc_tmp_path)
+            except OSError:
+                pass
+        with self._play_lock:
+            if self._sf:
                 try:
-                    os.unlink(path)
-                except OSError:
+                    self._sf.close()
+                except Exception:
                     pass
+                self._sf = None
+            if self._ffmpeg_proc:
+                try:
+                    self._ffmpeg_proc.terminate()
+                except Exception:
+                    pass
+                self._ffmpeg_proc = None
 
     def _prepare_abc_midi(self, track_path, start_pos):
         try:
@@ -729,18 +772,504 @@ class SafeMusicPlayer:
             print(f"Error compiling ABC to MIDI: {e}")
             return self._abc_tmp_path
 
-    @property
-    def playlist_dir(self):
-        return self._playlist_dir
+    def _synthesize_midi_to_wav(self, midi_path, target_wav_path):
+        if not self.soundfont_path or not os.path.exists(self.soundfont_path):
+            raise ValueError("No soundfont found for MIDI synthesis.")
+            
+        os.makedirs(os.path.dirname(target_wav_path), exist_ok=True)
+        
+        try:
+            cmd = [
+                "fluidsynth",
+                "-ni",
+                self.soundfont_path,
+                midi_path,
+                "-F",
+                target_wav_path,
+                "-r",
+                "44100"
+            ]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except Exception as e:
+            if os.path.exists(target_wav_path):
+                try:
+                    os.unlink(target_wav_path)
+                except OSError:
+                    pass
+            raise e
 
-    @playlist_dir.setter
-    def playlist_dir(self, value):
-        if value and not os.path.isabs(value):
-            self._playlist_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), value
-            )
-        else:
-            self._playlist_dir = value
+    def _clear_eq_zi(self):
+        self._eq_zi.clear()
+
+    def _stop_sounddevice_playback(self):
+        self.was_stopped = True
+        if self._play_thread and self._play_thread.is_alive():
+            self._play_thread.join(timeout=0.5)
+        self._play_thread = None
+        
+        with self._play_lock:
+            self._audio_data = None
+            if self._sf:
+                try:
+                    self._sf.close()
+                except Exception:
+                    pass
+                self._sf = None
+            if self._ffmpeg_proc:
+                try:
+                    self._ffmpeg_proc.terminate()
+                    self._ffmpeg_proc.wait(timeout=0.2)
+                except Exception:
+                    try:
+                        self._ffmpeg_proc.kill()
+                    except Exception:
+                        pass
+                self._ffmpeg_proc = None
+
+    def _playback_loop(self):
+        import sounddevice as sd
+        from scipy.signal import sosfilt
+        
+        chunk_size = 1024
+        zi_dict = {}
+        last_eq_gains = {}
+        sos_dict = {}
+        
+        try:
+            # --- ON-DEMAND LAZY LOADING FOR DEFERRED TRACKS ---
+            with self._play_lock:
+                if self._sf is None and self._ffmpeg_proc is None and self.current_track:
+                    track_path = os.path.join(self.playlist_dir, self.current_track)
+                    is_midi_abc = self.current_track.lower().endswith((".abc", ".mid", ".midi"))
+                    actual_track_path = track_path
+                    
+                    if is_midi_abc:
+                        # Resolve cached WAV path (use instrument-specific if active)
+                        cache_dir = os.path.join(self.playlist_dir, ".cache")
+                        if self.current_track.lower().endswith(".abc") and self.active_instrument is not None:
+                            cached_wav = os.path.join(cache_dir, f"{self.current_track}_inst_{self.active_instrument}.wav")
+                        else:
+                            cached_wav = os.path.join(cache_dir, self.current_track + ".wav")
+                        
+                        # Synthesize if cache doesn't exist or is older than the source file
+                        source_mtime = os.path.getmtime(track_path)
+                        cache_mtime = os.path.getmtime(cached_wav) if os.path.exists(cached_wav) else 0
+                        
+                        if not os.path.exists(cached_wav) or source_mtime > cache_mtime:
+                            print(f"[Synth] Background synthesizing {self.current_track} to WAV cache...")
+                            midi_path = track_path
+                            if self.current_track.lower().endswith(".abc"):
+                                self.track_duration = get_abc_duration(track_path) or 180.0
+                                midi_path = self._prepare_abc_midi(track_path, 0.0)
+                            self._synthesize_midi_to_wav(midi_path, cached_wav)
+                            
+                        actual_track_path = cached_wav
+
+                    if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
+                        import soundfile as sf
+                        self._sf = sf.SoundFile(actual_track_path)
+                        self._sample_rate = self._sf.samplerate
+                        self._channels = self._sf.channels
+                        self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+                    elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
+                        pos_sec = self._playhead / 44100.0
+                        cmd = [
+                            "ffmpeg", "-y",
+                            "-ss", f"{pos_sec:.3f}",
+                            "-i", actual_track_path,
+                            "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                            "-ar", "44100", "-ac", "2", "-"
+                        ]
+                        self._ffmpeg_proc = subprocess.Popen(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL
+                        )
+                        self._sample_rate = 44100
+                        self._channels = 2
+
+            with sd.OutputStream(
+                samplerate=self._sample_rate,
+                channels=self._channels,
+                dtype="float32",
+                latency="high",
+                device=self.sd_device
+            ) as stream:
+                
+                while not self.was_stopped:
+                    if self.paused:
+                        time.sleep(0.01)
+                        continue
+                        
+                    with self._play_lock:
+                        duration = self.track_duration
+                        start_frame = int(self.start_time * self._sample_rate)
+                        
+                        if self._audio_data is not None:
+                            total_frames = len(self._audio_data)
+                        elif self._sf is not None:
+                            total_frames = len(self._sf)
+                        else:
+                            total_frames = int(self.track_duration * self._sample_rate)
+                        
+                        if self.end_time is not None:
+                            end_frame = min(total_frames, int(self.end_time * self._sample_rate))
+                        else:
+                            end_frame = total_frames
+                            
+                        if self._playhead < start_frame or self._playhead >= end_frame:
+                            range_frames = end_frame - start_frame
+                            if range_frames > 0:
+                                if self._playhead >= end_frame:
+                                    self._playhead = start_frame + ((self._playhead - start_frame) % range_frames)
+                                else:
+                                    self._playhead = start_frame
+                            else:
+                                self._playhead = start_frame
+                            
+                            # Seek the file if we are streaming WAV/OGG/FLAC
+                            if self._sf is not None:
+                                self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+                            # Re-start ffmpeg process at the new playhead if we are streaming MP3/AAC
+                            elif self._ffmpeg_proc is not None:
+                                try:
+                                    self._ffmpeg_proc.terminate()
+                                except Exception:
+                                    pass
+                                pos_sec = self._playhead / self._sample_rate
+                                cmd = [
+                                    "ffmpeg", "-y",
+                                    "-ss", f"{pos_sec:.3f}",
+                                    "-i", os.path.join(self.playlist_dir, self.current_track),
+                                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                                    "-ar", "44100", "-ac", "2", "-"
+                                ]
+                                self._ffmpeg_proc = subprocess.Popen(
+                                    cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL
+                                )
+                            zi_dict.clear()
+                            
+                        start_idx = self._playhead
+                        end_idx = min(end_frame, start_idx + chunk_size)
+                        
+                        if start_idx >= end_frame:
+                            continue
+                            
+                        if self._audio_data is not None:
+                            chunk = self._audio_data[start_idx:end_idx].copy()
+                        elif self._sf is not None:
+                            chunk = self._sf.read(end_idx - start_idx, dtype="float32", always_2d=True).copy()
+                        else:
+                            num_bytes = (end_idx - start_idx) * 4
+                            raw_bytes = b""
+                            try:
+                                raw_bytes = self._ffmpeg_proc.stdout.read(num_bytes)
+                            except Exception:
+                                pass
+                            
+                            if not raw_bytes:
+                                self._playhead = end_frame
+                                continue
+                                
+                            samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+                            chunk = samples.reshape((-1, 2))
+                            
+                        actual_frames = len(chunk)
+                        
+                    if actual_frames == 0:
+                        with self._play_lock:
+                            self._playhead = start_frame
+                            if self._sf is not None:
+                                self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
+                            elif self._ffmpeg_proc is not None:
+                                try:
+                                    self._ffmpeg_proc.terminate()
+                                except Exception:
+                                    pass
+                                cmd = [
+                                    "ffmpeg", "-y",
+                                    "-ss", f"{self.start_time:.3f}",
+                                    "-i", os.path.join(self.playlist_dir, self.current_track),
+                                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                                    "-ar", "44100", "-ac", "2", "-"
+                                ]
+                                self._ffmpeg_proc = subprocess.Popen(
+                                    cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL
+                                )
+                        continue
+                        
+                    # Pad chunk if it's smaller than chunk_size
+                    if actual_frames < chunk_size:
+                        padding = np.zeros((chunk_size - actual_frames, self._channels), dtype=np.float32)
+                        if len(chunk) > 0:
+                            chunk = np.concatenate([chunk, padding], axis=0)
+                        else:
+                            chunk = padding
+                        
+                    # --- Apply EQ in Real-Time ---
+                    gains_changed = False
+                    for band, gain in self.eq_gains.items():
+                        if last_eq_gains.get(band) != gain:
+                            gains_changed = True
+                            last_eq_gains[band] = gain
+                            
+                            Q = 1.0
+                            for fb, qb in self._EQ_BANDS:
+                                if fb == band:
+                                    Q = qb
+                                    break
+                            sos_dict[band] = self._peaking_sos(float(band), float(gain), float(Q), self._sample_rate)
+                            
+                    for band, sos in sos_dict.items():
+                        gain = last_eq_gains.get(band, 0.0)
+                        if abs(gain) < 0.01:
+                            continue
+                            
+                        if band not in zi_dict or zi_dict[band].shape[2] != self._channels:
+                            zi_dict[band] = np.zeros((1, 2, self._channels), dtype=np.float32)
+                            
+                        chunk, zi_dict[band] = sosfilt(sos, chunk, zi=zi_dict[band], axis=0)
+                        
+                    chunk = np.clip(chunk, -1.0, 1.0)
+                    
+                    effective_vol = self._get_effective_volume()
+                    chunk *= effective_vol
+                    
+                    # Force C-contiguous float32 array to prevent PortAudio memory corruption
+                    chunk = np.ascontiguousarray(chunk, dtype=np.float32)
+                    
+                    # Write to stream
+                    stream.write(chunk)
+                    
+                    with self._play_lock:
+                        if self._playhead == start_idx:
+                            self._playhead += actual_frames
+                            
+        except Exception as e:
+            print(f"[Playback Loop] Error: {e}")
+
+    def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
+        if not track_file:
+            return False
+
+        track_path = os.path.join(self.playlist_dir, track_file)
+        if not os.path.exists(track_path):
+            print(f"Error: Track file not found: {track_path}")
+            return False
+
+        is_midi_abc = track_file.lower().endswith((".abc", ".mid", ".midi"))
+
+        if is_midi_abc and not self.fluidsynth_available:
+            print("Error: Fluidsynth is not available, cannot play MIDI/ABC.")
+            return False
+
+        self._stop_sounddevice_playback()
+        
+        # Load the audio file
+        try:
+            actual_track_path = track_path
+            
+            if is_midi_abc:
+                # Resolve cached WAV path (use instrument-specific if active)
+                cache_dir = os.path.join(self.playlist_dir, ".cache")
+                if track_file.lower().endswith(".abc") and self.active_instrument is not None:
+                    cached_wav = os.path.join(cache_dir, f"{track_file}_inst_{self.active_instrument}.wav")
+                else:
+                    cached_wav = os.path.join(cache_dir, track_file + ".wav")
+                
+                # Synthesize if cache doesn't exist or is older than the source file
+                source_mtime = os.path.getmtime(track_path)
+                cache_mtime = os.path.getmtime(cached_wav) if os.path.exists(cached_wav) else 0
+                
+                if not os.path.exists(cached_wav) or source_mtime > cache_mtime:
+                    print(f"[Synth] Synthesizing {track_file} to WAV cache...")
+                    midi_path = track_path
+                    if track_file.lower().endswith(".abc"):
+                        self.track_duration = get_abc_duration(track_path) or 180.0
+                        midi_path = self._prepare_abc_midi(track_path, 0.0)
+                    self._synthesize_midi_to_wav(midi_path, cached_wav)
+                    
+                actual_track_path = cached_wav
+
+            if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
+                import soundfile as sf
+                sf_obj = sf.SoundFile(actual_track_path)
+                self._sf = sf_obj
+                self._audio_data = None
+                self._ffmpeg_proc = None
+                sample_rate = sf_obj.samplerate
+                channels = sf_obj.channels
+                self.track_duration = len(sf_obj) / sample_rate
+            elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
+                self.track_duration = TinyTag.get(actual_track_path).duration or 180.0
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", f"{start_time:.3f}",
+                    "-i", actual_track_path,
+                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                    "-ar", "44100", "-ac", "2", "-"
+                ]
+                self._ffmpeg_proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL
+                )
+                self._audio_data = None
+                self._sf = None
+                sample_rate = 44100
+                channels = 2
+            else:
+                print(f"Unsupported audio format: {track_file}")
+                return False
+        except Exception as e:
+            print(f"Error loading audio file {track_file}: {e}")
+            return False
+
+        if self.current_track != track_file:
+            self.active_instrument = None
+        self.current_track = track_file
+        self._sample_rate = sample_rate
+        self._channels = channels
+
+        self.start_time = start_time
+        self.end_time = end_time
+        
+        with self._play_lock:
+            self._playhead = int(start_time * sample_rate)
+            if self._sf is not None:
+                self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+            self.paused = False
+            self.was_stopped = False
+            self.seeked_while_paused = False
+            self.last_seek_position = start_time
+            self.last_play_time = time.time()
+            self._clear_eq_zi()
+
+        self._play_thread = threading.Thread(target=self._playback_loop, daemon=True)
+        self._play_thread.start()
+        print(f"[Playback sounddevice] Playing: {track_file} (duration={self.track_duration:.2f}s)")
+        return True
+
+    def select_track(self, track_file, start_time=0.0, end_time=None):
+        if not track_file:
+            return False
+
+        track_path = os.path.join(self.playlist_dir, track_file)
+        if not os.path.exists(track_path):
+            print(f"Warning: Track file not found: {track_path}")
+            return False
+
+        is_midi_abc = track_file.lower().endswith((".abc", ".mid", ".midi"))
+
+        if is_midi_abc and not self.fluidsynth_available:
+            print("Error: Fluidsynth is not available, cannot play MIDI/ABC.")
+            return False
+
+        self._stop_sounddevice_playback()
+
+        # Determine track duration without synthesizing
+        try:
+            if is_midi_abc:
+                if track_file.lower().endswith(".abc"):
+                    self.track_duration = get_abc_duration(track_path) or 180.0
+                else:
+                    self.track_duration = get_midi_duration(track_path) or 180.0
+            elif track_file.lower().endswith((".wav", ".ogg", ".flac")):
+                import soundfile as sf
+                with sf.SoundFile(track_path) as f:
+                    self.track_duration = len(f) / f.samplerate
+            elif track_file.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
+                self.track_duration = TinyTag.get(track_path).duration or 180.0
+        except Exception as e:
+            print(f"Error getting track duration during select: {e}")
+            self.track_duration = 180.0
+
+        if self.current_track != track_file:
+            self.active_instrument = None
+        self.current_track = track_file
+        self._audio_data = None
+        self._sf = None
+        self._ffmpeg_proc = None
+        self._sample_rate = 44100
+        self._channels = 2
+
+        self.start_time = start_time
+        self.end_time = end_time
+        
+        with self._play_lock:
+            self._playhead = int(start_time * self._sample_rate)
+            self.paused = True
+            self.was_stopped = True
+            self.seeked_while_paused = False
+            self.last_seek_position = start_time
+            self.last_play_time = None
+            self._clear_eq_zi()
+
+        # --- START BACKGROUND PRE-SYNTHESIS IMMEDIATELY ON SELECTION ---
+        if is_midi_abc:
+            cache_dir = os.path.join(self.playlist_dir, ".cache")
+            cached_wav = os.path.join(cache_dir, track_file + ".wav")
+            
+            def bg_pre_synth():
+                try:
+                    source_mtime = os.path.getmtime(track_path)
+                    cache_mtime = os.path.getmtime(cached_wav) if os.path.exists(cached_wav) else 0
+                    
+                    if not os.path.exists(cached_wav) or source_mtime > cache_mtime:
+                        print(f"[Synth] Background pre-synthesizing {track_file}...")
+                        midi_path = track_path
+                        if track_file.lower().endswith(".abc"):
+                            midi_path = self._prepare_abc_midi(track_path, 0.0)
+                        self._synthesize_midi_to_wav(midi_path, cached_wav)
+                        print(f"[Synth] Background pre-synthesis of {track_file} complete.")
+                except Exception as e:
+                    print(f"[Synth] Background pre-synthesis failed for {track_file}: {e}")
+            
+            threading.Thread(target=bg_pre_synth, daemon=True).start()
+
+        print(f"[Playback sounddevice] Selected: {track_file} (duration={self.track_duration:.2f}s)")
+        return True
+
+    def stop(self, fade_out_ms=1500):
+        if not self.current_track:
+            return
+
+        print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
+        self.paused = True
+        self.was_stopped = True
+        self.seeked_while_paused = False
+        self.last_seek_position = self.start_time
+        self.last_play_time = None
+
+        with self._play_lock:
+            self._playhead = int(self.start_time * self._sample_rate)
+            if self._sf is not None:
+                self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+            elif self._ffmpeg_proc is not None:
+                try:
+                    self._ffmpeg_proc.terminate()
+                except Exception:
+                    pass
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", f"{self.start_time:.3f}",
+                    "-i", os.path.join(self.playlist_dir, self.current_track),
+                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                    "-ar", "44100", "-ac", "2", "-"
+                ]
+                self._ffmpeg_proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL
+                )
+            self._clear_eq_zi()
+
+    def _get_effective_volume(self) -> float:
+        return self.volume
 
     def get_default_instrument(self) -> int:
         if not self.current_track or not self.current_track.lower().endswith(".abc"):
@@ -764,265 +1293,67 @@ class SafeMusicPlayer:
         self.active_instrument = program
         if self.current_track and self.current_track.lower().endswith(".abc"):
             track_path = os.path.join(self.playlist_dir, self.current_track)
-            # Reset playback to the beginning of the loop (start_time) on instrument change
-            pos = self.start_time
+            pos = self.get_current_position()
             
-            # Update timing state immediately to prevent race conditions with concurrent status polls
-            self.last_seek_position = pos
-            self.last_play_time = time.time() if not self.paused else None
+            # --- SOUNDDEVICE BACKEND HOT-SWAP ---
+            self._stop_sounddevice_playback()
+            self.was_stopped = False
             
-            self._prepare_abc_midi(track_path, pos)
-            if not self.simulated and self.mixer_initialized:
+            cache_dir = os.path.join(self.playlist_dir, ".cache")
+            cached_wav = os.path.join(cache_dir, f"{self.current_track}_inst_{program}.wav")
+            
+            if not self.paused:
                 try:
-                    pygame.mixer.music.load(self._abc_tmp_path)
-                    if not self.paused:
-                        pygame.mixer.music.play(loops=-1, start=0.0)
+                    midi_path = self._prepare_abc_midi(track_path, pos)
+                    self._synthesize_midi_to_wav(midi_path, cached_wav)
+                    
+                    import soundfile as sf
+                    self._sf = sf.SoundFile(cached_wav)
+                    self._sample_rate = self._sf.samplerate
+                    self._channels = self._sf.channels
+                    
+                    with self._play_lock:
+                        self._playhead = int(pos * self._sample_rate)
+                        self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+                        self._clear_eq_zi()
+                        
+                    self._play_thread = threading.Thread(target=self._playback_loop, daemon=True)
+                    self._play_thread.start()
                 except Exception as e:
-                    print(f"Error changing instrument: {e}")
-
-    def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
-        if not track_file:
-            self.stop(fade_out_ms)
-            return True
-
-        track_path = os.path.join(self.playlist_dir, track_file)
-        if not os.path.exists(track_path):
-            print(f"Warning: Track file not found: {track_path}")
-            return False
-
-        if self.current_track == track_file and getattr(self, "start_time", 0.0) == start_time and getattr(self, "end_time", None) == end_time:
-            # Track is already playing with same bounds
-            if self.paused:
-                return self.resume()
-            return True
-
-        print(
-            f"[Playback] Transitioning to track '{track_file}' (fadeout: {fade_out_ms}ms, fadein: {fade_in_ms}ms)"
-        )
-
-        # If a track is currently playing, fade it out first and wait for it to end (only if not paused)
-        if self.current_track:
-            if not self.paused and fade_out_ms > 0:
-                if not self.simulated and self.mixer_initialized:
-                    try:
-                        if pygame.mixer.music.get_busy():
-                            pygame.mixer.music.fadeout(fade_out_ms)
-                    except Exception as e:
-                        print(f"Error during fadeout: {e}")
-                import time
-                time.sleep(fade_out_ms / 1000.0)
+                    print(f"Error hot-swapping instrument: {e}")
             else:
-                if not self.simulated and self.mixer_initialized:
+                def bg_synth():
                     try:
-                        pygame.mixer.music.stop()
+                        midi_path = self._prepare_abc_midi(track_path, 0.0)
+                        self._synthesize_midi_to_wav(midi_path, cached_wav)
                     except Exception as e:
-                        print(f"Error stopping music: {e}")
-
-        if self.current_track != track_file:
-            self.active_instrument = None
-        self.current_track = track_file
-        self.paused = False
-        self.was_stopped = False
-        self.seeked_while_paused = False
-
-        # Load track duration
-        self.track_duration = 0.0
-        if track_file.lower().endswith(".abc"):
-            self.track_duration = get_abc_duration(track_path)
-            self._prepare_abc_midi(track_path, start_time)
-        elif track_file.lower().endswith(".mid") or track_file.lower().endswith(".midi"):
-            self.track_duration = get_midi_duration(track_path)
-        else:
-            try:
-                tag = TinyTag.get(track_path)
-                self.track_duration = tag.duration
-            except Exception as e:
-                print(f"Error loading track duration with TinyTag: {e}")
-        if self.track_duration is None or self.track_duration == 0.0:
-            self.track_duration = 180.0
-
-        self.start_time = start_time
-        self.end_time = end_time
-        self.last_seek_position = self.start_time
-        import time
-        self.last_play_time = time.time()
-
-        if self.simulated:
-            print(f"[Playback SIMULATED] Playing: {track_file}")
-            return True
-
-        try:
-            load_path = self._abc_tmp_path if track_file.lower().endswith(".abc") else track_path
-            pygame.mixer.music.load(load_path)
-            play_start = 0.0 if track_file.lower().endswith(".abc") else self.start_time
-            pygame.mixer.music.play(loops=-1, start=play_start, fade_ms=fade_in_ms)
-            pygame.mixer.music.set_volume(self._get_effective_volume())
-            return True
-        except Exception as e:
-            print(f"Error during Pygame playback of {track_file}: {e}")
-            return False
-
-    def select_track(self, track_file, start_time=0.0, end_time=None):
-        if not track_file:
-            return False
-
-        track_path = os.path.join(self.playlist_dir, track_file)
-        if not os.path.exists(track_path):
-            print(f"Warning: Track file not found: {track_path}")
-            return False
-
-        # If there is currently a track playing or paused, stop it
-        if self.current_track:
-            if not self.simulated and self.mixer_initialized:
-                try:
-                    pygame.mixer.music.stop()
-                except Exception as e:
-                    print(f"Error stopping music: {e}")
-
-        if self.current_track != track_file:
-            self.active_instrument = None
-        self.current_track = track_file
-        self.paused = True
-        self.was_stopped = True
-        self.seeked_while_paused = False
-
-        # Load track duration
-        self.track_duration = 0.0
-        if track_file.lower().endswith(".abc"):
-            self.track_duration = get_abc_duration(track_path)
-            self._prepare_abc_midi(track_path, start_time)
-        elif track_file.lower().endswith(".mid") or track_file.lower().endswith(".midi"):
-            self.track_duration = get_midi_duration(track_path)
-        else:
-            try:
-                tag = TinyTag.get(track_path)
-                self.track_duration = tag.duration
-            except Exception as e:
-                print(f"Error loading track duration with TinyTag: {e}")
-        if self.track_duration is None or self.track_duration == 0.0:
-            self.track_duration = 180.0
-
-        self.start_time = start_time
-        self.end_time = end_time
-        self.last_seek_position = self.start_time
-        self.last_play_time = None
-
-        if self.simulated:
-            print(f"[Playback SIMULATED] Selected track (stopped): {track_file}")
-            return True
-
-        try:
-            load_path = self._abc_tmp_path if track_file.lower().endswith(".abc") else track_path
-            pygame.mixer.music.load(load_path)
-            return True
-        except Exception as e:
-            print(f"Error loading Pygame track {track_file}: {e}")
-            return False
-
-    def stop(self, fade_out_ms=1500):
-        if not self.current_track:
-            return
-
-        print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
-        self.paused = True
-        self.was_stopped = True
-        self.seeked_while_paused = False
-        self.last_seek_position = self.start_time
-        self.last_play_time = None
-
-        if self.simulated:
-            return
-
-        try:
-            if pygame.mixer.music.get_busy():
-                if fade_out_ms > 0:
-                    pygame.mixer.music.fadeout(fade_out_ms)
-                else:
-                    pygame.mixer.music.stop()
-        except Exception as e:
-            print(f"Error stopping playback: {e}")
-
-    def _get_effective_volume(self) -> float:
-        if self.current_track and (
-            self.current_track.lower().endswith(".mid") or 
-            self.current_track.lower().endswith(".midi")
-        ):
-            # Scale MIDI files down to 40% to match MP3/WAV/ABC loudness
-            return self.volume * 0.4
-        return self.volume
+                        print(f"Background instrument synthesis failed: {e}")
+                threading.Thread(target=bg_synth, daemon=True).start()
 
     def set_volume(self, volume):
         self.volume = max(0.0, min(1.0, volume))
-        if self.mixer_initialized and not self.simulated:
-            try:
-                pygame.mixer.music.set_volume(self._get_effective_volume())
-            except Exception as e:
-                print(f"Error setting volume: {e}")
         print(f"[Playback] Volume set to {int(self.volume * 100)}%")
 
     def pause(self):
         if not self.current_track:
             return False
         print("[Playback] Pausing music.")
-        
-        # Capture current progress before pausing
-        import time
-        if not self.paused and self.last_play_time is not None:
-            self.last_seek_position += time.time() - self.last_play_time
-            self.last_play_time = None
-
         self.paused = True
-        self.seeked_while_paused = False
-        if self.simulated:
-            return True
-        try:
-            pygame.mixer.music.pause()
-            return True
-        except Exception as e:
-            print(f"Error pausing music: {e}")
-            return False
+        self.last_play_time = None
+        return True
 
     def resume(self):
         if not self.current_track:
             return False
         print("[Playback] Resuming music.")
         self.paused = False
-
-        import time
         self.last_play_time = time.time()
-
-        if self.simulated:
-            if self.was_stopped or getattr(self, "seeked_while_paused", False):
-                if self.last_seek_position < self.start_time:
-                    self.last_seek_position = self.start_time
-            self.was_stopped = False
-            self.seeked_while_paused = False
-            return True
-        try:
-            # Always reload and play for ABC files to avoid pygame MIDI unpause bugs
-            if self.current_track.lower().endswith(".abc") or self.was_stopped or getattr(self, "seeked_while_paused", False):
-                start_pos = self.last_seek_position
-                if start_pos < self.start_time:
-                    start_pos = self.start_time
-                track_path = os.path.join(self.playlist_dir, self.current_track)
-                if self.current_track.lower().endswith(".abc"):
-                    self._prepare_abc_midi(track_path, start_pos)
-                    load_path = self._abc_tmp_path
-                    play_start = 0.0
-                else:
-                    load_path = track_path
-                    play_start = start_pos
-                pygame.mixer.music.load(load_path)
-                pygame.mixer.music.play(loops=-1, start=play_start, fade_ms=1500)
-                pygame.mixer.music.set_volume(self._get_effective_volume())
-                self.was_stopped = False
-                self.seeked_while_paused = False
-            else:
-                pygame.mixer.music.unpause()
-            return True
-        except Exception as e:
-            print(f"Error resuming music: {e}")
-            return False
+        self.was_stopped = False
+        self.seeked_while_paused = False
+        if self._play_thread is None or not self._play_thread.is_alive():
+            self._play_thread = threading.Thread(target=self._playback_loop, daemon=True)
+            self._play_thread.start()
+        return True
 
     def seek(self, position):
         if not self.current_track:
@@ -1031,90 +1362,105 @@ class SafeMusicPlayer:
         position = max(0.0, min(self.track_duration, position))
         print(f"[Playback] Seeking to {position}s (was_stopped={self.was_stopped}, paused={self.paused})")
 
-        self.last_seek_position = position
-        import time
+        with self._play_lock:
+            self._playhead = int(position * self._sample_rate)
+            if self._sf is not None:
+                self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+            elif self._ffmpeg_proc is not None:
+                try:
+                    self._ffmpeg_proc.terminate()
+                except Exception:
+                    pass
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", f"{position:.3f}",
+                    "-i", os.path.join(self.playlist_dir, self.current_track),
+                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                    "-ar", "44100", "-ac", "2", "-"
+                ]
+                self._ffmpeg_proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL
+                )
+            self.last_seek_position = position
+            self.last_play_time = time.time() if not self.paused else None
+            self._clear_eq_zi()
 
         if self.was_stopped or self.paused:
-            # When stopped or paused, seeking only updates the current position marker without playing/unpausing
-            self.last_play_time = None
             if self.paused and not self.was_stopped:
                 self.seeked_while_paused = True
             return True
 
-        # Otherwise continue current behavior (resume/start playback)
-        self.last_play_time = time.time()
         self.paused = False
         self.was_stopped = False
         self.seeked_while_paused = False
 
-        if self.simulated:
-            return True
-
-        try:
-            track_path = os.path.join(self.playlist_dir, self.current_track)
-            if self.current_track.lower().endswith(".abc"):
-                self._prepare_abc_midi(track_path, position)
-                load_path = self._abc_tmp_path
-                play_start = 0.0
-            else:
-                load_path = track_path
-                play_start = position
-            pygame.mixer.music.load(load_path)
-            pygame.mixer.music.play(loops=-1, start=play_start)
-            pygame.mixer.music.set_volume(self._get_effective_volume())
-            return True
-        except Exception as e:
-            print(f"Error seeking: {e}")
-            return False
+        if self._play_thread is None or not self._play_thread.is_alive():
+            self._play_thread = threading.Thread(target=self._playback_loop, daemon=True)
+            self._play_thread.start()
+        return True
 
     def get_current_position(self):
         if not self.current_track:
             return 0.0
-        import time
-        pos = self.last_seek_position
-        if not self.paused and self.last_play_time is not None:
-            pos += time.time() - self.last_play_time
 
-        duration = self.track_duration
-        start = self.start_time
-        end = self.end_time if self.end_time is not None else duration
-
-        if start < 0:
-            start = 0.0
-        if end > duration:
-            end = duration
-
-        range_len = end - start
-        if range_len > 0:
-            if pos > end:
-                # Loop back to start
-                pos = start + ((pos - start) % range_len)
-
-                # Update timing state immediately to prevent re-entrancy/race conditions
-                self.last_seek_position = pos
-                self.last_play_time = time.time()
-
-                # Update Pygame playback position
-                if not self.simulated and self.mixer_initialized:
+        with self._play_lock:
+            # Snap playhead to bounds if out of bounds (e.g. when paused and bounds are changed)
+            start_frame = int(self.start_time * self._sample_rate)
+            
+            if self._audio_data is not None:
+                total_frames = len(self._audio_data)
+            elif self._sf is not None:
+                total_frames = len(self._sf)
+            else:
+                total_frames = int(self.track_duration * self._sample_rate)
+            
+            if self.end_time is not None:
+                end_frame = min(total_frames, int(self.end_time * self._sample_rate))
+            else:
+                end_frame = total_frames
+                
+            if self._playhead < start_frame or self._playhead >= end_frame:
+                range_frames = end_frame - start_frame
+                if range_frames > 0:
+                    if self._playhead >= end_frame:
+                        self._playhead = start_frame + ((self._playhead - start_frame) % range_frames)
+                    else:
+                        self._playhead = start_frame
+                else:
+                    self._playhead = start_frame
+                
+                if self._sf is not None:
                     try:
-                        if self.current_track.lower().endswith(".abc"):
-                            self._prepare_abc_midi(os.path.join(self.playlist_dir, self.current_track), pos)
-                            pygame.mixer.music.load(self._abc_tmp_path)
-                            if not self.paused:
-                                pygame.mixer.music.play(loops=-1, start=0.0)
-                        else:
-                            if not self.paused:
-                                pygame.mixer.music.play(loops=-1, start=pos)
-                    except Exception as e:
-                        print(f"Error during loop seek: {e}")
-        else:
-            if duration > 0:
-                if pos > duration:
-                    pos = pos % duration
+                        self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+                    except Exception:
+                        pass
+                elif self._ffmpeg_proc is not None:
+                    try:
+                        self._ffmpeg_proc.terminate()
+                    except Exception:
+                        pass
+                    pos_sec = self._playhead / self._sample_rate
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-ss", f"{pos_sec:.3f}",
+                        "-i", os.path.join(self.playlist_dir, self.current_track),
+                        "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                        "-ar", "44100", "-ac", "2", "-"
+                    ]
+                    self._ffmpeg_proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL
+                    )
+                self._clear_eq_zi()
+            
+            pos = self._playhead / self._sample_rate
         return max(0.0, pos)
 
     # ------------------------------------------------------------------
-    # EQ  (10-band peaking IIR filters via scipy, applied to a 30s window)
+    # EQ  (10-band peaking IIR filters via scipy, applied in real-time)
     # ------------------------------------------------------------------
 
     # EQ_BANDS: (centre_hz, octave_width_Q)
@@ -1122,12 +1468,9 @@ class SafeMusicPlayer:
         (32, 1.0), (64, 1.0), (125, 1.0), (250, 1.0), (500, 1.0),
         (1000, 1.0), (2000, 1.0), (4000, 1.0), (8000, 1.0), (16000, 1.0),
     ]
-    _WINDOW_SEC = 30  # seconds of audio to filter per EQ apply
 
     @staticmethod
     def _peaking_sos(fc: float, gain_db: float, Q: float, fs: int) -> np.ndarray:
-        """Return a 2nd-order peaking EQ filter as a single SOS row."""
-        # Build peaking coefficients manually (Audio EQ Cookbook).
         A = 10 ** (gain_db / 40.0)
         w0 = 2 * np.pi * fc / fs
         alpha = np.sin(w0) / (2 * Q)
@@ -1137,110 +1480,13 @@ class SafeMusicPlayer:
         a0 = 1 + alpha / A
         a1 = -2 * np.cos(w0)
         a2 = 1 - alpha / A
-        # Return as SOS row: [b0/a0, b1/a0, b2/a0, 1, a1/a0, a2/a0]
         return np.array([[b0 / a0, b1 / a0, b2 / a0, 1.0, a1 / a0, a2 / a0]])
 
     def apply_eq(self) -> dict:
-        """Apply current eq_gains to the active track and hot-reload pygame.
-
-        Reads a _WINDOW_SEC window centred on the current playback position,
-        filters it with peaking IIR filters, writes a temp WAV, and reloads
-        pygame playback from position 0 of the window (seeking back seamlessly).
-
-        Returns a dict with 'status' and 'message'.
-        """
-        if not self.current_track:
-            return {"status": "error", "message": "No track loaded."}
-        if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
-            file_type = "MIDI" if not self.current_track.lower().endswith(".abc") else "ABC"
-            return {"status": "success", "message": f"EQ is disabled for {file_type} files."}
-
-        # Check if all gains are 0 — if so, just reload the original file
-        all_flat = all(abs(g) < 0.01 for g in self.eq_gains.values())
-
-        track_path = os.path.join(self.playlist_dir, self.current_track)
-        if not os.path.exists(track_path):
-            return {"status": "error", "message": f"Track file not found: {track_path}"}
-
-        capture_pos = self.get_current_position()
-
-        with self._eq_lock:
-            try:
-                import soundfile as sf  # type: ignore[import]
-                from scipy.signal import sosfilt  # type: ignore[import]
-
-                # --- Read window ---
-                info = sf.info(track_path)
-                fs = info.samplerate
-                total_frames = info.frames
-
-                win_frames = int(self._WINDOW_SEC * fs)
-                start_frame = max(0, int(capture_pos * fs) - win_frames // 4)
-                end_frame = min(total_frames, start_frame + win_frames)
-                start_frame = max(0, end_frame - win_frames)  # clamp
-
-                audio, _ = sf.read(track_path, start=start_frame, stop=end_frame, dtype="float32", always_2d=True)
-
-                if not all_flat:
-                    # --- Build and apply filter chain ---
-                    for (fc, Q) in self._EQ_BANDS:
-                        gain_db = self.eq_gains.get(fc, 0.0)
-                        if abs(gain_db) < 0.01:
-                            continue
-                        if fc >= fs / 2:  # skip bands above Nyquist
-                            continue
-                        sos = self._peaking_sos(float(fc), float(gain_db), float(Q), fs)
-                        audio = sosfilt(sos, audio, axis=0).astype(np.float32)
-                    # Clamp to prevent clipping
-                    audio = np.clip(audio, -1.0, 1.0)
-
-                # --- Write temp WAV ---
-                tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="eq_tmp_")
-                tmp_path = tmp.name
-                tmp.close()
-                sf.write(tmp_path, audio, fs)
-
-                # --- Reload pygame from the window start ---
-                resume_offset = capture_pos - (start_frame / fs)
-                resume_offset = max(0.0, min(resume_offset, self._WINDOW_SEC - 0.5))
-
-                was_playing = not self.paused and not self.was_stopped
-
-                if not self.simulated and self.mixer_initialized:
-                    pygame.mixer.music.stop()
-                    pygame.mixer.music.load(tmp_path)
-                    if was_playing:
-                        pygame.mixer.music.play(loops=0, start=resume_offset, fade_ms=80)
-                        pygame.mixer.music.set_volume(self._get_effective_volume())
-
-                # Track position so the seek timer stays accurate
-                import time
-                self.last_seek_position = capture_pos
-                self.last_play_time = time.time() if was_playing else None
-
-                # Clean up previous temp file
-                if self._eq_tmp_path and self._eq_tmp_path != tmp_path:
-                    try:
-                        os.unlink(self._eq_tmp_path)
-                    except OSError:
-                        pass
-                self._eq_tmp_path = tmp_path
-
-                return {"status": "success", "message": "EQ applied."}
-
-            except ImportError as e:
-                return {"status": "error", "message": f"Missing dependency for EQ: {e}. Install soundfile."}
-            except Exception as e:
-                print(f"[EQ] Error applying EQ: {e}")
-                return {"status": "error", "message": str(e)}
+        # For sounddevice, the EQ gains are applied in real-time in the playback loop.
+        return {"status": "success", "message": "EQ gains updated in real-time."}
 
 
-CAPTURE_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "capture"
-)
-
-
-# Minimap screen grabbing and cropping
 class ScreenGrabber:
     def __init__(self, bounds_config):
         self.bounds = bounds_config
