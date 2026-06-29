@@ -281,6 +281,27 @@ def get_locale_json(locale_name: str):
     raise HTTPException(status_code=404, detail="Locale not found")
 
 
+@app.get("/api/locales")
+def get_locales():
+    """Returns a list of available locales, reading the locale_name key from each file."""
+    locales_dir = os.path.join(AGENT_DIR, "app", "locales")
+    locales_list = []
+    if os.path.exists(locales_dir):
+        import json
+        for filename in sorted(os.listdir(locales_dir)):
+            if filename.endswith(".json"):
+                code = filename[:-5]
+                filepath = os.path.join(locales_dir, filename)
+                try:
+                    with open(filepath, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        name = data.get("locale_name", code)
+                        locales_list.append({"code": code, "name": name})
+                except Exception as e:
+                    locales_list.append({"code": code, "name": code})
+    return locales_list
+
+
 
 @app.get("/api/env-status")
 def get_env_status():

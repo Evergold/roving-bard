@@ -6096,8 +6096,31 @@
 
 
 
+        let availableLocales = null;
         async function loadLocalization(lang) {
             const currentLang = lang || localStorage.getItem('lang') || 'en-US';
+            
+            if (!availableLocales) {
+                try {
+                    const res = await fetch('/api/locales');
+                    if (res.ok) {
+                        availableLocales = await res.json();
+                        const langSelect = document.getElementById('lang-select');
+                        if (langSelect) {
+                            langSelect.innerHTML = '';
+                            availableLocales.forEach(loc => {
+                                const opt = document.createElement('option');
+                                opt.value = loc.code;
+                                opt.textContent = loc.name;
+                                langSelect.appendChild(opt);
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error fetching available locales:', e);
+                }
+            }
+
             if (!LOCALIZATION['en-US']) {
                 try {
                     const res = await fetch('/locales/en-US.json');
