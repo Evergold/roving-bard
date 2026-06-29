@@ -6304,7 +6304,6 @@
         }
 
         function onEQSliderInput(freq, rawVal) {
-            if (isABCTrackActive()) return;
             const val = parseFloat(rawVal);
             eqGains[freq] = val;
             const label = document.getElementById(`eq-db-${freq}`);
@@ -6350,7 +6349,6 @@
         }
 
         function applyEQGains(gains, presetName, force = false) {
-            if (isABCTrackActive() && !force) return;
             EQ_BANDS.forEach(freq => {
                 eqGains[freq] = gains[freq] !== undefined ? parseFloat(gains[freq]) : 0;
                 const slider = document.getElementById(`eq-slider-${freq}`);
@@ -6368,14 +6366,12 @@
         }
 
         function applyEQPreset(presetName, force = false) {
-            if (isABCTrackActive() && !force) return;
             const preset = EQ_PRESETS[presetName];
             if (!preset) return;
             applyEQGains(preset, presetName, force);
         }
 
         function resetEQ() {
-            if (isABCTrackActive()) return;
             document.getElementById('eq-preset-select').value = 'flat';
             applyEQPreset('flat');
         }
