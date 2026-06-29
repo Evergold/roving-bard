@@ -921,69 +921,8 @@ class SafeMusicPlayer:
                         else:
                             end_frame = total_frames
                             
+                        # Ensure playhead is within bounds before reading
                         if self._playhead < start_frame or self._playhead >= end_frame:
-                            range_frames = end_frame - start_frame
-                            if range_frames > 0:
-                                if self._playhead >= end_frame:
-                                    self._playhead = start_frame + ((self._playhead - start_frame) % range_frames)
-                                else:
-                                    self._playhead = start_frame
-                            else:
-                                self._playhead = start_frame
-                            
-                            # Seek the file if we are streaming WAV/OGG/FLAC
-                            if self._sf is not None:
-                                self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
-                            # Re-start ffmpeg process at the new playhead if we are streaming MP3/AAC
-                            elif self._ffmpeg_proc is not None:
-                                try:
-                                    self._ffmpeg_proc.terminate()
-                                except Exception:
-                                    pass
-                                pos_sec = self._playhead / self._sample_rate
-                                cmd = [
-                                    "ffmpeg", "-y",
-                                    "-ss", f"{pos_sec:.3f}",
-                                    "-i", os.path.join(self.playlist_dir, self.current_track),
-                                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
-                                    "-ar", "44100", "-ac", "2", "-"
-                                ]
-                                self._ffmpeg_proc = subprocess.Popen(
-                                    cmd,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.DEVNULL
-                                )
-                            zi_dict.clear()
-                            
-                        start_idx = self._playhead
-                        end_idx = min(end_frame, start_idx + chunk_size)
-                        
-                        if start_idx >= end_frame:
-                            continue
-                            
-                        if self._audio_data is not None:
-                            chunk = self._audio_data[start_idx:end_idx].copy()
-                        elif self._sf is not None:
-                            chunk = self._sf.read(end_idx - start_idx, dtype="float32", always_2d=True).copy()
-                        else:
-                            num_bytes = (end_idx - start_idx) * 4
-                            raw_bytes = b""
-                            try:
-                                raw_bytes = self._ffmpeg_proc.stdout.read(num_bytes)
-                            except Exception:
-                                pass
-                            
-                            if not raw_bytes:
-                                self._playhead = end_frame
-                                continue
-                                
-                            samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
-                            chunk = samples.reshape((-1, 2))
-                            
-                        actual_frames = len(chunk)
-                        
-                    if actual_frames == 0:
-                        with self._play_lock:
                             self._playhead = start_frame
                             if self._sf is not None:
                                 self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
@@ -992,27 +931,86 @@ class SafeMusicPlayer:
                                     self._ffmpeg_proc.terminate()
                                 except Exception:
                                     pass
+                                pos_sec = start_frame / self._sample_rate
                                 cmd = [
-                                    "ffmpeg", "-y",
-                                    "-ss", f"{self.start_time:.3f}",
+                                    "ffmpeg", "-y", "-ss", f"{pos_sec:.3f}",
                                     "-i", os.path.join(self.playlist_dir, self.current_track),
                                     "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
                                     "-ar", "44100", "-ac", "2", "-"
                                 ]
                                 self._ffmpeg_proc = subprocess.Popen(
-                                    cmd,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.DEVNULL
+                                    cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
                                 )
-                        continue
-                        
-                    # Pad chunk if it's smaller than chunk_size
-                    if actual_frames < chunk_size:
-                        padding = np.zeros((chunk_size - actual_frames, self._channels), dtype=np.float32)
-                        if len(chunk) > 0:
-                            chunk = np.concatenate([chunk, padding], axis=0)
+                            zi_dict.clear()
+
+                        # Read exactly chunk_size frames, wrapping around if we hit end_frame
+                        frames_to_read = chunk_size
+                        chunk_parts = []
+
+                        while frames_to_read > 0:
+                            available_frames = end_frame - self._playhead
+                            if available_frames <= 0:
+                                # Loop back to start_frame
+                                self._playhead = start_frame
+                                if self._sf is not None:
+                                    self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
+                                elif self._ffmpeg_proc is not None:
+                                    try:
+                                        self._ffmpeg_proc.terminate()
+                                    except Exception:
+                                        pass
+                                    pos_sec = start_frame / self._sample_rate
+                                    cmd = [
+                                        "ffmpeg", "-y", "-ss", f"{pos_sec:.3f}",
+                                        "-i", os.path.join(self.playlist_dir, self.current_track),
+                                        "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                                        "-ar", "44100", "-ac", "2", "-"
+                                    ]
+                                    self._ffmpeg_proc = subprocess.Popen(
+                                        cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+                                    )
+                                zi_dict.clear()
+                                available_frames = end_frame - start_frame
+                                if available_frames <= 0:
+                                    break
+
+                            read_len = min(frames_to_read, available_frames)
+
+                            if self._audio_data is not None:
+                                part = self._audio_data[self._playhead : self._playhead + read_len].copy()
+                            elif self._sf is not None:
+                                part = self._sf.read(read_len, dtype="float32", always_2d=True).copy()
+                            else:
+                                num_bytes = read_len * self._channels * 2
+                                raw_bytes = b""
+                                try:
+                                    raw_bytes = self._ffmpeg_proc.stdout.read(num_bytes)
+                                except Exception:
+                                    pass
+                                if not raw_bytes:
+                                    self._playhead = end_frame
+                                    break
+                                samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+                                part = samples.reshape((-1, self._channels))
+
+                            if len(part) == 0:
+                                self._playhead = end_frame
+                                break
+
+                            chunk_parts.append(part)
+                            self._playhead += len(part)
+                            frames_to_read -= len(part)
+
+                        if chunk_parts:
+                            chunk = np.concatenate(chunk_parts, axis=0)
                         else:
-                            chunk = padding
+                            chunk = np.zeros((chunk_size, self._channels), dtype=np.float32)
+
+                        if len(chunk) < chunk_size:
+                            padding = np.zeros((chunk_size - len(chunk), self._channels), dtype=np.float32)
+                            chunk = np.concatenate([chunk, padding], axis=0)
+
+                        actual_frames = chunk_size
                         
                     # --- Apply EQ in Real-Time ---
                     gains_changed = False
