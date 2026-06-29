@@ -947,8 +947,8 @@ class SafeMusicPlayer:
             self.current_track.lower().endswith(".mid") or 
             self.current_track.lower().endswith(".midi")
         ):
-            # Scale MIDI files down to 45% to match MP3/WAV/ABC loudness
-            return self.volume * 0.45
+            # Scale MIDI files down to 40% to match MP3/WAV/ABC loudness
+            return self.volume * 0.4
         return self.volume
 
     def set_volume(self, volume):
