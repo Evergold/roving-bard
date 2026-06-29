@@ -181,6 +181,12 @@
             .auto-polling-short { display: inline; }
         }
 
+        @media (max-width: 984px) {
+            .logo-container p {
+                max-width: 220px;
+            }
+        }
+
         /* ── Responsive Header: compact at ≤768px ──────────────── */
         @media (max-width: 768px) {
             header {
@@ -188,7 +194,6 @@
                 gap: 0.6rem;
             }
             .logo-container h1 { font-size: 1.25rem; }
-            .logo-container p  { display: none; }
             .header-main-content { gap: 0.6rem; }
             main {
                 grid-template-columns: 1fr;
