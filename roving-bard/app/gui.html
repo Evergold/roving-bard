@@ -72,7 +72,7 @@
         }
 
         header {
-            padding: 1rem 2rem;
+            padding: 0.6rem 1rem;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -83,11 +83,11 @@
             top: 0;
             z-index: 100;
             flex-wrap: wrap;
-            gap: 1.5rem;
+            gap: 0.6rem;
         }
 
         .logo-container h1 {
-            font-size: 1.8rem;
+            font-size: 1.25rem;
             font-weight: 800;
             background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #7c4dff 100%);
             -webkit-background-clip: text;
@@ -104,15 +104,20 @@
             letter-spacing: 1.5px;
             font-family: 'Space Mono', monospace;
             text-shadow: 0 0 8px rgba(124, 77, 255, 0.4);
+            max-width: 220px;
+        }
+
+        .header-main-content {
+            gap: 0.6rem !important;
         }
 
         main {
             flex: 1;
             width: 100%;
-            padding: 2rem 2rem;
+            padding: 1rem;
             display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 2rem;
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
             align-items: start;
         }
 
@@ -175,36 +180,97 @@
         }
 
         .auto-polling-short { display: none; }
+        .auto-polling-full { display: inline; }
 
+        /* Normal Font Size (s): RUN at < 1080px */
         @media (max-width: 1079px) {
-            .auto-polling-full { display: none; }
-            .auto-polling-short { display: inline; }
+            html:not(.font-size-m):not(.font-size-lg) .auto-polling-full { display: none; }
+            html:not(.font-size-m):not(.font-size-lg) .auto-polling-short { display: inline; }
         }
 
-        /* ── Responsive Layout & Header: compact and single-column at <985px ──────────────── */
-        @media (max-width: 984px) {
-            header {
-                padding: 0.6rem 1rem;
-                gap: 0.6rem;
-            }
-            .logo-container h1 { font-size: 1.25rem; }
-            .logo-container p {
-                max-width: 220px;
-            }
-            .header-main-content { gap: 0.6rem; }
-            main {
-                grid-template-columns: 1fr;
-                padding: 1rem;
-                gap: 1.2rem;
-            }
+        /* Larger Font Size (m): RUN at < 1140px (interpolated) */
+        @media (max-width: 1139px) {
+            html.font-size-m .auto-polling-full { display: none; }
+            html.font-size-m .auto-polling-short { display: inline; }
         }
 
+        /* Largest Font Size (lg): RUN at < 1200px */
+        @media (max-width: 1199px) {
+            html.font-size-lg .auto-polling-full { display: none; }
+            html.font-size-lg .auto-polling-short { display: inline; }
+        }
+
+        /* ── Wide View Breakpoints based on Font Size ──────────────── */
+
+        /* 1. Normal Font Size (s): Wide View at >= 985px */
         @media (min-width: 985px) {
-            main:not(.single-col) {
+            html:not(.font-size-m):not(.font-size-lg) header {
+                padding: 1rem 2rem;
+                gap: 1.5rem;
+            }
+            html:not(.font-size-m):not(.font-size-lg) .logo-container h1 {
+                font-size: 1.8rem;
+            }
+            html:not(.font-size-m):not(.font-size-lg) .logo-container p {
+                max-width: none;
+            }
+            html:not(.font-size-m):not(.font-size-lg) .header-main-content {
+                gap: 1.5rem !important;
+            }
+            html:not(.font-size-m):not(.font-size-lg) main {
+                padding: 2rem 2rem;
+                gap: 2rem;
+            }
+            html:not(.font-size-m):not(.font-size-lg) main:not(.single-col) {
                 grid-template-columns: 1fr 1.2fr;
             }
-            main.single-col {
-                grid-template-columns: 1fr;
+        }
+
+        /* 2. Larger Font Size (m): Wide View at >= 1132px (interpolated) */
+        @media (min-width: 1132px) {
+            html.font-size-m header {
+                padding: 1rem 2rem;
+                gap: 1.5rem;
+            }
+            html.font-size-m .logo-container h1 {
+                font-size: 1.8rem;
+            }
+            html.font-size-m .logo-container p {
+                max-width: none;
+            }
+            html.font-size-m .header-main-content {
+                gap: 1.5rem !important;
+            }
+            html.font-size-m main {
+                padding: 2rem 2rem;
+                gap: 2rem;
+            }
+            html.font-size-m main:not(.single-col) {
+                grid-template-columns: 1fr 1.2fr;
+            }
+        }
+
+        /* 3. Largest Font Size (lg): Wide View at >= 1280px */
+        @media (min-width: 1280px) {
+            html.font-size-lg header {
+                padding: 1rem 2rem;
+                gap: 1.5rem;
+            }
+            html.font-size-lg .logo-container h1 {
+                font-size: 1.8rem;
+            }
+            html.font-size-lg .logo-container p {
+                max-width: none;
+            }
+            html.font-size-lg .header-main-content {
+                gap: 1.5rem !important;
+            }
+            html.font-size-lg main {
+                padding: 2rem 2rem;
+                gap: 2rem;
+            }
+            html.font-size-lg main:not(.single-col) {
+                grid-template-columns: 1fr 1.2fr;
             }
         }
 
@@ -6201,6 +6267,7 @@
                 localStorage.setItem('font-size', 's');
             }
             updateExportButtonWidth();
+            window.dispatchEvent(new Event('resize'));
         }
 
         function toggleCVDAccessible(event) {
@@ -6420,7 +6487,16 @@
                 { id: 'audio-library',   col: 1, order: 0 },
             ];
 
-            const NARROW_BP = 984; // px – single column below this width
+            function isNarrowLayout() {
+                const width = window.innerWidth;
+                const html = document.documentElement;
+                if (html.classList.contains('font-size-lg')) {
+                    return width <= 1279;
+                } else if (html.classList.contains('font-size-m')) {
+                    return width <= 1131;
+                }
+                return width <= 984;
+            }
 
             let layout = loadLayout();
             let manuallyForcedSingleCol = layout.manuallyForcedSingleCol || false;
@@ -6454,7 +6530,7 @@
             function applyLayout(animate) {
                 const grid = getGrid();
                 if (!grid) return;
-                const isNarrow = window.innerWidth <= NARROW_BP;
+                const isNarrow = isNarrowLayout();
                 const useSingleCol = isNarrow || manuallyForcedSingleCol;
 
                 grid.classList.toggle('single-col', useSingleCol);
@@ -6510,7 +6586,7 @@
             function computeDropTarget(clientX, clientY, draggingPanelId) {
                 const grid = getGrid();
                 const gridRect = grid.getBoundingClientRect();
-                const isNarrow = window.innerWidth <= NARROW_BP;
+                const isNarrow = isNarrowLayout();
 
                 // Find the nearest column horizontally, applying hysteresis to prevent layout flickering
                 let targetCol = 0;
@@ -6881,9 +6957,9 @@
             }
 
             // ── Orientation / resize handler ─────────────────────────────────────
-            let lastWasNarrow = window.innerWidth <= NARROW_BP;
+            let lastWasNarrow = isNarrowLayout();
             window.addEventListener('resize', () => {
-                const nowNarrow = window.innerWidth <= NARROW_BP;
+                const nowNarrow = isNarrowLayout();
                 if (nowNarrow !== lastWasNarrow) {
                     lastWasNarrow = nowNarrow;
                     if (!nowNarrow && manuallyForcedSingleCol) {
