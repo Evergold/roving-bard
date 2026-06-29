@@ -6537,19 +6537,28 @@
                 }
 
                 let insertBefore = null;
+                const cardEl = dragState ? dragState.cardEl : null;
+                const allChildren = [...colEl.children];
+                const placeholderIdx = cardEl ? allChildren.indexOf(cardEl) : -1;
+
                 for (const card of cards) {
                     const r = card.getBoundingClientRect();
-                    const isBelow = (r.top + r.height / 2) > dragMidY;
-                    
-                    if (isBelow) {
-                        // Dragging downwards: insert before if the dragged midpoint hasn't crossed this card's top
-                        if (dragMidY <= r.top) {
+                    const cardIdx = allChildren.indexOf(card);
+                    const isCurrentlyAbove = (placeholderIdx !== -1 && placeholderIdx < cardIdx);
+
+                    // Directional hysteresis thresholds based on card heights:
+                    // T_below: must drag past the top 30% (max 50px) to move below
+                    // T_above: must drag past the bottom 30% (max 50px) to move above
+                    const T_below = r.top + Math.min(50, r.height * 0.3);
+                    const T_above = r.bottom - Math.min(50, r.height * 0.3);
+
+                    if (isCurrentlyAbove) {
+                        if (dragMidY <= T_below) {
                             insertBefore = card;
                             break;
                         }
                     } else {
-                        // Dragging upwards: insert before if the dragged midpoint has crossed this card's bottom
-                        if (dragMidY < r.bottom) {
+                        if (dragMidY < T_above) {
                             insertBefore = card;
                             break;
                         }
