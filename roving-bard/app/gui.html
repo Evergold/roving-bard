@@ -6465,9 +6465,14 @@
                 const gridRect = grid.getBoundingClientRect();
                 const isNarrow = window.innerWidth <= NARROW_BP;
 
-                // Find the nearest column horizontally, allowing transition between 1-col and 2-col modes
+                // Find the nearest column horizontally, applying hysteresis to prevent layout flickering
                 let targetCol = 0;
                 let forceTwoColLeft = false;
+
+                // Determine the current column of the dragged panel to apply hysteresis
+                const ps = layout.panels.find(p => p.id === draggingPanelId);
+                const currentCol = ps ? ps.col : 0;
+
                 if (!isNarrow) {
                     const col0El = getColEl(0);
                     const col1El = getColEl(1);
@@ -6475,7 +6480,20 @@
                         const r0 = col0El.getBoundingClientRect();
                         const r1 = col1El.getBoundingClientRect();
                         const midX = (r0.right + r1.left) / 2;
-                        targetCol = (clientX < midX) ? 0 : 1;
+
+                        // Create a hysteresis zone: must drag past the opposite column's inner edge
+                        // or at least 60px past the midpoint
+                        const HYSTERESIS = 60;
+                        const leftThresh = Math.min(r0.right, midX - HYSTERESIS);
+                        const rightThresh = Math.max(r1.left, midX + HYSTERESIS);
+
+                        if (currentCol === 1) {
+                            // Currently on the right: must cross leftThresh to move to the left column
+                            targetCol = (clientX < leftThresh) ? 0 : 1;
+                        } else {
+                            // Currently on the left: must cross rightThresh to move to the right column
+                            targetCol = (clientX > rightThresh) ? 1 : 0;
+                        }
                     } else {
                         // If we are in 1-column mode, check left/right thresholds of the grid
                         const leftThresh = gridRect.left + gridRect.width * 0.35;
