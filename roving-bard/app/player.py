@@ -1049,10 +1049,6 @@ class SafeMusicPlayer:
                     
                     # Write to stream
                     stream.write(chunk)
-                    
-                    with self._play_lock:
-                        if self._playhead == start_idx:
-                            self._playhead += actual_frames
                             
         except Exception as e:
             print(f"[Playback Loop] Error: {e}")
