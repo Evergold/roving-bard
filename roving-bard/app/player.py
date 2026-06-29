@@ -895,7 +895,7 @@ class SafeMusicPlayer:
                 samplerate=self._sample_rate,
                 channels=self._channels,
                 dtype="float32",
-                latency="high",
+                latency="low",
                 device=self.sd_device
             ) as stream:
                 
