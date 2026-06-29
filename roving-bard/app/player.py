@@ -834,6 +834,7 @@ class SafeMusicPlayer:
         zi_dict = {}
         last_eq_gains = {}
         sos_dict = {}
+        is_midi_abc = self.current_track.lower().endswith((".abc", ".mid", ".midi")) if self.current_track else False
         
         try:
             # --- ON-DEMAND LAZY LOADING FOR DEFERRED TRACKS ---
@@ -980,7 +981,7 @@ class SafeMusicPlayer:
                                 part = self._audio_data[self._playhead : self._playhead + read_len].copy()
                             elif self._sf is not None:
                                 part = self._sf.read(read_len, dtype="float32", always_2d=True).copy()
-                            else:
+                            elif self._ffmpeg_proc is not None:
                                 num_bytes = read_len * self._channels * 2
                                 raw_bytes = b""
                                 try:
@@ -992,6 +993,8 @@ class SafeMusicPlayer:
                                     break
                                 samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
                                 part = samples.reshape((-1, self._channels))
+                            else:
+                                part = np.zeros((0, self._channels), dtype=np.float32)
 
                             if len(part) == 0:
                                 self._playhead = end_frame
