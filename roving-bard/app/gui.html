@@ -3693,6 +3693,7 @@
                     if (eqBtn) eqBtn.classList.remove('eq-active');
                 }
 
+                panel.style.display = 'block';
                 panel.classList.add('instrument-panel-open');
                 if (btn) btn.classList.add('inst-active');
                 positionInstrumentPanel();
@@ -3701,6 +3702,7 @@
                 panel.offsetHeight;
                 panel.style.animation = '';
             } else {
+                panel.style.display = 'none';
                 panel.classList.remove('instrument-panel-open');
                 if (btn) btn.classList.remove('inst-active');
             }
@@ -3849,6 +3851,7 @@
                     instPanelOpen = false;
                     const instPanel = document.getElementById('instrument-panel');
                     if (instPanel) {
+                        instPanel.style.display = 'none';
                         instPanel.classList.remove('instrument-panel-open');
                     }
                 }
@@ -6401,6 +6404,7 @@
                 const btn = document.getElementById('instrument-btn');
                 if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
                     instPanelOpen = false;
+                    panel.style.display = 'none';
                     panel.classList.remove('instrument-panel-open');
                     btn.classList.remove('inst-active');
                 }
