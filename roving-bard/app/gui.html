@@ -3805,20 +3805,24 @@
 
         function updatePlayerUI(status) {
             console.log("[Player UI] updatePlayerUI called. Track:", status.current_track, "Paused:", status.paused);
-            // Disable EQ settings if .abc is selected
-            const isAbc = status.current_track && status.current_track.toLowerCase().endsWith('.abc');
-            console.log("[Player UI] Computed isAbc:", isAbc);
+            // Disable EQ settings if .abc or .mid/.midi is selected
+            const currentTrackLower = status.current_track ? status.current_track.toLowerCase() : '';
+            const isAbc = currentTrackLower.endsWith('.abc');
+            const isMidi = currentTrackLower.endsWith('.mid') || currentTrackLower.endsWith('.midi');
+            const disableEQ = isAbc || isMidi;
+            
+            console.log("[Player UI] Computed isAbc:", isAbc, "isMidi:", isMidi, "disableEQ:", disableEQ);
             const sliders = document.querySelectorAll('.eq-slider');
             sliders.forEach(s => {
-                s.disabled = isAbc;
+                s.disabled = disableEQ;
             });
             const presetSelect = document.getElementById('eq-preset-select');
             if (presetSelect) {
-                presetSelect.disabled = isAbc;
+                presetSelect.disabled = disableEQ;
             }
             const resetBtn = document.querySelector('.eq-reset-btn');
             if (resetBtn) {
-                resetBtn.disabled = isAbc;
+                resetBtn.disabled = disableEQ;
             }
 
             const trackTitle = document.getElementById('track-title');
@@ -3894,9 +3898,21 @@
             const instBtn = document.getElementById('instrument-btn');
             if (eqBtn && instBtn) {
                 if (isAbc) {
+                    // For ABC, hide EQ and show Instrument button
                     eqBtn.style.display = 'none';
                     instBtn.style.display = 'flex';
+                } else if (isMidi) {
+                    // For MIDI, show EQ (disabled) and hide Instrument button
+                    eqBtn.style.display = 'flex';
+                    instBtn.style.display = 'none';
+                    instPanelOpen = false;
+                    const instPanel = document.getElementById('instrument-panel');
+                    if (instPanel) {
+                        instPanel.style.display = 'none';
+                        instPanel.classList.remove('instrument-panel-open');
+                    }
                 } else {
+                    // For MP3/WAV, show EQ (active) and hide Instrument button
                     eqBtn.style.display = 'flex';
                     instBtn.style.display = 'none';
                     instPanelOpen = false;

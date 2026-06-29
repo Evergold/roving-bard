@@ -311,6 +311,174 @@ def abc_to_midi_bytes(abc_text: str, start_pos: float = 0.0, instrument: int | N
     return bytes(midi_file)
 
 
+
+def get_midi_duration(filepath: str) -> float:
+    try:
+        with open(filepath, "rb") as f:
+            data = f.read()
+        if len(data) < 14 or data[:4] != b"MThd":
+            return 180.0
+        
+        division = int.from_bytes(data[12:14], byteorder="big")
+        if division & 0x8000:
+            return 180.0
+            
+        idx = 14
+        tracks = []
+        while idx < len(data):
+            if data[idx:idx+4] == b"MTrk":
+                track_len = int.from_bytes(data[idx+4:idx+8], byteorder="big")
+                track_data = data[idx+8:idx+8+track_len]
+                tracks.append(track_data)
+                idx += 8 + track_len
+            else:
+                idx += 1
+                
+        if not tracks:
+            return 180.0
+            
+        tempo_events = []
+        for track in tracks:
+            t_idx = 0
+            current_ticks = 0
+            running_status = None
+            while t_idx < len(track):
+                val = 0
+                while True:
+                    b = track[t_idx]
+                    t_idx += 1
+                    val = (val << 7) | (b & 0x7f)
+                    if not (b & 0x80):
+                        break
+                current_ticks += val
+                
+                if t_idx >= len(track):
+                    break
+                
+                status = track[t_idx]
+                if status >= 0x80:
+                    t_idx += 1
+                    running_status = status
+                else:
+                    status = running_status
+                
+                if status == 0xFF:
+                    meta_type = track[t_idx]
+                    t_idx += 1
+                    len_val = 0
+                    while True:
+                        b = track[t_idx]
+                        t_idx += 1
+                        len_val = (len_val << 7) | (b & 0x7f)
+                        if not (b & 0x80):
+                            break
+                    if meta_type == 0x51 and len_val == 3:
+                        tempo = int.from_bytes(track[t_idx:t_idx+3], byteorder="big")
+                        tempo_events.append((current_ticks, tempo))
+                    t_idx += len_val
+                elif status in (0xF0, 0xF7):
+                    len_val = 0
+                    while True:
+                        b = track[t_idx]
+                        t_idx += 1
+                        len_val = (len_val << 7) | (b & 0x7f)
+                        if not (b & 0x80):
+                            break
+                    t_idx += len_val
+                else:
+                    msg_type = status & 0xF0
+                    if msg_type in (0x80, 0x90, 0xA0, 0xB0, 0xE0):
+                        t_idx += 2
+                    elif msg_type in (0xC0, 0xD0):
+                        t_idx += 1
+                    else:
+                        t_idx += 1
+        
+        tempo_events.sort(key=lambda x: x[0])
+        
+        def ticks_to_seconds(total_ticks):
+            if not tempo_events:
+                return total_ticks * 0.5 / division
+            
+            curr_tick = 0
+            curr_time = 0.0
+            curr_tempo = 500000
+            
+            for t_tick, t_tempo in tempo_events:
+                if t_tick >= total_ticks:
+                    break
+                curr_time += (t_tick - curr_tick) * (curr_tempo / 1000000.0) / division
+                curr_tick = t_tick
+                curr_tempo = t_tempo
+                
+            if total_ticks > curr_tick:
+                curr_time += (total_ticks - curr_tick) * (curr_tempo / 1000000.0) / division
+            return curr_time
+
+        max_duration = 0.0
+        for track in tracks:
+            t_idx = 0
+            current_ticks = 0
+            running_status = None
+            while t_idx < len(track):
+                val = 0
+                while True:
+                    b = track[t_idx]
+                    t_idx += 1
+                    val = (val << 7) | (b & 0x7f)
+                    if not (b & 0x80):
+                        break
+                current_ticks += val
+                
+                if t_idx >= len(track):
+                    break
+                
+                status = track[t_idx]
+                if status >= 0x80:
+                    t_idx += 1
+                    running_status = status
+                else:
+                    status = running_status
+                
+                if status == 0xFF:
+                    meta_type = track[t_idx]
+                    t_idx += 1
+                    len_val = 0
+                    while True:
+                        b = track[t_idx]
+                        t_idx += 1
+                        len_val = (len_val << 7) | (b & 0x7f)
+                        if not (b & 0x80):
+                            break
+                    t_idx += len_val
+                elif status in (0xF0, 0xF7):
+                    len_val = 0
+                    while True:
+                        b = track[t_idx]
+                        t_idx += 1
+                        len_val = (len_val << 7) | (b & 0x7f)
+                        if not (b & 0x80):
+                            break
+                    t_idx += len_val
+                else:
+                    msg_type = status & 0xF0
+                    if msg_type in (0x80, 0x90, 0xA0, 0xB0, 0xE0):
+                        t_idx += 2
+                    elif msg_type in (0xC0, 0xD0):
+                        t_idx += 1
+                    else:
+                        t_idx += 1
+            
+            track_duration = ticks_to_seconds(current_ticks)
+            if track_duration > max_duration:
+                max_duration = track_duration
+                
+        return max_duration
+    except Exception as e:
+        print(f"Error parsing MIDI duration: {e}")
+        return 180.0
+
+
 def get_abc_duration(filepath: str) -> float:
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -662,6 +830,8 @@ class SafeMusicPlayer:
         if track_file.lower().endswith(".abc"):
             self.track_duration = get_abc_duration(track_path)
             self._prepare_abc_midi(track_path, start_time)
+        elif track_file.lower().endswith(".mid") or track_file.lower().endswith(".midi"):
+            self.track_duration = get_midi_duration(track_path)
         else:
             try:
                 tag = TinyTag.get(track_path)
@@ -721,6 +891,8 @@ class SafeMusicPlayer:
         if track_file.lower().endswith(".abc"):
             self.track_duration = get_abc_duration(track_path)
             self._prepare_abc_midi(track_path, start_time)
+        elif track_file.lower().endswith(".mid") or track_file.lower().endswith(".midi"):
+            self.track_duration = get_midi_duration(track_path)
         else:
             try:
                 tag = TinyTag.get(track_path)
@@ -833,7 +1005,7 @@ class SafeMusicPlayer:
                 if start_pos < self.start_time:
                     start_pos = self.start_time
                 track_path = os.path.join(self.playlist_dir, self.current_track)
-                if self.current_track.lower().endswith(".abc"):
+                if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
                     self._prepare_abc_midi(track_path, start_pos)
                     load_path = self._abc_tmp_path
                     play_start = 0.0
@@ -880,7 +1052,7 @@ class SafeMusicPlayer:
 
         try:
             track_path = os.path.join(self.playlist_dir, self.current_track)
-            if self.current_track.lower().endswith(".abc"):
+            if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
                 self._prepare_abc_midi(track_path, position)
                 load_path = self._abc_tmp_path
                 play_start = 0.0
@@ -925,7 +1097,7 @@ class SafeMusicPlayer:
                 # Update Pygame playback position
                 if not self.simulated and self.mixer_initialized:
                     try:
-                        if self.current_track.lower().endswith(".abc"):
+                        if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
                             self._prepare_abc_midi(os.path.join(self.playlist_dir, self.current_track), pos)
                             pygame.mixer.music.load(self._abc_tmp_path)
                             if not self.paused:
@@ -979,8 +1151,9 @@ class SafeMusicPlayer:
         """
         if not self.current_track:
             return {"status": "error", "message": "No track loaded."}
-        if self.current_track.lower().endswith(".abc"):
-            return {"status": "success", "message": "EQ is disabled for ABC files."}
+        if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
+            file_type = "MIDI" if not self.current_track.lower().endswith(".abc") else "ABC"
+            return {"status": "success", "message": f"EQ is disabled for {file_type} files."}
 
         # Check if all gains are 0 — if so, just reload the original file
         all_flat = all(abs(g) < 0.01 for g in self.eq_gains.values())
