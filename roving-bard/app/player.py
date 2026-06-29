@@ -702,6 +702,8 @@ class SafeMusicPlayer:
                 except Exception as e:
                     print(f"Error stopping music: {e}")
 
+        if self.current_track != track_file:
+            self.active_instrument = None
         self.current_track = track_file
         self.paused = True
         self.was_stopped = True
