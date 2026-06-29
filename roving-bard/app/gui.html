@@ -4909,14 +4909,14 @@
                     };
                     const exportBtn = document.getElementById('export-segment-btn');
                     if (exportBtn) exportBtn.disabled = true;
-                    showToast(t("segment_export_success") + segmentName, 'success');
+                    showToast(t("segment_export_success") + trimmedName, 'success');
                     await loadAudioLibrary();
                 } else {
-                    alert(t("error_label") + result.message);
+                    showToast((t("error_label") || "Error: ") + (result.message || "Failed to export segment"), 'error');
                 }
             } catch (err) {
                 console.error(t("err_export_segment"), err);
-                alert(t("failed_export_segment"));
+                showToast(t("failed_export_segment") || "Failed to export segment", 'error');
             }
         }
 
