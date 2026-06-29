@@ -3548,10 +3548,15 @@
         }
 
         function updateInstrumentChooser(isAbc, activeInstrument) {
+            console.log("[Instrument Chooser] updateInstrumentChooser called with isAbc:", isAbc, "activeInstrument:", activeInstrument);
             const panel = document.getElementById('instrument-chooser-panel');
-            if (!panel) return;
+            if (!panel) {
+                console.warn("[Instrument Chooser] instrument-chooser-panel element not found in DOM!");
+                return;
+            }
             
             if (isAbc) {
+                console.log("[Instrument Chooser] Showing instrument panel.");
                 panel.style.display = 'block';
                 document.querySelectorAll('.instrument-option').forEach(opt => {
                     const prog = Number(opt.getAttribute('data-program'));
@@ -3594,8 +3599,10 @@
         }
 
         function updatePlayerUI(status) {
+            console.log("[Player UI] updatePlayerUI called. Track:", status.current_track, "Paused:", status.paused);
             // Disable EQ settings if .abc is selected
             const isAbc = status.current_track && status.current_track.toLowerCase().endsWith('.abc');
+            console.log("[Player UI] Computed isAbc:", isAbc);
             const sliders = document.querySelectorAll('.eq-slider');
             sliders.forEach(s => {
                 s.disabled = isAbc;

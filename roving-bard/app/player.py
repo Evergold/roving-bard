@@ -958,6 +958,8 @@ class SafeMusicPlayer:
         """
         if not self.current_track:
             return {"status": "error", "message": "No track loaded."}
+        if self.current_track.lower().endswith(".abc"):
+            return {"status": "success", "message": "EQ is disabled for ABC files."}
 
         # Check if all gains are 0 — if so, just reload the original file
         all_flat = all(abs(g) < 0.01 for g in self.eq_gains.values())
