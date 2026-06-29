@@ -2955,6 +2955,10 @@
                                     <span class="instrument-title" data-loc="instrument_label">INSTRUMENT</span>
                                 </div>
                                 <div class="instrument-grid">
+                                    <div class="instrument-card" data-program="0" onclick="selectInstrument(0)" title="Piano">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h18v16H3V4z M7 4v10 M11 4v10 M15 4v10 M19 4v10 M5 14h14 M9 4v6h1 M13 4v6h1"/></svg>
+                                        <span>Piano</span>
+                                    </div>
                                     <div class="instrument-card" data-program="109" onclick="selectInstrument(109)" title="Bagpipe">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 12c-2 0-4 1.5-4 3.5s2 3.5 4 3.5s4-1.5 4-3.5S14 12 12 12z M10 12V4 M14 12V4 M8 13.5l-3-3 M16 13.5l3-3"/></svg>
                                         <span>Bagpipe</span>
@@ -3605,6 +3609,7 @@
         }
 
         const INSTRUMENT_SVGS = {
+            0: `<path d="M4 6h36v28H4V6z M10 6v16 M16 6v16 M22 6v16 M28 6v16 M34 6v16 M4 22h36 M13 6v10 M25 6v10 M37 6v10"/>`, // Piano
             109: `<path d="M16 24c-2 0-4 1.5-4 3.5s2 3.5 4 3.5s4-1.5 4-3.5S18 24 16 24z M14 24V10 M18 24V10 M12 26l-3-3 M20 26l3-3"/>`, // Bagpipe
             70: `<path d="M10 30L30 10 M15 25l1.5-1.5 M19 21l1.5-1.5 M23 17l1.5-1.5 M27 13l1.5-1.5 M10 30l-2 2 M30 10l2-2"/>`, // Bassoon
             71: `<path d="M22 8v20 M18 28h8l-2 4h-4L18 28z M22 12h.01 M22 16h.01 M22 20h.01 M22 24h.01"/>`, // Clarinet
@@ -3620,7 +3625,7 @@
         };
 
         function getInstrumentSvg(program) {
-            const path = INSTRUMENT_SVGS[program] || INSTRUMENT_SVGS[24]; // Default to Lute
+            const path = INSTRUMENT_SVGS[program] || INSTRUMENT_SVGS[0]; // Default to Piano (0)
             return `
                 <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
                     <defs>
