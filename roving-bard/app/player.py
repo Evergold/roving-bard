@@ -1244,6 +1244,10 @@ class SafeMusicPlayer:
             return
 
         print(f"[Playback] Stopping playback (fadeout: {fade_out_ms}ms)")
+        
+        # Safely stop the thread and close all file handles to prevent race conditions
+        self._stop_sounddevice_playback()
+        
         self.paused = True
         self.was_stopped = True
         self.seeked_while_paused = False
@@ -1252,25 +1256,6 @@ class SafeMusicPlayer:
 
         with self._play_lock:
             self._playhead = int(self.start_time * self._sample_rate)
-            if self._sf is not None:
-                self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
-            elif self._ffmpeg_proc is not None:
-                try:
-                    self._ffmpeg_proc.terminate()
-                except Exception:
-                    pass
-                cmd = [
-                    "ffmpeg", "-y",
-                    "-ss", f"{self.start_time:.3f}",
-                    "-i", os.path.join(self.playlist_dir, self.current_track),
-                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
-                    "-ar", "44100", "-ac", "2", "-"
-                ]
-                self._ffmpeg_proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL
-                )
             self._clear_eq_zi()
 
     def _get_effective_volume(self) -> float:
