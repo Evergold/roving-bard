@@ -6476,35 +6476,39 @@
                 const currentCol = ps ? ps.col : 0;
 
                 if (!isNarrow) {
-                    const col0El = getColEl(0);
-                    const col1El = getColEl(1);
-                    if (col0El && col1El && col1El.style.display !== 'none') {
-                        const r0 = col0El.getBoundingClientRect();
-                        const r1 = col1El.getBoundingClientRect();
-                        const midX = (r0.right + r1.left) / 2;
-
-                        // Create a hysteresis zone: must drag past the opposite column's inner edge
-                        // or at least 60px past the midpoint
-                        const HYSTERESIS = 60;
-                        const leftThresh = Math.min(r0.right, midX - HYSTERESIS);
-                        const rightThresh = Math.max(r1.left, midX + HYSTERESIS);
-
-                        if (currentCol === 1) {
-                            // Currently on the right: must cross leftThresh to move to the left column
-                            targetCol = (clientX < leftThresh) ? 0 : 1;
-                        } else {
-                            // Currently on the left: must cross rightThresh to move to the right column
-                            targetCol = (clientX > rightThresh) ? 1 : 0;
-                        }
-                    } else {
-                        // If we are in 1-column mode, check left/right thresholds of the grid
-                        const leftThresh = gridRect.left + gridRect.width * 0.35;
-                        const rightThresh = gridRect.left + gridRect.width * 0.65;
-                        if (clientX < leftThresh && dragState && dragState.startedInSingleCol) {
+                    if (dragState && dragState.startedInSingleCol) {
+                        // If we started the drag in 1-column mode, use stable centered zones for the entire drag
+                        const screenMidX = window.innerWidth / 2;
+                        const leftThresh = screenMidX - 120; // 35% of 800px centered
+                        const rightThresh = screenMidX + 120; // 65% of 800px centered
+                        if (clientX < leftThresh) {
                             targetCol = 0;
                             forceTwoColLeft = true;
                         } else if (clientX > rightThresh) {
                             targetCol = 1;
+                        } else {
+                            targetCol = 0;
+                        }
+                    } else {
+                        // If we started in 2-column mode, use normal 2-column hysteresis thresholds
+                        const col0El = getColEl(0);
+                        const col1El = getColEl(1);
+                        if (col0El && col1El && col1El.style.display !== 'none') {
+                            const r0 = col0El.getBoundingClientRect();
+                            const r1 = col1El.getBoundingClientRect();
+                            const midX = (r0.right + r1.left) / 2;
+
+                            const HYSTERESIS = 60;
+                            const leftThresh = Math.min(r0.right, midX - HYSTERESIS);
+                            const rightThresh = Math.max(r1.left, midX + HYSTERESIS);
+
+                            if (currentCol === 1) {
+                                // Currently on the right: must cross leftThresh to move to the left column
+                                targetCol = (clientX < leftThresh) ? 0 : 1;
+                            } else {
+                                // Currently on the left: must cross rightThresh to move to the right column
+                                targetCol = (clientX > rightThresh) ? 1 : 0;
+                            }
                         } else {
                             targetCol = 0;
                         }
