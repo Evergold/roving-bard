@@ -314,6 +314,9 @@
         #instrument-btn:hover {
             opacity: 0.8;
         }
+        #instrument-btn.inst-active svg {
+            filter: drop-shadow(0 0 8px var(--neon-blue));
+        }
 
         /* Widgets */
         .card {
@@ -3666,12 +3669,18 @@
         }
 
         function toggleInstrumentPanel() {
+            console.log("[Instrument Panel] toggleInstrumentPanel() triggered.");
             const panel = document.getElementById('instrument-panel');
-            if (!panel) return;
+            const btn = document.getElementById('instrument-btn');
+            if (!panel) {
+                console.error("[Instrument Panel] Could not find 'instrument-panel' in DOM!");
+                return;
+            }
             
             // Close EQ panel if open
             const eqPanel = document.getElementById('eq-panel');
             if (eqPanel && eqPanel.classList.contains('eq-panel-open')) {
+                console.log("[Instrument Panel] Closing open EQ panel.");
                 eqPanelOpen = false;
                 eqPanel.classList.remove('eq-panel-open');
                 const eqBtn = document.getElementById('eq-btn');
@@ -3679,7 +3688,18 @@
             }
             
             panel.classList.toggle('instrument-panel-open');
-            if (panel.classList.contains('instrument-panel-open')) {
+            const isOpen = panel.classList.contains('instrument-panel-open');
+            console.log("[Instrument Panel] Panel open state toggled to:", isOpen);
+            
+            if (btn) {
+                if (isOpen) {
+                    btn.classList.add('inst-active');
+                } else {
+                    btn.classList.remove('inst-active');
+                }
+            }
+            
+            if (isOpen) {
                 positionInstrumentPanel();
             }
         }
@@ -3687,14 +3707,18 @@
         function positionInstrumentPanel() {
             const btn = document.getElementById('instrument-btn');
             const panel = document.getElementById('instrument-panel');
-            if (!btn || !panel) return;
+            if (!btn || !panel) {
+                console.error("[Instrument Panel] Missing button or panel in positionInstrumentPanel()", btn, panel);
+                return;
+            }
             const rect = btn.getBoundingClientRect();
             const panelW = panel.offsetWidth || 340;
-            // Right-align panel with button's right edge, clamped to viewport
             let left = rect.right - panelW;
             if (left < 8) left = 8;
+            const top = rect.bottom + 10;
+            console.log("[Instrument Panel] Positioned at: left =", left + "px, top =", top + "px. Button rect:", rect);
             panel.style.left = left + 'px';
-            panel.style.top  = (rect.bottom + 10) + 'px';
+            panel.style.top  = top + 'px';
         }
 
         async function selectInstrument(program) {
@@ -6365,7 +6389,9 @@
             const instBtn = document.getElementById('instrument-btn');
             if (instPanel && instPanel.classList.contains('instrument-panel-open')) {
                 if (instBtn && !instPanel.contains(e.target) && !instBtn.contains(e.target)) {
+                    console.log("[Instrument Panel] Clicking outside; closing panel.");
                     instPanel.classList.remove('instrument-panel-open');
+                    instBtn.classList.remove('inst-active');
                 }
             }
         });
