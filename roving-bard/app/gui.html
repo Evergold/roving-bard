@@ -7786,5 +7786,54 @@
         </div>
     </div>
     <div id="toast-container"></div>
+
+    <!-- Live Debug Overlay for Instrument Panel -->
+    <div id="inst-debug-overlay" style="position: fixed; bottom: 10px; right: 10px; z-index: 99999; background: rgba(10, 15, 25, 0.95); color: #00f2fe; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; border: 1px solid rgba(0, 242, 254, 0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: none; min-width: 280px; line-height: 1.4;">
+        <div style="font-weight: bold; border-bottom: 1px solid rgba(0, 242, 254, 0.3); padding-bottom: 4px; margin-bottom: 6px; color: #7c4dff;">INSTRUMENT PANEL DEBUG</div>
+        <div id="debug-btn-status">Btn: Loading...</div>
+        <div id="debug-panel-status">Panel: Loading...</div>
+        <div id="debug-globals">Globals: Loading...</div>
+    </div>
+    <script>
+        setInterval(() => {
+            const btn = document.getElementById('instrument-btn');
+            const panel = document.getElementById('instrument-panel');
+            const btnStatus = document.getElementById('debug-btn-status');
+            const panelStatus = document.getElementById('debug-panel-status');
+            const globalsStatus = document.getElementById('debug-globals');
+            
+            if (btnStatus) {
+                if (btn) {
+                    const rect = btn.getBoundingClientRect();
+                    btnStatus.innerHTML = `<b>Button:</b><br/>` +
+                        `• display: "${btn.style.display}" (computed: "${window.getComputedStyle(btn).display}")<br/>` +
+                        `• rect: L=${Math.round(rect.left)} R=${Math.round(rect.right)} T=${Math.round(rect.top)} B=${Math.round(rect.bottom)} W=${Math.round(rect.width)} H=${Math.round(rect.height)}<br/>` +
+                        `• parent: ${btn.parentElement ? btn.parentElement.className : 'none'}`;
+                } else {
+                    btnStatus.innerHTML = `<b>Button:</b> NOT FOUND IN DOM`;
+                }
+            }
+            
+            if (panelStatus) {
+                if (panel) {
+                    const rect = panel.getBoundingClientRect();
+                    panelStatus.innerHTML = `<b>Panel:</b><br/>` +
+                        `• display: "${panel.style.display}" (computed: "${window.getComputedStyle(panel).display}")<br/>` +
+                        `• classes: "${panel.className}"<br/>` +
+                        `• pos style: L="${panel.style.left}" T="${panel.style.top}"<br/>` +
+                        `• actual pos: L=${Math.round(rect.left)} T=${Math.round(rect.top)} W=${Math.round(rect.width)} H=${Math.round(rect.height)}<br/>` +
+                        `• parent: ${panel.parentElement ? panel.parentElement.tagName : 'none'}`;
+                } else {
+                    panelStatus.innerHTML = `<b>Panel:</b> NOT FOUND IN DOM`;
+                }
+            }
+            
+            if (globalsStatus) {
+                globalsStatus.innerHTML = `<b>Globals:</b><br/>` +
+                    `• instPanelOpen: ${typeof instPanelOpen !== 'undefined' ? instPanelOpen : 'undefined'}<br/>` +
+                    `• eqPanelOpen: ${typeof eqPanelOpen !== 'undefined' ? eqPanelOpen : 'undefined'}`;
+            }
+        }, 200);
+    </script>
 </body>
 </html>
