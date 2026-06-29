@@ -1,6 +1,7 @@
 {
     "subtitle": "Adaptiver, standortbezogener Ton in LOTRO",
     "auto_polling": "AUTOMATISCHE BILDSCHIRMERFASSUNG",
+    "run_polling": "AUSFÜHREN",
     "ready": "BEREIT",
     "unauthorized": "NICHT AUTORISIERT",
     "offline": "OFFLINE",

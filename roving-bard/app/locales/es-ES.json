@@ -1,6 +1,7 @@
 {
     "subtitle": "Audio adaptativo y consciente de la ubicación en LOTRO",
     "auto_polling": "ANÁLISIS AUTOMÁTICO DE PANTALLA",
+    "run_polling": "EJECUTAR",
     "ready": "LISTO",
     "unauthorized": "NO AUTORIZADO",
     "offline": "DESCONECTADO",
