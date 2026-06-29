@@ -686,7 +686,7 @@ class SafeMusicPlayer:
             pygame.mixer.music.load(load_path)
             play_start = 0.0 if track_file.lower().endswith(".abc") else self.start_time
             pygame.mixer.music.play(loops=-1, start=play_start, fade_ms=fade_in_ms)
-            pygame.mixer.music.set_volume(self.volume)
+            pygame.mixer.music.set_volume(self._get_effective_volume())
             return True
         except Exception as e:
             print(f"Error during Pygame playback of {track_file}: {e}")
@@ -770,11 +770,20 @@ class SafeMusicPlayer:
         except Exception as e:
             print(f"Error stopping playback: {e}")
 
+    def _get_effective_volume(self) -> float:
+        if self.current_track and (
+            self.current_track.lower().endswith(".mid") or 
+            self.current_track.lower().endswith(".midi")
+        ):
+            # Scale MIDI files down to 45% to match MP3/WAV/ABC loudness
+            return self.volume * 0.45
+        return self.volume
+
     def set_volume(self, volume):
         self.volume = max(0.0, min(1.0, volume))
         if self.mixer_initialized and not self.simulated:
             try:
-                pygame.mixer.music.set_volume(self.volume)
+                pygame.mixer.music.set_volume(self._get_effective_volume())
             except Exception as e:
                 print(f"Error setting volume: {e}")
         print(f"[Playback] Volume set to {int(self.volume * 100)}%")
@@ -833,7 +842,7 @@ class SafeMusicPlayer:
                     play_start = start_pos
                 pygame.mixer.music.load(load_path)
                 pygame.mixer.music.play(loops=-1, start=play_start, fade_ms=1500)
-                pygame.mixer.music.set_volume(self.volume)
+                pygame.mixer.music.set_volume(self._get_effective_volume())
                 self.was_stopped = False
                 self.seeked_while_paused = False
             else:
@@ -880,7 +889,7 @@ class SafeMusicPlayer:
                 play_start = position
             pygame.mixer.music.load(load_path)
             pygame.mixer.music.play(loops=-1, start=play_start)
-            pygame.mixer.music.set_volume(self.volume)
+            pygame.mixer.music.set_volume(self._get_effective_volume())
             return True
         except Exception as e:
             print(f"Error seeking: {e}")
@@ -1029,7 +1038,7 @@ class SafeMusicPlayer:
                     pygame.mixer.music.load(tmp_path)
                     if was_playing:
                         pygame.mixer.music.play(loops=0, start=resume_offset, fade_ms=80)
-                        pygame.mixer.music.set_volume(self.volume)
+                        pygame.mixer.music.set_volume(self._get_effective_volume())
 
                 # Track position so the seek timer stays accurate
                 import time
