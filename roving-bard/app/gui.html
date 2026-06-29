@@ -6365,15 +6365,7 @@
             if (instPanel && instPanel.parentElement !== document.body) {
                 document.body.appendChild(instPanel);
             }
-            const instBtn = document.getElementById('instrument-btn');
-            if (instBtn) {
-                console.log("[Instrument Panel] Binding click listener via addEventListener.");
-                instBtn.addEventListener('click', (e) => {
-                    console.log("[Instrument Panel] Click registered via addEventListener!");
-                    e.stopPropagation();
-                    toggleInstrumentPanel();
-                });
-            }
+
             // Try to load from localStorage first
             const saved = localStorage.getItem(EQ_STORAGE_KEY);
             if (saved) {
@@ -6397,8 +6389,18 @@
             buildEQBands();
         }
 
-        // Close EQ and Instrument panels on outside click
+        // Global click listener (Event Delegation & Click-Away)
         document.addEventListener('click', (e) => {
+            // Event Delegation for Instrument Button click
+            const instBtn = document.getElementById('instrument-btn');
+            if (instBtn && instBtn.contains(e.target)) {
+                console.log("[Event Delegation] Instrument button clicked!");
+                e.stopPropagation();
+                toggleInstrumentPanel();
+                return;
+            }
+
+            // Click-away for EQ panel
             if (eqPanelOpen) {
                 const panel = document.getElementById('eq-panel');
                 const btn = document.getElementById('eq-btn');
@@ -6408,6 +6410,8 @@
                     btn.classList.remove('eq-active');
                 }
             }
+
+            // Click-away for Instrument panel
             if (instPanelOpen) {
                 const panel = document.getElementById('instrument-panel');
                 const btn = document.getElementById('instrument-btn');
