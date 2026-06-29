@@ -188,69 +188,41 @@
             html:not(.font-size-m):not(.font-size-lg) .auto-polling-short { display: inline; }
         }
 
-        /* Larger Font Size (m): RUN at < 1140px (interpolated) */
-        @media (max-width: 1139px) {
-            html.font-size-m .auto-polling-full { display: none; }
-            html.font-size-m .auto-polling-short { display: inline; }
-        }
-
-        /* Largest Font Size (lg): RUN at < 1200px */
+        /* Larger (m) and Largest (lg) Font Sizes: RUN at < 1200px */
         @media (max-width: 1199px) {
+            html.font-size-m .auto-polling-full,
             html.font-size-lg .auto-polling-full { display: none; }
+            html.font-size-m .auto-polling-short,
             html.font-size-lg .auto-polling-short { display: inline; }
         }
 
         /* ── Wide View Breakpoints based on Font Size ──────────────── */
 
-        /* 1. Normal Font Size (s): Wide View at >= 985px */
+        /* 1. Normal (s) and Larger (m) Font Sizes: Wide View at >= 985px */
         @media (min-width: 985px) {
-            html:not(.font-size-m):not(.font-size-lg) header {
+            html:not(.font-size-lg) header {
                 padding: 1rem 2rem;
                 gap: 1.5rem;
             }
-            html:not(.font-size-m):not(.font-size-lg) .logo-container h1 {
+            html:not(.font-size-lg) .logo-container h1 {
                 font-size: 1.8rem;
             }
-            html:not(.font-size-m):not(.font-size-lg) .logo-container p {
+            html:not(.font-size-lg) .logo-container p {
                 max-width: none;
             }
-            html:not(.font-size-m):not(.font-size-lg) .header-main-content {
+            html:not(.font-size-lg) .header-main-content {
                 gap: 1.5rem !important;
             }
-            html:not(.font-size-m):not(.font-size-lg) main {
+            html:not(.font-size-lg) main {
                 padding: 2rem 2rem;
                 gap: 2rem;
             }
-            html:not(.font-size-m):not(.font-size-lg) main:not(.single-col) {
+            html:not(.font-size-lg) main:not(.single-col) {
                 grid-template-columns: 1fr 1.2fr;
             }
         }
 
-        /* 2. Larger Font Size (m): Wide View at >= 1132px (interpolated) */
-        @media (min-width: 1132px) {
-            html.font-size-m header {
-                padding: 1rem 2rem;
-                gap: 1.5rem;
-            }
-            html.font-size-m .logo-container h1 {
-                font-size: 1.8rem;
-            }
-            html.font-size-m .logo-container p {
-                max-width: none;
-            }
-            html.font-size-m .header-main-content {
-                gap: 1.5rem !important;
-            }
-            html.font-size-m main {
-                padding: 2rem 2rem;
-                gap: 2rem;
-            }
-            html.font-size-m main:not(.single-col) {
-                grid-template-columns: 1fr 1.2fr;
-            }
-        }
-
-        /* 3. Largest Font Size (lg): Wide View at >= 1280px */
+        /* 2. Largest Font Size (lg): Wide View at >= 1280px */
         @media (min-width: 1280px) {
             html.font-size-lg header {
                 padding: 1rem 2rem;
@@ -6492,8 +6464,6 @@
                 const html = document.documentElement;
                 if (html.classList.contains('font-size-lg')) {
                     return width <= 1279;
-                } else if (html.classList.contains('font-size-m')) {
-                    return width <= 1131;
                 }
                 return width <= 984;
             }
