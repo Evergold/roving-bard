@@ -6453,6 +6453,12 @@
                         const col1Count = layout.panels.filter(p => p.col === 1).length;
                         if (col0Count === 0 || col1Count === 0) {
                             manuallyForcedSingleCol = true;
+                            // Normalize all panels to Column 0 and preserve their sorted order in the state
+                            const sorted = [...layout.panels].sort((a,b) => (a.col - b.col) || (a.order - b.order));
+                            sorted.forEach((p, i) => {
+                                p.col = 0;
+                                p.order = i;
+                            });
                             applyLayout(false);
                             return;
                         }
