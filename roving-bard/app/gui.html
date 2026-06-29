@@ -1907,6 +1907,10 @@
             border-color: #f59e0b;
             color: #fcd34d;
         }
+        .toast.toast-success {
+            border-color: #10b981;
+            color: #a7f3d0;
+        }
 
         /* Toggle switches */
         .switch-container {
@@ -5370,13 +5374,14 @@
                 });
                 const res = await response.json();
                 if (res.status === 'success') {
+                    showToast(t("upload_success") + " " + file.name, 'success');
                     loadAudioLibrary();
                 } else {
-                    alert(t("upload_failed") + res.detail);
+                    showToast((t("upload_failed") || "Upload failed: ") + (res.detail || res.message || "Unknown error"), 'error');
                 }
             } catch (err) {
                 console.error(t("err_upload_audio_file"), err);
-                alert(t("upload_failed") + err.message);
+                showToast((t("upload_failed") || "Upload failed: ") + err.message, 'error');
             }
             input.value = ''; // Reset input
         }

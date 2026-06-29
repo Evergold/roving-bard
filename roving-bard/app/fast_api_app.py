@@ -476,6 +476,11 @@ def api_upload_audio(file: UploadFile = File(...)):
         )
         
     filepath = os.path.join(playlist_dir, filename)
+    if os.path.exists(filepath):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File already exists in Audio Library."
+        )
     try:
         with open(filepath, "wb") as f:
             f.write(file.file.read())
