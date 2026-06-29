@@ -2910,7 +2910,7 @@
                                 </svg>
                             </span>
                             <!-- Instrument Button (ABC tracks) -->
-                            <span id="instrument-btn" onclick="event.stopPropagation(); toggleInstrumentPanel()" data-loc-title="instrument_label" title="Instrument" style="display: none;">
+                            <span id="instrument-btn" data-loc-title="instrument_label" title="Instrument" style="display: none;">
                                 <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
                                     <defs>
                                         <linearGradient id="instGrad" x1="0" y1="0" x2="0" y2="1">
@@ -6364,6 +6364,15 @@
             const instPanel = document.getElementById('instrument-panel');
             if (instPanel && instPanel.parentElement !== document.body) {
                 document.body.appendChild(instPanel);
+            }
+            const instBtn = document.getElementById('instrument-btn');
+            if (instBtn) {
+                console.log("[Instrument Panel] Binding click listener via addEventListener.");
+                instBtn.addEventListener('click', (e) => {
+                    console.log("[Instrument Panel] Click registered via addEventListener!");
+                    e.stopPropagation();
+                    toggleInstrumentPanel();
+                });
             }
             // Try to load from localStorage first
             const saved = localStorage.getItem(EQ_STORAGE_KEY);
