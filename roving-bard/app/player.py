@@ -1005,7 +1005,7 @@ class SafeMusicPlayer:
                 if start_pos < self.start_time:
                     start_pos = self.start_time
                 track_path = os.path.join(self.playlist_dir, self.current_track)
-                if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
+                if self.current_track.lower().endswith(".abc"):
                     self._prepare_abc_midi(track_path, start_pos)
                     load_path = self._abc_tmp_path
                     play_start = 0.0
@@ -1052,7 +1052,7 @@ class SafeMusicPlayer:
 
         try:
             track_path = os.path.join(self.playlist_dir, self.current_track)
-            if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
+            if self.current_track.lower().endswith(".abc"):
                 self._prepare_abc_midi(track_path, position)
                 load_path = self._abc_tmp_path
                 play_start = 0.0
@@ -1097,7 +1097,7 @@ class SafeMusicPlayer:
                 # Update Pygame playback position
                 if not self.simulated and self.mixer_initialized:
                     try:
-                        if self.current_track.lower().endswith(".abc") or self.current_track.lower().endswith(".mid") or self.current_track.lower().endswith(".midi"):
+                        if self.current_track.lower().endswith(".abc"):
                             self._prepare_abc_midi(os.path.join(self.playlist_dir, self.current_track), pos)
                             pygame.mixer.music.load(self._abc_tmp_path)
                             if not self.paused:
