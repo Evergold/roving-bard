@@ -6556,11 +6556,11 @@
                     }
 
                     // Directional hysteresis thresholds based on static card height:
-                    // T_below: must drag past the top 30% (max 50px) of the static card to move below
-                    // T_above: must drag past the bottom 30% (max 50px) of the static card to move above
+                    // T_below: must drag past the bottom 30% (max 80px) of the static card to move below
+                    // T_above: must drag past the top 30% (max 80px) of the static card to move above
                     const cardHeight = cardBottom - cardTop;
-                    const T_below = cardTop + Math.min(50, cardHeight * 0.3);
-                    const T_above = cardBottom - Math.min(50, cardHeight * 0.3);
+                    const T_below = cardBottom - Math.min(80, cardHeight * 0.3);
+                    const T_above = cardTop + Math.min(80, cardHeight * 0.3);
 
                     if (isCurrentlyAbove) {
                         if (dragMidY <= T_below) {
