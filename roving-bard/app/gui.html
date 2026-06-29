@@ -207,9 +207,6 @@
             html:not(.font-size-lg) .logo-container h1 {
                 font-size: 1.8rem;
             }
-            html:not(.font-size-lg) .logo-container p {
-                max-width: none;
-            }
             html:not(.font-size-lg) .header-main-content {
                 gap: 1.5rem !important;
             }
@@ -231,9 +228,6 @@
             html.font-size-lg .logo-container h1 {
                 font-size: 1.8rem;
             }
-            html.font-size-lg .logo-container p {
-                max-width: none;
-            }
             html.font-size-lg .header-main-content {
                 gap: 1.5rem !important;
             }
@@ -243,6 +237,23 @@
             }
             html.font-size-lg main:not(.single-col) {
                 grid-template-columns: 1fr 1.2fr;
+            }
+        }
+
+        /* ── Subtitle Spacious (max-width: none) triggers ──────────────── */
+
+        /* Normal (s): Spacious at >= 1080px */
+        @media (min-width: 1080px) {
+            html:not(.font-size-m):not(.font-size-lg) .logo-container p {
+                max-width: none;
+            }
+        }
+
+        /* Larger (m) and Largest (lg): Spacious at >= 1200px */
+        @media (min-width: 1200px) {
+            html.font-size-m .logo-container p,
+            html.font-size-lg .logo-container p {
+                max-width: none;
             }
         }
 
