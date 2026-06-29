@@ -2950,7 +2950,7 @@
                             </div>
 
                             <!-- Instrument Panel (popover) -->
-                            <div id="instrument-panel" onclick="event.stopPropagation()" style="display: none;">
+                            <div id="instrument-panel" onclick="event.stopPropagation()">
                                 <div class="instrument-header">
                                     <span class="instrument-title" data-loc="instrument_label">INSTRUMENT</span>
                                 </div>
@@ -3604,9 +3604,51 @@
             }
         }
 
+        const INSTRUMENT_SVGS = {
+            109: `<path d="M16 24c-2 0-4 1.5-4 3.5s2 3.5 4 3.5s4-1.5 4-3.5S18 24 16 24z M14 24V10 M18 24V10 M12 26l-3-3 M20 26l3-3"/>`, // Bagpipe
+            70: `<path d="M10 30L30 10 M15 25l1.5-1.5 M19 21l1.5-1.5 M23 17l1.5-1.5 M27 13l1.5-1.5 M10 30l-2 2 M30 10l2-2"/>`, // Bassoon
+            71: `<path d="M22 8v20 M18 28h8l-2 4h-4L18 28z M22 12h.01 M22 16h.01 M22 20h.01 M22 24h.01"/>`, // Clarinet
+            115: `<path d="M14 16l2-8h12l2 8 M11 16h22l-3 12H14l-3-12z M22 8V5 M22 28v3"/>`, // Cowbell
+            116: `<path d="M8 12a14 6 0 1 0 28 0A14 6 0 1 0 8 12z M8 12v12c0 6.6 6.3 12 14 12s14-5.4 14-12V12 M14 9l16 6 M28 9L14 15"/>`, // Drum
+            110: `<path d="M22 6v28 M17 11c-2 0-3.5 1.5-3.5 3.5S16 18 18 18s3.5 2 3.5 4c0 3-3 5-5 6.5M27 11c2 0 3.5 1.5 3.5 3.5S28 18 26 18s-3.5 2-3.5 4c0 3 3 5 5 6.5"/>`, // Fiddle
+            73: `<path d="M8 32L32 8 M12 28l.01-.01 M16 24l.01-.01 M20 20l.01-.01 M24 16l.01-.01 M28 12l.01-.01"/>`, // Flute
+            46: `<path d="M12 8v24h3c3.75-4.5 8.25-6 13.5-6.75V8C23.25 8.75 15.75 6.5 12 8z M12 14h16.5 M12 20h12.75 M12 26h7.5"/>`, // Harp
+            60: `<path d="M22 27a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M22 9V4 M22 27h9v4 M13 18H8"/>`, // Horn
+            24: `<path d="M29 11L23 17 M17 23c-2.25 0-4.5-1.5-4.5-3.75S14 15.5 16.25 15.5s3.75 2.25 3.75 4.5c0 3-3 5.25-5.25 6.75M21.5 18.5l6-6M26.75 8.75l4.5 4.5"/>`, // Lute
+            84: `<path d="M11 11c4.5 0 9 3 12 7.5s3 9 7.5 12 M30.5 30.5a3 3 0 1 0 3-3 M11 11L8 8 M14 14l.01-.01 M17 17l.01-.01"/>`, // Pibgorn
+            32: `<path d="M32 6.5L20 18.5 M14 24.5c-2.25 0-4.5-1.5-4.5-3.75S11 17 13.25 17s3.75 2.25 3.75 4.5c0 3-3 5.25-5.25 6.75M18.5 20.75l10.5-10.5M26.75 7.25l4.5 4.5 M23 5v9"/>` // Theorbo
+        };
+
+        function getInstrumentSvg(program) {
+            const path = INSTRUMENT_SVGS[program] || INSTRUMENT_SVGS[24]; // Default to Lute
+            return `
+                <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+                    <defs>
+                        <linearGradient id="instGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#00f2fe"/>
+                            <stop offset="100%" stop-color="#7c4dff"/>
+                        </linearGradient>
+                        <filter id="instGlow">
+                            <feGaussianBlur stdDeviation="1.2" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                    </defs>
+                    <g filter="url(#instGlow)" stroke="url(#instGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        ${path}
+                    </g>
+                </svg>
+            `;
+        }
+
         function updateInstrumentChooser(isAbc, activeInstrument) {
             console.log("[Instrument Chooser] updateInstrumentChooser called with isAbc:", isAbc, "activeInstrument:", activeInstrument);
             
+            // Update the button icon dynamically to represent the active instrument
+            const btn = document.getElementById('instrument-btn');
+            if (btn) {
+                btn.innerHTML = getInstrumentSvg(activeInstrument);
+            }
+
             // Highlight the active instrument card in the popover
             document.querySelectorAll('.instrument-card').forEach(card => {
                 const prog = Number(card.getAttribute('data-program'));
