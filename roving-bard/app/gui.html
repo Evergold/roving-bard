@@ -215,6 +215,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            container-type: inline-size;
         }
 
         .card:hover {
@@ -367,7 +368,7 @@
         }
 
         /* Responsive alignment for manual bounds when they wrap onto 2 lines */
-        @media (max-width: 480px) {
+        @container (max-width: 428px) {
             .manual-bounds-container span[data-loc="start_label"],
             .manual-bounds-container span[data-loc="end_label"] {
                 min-width: 45px;
