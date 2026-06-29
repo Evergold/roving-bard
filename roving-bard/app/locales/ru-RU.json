@@ -112,7 +112,7 @@
     "failed_remove_tag": "Не удалось удалить тег: ",
     "failed_add_segment_tag": "Не удалось добавить тег сегмента: ",
     "failed_remove_segment_tag": "Не удалось удалить тег сегмента: ",
-    "segment_export_success": "Сегмент успешно экспортирован.",
+    "segment_export_success": "Успешно экспортирован ",
     "error_label": "Ошибка: ",
     "failed_export_segment": "Не удалось экспортировать сегмент.",
     "segment_delete_success": "Сегмент успешно удален.",

@@ -112,7 +112,7 @@
     "failed_remove_tag": "Fehler beim Entfernen des Tags: ",
     "failed_add_segment_tag": "Fehler beim Hinzufügen des Segment-Tags: ",
     "failed_remove_segment_tag": "Fehler beim Entfernen des Segment-Tags: ",
-    "segment_export_success": "Segment erfolgreich exportiert.",
+    "segment_export_success": "Erfolgreich exportiert ",
     "error_label": "Fehler: ",
     "failed_export_segment": "Exportieren des Segments fehlgeschlagen.",
     "segment_delete_success": "Segment erfolgreich gelöscht.",

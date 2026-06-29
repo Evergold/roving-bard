@@ -112,7 +112,7 @@
     "failed_remove_tag": "Échec de la suppression du tag: ",
     "failed_add_segment_tag": "Échec de l'ajout du tag au segment: ",
     "failed_remove_segment_tag": "Échec de la suppression du tag du segment: ",
-    "segment_export_success": "Segment exporté avec succès.",
+    "segment_export_success": "Exporté avec succès ",
     "error_label": "Erreur: ",
     "failed_export_segment": "Échec de l'exportation du segment.",
     "segment_delete_success": "Segment supprimé avec succès.",

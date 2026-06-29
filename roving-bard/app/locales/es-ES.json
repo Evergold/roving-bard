@@ -112,7 +112,7 @@
     "failed_remove_tag": "Error al eliminar etiqueta: ",
     "failed_add_segment_tag": "Error al añadir etiqueta al segmento: ",
     "failed_remove_segment_tag": "Error al eliminar etiqueta del segmento: ",
-    "segment_export_success": "Segmento exportado correctamente.",
+    "segment_export_success": "Exportado correctamente ",
     "error_label": "Error: ",
     "failed_export_segment": "Error al exportar el segmento.",
     "segment_delete_success": "Segmento eliminado correctamente.",

@@ -4909,7 +4909,7 @@
                     };
                     const exportBtn = document.getElementById('export-segment-btn');
                     if (exportBtn) exportBtn.disabled = true;
-                    showToast(t("success_export_segment") || "Segment exported successfully", 'success');
+                    showToast(t("segment_export_success") + segmentName, 'success');
                     await loadAudioLibrary();
                 } else {
                     alert(t("error_label") + result.message);

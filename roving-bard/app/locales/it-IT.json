@@ -112,7 +112,7 @@
     "failed_remove_tag": "Impossibile rimuovere il tag: ",
     "failed_add_segment_tag": "Impossibile aggiungere il tag del segmento: ",
     "failed_remove_segment_tag": "Impossibile rimuovere il tag del segmento: ",
-    "segment_export_success": "Segmento esportato con successo.",
+    "segment_export_success": "Esportato con successo ",
     "error_label": "Errore: ",
     "failed_export_segment": "Impossibile esportare il segmento.",
     "segment_delete_success": "Segmento eliminato con successo.",
