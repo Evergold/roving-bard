@@ -601,9 +601,11 @@ class SafeMusicPlayer:
                 try:
                     pygame.mixer.music.load(self._abc_tmp_path)
                     if not self.paused:
-                        pygame.mixer.music.play(start=0.0)
+                        pygame.mixer.music.play(loops=-1, start=0.0)
                 except Exception as e:
                     print(f"Error changing instrument: {e}")
+            self.last_seek_position = pos
+            self.last_play_time = time.time() if not self.paused else None
 
     def play_track(self, track_file, fade_in_ms=1500, fade_out_ms=1500, start_time=0.0, end_time=None):
         if not track_file:
