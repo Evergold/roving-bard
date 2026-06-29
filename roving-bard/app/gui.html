@@ -5109,7 +5109,6 @@
                 exportBtn.disabled = !hasChanges;
             }
             updateExportButtonWidth();
-            updateInstrumentChooser(status.is_abc, status.active_instrument);
         }
 
         async function saveSegment() {
@@ -7792,7 +7791,7 @@
     <div id="toast-container"></div>
 
     <!-- Live Debug Overlay for Instrument Panel -->
-    <div id="inst-debug-overlay" style="position: fixed; bottom: 10px; right: 10px; z-index: 99999; background: rgba(10, 15, 25, 0.95); color: #00f2fe; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; border: 1px solid rgba(0, 242, 254, 0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: none; min-width: 280px; line-height: 1.4;">
+    <div id="inst-debug-overlay" style="position: fixed; bottom: 10px; right: 10px; z-index: 99999; background: rgba(10, 15, 25, 0.95); color: #00f2fe; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; border: 1px solid rgba(0, 242, 254, 0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: auto; user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text; min-width: 280px; line-height: 1.4;">
         <div style="font-weight: bold; border-bottom: 1px solid rgba(0, 242, 254, 0.3); padding-bottom: 4px; margin-bottom: 6px; color: #7c4dff;">INSTRUMENT PANEL DEBUG</div>
         <div id="debug-btn-status">Btn: Loading...</div>
         <div id="debug-panel-status">Panel: Loading...</div>
