@@ -181,19 +181,16 @@
             .auto-polling-short { display: inline; }
         }
 
+        /* ── Responsive Layout & Header: compact and single-column at <985px ──────────────── */
         @media (max-width: 984px) {
-            .logo-container p {
-                max-width: 220px;
-            }
-        }
-
-        /* ── Responsive Header: compact at ≤768px ──────────────── */
-        @media (max-width: 768px) {
             header {
                 padding: 0.6rem 1rem;
                 gap: 0.6rem;
             }
             .logo-container h1 { font-size: 1.25rem; }
+            .logo-container p {
+                max-width: 220px;
+            }
             .header-main-content { gap: 0.6rem; }
             main {
                 grid-template-columns: 1fr;
@@ -202,7 +199,7 @@
             }
         }
 
-        @media (min-width: 769px) {
+        @media (min-width: 985px) {
             main:not(.single-col) {
                 grid-template-columns: 1fr 1.2fr;
             }
@@ -6423,7 +6420,7 @@
                 { id: 'audio-library',   col: 1, order: 0 },
             ];
 
-            const NARROW_BP = 768; // px – single column below this width
+            const NARROW_BP = 984; // px – single column below this width
 
             let layout = loadLayout();
             let manuallyForcedSingleCol = layout.manuallyForcedSingleCol || false;
