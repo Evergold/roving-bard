@@ -6433,6 +6433,25 @@
             initPanelDrag();
         };
     
+        // ── Localized Responsive Layout Engine ────────────────────────────────────
+        function updateResponsiveLayout() {
+            const width = window.innerWidth;
+            const size = localStorage.getItem('font-size') || 's';
+            const currentLang = localStorage.getItem('lang') || 'en-US';
+            const dict = LOCALIZATION[currentLang] || LOCALIZATION['en-US'] || {};
+            
+            const triggerRun = Number(dict[`trigger_run_width_${size}`]) || (size === 's' ? 1080 : 1200);
+            const triggerNarrow = Number(dict[`trigger_narrow_width_${size}`]) || (size === 'lg' ? 1280 : 985);
+            
+            const html = document.documentElement;
+            html.classList.toggle('use-run-label', width < triggerRun);
+            html.classList.toggle('narrow-view', width < triggerNarrow);
+        }
+
+        function isNarrowLayout() {
+            return document.documentElement.classList.contains('narrow-view');
+        }
+
         // ── Panel Drag-and-Drop Engine ───────────────────────────────────────────
         function initPanelDrag() {
             // Default layout: panels[panelId] = { col: 0|1, order: 0..n }
@@ -6443,24 +6462,6 @@
                 { id: 'bounding-box',    col: 0, order: 3 },
                 { id: 'audio-library',   col: 1, order: 0 },
             ];
-
-            function updateResponsiveLayout() {
-                const width = window.innerWidth;
-                const size = localStorage.getItem('font-size') || 's';
-                const currentLang = localStorage.getItem('lang') || 'en-US';
-                const dict = LOCALIZATION[currentLang] || LOCALIZATION['en-US'] || {};
-                
-                const triggerRun = Number(dict[`trigger_run_width_${size}`]) || (size === 's' ? 1080 : 1200);
-                const triggerNarrow = Number(dict[`trigger_narrow_width_${size}`]) || (size === 'lg' ? 1280 : 985);
-                
-                const html = document.documentElement;
-                html.classList.toggle('use-run-label', width < triggerRun);
-                html.classList.toggle('narrow-view', width < triggerNarrow);
-            }
-
-            function isNarrowLayout() {
-                return document.documentElement.classList.contains('narrow-view');
-            }
 
             let layout = loadLayout();
             let manuallyForcedSingleCol = layout.manuallyForcedSingleCol || false;
