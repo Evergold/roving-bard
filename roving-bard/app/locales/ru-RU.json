@@ -201,5 +201,6 @@
     "download_start_failed": "Не удалось запустить скачивание.",
     "download_complete": "Скачивание завершено!",
     "download_failed": "Ошибка скачивания: ",
-    "download_connection_error": "Ошибка подключения. Не удалось скачать саундфон."
+    "download_connection_error": "Ошибка подключения. Не удалось скачать саундфон.",
+    "sort_type_title": "Группировать по типу файла"
 }

@@ -201,5 +201,6 @@
     "download_start_failed": "Échec du démarrage du téléchargement.",
     "download_complete": "Téléchargement terminé !",
     "download_failed": "Échec du téléchargement : ",
-    "download_connection_error": "Erreur de connexion. Échec du téléchargement du Soundfont."
+    "download_connection_error": "Erreur de connexion. Échec du téléchargement du Soundfont.",
+    "sort_type_title": "Grouper par type de fichier"
 }

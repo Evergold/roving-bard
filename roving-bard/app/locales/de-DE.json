@@ -201,5 +201,6 @@
     "download_start_failed": "Fehler beim Starten des Downloads.",
     "download_complete": "Download abgeschlossen!",
     "download_failed": "Download fehlgeschlagen: ",
-    "download_connection_error": "Verbindungsfehler. Soundfont-Download fehlgeschlagen."
+    "download_connection_error": "Verbindungsfehler. Soundfont-Download fehlgeschlagen.",
+    "sort_type_title": "Nach Dateityp gruppieren"
 }

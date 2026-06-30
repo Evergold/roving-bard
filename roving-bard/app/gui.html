@@ -3521,6 +3521,15 @@
                                     <line x1="20" y1="12" x2="20" y2="22"></line>
                                 </svg>
                             </button>
+                            <button id="sort-type-btn" class="sort-btn" onclick="toggleLibrarySortByType()" data-loc-title="sort_type_title" title="Group by File Type" style="border-radius: 0.875rem; padding: 0 0.75rem; height: 100%; margin-left: 0.125rem;">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.8rem;">
@@ -4164,10 +4173,12 @@
         }
 
         let librarySortOrder = localStorage.getItem('librarySortOrder') || 'asc';
+        let librarySortByType = localStorage.getItem('librarySortByType') === 'true';
 
         function initLibrarySort() {
             const ascBtn = document.getElementById('sort-asc-btn');
             const descBtn = document.getElementById('sort-desc-btn');
+            const typeBtn = document.getElementById('sort-type-btn');
             if (ascBtn && descBtn) {
                 if (librarySortOrder === 'asc') {
                     ascBtn.classList.add('active');
@@ -4177,11 +4188,25 @@
                     ascBtn.classList.remove('active');
                 }
             }
+            if (typeBtn) {
+                if (librarySortByType) {
+                    typeBtn.classList.add('active');
+                } else {
+                    typeBtn.classList.remove('active');
+                }
+            }
         }
 
         function setLibrarySort(order) {
             librarySortOrder = order;
             localStorage.setItem('librarySortOrder', order);
+            initLibrarySort();
+            renderAudioFiles();
+        }
+
+        function toggleLibrarySortByType() {
+            librarySortByType = !librarySortByType;
+            localStorage.setItem('librarySortByType', librarySortByType);
             initLibrarySort();
             renderAudioFiles();
         }
@@ -4795,12 +4820,21 @@
                     return matchesSearch && matchesTag && matchesExtension;
                 });
 
-                // Sort matched files alphabetically
-                if (librarySortOrder === 'asc') {
-                    matchedFiles.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-                } else {
-                    matchedFiles.sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
-                }
+                // Sort matched files
+                matchedFiles.sort((a, b) => {
+                    if (librarySortByType) {
+                        const extA = getFileExtension(a);
+                        const extB = getFileExtension(b);
+                        if (extA !== extB) {
+                            return librarySortOrder === 'asc'
+                                ? extA.localeCompare(extB, undefined, { sensitivity: 'base' })
+                                : extB.localeCompare(extA, undefined, { sensitivity: 'base' });
+                        }
+                    }
+                    return librarySortOrder === 'asc'
+                        ? a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+                        : b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
+                });
 
                 if (audioLibraryFiles.length === 0) {
                     const emptyFiles = document.createElement('div');
@@ -4900,12 +4934,21 @@
                     return matchesSearch && matchesTag;
                 });
 
-                // Sort matched segments alphabetically
-                if (librarySortOrder === 'asc') {
-                    matchedSegments.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
-                } else {
-                    matchedSegments.sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' }));
-                }
+                // Sort matched segments
+                matchedSegments.sort((a, b) => {
+                    if (librarySortByType) {
+                        const extA = getFileExtension(a.track_file);
+                        const extB = getFileExtension(b.track_file);
+                        if (extA !== extB) {
+                            return librarySortOrder === 'asc'
+                                ? extA.localeCompare(extB, undefined, { sensitivity: 'base' })
+                                : extB.localeCompare(extA, undefined, { sensitivity: 'base' });
+                        }
+                    }
+                    return librarySortOrder === 'asc'
+                        ? a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+                        : b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' });
+                });
 
                 if (segments.length === 0) {
                     const emptySegments = document.createElement('div');

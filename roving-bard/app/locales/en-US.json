@@ -201,5 +201,6 @@
     "download_start_failed": "Failed to start download.",
     "download_complete": "Download complete!",
     "download_failed": "Download failed: ",
-    "download_connection_error": "Connection error. Soundfont download failed."
+    "download_connection_error": "Connection error. Soundfont download failed.",
+    "sort_type_title": "Group by File Type"
 }
