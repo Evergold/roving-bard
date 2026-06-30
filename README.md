@@ -91,7 +91,7 @@ roving-bard/
 | **Tesseract OCR** | Local OCR for minimap text | `sudo apt install tesseract-ocr` |
 | **SDL2 + SDL_mixer** | Audio playback via pygame | Usually bundled with pygame; `sudo apt install libsdl2-mixer-2.0-0` if needed |
 | **libsndfile** | Audio I/O for EQ processing (soundfile) | `sudo apt install libsndfile1` |
-| **FluidSynth** *(optional)* | Higher-quality MIDI synthesis | `sudo apt install fluidsynth` |
+| **FluidSynth** *(optional)* | Legacy MIDI synthesis engine (optional system fallback) | `sudo apt install fluidsynth` |
 
 ### Environment variables
 
@@ -102,14 +102,21 @@ roving-bard/
 | `INTEGRATION_TEST` | Set to `TRUE` to mock LiteLLM responses during testing |
 | `LOGS_BUCKET_NAME` | *(optional)* GCS bucket for artifact / log storage |
 
-### SoundFont setup for MIDI / ABC playback
+### SoundFont Setup & Legacy FluidSynth Status
 
-MIDI and ABC notation files require a SoundFont (`.sf2` or `.sf3`) for instrument
-synthesis. The player resolves a SoundFont in this order:
+MIDI and ABC notation files require a SoundFont (`.sf2` or `.sf3`) for instrument synthesis. Historically, this required setting up system-wide FluidSynth and legacy SoundFonts. Roving Bard simplifies this by bundling a modern FOSS SoundFont directly in the repository:
 
-1. **`SDL_SOUNDFONTS` env var** — if set and the file exists, used directly
-2. **`audio/` directory** — any `.sf2` / `.sf3` files placed alongside your tracks (including the pre-packaged `MuseScore_General.sf3` and the on-demand `MuseScore_General.sf2` ULTRA version)
-3. **System paths** — scans standard Linux locations:
+#### 🌟 The Bundled SoundFont Advantage (`MuseScore_General.sf3`)
+* **Zero Configuration**: MIDI and ABC playback work completely out-of-the-box. There is no need to install external packages or configure environment variables.
+* **Modern Instrument Fidelity**: Unlike legacy SoundFonts (e.g., `FluidR3_GM` or `TimGM6mb`), the **MuseScore General** SoundFont features professional-grade, highly realistic instrument samples.
+* **Minimal Footprint**: By utilizing the compressed `.sf3` format (which stores samples using Ogg Vorbis compression), the file size is reduced to just **40 MB** (compared to 140+ MB for FluidR3 or 215 MB for uncompressed `.sf2` files), keeping the repository clone footprint extremely lightweight.
+
+#### 🏛️ Legacy FluidSynth & FluidR3 Support
+System-installed FluidSynth and legacy SoundFonts are now treated as **optional fallbacks**. The player resolves SoundFonts in the following order:
+
+1. **`SDL_SOUNDFONTS` env var** — if set and the file exists, used directly.
+2. **`audio/` directory** — any custom `.sf2` / `.sf3` files placed here (searched first, including the bundled `MuseScore_General.sf3` and the on-demand `MuseScore_General.sf2` ULTRA version).
+3. **System paths** — scans standard Linux fallback locations:
    - `/usr/share/sounds/sf2/FluidR3_GM.sf2`
    - `/usr/share/sounds/sf2/default-GM.sf2`
    - `/usr/share/sounds/sf2/TimGM6mb.sf2`
