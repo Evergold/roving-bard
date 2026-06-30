@@ -20,7 +20,7 @@ load_dotenv()
 
 import google.auth
 import yaml
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, status
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, status, Request
 from fastapi.responses import HTMLResponse, Response
 from google.adk.cli.fast_api import get_fast_api_app
 from google.auth.credentials import Credentials
@@ -177,9 +177,15 @@ class EQRequest(BaseModel):
 
 
 def verify_api_key(
+    request: Request,
     x_api_key: str | None = Header(default=None),
     api_key: str | None = Query(default=None),
 ):
+    # Bypass API key checks for local/localhost access
+    client_host = request.client.host if request.client else None
+    if client_host in ("127.0.0.1", "::1", "localhost"):
+        return "localhost"
+
     provided_key = x_api_key or api_key
     if not provided_key:
         raise HTTPException(

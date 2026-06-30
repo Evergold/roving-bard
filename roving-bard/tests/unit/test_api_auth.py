@@ -36,3 +36,18 @@ def test_api_status_authorized() -> None:
     response = client.get("/api/status", headers={"X-API-Key": api_key})
     assert response.status_code == 200
     assert "current_track" in response.json()
+
+
+def test_verify_api_key_localhost_bypass() -> None:
+    """Ensure verify_api_key bypasses verification for local client hosts."""
+    from unittest.mock import MagicMock
+    from fastapi import Request
+    from app.fast_api_app import verify_api_key
+
+    mock_request = MagicMock(spec=Request)
+    mock_request.client = MagicMock()
+
+    for local_host in ("127.0.0.1", "::1", "localhost"):
+        mock_request.client.host = local_host
+        assert verify_api_key(request=mock_request) == "localhost"
+
