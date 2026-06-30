@@ -330,6 +330,16 @@ def get_available_soundfonts(playlist_dir: str) -> list[str]:
     if any(os.path.exists(p) for p in fluid_paths):
         available.append("FluidR3_GM.sf2")
         
+    # 4. Scan playlist_dir for any other .sf2 or .sf3 files
+    if os.path.exists(playlist_dir):
+        try:
+            for filename in sorted(os.listdir(playlist_dir)):
+                if filename.lower().endswith((".sf2", ".sf3")):
+                    if filename not in available:
+                        available.append(filename)
+        except Exception as e:
+            print(f"Error scanning playlist_dir for available soundfonts: {e}")
+            
     return available
 
 

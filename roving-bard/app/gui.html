@@ -4268,6 +4268,14 @@
                 html += `<option value="FluidR3_GM.sf2" ${active === "FluidR3_GM.sf2" ? "selected" : ""}>FluidR3 (Legacy)</option>`;
             }
             
+            // 4. Custom SoundFonts detected in the audio directory
+            available.forEach(sf => {
+                if (sf !== "MuseScore_General.sf3" && sf !== "MuseScore_General.sf2" && sf !== "FluidR3_GM.sf2") {
+                    let displayName = sf.replace(/\.(sf2|sf3)$/i, '').replace(/[_-]/g, ' ');
+                    html += `<option value="${sf}" ${active === sf ? "selected" : ""}>${displayName} (Custom)</option>`;
+                }
+            });
+            
             select.innerHTML = html;
         }
 
