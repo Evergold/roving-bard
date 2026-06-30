@@ -4500,6 +4500,10 @@
                     // For ABC, show both EQ and Instrument button
                     eqBtn.style.display = 'flex';
                     instBtn.style.display = 'flex';
+                    const instPanel = document.getElementById('instrument-panel');
+                    if (instPanel) {
+                        instPanel.style.display = '';
+                    }
                 } else if (isMidi) {
                     // For MIDI, show EQ (disabled) and hide Instrument button
                     eqBtn.style.display = 'flex';
