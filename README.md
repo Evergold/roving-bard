@@ -16,19 +16,23 @@ roving-bard/
 │   ├── player.py                 #   SafeMusicPlayer, ScreenGrabber, LocalOCRParser, TrackMapper
 │   ├── fast_api_app.py           #   FastAPI server & REST endpoints
 │   ├── gui.html                  #   Browser dashboard (262 KB single-file app)
+│   ├── lotro_words.txt           #   OCR dictionary (229 pre-populated locations)
 │   └── app_utils/                #   Shared utilities
 │       ├── telemetry.py          #     OpenTelemetry / Cloud Trace setup
 │       └── typing.py             #     Shared type definitions
 │
 ├── audio/                        #  Audio library directory
+│   ├── .cache/                   #   Synthesized FLAC files (auto-generated & cleared)
 │   ├── .gitkeep                  #   Keeps directory in version control
 │   ├── mapping.yaml              #   Location → track mapping rules & config
 │   ├── segments.yaml             #   Saved segment definitions (git-ignored)
 │   ├── file_tags.yaml            #   Per-file tag metadata (git-ignored)
+│   ├── MuseScore_General.sf3     #   Pre-packaged FOSS HQ SoundFont (CC-BY 3.0)
+│   ├── MuseScore_General_LICENSE.txt # SoundFont license attribution
 │   ├── *.wav / *.mp3 / *.ogg     #   Audio tracks (git-ignored)
 │   ├── *.flac / *.mp4            #   Audio tracks (git-ignored)
 │   ├── *.abc                     #   ABC notation files (auto-converted to MIDI)
-│   └── *.sf2 / *.sf3             #   SoundFont files for MIDI playback (optional)
+│   └── *.sf2 / *.sf3             #   Custom SoundFont files for MIDI playback
 │
 ├── capture/                      #  Screen capture staging directory
 │   └── .gitkeep                  #   Also accepts manually placed screenshots
@@ -40,7 +44,6 @@ roving-bard/
 │   └── eval/                     #   ADK evaluation configs & datasets
 │
 ├── run_player.py                 #  CLI entry point — standalone polling loop
-├── simulated_game.py             #  Tkinter game client simulator
 ├── pyproject.toml                #  Dependencies & tool config (uv / hatch)
 ├── uv.lock                       #  Locked dependency graph
 ├── Dockerfile                    #  Container build (API-server mode)
@@ -58,16 +61,20 @@ roving-bard/
 
 ## Features
 
-- **Automatic location detection** — captures the game screen, crops the minimap, and parses coordinates + location name via Tesseract OCR
-- **Gemini Vision fallback** — when local OCR is inconclusive, falls back to a multimodal LLM (configurable: Gemini, GPT-4o, Claude)
-- **Smooth crossfade transitions** — configurable fade-in / fade-out between tracks
-- **ABC notation support** — pure-Python ABC → MIDI converter with repeats, chords, grace notes, accidentals, and `%%MIDI program` instrument selection
-- **SoundFont auto-discovery** — scans `audio/` for `.sf2`/`.sf3` files, then falls back to common Linux system paths; honors `SDL_SOUNDFONTS` env var
-- **10-band parametric EQ** — real-time equalizer (32 Hz – 16 kHz) using IIR peaking filters via scipy
-- **Segment system** — save, edit, and export named sub-ranges of tracks with custom volume, bounds, and EQ presets
-- **Browser GUI** — glassmorphism dark/light theme, 7-language localisation (EN-US, EN-UK, FR, DE, ES, IT, RU), interactive EQ panel, seek bar with range highlighting, audio upload, file tagging, mapping editor, and screenshot viewer
-- **REST API** — authenticated FastAPI endpoints for playback control, config management, segments, EQ, file management, and screenshots
-- **ADK agent integration** — agent tools for screen checking, playback, volume control, and status queries; ADK Playground support
+- **Automatic location detection** — captures the game screen, crops the minimap, and parses coordinates + location name via Tesseract OCR.
+- **FOSS SoundFont Packaging** — Packages the high-quality, compressed `MuseScore_General.sf3` directly in the repository under the CC-BY 3.0 license.
+- **On-Demand Lossless Downloader** — Trigger a background download of the 215 MB uncompressed `MuseScore_General.sf2` (ULTRA) SoundFont directly from the Preferences menu, with real-time percentage and spinner feedback.
+- **Dynamic SoundFont Scanning** — Automatically scans the `audio/` directory for any custom `.sf2`/`.sf3` files and lists them in the Preferences dropdown.
+- **Smart Playback Restart** — Changing the SoundFont immediately invalidates/clears the `.cache/` directory and restarts active MIDI/ABC playback from the current `start_time` to apply the new instrument sounds.
+- **Gemini Vision fallback** — when local OCR is inconclusive, falls back to a multimodal LLM (configurable: Gemini, GPT-4o, Claude).
+- **Expanded OCR Dictionary** — Pre-populated [lotro_words.txt](file:///home/chuubi/Desktop/vibe-coding-2026/capstone/roving-bard/app/lotro_words.txt) with **229 game locations** (including Sírlond, Evendim, and Gundabad) to ensure extremely high local OCR accuracy.
+- **Manual Bounding Box Adjuster** — Click the *Bounding Box Selector* card in the UI to manually adjust coordinates (X, Y, Width, Height) and cycle OCR preprocessing passes on-demand.
+- **Audio Library Sorting by Type** — Toggle the file icon in the Audio Library to group audio files and segments by their extension before applying alphabetical sorting.
+- **10-band parametric EQ** — real-time equalizer (32 Hz – 16 kHz) using IIR peaking filters via scipy.
+- **Segment system** — save, edit, and export named sub-ranges of tracks with custom volume, bounds, and EQ presets.
+- **Browser GUI** — glassmorphism dark/light theme, 7-language localisation (EN-US, EN-UK, FR, DE, ES, IT, RU), interactive EQ panel, seek bar with range highlighting, audio upload, file tagging, mapping editor, and screenshot viewer.
+- **REST API** — authenticated FastAPI endpoints for playback control, config management, segments, EQ, file management, and screenshots.
+- **ADK agent integration** — agent tools for screen checking, playback, volume control, and status queries; ADK Playground support.
 
 ## Requirements
 
@@ -85,13 +92,12 @@ roving-bard/
 | **SDL2 + SDL_mixer** | Audio playback via pygame | Usually bundled with pygame; `sudo apt install libsdl2-mixer-2.0-0` if needed |
 | **libsndfile** | Audio I/O for EQ processing (soundfile) | `sudo apt install libsndfile1` |
 | **FluidSynth** *(optional)* | Higher-quality MIDI synthesis | `sudo apt install fluidsynth` |
-| **SoundFont** *(optional)* | MIDI instrument samples | `sudo apt install fluid-soundfont-gm` or place `.sf2`/`.sf3` files in `audio/` |
 
 ### Environment variables
 
 | Variable | Purpose |
 |---|---|
-| `AGENT_API_KEY` | API key for GUI / REST authentication (also checked: `GOOGLE_API_KEY`, `GEMINI_API_KEY`) |
+| `AGENT_API_KEY` | API key for GUI / REST authentication (also checked: `GOOGLE_API_KEY`, `GEMINI_API_KEY`). Bypassed automatically for localhost loopback clients. |
 | `SDL_SOUNDFONTS` | *(optional)* Explicit path to a SoundFont file; overrides auto-discovery |
 | `INTEGRATION_TEST` | Set to `TRUE` to mock LiteLLM responses during testing |
 | `LOGS_BUCKET_NAME` | *(optional)* GCS bucket for artifact / log storage |
@@ -102,16 +108,13 @@ MIDI and ABC notation files require a SoundFont (`.sf2` or `.sf3`) for instrumen
 synthesis. The player resolves a SoundFont in this order:
 
 1. **`SDL_SOUNDFONTS` env var** — if set and the file exists, used directly
-2. **`audio/` directory** — any `.sf2` / `.sf3` files placed alongside your tracks
+2. **`audio/` directory** — any `.sf2` / `.sf3` files placed alongside your tracks (including the pre-packaged `MuseScore_General.sf3` and the on-demand `MuseScore_General.sf2` ULTRA version)
 3. **System paths** — scans standard Linux locations:
    - `/usr/share/sounds/sf2/FluidR3_GM.sf2`
    - `/usr/share/sounds/sf2/default-GM.sf2`
    - `/usr/share/sounds/sf2/TimGM6mb.sf2`
    - `/usr/share/sounds/sf3/FluidR3_GM.sf3`
    - `/usr/share/midi/soundfont/FluidR3_GM.sf2`
-
-If no SoundFont is found, MIDI playback will use SDL_mixer's default (often
-low-quality) synthesis.
 
 ## Quick Start
 
@@ -121,61 +124,35 @@ Install required packages:
 agents-cli install
 ```
 
-This project includes a simulated game client and a music player runner for local testing.
+### 1. Start the Music Player Runner
 
-### 1. Launch the Simulated Game Client
-
-Run the simulated game client in a separate terminal:
-
-```bash
-uv run python simulated_game.py
-```
-
-This opens a Tkinter GUI representing the game screen with a minimap widget
-(positioned at the default `mapping.yaml` bounds). Click region buttons
-(Town, Forest, Boss Arena, Cave, Wastelands) to change the in-game location.
-
-### 2. Start the Music Player Runner
-
-In another terminal, start the automatic screen monitoring loop:
+Start the automatic screen monitoring loop in your terminal:
 
 ```bash
 uv run python run_player.py
 ```
 
 The runner will:
-- Auto-generate test audio files (`town.wav`, `forest.wav`, `boss.wav`,
-  `cave.wav`) in the `audio/` directory if they don't exist.
-- Capture the screen, crop to the minimap area, and run local OCR (Tesseract)
-  to parse location and coordinates.
-- Smoothly crossfade background music based on the active region via
-  `pygame.mixer`.
-- Automatically fall back to Gemini Vision via LiteLLM if local OCR is
-  inconclusive.
+- Auto-generate test audio files (`town.wav`, `forest.wav`, `boss.wav`, `cave.wav`) in the `audio/` directory if they don't exist.
+- Capture the screen, crop to the minimap area, and run local OCR (Tesseract) using the expanded 229-word dictionary to parse location and coordinates.
+- Smoothly crossfade background music based on the active region.
+- Automatically fall back to Gemini Vision via LiteLLM if local OCR is inconclusive.
 
-### 3. Browser GUI
+### 2. Browser GUI
 
-Once the runner or playground is active, open the GUI dashboard:
-
-```
-http://localhost:8000/gui?api_key=YOUR_API_KEY
-```
-
-If you've exported GEMINI_API_KEY or GOOGLE_API_KEY to your 
-environment you can launch without api_key. The exported key will be detected:
+Once the runner is active, open the GUI dashboard:
 
 ```
 http://localhost:8000/gui
 ```
 
-The dashboard provides full playback controls, a 10-band EQ, segment management,
-audio upload, live screenshot viewer, and configuration editing — all with
-dark/light theme toggle and 7-language localisation.
+*(Note: Localhost loopback connections automatically bypass API key authentication and display a green checkmark next to the status badge).*
 
-### 4. Interactive ADK Playground
+The dashboard provides full playback controls, a 10-band EQ, segment management, audio upload, live screenshot viewer, and configuration editing — all with dark/light theme toggle and 7-language localisation.
 
-To talk directly with the agent (which has tools to play/stop music, set volume,
-check screen, etc.):
+### 3. Interactive ADK Playground
+
+To talk directly with the agent:
 
 ```bash
 agents-cli playground
@@ -186,6 +163,7 @@ agents-cli playground
 All configuration lives in `audio/mapping.yaml`:
 
 ```yaml
+active_soundfont: "MuseScore_General.sf3"
 minimap_bounds:        # Screen region to crop for OCR
   x: 0.8              # 80% from left
   y: 0.05             # 5% from top
@@ -232,18 +210,20 @@ mappings:                                # Location → track rules
 
 ## REST API
 
-All endpoints require authentication via `X-Api-Key` header or `api_key` query parameter.
+All endpoints require authentication (bypassed automatically for localhost loopback).
 
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/gui` | GET | Browser dashboard |
-| `/api/status` | GET | Current playback state |
+| `/api/status` | GET | Current playback state & available SoundFonts |
 | `/api/control` | POST | Player actions (play, stop, pause, resume, seek, volume, bounds, select) |
 | `/api/config` | POST | Hot-reload mapping configuration |
 | `/api/screenshot` | GET | Latest cropped screenshot (PNG) |
 | `/api/screenshot/refresh` | POST | Re-capture screen |
 | `/api/audio-files` | GET | List audio files with tags |
 | `/api/upload-audio` | POST | Upload audio file to playlist directory |
+| `/api/soundfont/download` | POST | Trigger background download of `MuseScore_General.sf2` |
+| `/api/soundfont/download/status` | GET | Read download progress percentage |
 | `/api/segments` | GET/POST/DELETE | Manage saved segments |
 | `/api/file-tags` | POST | Update file tags |
 | `/api/eq` | GET/POST | Read/write 10-band EQ gains |
@@ -252,9 +232,7 @@ All endpoints require authentication via `X-Api-Key` header or `api_key` query p
 
 ## Development
 
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` —
-it auto-reloads on save. The GUI at `app/gui.html` is served directly by the
-FastAPI server and requires no build step.
+Edit your agent logic in `app/agent.py` and test with `agents-cli playground` — it auto-reloads on save. The GUI at `app/gui.html` is served directly by the FastAPI server and requires no build step.
 
 ## Deployment
 
@@ -263,14 +241,11 @@ gcloud config set project <your-project-id>
 agents-cli deploy
 ```
 
-The Dockerfile builds a lightweight API-server container (port 8080). Note that
-the container runs in **simulated audio mode** since it does not include system
-audio libraries or Tesseract — it is designed for serving the API and GUI.
+The Dockerfile builds a lightweight API-server container (port 8080). Note that the container runs in **simulated audio mode** since it does not include system audio libraries or Tesseract — it is designed for serving the API and GUI.
 
 To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
 To set up your production infrastructure, run `agents-cli infra cicd`.
 
 ## Observability
 
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging via
-OpenTelemetry. Disabled automatically during integration tests.
+Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging via OpenTelemetry. Disabled automatically during integration tests.
