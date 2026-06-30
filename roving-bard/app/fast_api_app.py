@@ -170,6 +170,7 @@ class ConfigUpdateRequest(BaseModel):
     polling_interval: float
     mappings: list
     api_key: str | None = None
+    active_soundfont: str | None = None
 
 
 class EQRequest(BaseModel):
