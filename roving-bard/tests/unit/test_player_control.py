@@ -322,6 +322,7 @@ def test_api_bounds_control() -> None:
     tools.player.was_stopped = True
     tools.player.start_time = 0.0
     tools.player.end_time = None
+    tools.player._playhead = 0
 
     # Send set_bounds command
     bounds_response = client.post(

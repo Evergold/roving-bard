@@ -772,11 +772,11 @@ class SafeMusicPlayer:
             print(f"Error compiling ABC to MIDI: {e}")
             return self._abc_tmp_path
 
-    def _synthesize_midi_to_wav(self, midi_path, target_wav_path):
+    def _synthesize_midi_to_flac(self, midi_path, target_flac_path):
         if not self.soundfont_path or not os.path.exists(self.soundfont_path):
             raise ValueError("No soundfont found for MIDI synthesis.")
             
-        os.makedirs(os.path.dirname(target_wav_path), exist_ok=True)
+        os.makedirs(os.path.dirname(target_flac_path), exist_ok=True)
         
         try:
             cmd = [
@@ -785,15 +785,17 @@ class SafeMusicPlayer:
                 self.soundfont_path,
                 midi_path,
                 "-F",
-                target_wav_path,
+                target_flac_path,
+                "-T",
+                "flac",
                 "-r",
                 "44100"
             ]
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         except Exception as e:
-            if os.path.exists(target_wav_path):
+            if os.path.exists(target_flac_path):
                 try:
-                    os.unlink(target_wav_path)
+                    os.unlink(target_flac_path)
                 except OSError:
                     pass
             raise e
@@ -848,23 +850,23 @@ class SafeMusicPlayer:
                         # Resolve cached WAV path (use instrument-specific if active)
                         cache_dir = os.path.join(self.playlist_dir, ".cache")
                         if self.current_track.lower().endswith(".abc") and self.active_instrument is not None:
-                            cached_wav = os.path.join(cache_dir, f"{self.current_track}_inst_{self.active_instrument}.wav")
+                            cached_flac = os.path.join(cache_dir, f"{self.current_track}_inst_{self.active_instrument}.flac")
                         else:
-                            cached_wav = os.path.join(cache_dir, self.current_track + ".wav")
+                            cached_flac = os.path.join(cache_dir, self.current_track + ".flac")
                         
                         # Synthesize if cache doesn't exist or is older than the source file
                         source_mtime = os.path.getmtime(track_path)
-                        cache_mtime = os.path.getmtime(cached_wav) if os.path.exists(cached_wav) else 0
+                        cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
                         
-                        if not os.path.exists(cached_wav) or source_mtime > cache_mtime:
-                            print(f"[Synth] Background synthesizing {self.current_track} to WAV cache...")
+                        if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
+                            print(f"[Synth] Background synthesizing {self.current_track} to FLAC cache...")
                             midi_path = track_path
                             if self.current_track.lower().endswith(".abc"):
                                 self.track_duration = get_abc_duration(track_path) or 180.0
                                 midi_path = self._prepare_abc_midi(track_path, 0.0)
-                            self._synthesize_midi_to_wav(midi_path, cached_wav)
+                            self._synthesize_midi_to_flac(midi_path, cached_flac)
                             
-                        actual_track_path = cached_wav
+                        actual_track_path = cached_flac
 
                     if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
                         import soundfile as sf
@@ -1078,23 +1080,23 @@ class SafeMusicPlayer:
                 # Resolve cached WAV path (use instrument-specific if active)
                 cache_dir = os.path.join(self.playlist_dir, ".cache")
                 if track_file.lower().endswith(".abc") and self.active_instrument is not None:
-                    cached_wav = os.path.join(cache_dir, f"{track_file}_inst_{self.active_instrument}.wav")
+                    cached_flac = os.path.join(cache_dir, f"{track_file}_inst_{self.active_instrument}.flac")
                 else:
-                    cached_wav = os.path.join(cache_dir, track_file + ".wav")
+                    cached_flac = os.path.join(cache_dir, track_file + ".flac")
                 
                 # Synthesize if cache doesn't exist or is older than the source file
                 source_mtime = os.path.getmtime(track_path)
-                cache_mtime = os.path.getmtime(cached_wav) if os.path.exists(cached_wav) else 0
+                cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
                 
-                if not os.path.exists(cached_wav) or source_mtime > cache_mtime:
-                    print(f"[Synth] Synthesizing {track_file} to WAV cache...")
+                if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
+                    print(f"[Synth] Synthesizing {track_file} to FLAC cache...")
                     midi_path = track_path
                     if track_file.lower().endswith(".abc"):
                         self.track_duration = get_abc_duration(track_path) or 180.0
                         midi_path = self._prepare_abc_midi(track_path, 0.0)
-                    self._synthesize_midi_to_wav(midi_path, cached_wav)
+                    self._synthesize_midi_to_flac(midi_path, cached_flac)
                     
-                actual_track_path = cached_wav
+                actual_track_path = cached_flac
 
             if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
                 import soundfile as sf
@@ -1214,19 +1216,19 @@ class SafeMusicPlayer:
         # --- START BACKGROUND PRE-SYNTHESIS IMMEDIATELY ON SELECTION ---
         if is_midi_abc:
             cache_dir = os.path.join(self.playlist_dir, ".cache")
-            cached_wav = os.path.join(cache_dir, track_file + ".wav")
+            cached_flac = os.path.join(cache_dir, track_file + ".flac")
             
             def bg_pre_synth():
                 try:
                     source_mtime = os.path.getmtime(track_path)
-                    cache_mtime = os.path.getmtime(cached_wav) if os.path.exists(cached_wav) else 0
+                    cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
                     
-                    if not os.path.exists(cached_wav) or source_mtime > cache_mtime:
+                    if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
                         print(f"[Synth] Background pre-synthesizing {track_file}...")
                         midi_path = track_path
                         if track_file.lower().endswith(".abc"):
                             midi_path = self._prepare_abc_midi(track_path, 0.0)
-                        self._synthesize_midi_to_wav(midi_path, cached_wav)
+                        self._synthesize_midi_to_flac(midi_path, cached_flac)
                         print(f"[Synth] Background pre-synthesis of {track_file} complete.")
                 except Exception as e:
                     print(f"[Synth] Background pre-synthesis failed for {track_file}: {e}")
@@ -1287,15 +1289,15 @@ class SafeMusicPlayer:
             self.was_stopped = False
             
             cache_dir = os.path.join(self.playlist_dir, ".cache")
-            cached_wav = os.path.join(cache_dir, f"{self.current_track}_inst_{program}.wav")
+            cached_flac = os.path.join(cache_dir, f"{self.current_track}_inst_{program}.flac")
             
             if not self.paused:
                 try:
                     midi_path = self._prepare_abc_midi(track_path, 0.0)
-                    self._synthesize_midi_to_wav(midi_path, cached_wav)
+                    self._synthesize_midi_to_flac(midi_path, cached_flac)
                     
                     import soundfile as sf
-                    self._sf = sf.SoundFile(cached_wav)
+                    self._sf = sf.SoundFile(cached_flac)
                     self._sample_rate = self._sf.samplerate
                     self._channels = self._sf.channels
                     
@@ -1312,7 +1314,7 @@ class SafeMusicPlayer:
                 def bg_synth():
                     try:
                         midi_path = self._prepare_abc_midi(track_path, 0.0)
-                        self._synthesize_midi_to_wav(midi_path, cached_wav)
+                        self._synthesize_midi_to_flac(midi_path, cached_flac)
                     except Exception as e:
                         print(f"Background instrument synthesis failed: {e}")
                 threading.Thread(target=bg_synth, daemon=True).start()
