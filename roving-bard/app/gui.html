@@ -4342,6 +4342,7 @@
                 if (res.status === "success") {
                     showToast(t("soundfont_changed", "SoundFont updated successfully!"), "success");
                     loadDashboard();
+                    updateCacheStatusUI();
                 } else {
                     showToast(t("soundfont_change_failed", "Failed to update SoundFont: ") + res.message, "error");
                     resetSoundFontSelect();
@@ -4384,6 +4385,7 @@
                         showToast(t("download_complete", "Download complete!"), "success");
                         showToast(t("soundfont_changed", "SoundFont updated successfully!"), "success");
                         await loadDashboard();
+                        updateCacheStatusUI();
                         resetSoundFontSelect();
                     } else if (status.status === "error") {
                         isDownloadingSoundFont = false;
