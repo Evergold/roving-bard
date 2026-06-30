@@ -3756,8 +3756,12 @@
                 // Update manual entry mode based on whether minimap was detected
                 setManualEntryMode(!status.minimap_detected);
                 
-                if (isFirstDashboardLoad && !status.minimap_detected) {
-                    showToast("Minimap detection failed. Falling back to manual entry.", "warn");
+                if (isFirstDashboardLoad) {
+                    if (status.minimap_detected) {
+                        showToast("Minimap detected successfully!", "success");
+                    } else {
+                        showToast("Minimap detection failed. Falling back to manual entry.", "warn");
+                    }
                 }
 
                 // Update now playing UI
