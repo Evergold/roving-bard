@@ -1,7 +1,229 @@
-Tinnudir
-Kings' End
-Echad Dúnann
+Adso's Camp
+Agamaur
+Agarnaith
+Aldburg
+Amon Sûl
+Anfalas
+Angmar
+Anhalt
+Annuminas
+Archet
+Aughaire
+Bagpipe
+Barad Gularan
+Barad-dûr
+Barnavon
+Bassoon
+Beorn's House
+Boni
+Boss Arena
+Bree
 Bree-land
-The Shire
-Thorin's Hall
+Broadacres
+Brown Lands
+Buckland
+Budgeford
+Bywater
+Cair Andros
+Cape of Umbar
+Caranost
+Caras Galadhon
+Cardolan
+Carreglyn
+Celondim
+Central Gondor
+Ceryn Amroth
+Chetwood
+Clarabelle
+Clegur
+Cliving
+Combe
+Dale
+Deepscrave
+Dol Amroth
+Dol Dinen
+Dol Guldur
+Dor Amarth
+Duillond
+Dunharrow
+Dunland
+Durin's Way
+Durthang
+Dwaling
+East Rohan
+Eastern Gondor
+Eaves of Evendim
+Echad Candelleth
+Echad Dúnann
+Echad Mirobel
+Echad Sirion
+Edoras
+Elderslade
+Elrond's House
+Enedwaith
+Entwash Vale
+Erech
+Ered Luin
+Eregion
+Eryn Lasgalen
+Esteldín
+Ethring
+Evendim
+Far Anórien
+Felegoth
+Fiddle
+First Hall
+Flaming Deeps
+Floodwend
+Flute
+Fornost
+Forochel
+Frogmorton
+Gabilshathûr
+Galtrev
+Garth Agarwen
+Gath Forthnír
+Gondamon
+Gondor
+Grand Stair
+Gravenwood
+Great Delving
+Great River
+Grey Mountains
+Gundabad
+Gwingris
+Haldir's Bend
+Haldir's Camp
+Harad
+Harloeg
+Harndirion
+Harp
+Harwick
+Haunted Inn
+Helegrod
+Helm's Deep
+Hengstacer Farm
+Henneth Annûn
+Herne
+High King's Crossing
+High Pass
+Hobbiton
+Horn
+Hornburg
+Hrimbarg
+Hultvis
+Imlad Balchorth
+Iron Hills
+Isengard
+Járnfast
+Kauppa-kohta
+Kheledûl
+King's Stead
+Kings' End
+Lake-town
+Lansval
+Last Homely House
+Lhan Garan
+Lhanuch
+Limlight Gorge
+Linhir
+Llingris
+Lone-lands
+Lonely Mountain
+Lothlórien
+Lute
+Mattugard
+Meluinen
+Michel Delving
+Mirkwood
+Misty Mountains
+Morgul Vale
+Moria
+Morlad
+Mossward
+Mount Doom
+Mournshaws
+Nan Curunír
+Needham
+Noglond
+Norcrofts
+North Downs
+North Ithilien
+Nud-melek
+Oatbarton
+Old Anórien
+Orthanc
+Osgiliath
+Ost Alagos
+Ost Forod
+Ost Galadh
+Ost Guruth
+Ost Rimmon
+Othrikar
+Pelargir
+Pelennor Fields
+Pibgorn
+Pinnath Gelin
+Plateau of Gorgoroth
+Pynti-poti
+Rath Duath
+Redhorn Lodes
+Rhunen-lad
 Rivendell
+Rohan
+Ruddymore
+Rushgore
+Sarch Vorn
+Sarn Ford
+Sarnur
+Scary
+Scuttledells
+Second Hall
+Shield Isles
+Silvertine Lodes
+Staddle
+Stangard
+Stock
+Stonedeans
+Stoneheight
+Sutcrofts
+Swanfleet
+Sírlond
+Sûri-kylä
+Talath Anor
+Talath Úrui
+Tarlang's Crown
+Taur Drúadan
+Thangorodrim
+Tharbad
+The Angle
+The Forsaken Inn
+The Shire
+The Wastes
+The Wold
+Theorbo
+Thorenhad
+Thorin's Hall
+Thrain's Vale
+Tinnudir
+Tornhad
+Trestlebridge
+Trollshaws
+Tuckborough
+Twenty-first Hall
+Udûn
+Umbar Baharbêl
+Underharrow
+Urugarth
+Vales of Anduin
+Water-works
+Waymeet
+Weathertop
+Wells of Langflood
+West Gondor
+West Rohan
+Wildermore
+Windfells
+Woodhall
+Zealendir
+Zirakzigil
