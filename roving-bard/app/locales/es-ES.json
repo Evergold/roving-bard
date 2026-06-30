@@ -173,5 +173,13 @@
     "clear_cache_failed": "Error al borrar la caché de audio: ",
     "clear_btn_label": "Borrar",
     "sort_asc_title": "Ordenar alfabéticamente (A-Z)",
-    "sort_desc_title": "Ordenar alfabéticamente (Z-A)"
+    "sort_desc_title": "Ordenar alfabéticamente (Z-A)",
+    "minimap_detect_success": "¡Minimapa detectado con éxito!",
+    "minimap_detect_failed": "Error al detectar el minimapa. Volviendo a la entrada manual.",
+    "crop_box_parse_failed": "No se pudo analizar la ubicación o las coordenadas del cuadro de recorte. Por favor, ajuste los límites.",
+    "scan_matched_prefix": "Coincidencia exitosa: ",
+    "scan_failed": "Error al escanear: ",
+    "scan_error": "Error de escaneo.",
+    "refresh_capture_failed": "Error al actualizar la captura: ",
+    "refresh_capture_error": "Error al actualizar la captura."
 }

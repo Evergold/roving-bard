@@ -173,5 +173,13 @@
     "clear_cache_failed": "Échec du vidage du cache audio : ",
     "clear_btn_label": "Vider",
     "sort_asc_title": "Trier par ordre alphabétique (A-Z)",
-    "sort_desc_title": "Trier par ordre alphabétique (Z-A)"
+    "sort_desc_title": "Trier par ordre alphabétique (Z-A)",
+    "minimap_detect_success": "Minicarte détectée avec succès !",
+    "minimap_detect_failed": "Échec de la détection de la minicarte. Retour à la saisie manuelle.",
+    "crop_box_parse_failed": "Impossible d'analyser l'emplacement ou les coordonnées de la zone de recadrage. Veuillez ajuster les limites.",
+    "scan_matched_prefix": "Correspondance réussie : ",
+    "scan_failed": "Échec du scan : ",
+    "scan_error": "Erreur de scan.",
+    "refresh_capture_failed": "Échec de l'actualisation de la capture : ",
+    "refresh_capture_error": "Erreur lors de l'actualisation de la capture."
 }

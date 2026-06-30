@@ -173,5 +173,13 @@
     "clear_cache_failed": "Audiocache konnte nicht geleert werden: ",
     "clear_btn_label": "Leeren",
     "sort_asc_title": "Alphabetisch sortieren (A-Z)",
-    "sort_desc_title": "Alphabetisch sortieren (Z-A)"
+    "sort_desc_title": "Alphabetisch sortieren (Z-A)",
+    "minimap_detect_success": "Minimap erfolgreich erkannt!",
+    "minimap_detect_failed": "Minimap-Erkennung fehlgeschlagen. Wechsel zu manueller Eingabe.",
+    "crop_box_parse_failed": "Ort oder Koordinaten konnten nicht aus dem Zuschneidebereich gelesen werden. Bitte Grenzen anpassen.",
+    "scan_matched_prefix": "Erfolgreich zugeordnet: ",
+    "scan_failed": "Scan fehlgeschlagen: ",
+    "scan_error": "Scan-Fehler.",
+    "refresh_capture_failed": "Aktualisierung der Aufnahme fehlgeschlagen: ",
+    "refresh_capture_error": "Fehler beim Aktualisieren der Aufnahme."
 }

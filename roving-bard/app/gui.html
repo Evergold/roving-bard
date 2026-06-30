@@ -3758,9 +3758,9 @@
                 
                 if (isFirstDashboardLoad) {
                     if (status.minimap_detected) {
-                        showToast("Minimap detected successfully!", "success");
+                        showToast(t("minimap_detect_success", "Minimap detected successfully!"), "success");
                     } else {
-                        showToast("Minimap detection failed. Falling back to manual entry.", "warn");
+                        showToast(t("minimap_detect_failed", "Minimap detection failed. Falling back to manual entry."), "warn");
                     }
                 }
 
@@ -4324,16 +4324,16 @@
                 
                 if (res.status === 'success') {
                     if (!res.parsed_location || !res.parsed_coordinates) {
-                        showToast("Could not parse location or coordinates from the crop box. Please adjust bounds.", "warn");
+                        showToast(t("crop_box_parse_failed", "Could not parse location or coordinates from the crop box. Please adjust bounds."), "warn");
                     } else {
-                        showToast(`Successfully matched: ${res.parsed_location} (${res.parsed_coordinates})`, "success");
+                        showToast(t("scan_matched_prefix", "Successfully matched: ") + `${res.parsed_location} (${res.parsed_coordinates})`, "success");
                     }
                 } else {
-                    showToast("Scan failed: " + res.message, "error");
+                    showToast(t("scan_failed", "Scan failed: ") + res.message, "error");
                 }
             } catch (err) {
                 console.error(t("err_scan_screen"), err);
-                showToast("Scan error.", "error");
+                showToast(t("scan_error", "Scan error."), "error");
             }
         }
 
@@ -4357,17 +4357,17 @@
                         setManualEntryMode(!res.detected);
                         
                         if (res.detected) {
-                            showToast("Minimap detected successfully!", "success");
+                            showToast(t("minimap_detect_success", "Minimap detected successfully!"), "success");
                         } else {
-                            showToast("Minimap detection failed. Falling back to manual entry.", "warn");
+                            showToast(t("minimap_detect_failed", "Minimap detection failed. Falling back to manual entry."), "warn");
                         }
                     }
                 } else {
-                    showToast("Failed to refresh capture: " + res.message, "error");
+                    showToast(t("refresh_capture_failed", "Failed to refresh capture: ") + res.message, "error");
                 }
             } catch (err) {
                 console.error("Error refreshing screenshot:", err);
-                showToast("Error refreshing capture.", "error");
+                showToast(t("refresh_capture_error", "Error refreshing capture."), "error");
             }
         }
 

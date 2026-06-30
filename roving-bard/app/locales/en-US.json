@@ -173,5 +173,13 @@
     "clear_cache_failed": "Failed to clear audio cache: ",
     "clear_btn_label": "Clear",
     "sort_asc_title": "Sort Alphabetically (A-Z)",
-    "sort_desc_title": "Sort Alphabetically (Z-A)"
+    "sort_desc_title": "Sort Alphabetically (Z-A)",
+    "minimap_detect_success": "Minimap detected successfully!",
+    "minimap_detect_failed": "Minimap detection failed. Falling back to manual entry.",
+    "crop_box_parse_failed": "Could not parse location or coordinates from the crop box. Please adjust bounds.",
+    "scan_matched_prefix": "Successfully matched: ",
+    "scan_failed": "Scan failed: ",
+    "scan_error": "Scan error.",
+    "refresh_capture_failed": "Failed to refresh capture: ",
+    "refresh_capture_error": "Error refreshing capture."
 }

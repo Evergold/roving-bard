@@ -173,5 +173,13 @@
     "clear_cache_failed": "Impossibile cancellare la cache audio: ",
     "clear_btn_label": "Cancella",
     "sort_asc_title": "Ordina alfabeticamente (A-Z)",
-    "sort_desc_title": "Ordina alfabeticamente (Z-A)"
+    "sort_desc_title": "Ordina alfabeticamente (Z-A)",
+    "minimap_detect_success": "Minimappa rilevata con successo!",
+    "minimap_detect_failed": "Rilevamento minimappa fallito. Ritorno all'inserimento manuale.",
+    "crop_box_parse_failed": "Impossibile analizzare la posizione o le coordinate dalla casella di ritaglio. Regola i limiti.",
+    "scan_matched_prefix": "Abbinamento riuscito: ",
+    "scan_failed": "Scansione fallita: ",
+    "scan_error": "Errore di scansione.",
+    "refresh_capture_failed": "Aggiornamento della cattura fallito: ",
+    "refresh_capture_error": "Errore durante l'aggiornamento della cattura."
 }
