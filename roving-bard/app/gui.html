@@ -3793,6 +3793,29 @@
             });
         }
 
+        let librarySortOrder = localStorage.getItem('librarySortOrder') || 'asc';
+
+        function initLibrarySort() {
+            const ascBtn = document.getElementById('sort-asc-btn');
+            const descBtn = document.getElementById('sort-desc-btn');
+            if (ascBtn && descBtn) {
+                if (librarySortOrder === 'asc') {
+                    ascBtn.classList.add('active');
+                    descBtn.classList.remove('active');
+                } else {
+                    descBtn.classList.add('active');
+                    ascBtn.classList.remove('active');
+                }
+            }
+        }
+
+        function setLibrarySort(order) {
+            librarySortOrder = order;
+            localStorage.setItem('librarySortOrder', order);
+            initLibrarySort();
+            renderAudioFiles();
+        }
+
         function toggleInstrumentPanel() {
             instPanelOpen = !instPanelOpen;
             const panel = document.getElementById('instrument-panel');
