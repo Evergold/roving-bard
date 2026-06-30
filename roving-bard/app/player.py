@@ -752,28 +752,49 @@ class SafeMusicPlayer:
 
     def update_soundfont(self, soundfont_name: str | None):
         """Updates the active soundfont to the one specified in the configuration."""
+        old_soundfont_path = self.soundfont_path
+
         if not soundfont_name:
             self._init_soundfont()
-            return
+        else:
+            # Check if the soundfont exists in playlist_dir
+            path_in_playlist = os.path.join(self.playlist_dir, soundfont_name)
+            if os.path.exists(path_in_playlist):
+                self.soundfont_path = path_in_playlist
+                os.environ["SDL_SOUNDFONTS"] = path_in_playlist
+                print(f"[SafeMusicPlayer] Set active SoundFont to {path_in_playlist}")
+            # Check if the soundfont is a system path
+            elif os.path.exists(soundfont_name):
+                self.soundfont_path = soundfont_name
+                os.environ["SDL_SOUNDFONTS"] = soundfont_name
+                print(f"[SafeMusicPlayer] Set active SoundFont to {soundfont_name}")
+            else:
+                # Otherwise, fall back to default search
+                print(f"[SafeMusicPlayer] SoundFont not found: {soundfont_name}. Falling back to default search.")
+                self._init_soundfont()
 
-        # Check if the soundfont exists in playlist_dir
-        path_in_playlist = os.path.join(self.playlist_dir, soundfont_name)
-        if os.path.exists(path_in_playlist):
-            self.soundfont_path = path_in_playlist
-            os.environ["SDL_SOUNDFONTS"] = path_in_playlist
-            print(f"[SafeMusicPlayer] Set active SoundFont to {path_in_playlist}")
-            return
-
-        # Check if the soundfont is a system path
-        if os.path.exists(soundfont_name):
-            self.soundfont_path = soundfont_name
-            os.environ["SDL_SOUNDFONTS"] = soundfont_name
-            print(f"[SafeMusicPlayer] Set active SoundFont to {soundfont_name}")
-            return
-
-        # Otherwise, fall back to default search
-        print(f"[SafeMusicPlayer] SoundFont not found: {soundfont_name}. Falling back to default search.")
-        self._init_soundfont()
+        # If the soundfont changed, invalidate the synthesis cache and restart playback if active
+        if old_soundfont_path != self.soundfont_path:
+            # 1. Clear FLAC synthesis cache
+            cache_dir = os.path.join(self.playlist_dir, ".cache")
+            if os.path.exists(cache_dir):
+                print(f"[SafeMusicPlayer] SoundFont changed. Clearing synthesis cache in {cache_dir}...")
+                try:
+                    for filename in os.listdir(cache_dir):
+                        if filename.lower().endswith(".flac"):
+                            os.remove(os.path.join(cache_dir, filename))
+                except Exception as e:
+                    print(f"Error clearing synthesis cache: {e}")
+            
+            # 2. Restart playback if playing an ABC/MIDI track
+            if self.current_track and self.current_track.lower().endswith((".abc", ".mid", ".midi")):
+                if not getattr(self, "paused", False) and not getattr(self, "was_stopped", False):
+                    print(f"[SafeMusicPlayer] SoundFont changed while playing {self.current_track}. Restarting from start_time ({self.start_time}s) to apply new SoundFont.")
+                    self.play_track(
+                        self.current_track,
+                        start_time=self.start_time,
+                        end_time=self.end_time
+                    )
 
     def _prepare_abc_midi(self, track_path, start_pos):
         try:
