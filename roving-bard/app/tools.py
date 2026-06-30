@@ -245,6 +245,17 @@ def check_screen_and_update_music() -> dict:
     # Crop to bounds for OCR processing
     img = grabber.crop_image(full_img)
 
+    # Crop to location and coordinates (bottom 30%) and enlarge 2x
+    try:
+        from PIL import Image
+        w, h = img.size
+        y_start = int(h * 0.70)
+        lesser_img = img.crop((0, y_start, w, h))
+        img_2x = lesser_img.resize((w * 2, int((h - y_start) * 2)), Image.Resampling.LANCZOS)
+    except Exception as e:
+        print(f"Error cropping/resizing minimap text area: {e}")
+        img_2x = img
+
     # Cache full and cropped images as bytes for GUI
     try:
         # Save full screenshot
@@ -252,16 +263,16 @@ def check_screen_and_update_music() -> dict:
         full_img.save(buf_full, format="PNG")
         latest_full_screenshot_bytes = buf_full.getvalue()
         
-        # Save cropped screenshot
+        # Save cropped and 2x enlarged text-only screenshot
         buf_crop = BytesIO()
-        img.save(buf_crop, format="PNG")
+        img_2x.save(buf_crop, format="PNG")
         latest_screenshot_bytes = buf_crop.getvalue()
     except Exception as e:
         print(f"Error caching screenshot: {e}")
 
     # Step 1: Attempt local OCR
     print(f"[Pipeline] Attempting local Tesseract OCR (Pass {current_ocr_pass})...")
-    location, coordinates, ns, ew = ocr_parser.run_ocr(img, current_ocr_pass)
+    location, coordinates, ns, ew = ocr_parser.run_ocr(img_2x, current_ocr_pass, already_cropped=True)
     method = f"Local OCR (Pass {current_ocr_pass})"
 
     # Step 2: Fallback to Gemini Multimodal if OCR failed (DISABLED BY USER)

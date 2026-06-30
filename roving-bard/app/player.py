@@ -1878,12 +1878,15 @@ class LocalOCRParser:
 
         return location, coordinates, ns_val, ew_val
 
-    def run_ocr(self, pil_img, ocr_pass=0):
+    def run_ocr(self, pil_img, ocr_pass=0, already_cropped=False):
         try:
-            # 1. Crop only the bottom 30% of the bounding box to isolate the text and eliminate map noise
-            width, height = pil_img.size
-            text_y_start = int(height * 0.70)
-            text_img = pil_img.crop((0, text_y_start, width, height))
+            # 1. Crop only the bottom 30% of the bounding box if not already cropped
+            if already_cropped:
+                text_img = pil_img
+            else:
+                width, height = pil_img.size
+                text_y_start = int(height * 0.70)
+                text_img = pil_img.crop((0, text_y_start, width, height))
             
             # 2. Preprocess the text image based on the selected OCR pass
             processed = self.preprocess_image(text_img, ocr_pass)
