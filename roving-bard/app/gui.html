@@ -2973,9 +2973,8 @@
                         <div id="soundfont-download-progress" style="display: none; font-size: 0.75rem; color: var(--accent); margin-top: 0.2rem; font-family: 'Space Mono', monospace; width: fit-content; max-width: 280px; white-space: normal;"></div>
                     </div>
 
-                    <!-- Clear Cache Option -->
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem;">
-                        <span id="cache-section-title" style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="cache_section_label">Synthesis Cache</span>
+                        <span id="cache-section-title" style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;">Synthesis Cache</span>
                         <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
                             <button id="clear-cache-btn" class="font-size-btn" onclick="clearAudioCache(event)" style="height: 48px; min-width: 80px; font-size: 0.95rem; border-radius: 24px; border: none; padding: 0 20px; transition: all 0.2s ease;" data-loc="clear_btn_label" disabled>Clear</button>
                         </div>
@@ -7284,6 +7283,7 @@
             if (audioLibraryFiles) {
                 renderAudioFiles();
             }
+            updateCacheStatusUI();
             updateStatusBadgeUI();
             checkApiKeyEnvStatus();
             updateExportButtonWidth();
