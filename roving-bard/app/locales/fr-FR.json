@@ -166,5 +166,10 @@
     "language_label": "Langue",
     "confirm_delete_segment": "Supprimer le segment ?",
     "export_segment_name_title": "Nom du segment :",
-    "ok": "OK"
+    "ok": "OK",
+    "cache_section_label": "Cache de synthèse",
+    "clear_cache_label": "Vider le cache audio",
+    "clear_cache_success": "Cache audio vidé avec succès !",
+    "clear_cache_failed": "Échec du vidage du cache audio : ",
+    "clear_btn_label": "Vider"
 }

@@ -777,6 +777,56 @@ def api_set_eq(req: EQRequest):
     return {"status": "success", "message": "EQ update dispatched.", "gains": {str(k): v for k, v in tools.player.eq_gains.items()}}
 
 
+
+
+@app.get("/api/cache/status", dependencies=[Depends(verify_api_key)])
+def api_cache_status():
+    """Returns the total size (MB) and file count of the synthesis cache."""
+    try:
+        player = tools.player
+        cache_dir = os.path.join(player.playlist_dir, ".cache")
+        if not os.path.exists(cache_dir):
+            return {"status": "success", "size_mb": 0.0, "file_count": 0}
+        
+        total_size = 0
+        file_count = 0
+        for filename in os.listdir(cache_dir):
+            filepath = os.path.join(cache_dir, filename)
+            if os.path.isfile(filepath):
+                total_size += os.path.getsize(filepath)
+                file_count += 1
+        size_mb = total_size / (1024 * 1024)
+        return {"status": "success", "size_mb": round(size_mb, 2), "file_count": file_count}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/cache/clear", dependencies=[Depends(verify_api_key)])
+def api_clear_cache():
+    """Deletes all cached FLAC/WAV files, keeping the active track's file to avoid file-in-use errors."""
+    try:
+        player = tools.player
+        cache_dir = os.path.join(player.playlist_dir, ".cache")
+        if not os.path.exists(cache_dir):
+            return {"status": "success", "message": "Cache is already empty."}
+        
+        active_file = None
+        if player.current_track and player._sf is not None:
+            active_file = os.path.abspath(player._sf.name)
+            
+        deleted_count = 0
+        for filename in os.listdir(cache_dir):
+            filepath = os.path.join(cache_dir, filename)
+            if os.path.isfile(filepath):
+                if active_file and os.path.abspath(filepath) == active_file:
+                    continue
+                os.remove(filepath)
+                deleted_count += 1
+        return {"status": "success", "message": f"Cleared {deleted_count} cached files."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # Main execution
 if __name__ == "__main__":
     import uvicorn

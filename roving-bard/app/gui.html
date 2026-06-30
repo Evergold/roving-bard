@@ -2828,6 +2828,14 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Clear Cache Option -->
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem;">
+                        <span id="cache-section-title" style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="cache_section_label">Synthesis Cache</span>
+                        <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
+                            <button id="clear-cache-btn" class="font-size-btn" onclick="clearAudioCache(event)" style="height: 48px; min-width: 80px; font-size: 0.95rem; border-radius: 24px; border: none; padding: 0 20px; transition: all 0.2s ease;" data-loc="clear_btn_label" disabled>Clear</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -6627,6 +6635,65 @@
             applyLocalization();
         }
 
+        async function updateCacheStatusUI() {
+            try {
+                const response = await apiFetch('/api/cache/status');
+                const res = await response.json();
+                if (res.status === 'success') {
+                    const titleSpan = document.getElementById('cache-section-title');
+                    const btn = document.getElementById('clear-cache-btn');
+                    if (titleSpan) {
+                        titleSpan.textContent = `${t("cache_section_label")}: ${res.size_mb.toFixed(2)} MB`;
+                    }
+                    if (btn) {
+                        btn.disabled = res.file_count === 0;
+                        if (res.file_count > 0) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching cache status:', e);
+            }
+        }
+
+        async function clearAudioCache(event) {
+            if (event && event.stopPropagation) {
+                event.stopPropagation();
+            }
+            const btn = document.getElementById('clear-cache-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.remove('active');
+            }
+            try {
+                const response = await apiFetch('/api/cache/clear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    showToast(t("clear_cache_success"), 'success');
+                    await updateCacheStatusUI();
+                } else {
+                    showToast(t("clear_cache_failed") + (res.message || ''), 'error');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.classList.add('active');
+                    }
+                }
+            } catch (e) {
+                console.error('Error clearing audio cache:', e);
+                showToast(t("clear_cache_failed") + e.message, 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.add('active');
+                }
+            }
+        }
+
         function setTheme(eventOrTheme, theme) {
             let activeTheme = theme;
             if (typeof eventOrTheme === 'string') {
@@ -6748,6 +6815,7 @@
                 menuPopoverOpen = false;
             } else {
                 // Open it
+                updateCacheStatusUI();
                 if (popoverInner) {
                     // Set initial untransformed size instantly before animation starts
                     popover.style.width = `${popoverInner.offsetWidth}px`;
