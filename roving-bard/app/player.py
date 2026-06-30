@@ -845,6 +845,7 @@ class SafeMusicPlayer:
                     track_path = os.path.join(self.playlist_dir, self.current_track)
                     is_midi_abc = self.current_track.lower().endswith((".abc", ".mid", ".midi"))
                     actual_track_path = track_path
+                    use_pipe = False
                     
                     if is_midi_abc:
                         # Resolve cached WAV path (use instrument-specific if active)
@@ -864,34 +865,66 @@ class SafeMusicPlayer:
                             if self.current_track.lower().endswith(".abc"):
                                 self.track_duration = get_abc_duration(track_path) or 180.0
                                 midi_path = self._prepare_abc_midi(track_path, 0.0)
-                            self._synthesize_midi_to_flac(midi_path, cached_flac)
                             
-                        actual_track_path = cached_flac
+                            # Start background thread to build the cache
+                            def bg_build_cache():
+                                try:
+                                    self._synthesize_midi_to_flac(midi_path, cached_flac)
+                                except Exception as e:
+                                    print(f"[Synth] Background cache synthesis failed: {e}")
+                            threading.Thread(target=bg_build_cache, daemon=True).start()
+                            
+                            # Play instantly using Fluidsynth stdout pipe
+                            self._sf = None
+                            self._sample_rate = 44100
+                            self._channels = 2
+                            cmd = [
+                                "fluidsynth", "-ni", "-F", "/dev/stdout", "-T", "raw", "-r", "44100",
+                                self.soundfont_path, midi_path
+                            ]
+                            self._ffmpeg_proc = subprocess.Popen(
+                                cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL
+                            )
+                            
+                            # Discard bytes up to start_time (represented by self._playhead)
+                            if self._playhead > 0:
+                                discard_bytes = self._playhead * 2 * 2  # channels * bytes_per_sample
+                                try:
+                                    self._ffmpeg_proc.stdout.read(discard_bytes)
+                                except Exception as e:
+                                    print(f"[Playback] Failed to discard start_time bytes from pipe: {e}")
+                            
+                            use_pipe = True
+                        else:
+                            actual_track_path = cached_flac
 
-                    if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
-                        import soundfile as sf
-                        self._sf = sf.SoundFile(actual_track_path)
-                        self._sample_rate = self._sf.samplerate
-                        self._channels = self._sf.channels
-                        if not is_midi_abc:
-                            self.track_duration = len(self._sf) / self._sample_rate
-                        self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
-                    elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
-                        pos_sec = self._playhead / 44100.0
-                        cmd = [
-                            "ffmpeg", "-y",
-                            "-ss", f"{pos_sec:.3f}",
-                            "-i", actual_track_path,
-                            "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
-                            "-ar", "44100", "-ac", "2", "-"
-                        ]
-                        self._ffmpeg_proc = subprocess.Popen(
-                            cmd,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL
-                        )
-                        self._sample_rate = 44100
-                        self._channels = 2
+                    if not use_pipe:
+                        if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
+                            import soundfile as sf
+                            self._sf = sf.SoundFile(actual_track_path)
+                            self._sample_rate = self._sf.samplerate
+                            self._channels = self._sf.channels
+                            if not is_midi_abc:
+                                self.track_duration = len(self._sf) / self._sample_rate
+                            self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
+                        elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
+                            pos_sec = self._playhead / 44100.0
+                            cmd = [
+                                "ffmpeg", "-y",
+                                "-ss", f"{pos_sec:.3f}",
+                                "-i", actual_track_path,
+                                "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                                "-ar", "44100", "-ac", "2", "-"
+                            ]
+                            self._ffmpeg_proc = subprocess.Popen(
+                                cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL
+                            )
+                            self._sample_rate = 44100
+                            self._channels = 2
 
             with sd.OutputStream(
                 samplerate=self._sample_rate,
@@ -1074,6 +1107,7 @@ class SafeMusicPlayer:
         
         # Load the audio file
         try:
+            use_pipe = False
             actual_track_path = track_path
             
             if is_midi_abc:
@@ -1089,46 +1123,80 @@ class SafeMusicPlayer:
                 cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
                 
                 if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
-                    print(f"[Synth] Synthesizing {track_file} to FLAC cache...")
+                    print(f"[Synth] Background synthesizing {track_file} to FLAC cache...")
                     midi_path = track_path
                     if track_file.lower().endswith(".abc"):
                         self.track_duration = get_abc_duration(track_path) or 180.0
                         midi_path = self._prepare_abc_midi(track_path, 0.0)
-                    self._synthesize_midi_to_flac(midi_path, cached_flac)
                     
-                actual_track_path = cached_flac
+                    # Start background thread to build the cache
+                    def bg_build_cache():
+                        try:
+                            self._synthesize_midi_to_flac(midi_path, cached_flac)
+                        except Exception as e:
+                            print(f"[Synth] Background cache synthesis failed: {e}")
+                    threading.Thread(target=bg_build_cache, daemon=True).start()
+                    
+                    # Play instantly using Fluidsynth stdout pipe
+                    self._sf = None
+                    self._audio_data = None
+                    sample_rate = 44100
+                    channels = 2
+                    cmd = [
+                        "fluidsynth", "-ni", "-F", "/dev/stdout", "-T", "raw", "-r", "44100",
+                        self.soundfont_path, midi_path
+                    ]
+                    self._ffmpeg_proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL
+                    )
+                    
+                    # Discard bytes up to start_time
+                    start_frame = int(start_time * 44100)
+                    if start_frame > 0:
+                        discard_bytes = start_frame * 2 * 2  # channels * bytes_per_sample
+                        try:
+                            self._ffmpeg_proc.stdout.read(discard_bytes)
+                        except Exception as e:
+                            print(f"[Playback] Failed to discard start_time bytes from pipe: {e}")
+                    
+                    use_pipe = True
+                else:
+                    actual_track_path = cached_flac
 
-            if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
-                import soundfile as sf
-                sf_obj = sf.SoundFile(actual_track_path)
-                self._sf = sf_obj
-                self._audio_data = None
-                self._ffmpeg_proc = None
-                sample_rate = sf_obj.samplerate
-                channels = sf_obj.channels
-                if not is_midi_abc:
-                    self.track_duration = len(sf_obj) / sample_rate
-            elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
-                self.track_duration = TinyTag.get(actual_track_path).duration or 180.0
-                cmd = [
-                    "ffmpeg", "-y",
-                    "-ss", f"{start_time:.3f}",
-                    "-i", actual_track_path,
-                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
-                    "-ar", "44100", "-ac", "2", "-"
-                ]
-                self._ffmpeg_proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL
-                )
-                self._audio_data = None
-                self._sf = None
-                sample_rate = 44100
-                channels = 2
-            else:
-                print(f"Unsupported audio format: {track_file}")
-                return False
+            if not use_pipe:
+                if actual_track_path.lower().endswith((".wav", ".ogg", ".flac")):
+                    import soundfile as sf
+                    sf_obj = sf.SoundFile(actual_track_path)
+                    self._sf = sf_obj
+                    self._audio_data = None
+                    self._ffmpeg_proc = None
+                    sample_rate = sf_obj.samplerate
+                    channels = sf_obj.channels
+                    if not is_midi_abc:
+                        self.track_duration = len(sf_obj) / sample_rate
+                elif actual_track_path.lower().endswith((".mp3", ".aac", ".m4a", ".mp4")):
+                    self.track_duration = TinyTag.get(actual_track_path).duration or 180.0
+                    cmd = [
+                        "ffmpeg", "-y",
+                        "-ss", f"{start_time:.3f}",
+                        "-i", actual_track_path,
+                        "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                        "-ar", "44100", "-ac", "2", "-"
+                    ]
+                    self._ffmpeg_proc = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL
+                    )
+                    self._sf = None
+                    self._audio_data = None
+                    sample_rate = 44100
+                    channels = 2
+                else:
+                    print(f"Unsupported audio format: {track_file}")
+                    return False
         except Exception as e:
             print(f"Error loading audio file {track_file}: {e}")
             return False
@@ -1352,6 +1420,31 @@ class SafeMusicPlayer:
         print(f"[Playback] Seeking to {position}s (was_stopped={self.was_stopped}, paused={self.paused})")
 
         with self._play_lock:
+            # If playing a MIDI/ABC track via pipe, check if the FLAC cache is ready now.
+            # If so, switch to the FLAC file for native seeking/playback.
+            is_midi_abc = self.current_track.lower().endswith((".abc", ".mid", ".midi"))
+            if is_midi_abc and self._sf is None:
+                cache_dir = os.path.join(self.playlist_dir, ".cache")
+                if self.current_track.lower().endswith(".abc") and self.active_instrument is not None:
+                    cached_flac = os.path.join(cache_dir, f"{self.current_track}_inst_{self.active_instrument}.flac")
+                else:
+                    cached_flac = os.path.join(cache_dir, self.current_track + ".flac")
+                
+                if os.path.exists(cached_flac):
+                    try:
+                        import soundfile as sf
+                        self._sf = sf.SoundFile(cached_flac)
+                        self._sample_rate = self._sf.samplerate
+                        self._channels = self._sf.channels
+                        if self._ffmpeg_proc is not None:
+                            try:
+                                self._ffmpeg_proc.terminate()
+                            except Exception:
+                                pass
+                            self._ffmpeg_proc = None
+                    except Exception as e:
+                        print(f"[Playback] Failed to load newly-synthesized FLAC cache during seek: {e}")
+
             self._playhead = int(position * self._sample_rate)
             if self._sf is not None:
                 self._sf.seek(min(len(self._sf) - 1, max(0, self._playhead)))
