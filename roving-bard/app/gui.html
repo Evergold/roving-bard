@@ -3695,7 +3695,8 @@
                 const hasGoogle = res.GOOGLE_API_KEY;
                 const hasGemini = res.GEMINI_API_KEY;
                 
-                const anyDetected = hasAgent || hasGoogle || hasGemini;
+                const isLocalhost = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(window.location.hostname);
+                const anyDetected = hasAgent || hasGoogle || hasGemini || isLocalhost;
                 const isCvd = document.body.classList.contains('cvd-accessible');
                 
                 let html = '';
@@ -3703,7 +3704,11 @@
                     if (anyDetected) {
                         html += `<div class="api-key-detected" style="font-weight: bold; margin-bottom: 0.5rem;"><span style="font-size: 1.85rem; font-weight: 900; margin-right: 6px; vertical-align: middle;">✓</span> ${t('api_key_detected')}</div>`;
                         html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
-                        html += `  <div><span class="api-key-symbol ${hasAgent ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasAgent ? '✓' : '✗'}</span> AGENT_API_KEY</div>`;
+                        if (isLocalhost) {
+                            html += `  <div><span class="api-key-symbol detected" style="font-weight: bold; margin-right: 4px;">✓</span> LOCALHOST</div>`;
+                        } else {
+                            html += `  <div><span class="api-key-symbol ${hasAgent ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasAgent ? '✓' : '✗'}</span> AGENT_API_KEY</div>`;
+                        }
                         html += `  <div><span class="api-key-symbol ${hasGoogle ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasGoogle ? '✓' : '✗'}</span> GOOGLE_API_KEY</div>`;
                         html += `  <div><span class="api-key-symbol ${hasGemini ? 'detected' : 'not-detected'}" style="font-weight: bold; margin-right: 4px;">${hasGemini ? '✓' : '✗'}</span> GEMINI_API_KEY</div>`;
                         html += `</div>`;
@@ -3720,7 +3725,11 @@
                     if (anyDetected) {
                         html += `<div style="color: #4caf50; font-weight: bold; margin-bottom: 0.5rem;">✔️ ${t('api_key_detected')}</div>`;
                         html += `<div style="display: flex; flex-direction: column; gap: 0.25rem; opacity: 0.85; margin-left: 0.5rem;">`;
-                        html += `  <div>${hasAgent ? '✔️' : '❌'} AGENT_API_KEY</div>`;
+                        if (isLocalhost) {
+                            html += `  <div>✔️ LOCALHOST</div>`;
+                        } else {
+                            html += `  <div>${hasAgent ? '✔️' : '❌'} AGENT_API_KEY</div>`;
+                        }
                         html += `  <div>${hasGoogle ? '✔️' : '❌'} GOOGLE_API_KEY</div>`;
                         html += `  <div>${hasGemini ? '✔️' : '❌'} GEMINI_API_KEY</div>`;
                         html += `</div>`;
