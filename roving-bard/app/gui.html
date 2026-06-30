@@ -1248,8 +1248,8 @@
         .visual-crop-box {
             position: absolute;
             border: 2px dashed var(--neon-blue);
-            background-color: rgba(0, 242, 254, 0.1);
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+            background-color: transparent;
+            box-shadow: none;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -3723,6 +3723,12 @@
                 document.getElementById('bounds-h').value = bounds.height;
                 
                 updateVisualizerBounds();
+                
+                // Disable controls if detection was successful
+                const inputs = ['bounds-x', 'bounds-y', 'bounds-w', 'bounds-h'];
+                inputs.forEach(id => {
+                    document.getElementById(id).disabled = status.minimap_detected || false;
+                });
 
                 // Update now playing UI
                 updatePlayerUI(status);
@@ -4049,7 +4055,17 @@
 
         function reloadScreenshot() {
             const img = document.getElementById('screenshot-view');
-            img.src = `/api/screenshot?api_key=${getApiKey()}&t=${new Date().getTime()}`;
+            const t = new Date().getTime();
+            img.src = `/api/screenshot?api_key=${getApiKey()}&t=${t}`;
+            
+            // Update Bounding Box Selector background with the full screenshot
+            const visualizer = document.querySelector('.bounds-visualizer');
+            if (visualizer) {
+                visualizer.style.backgroundImage = `url('/api/screenshot?full=true&api_key=${getApiKey()}&t=${t}')`;
+                visualizer.style.backgroundSize = 'contain';
+                visualizer.style.backgroundRepeat = 'no-repeat';
+                visualizer.style.backgroundPosition = 'center';
+            }
         }
 
         function updateVolumeIconAndText(val) {
@@ -4149,11 +4165,32 @@
                 const res = await response.json();
                 if (res.status === 'success') {
                     reloadScreenshot();
+                    
+                    if (res.bounds) {
+                        document.getElementById('bounds-x').value = res.bounds.x;
+                        document.getElementById('bounds-y').value = res.bounds.y;
+                        document.getElementById('bounds-w').value = res.bounds.width;
+                        document.getElementById('bounds-h').value = res.bounds.height;
+                        updateVisualizerBounds();
+                        
+                        // Disable controls if detection was successful
+                        const inputs = ['bounds-x', 'bounds-y', 'bounds-w', 'bounds-h'];
+                        inputs.forEach(id => {
+                            document.getElementById(id).disabled = res.detected;
+                        });
+                        
+                        if (res.detected) {
+                            showToast("Minimap detected successfully!", "success");
+                        } else {
+                            showToast("Minimap detection failed. Falling back to manual entry.", "warn");
+                        }
+                    }
                 } else {
-                    alert(t("failed_refresh_screenshot") + res.message);
+                    showToast("Failed to refresh capture: " + res.message, "error");
                 }
             } catch (err) {
-                console.error(t("err_refresh_screenshot"), err);
+                console.error("Error refreshing screenshot:", err);
+                showToast("Error refreshing capture.", "error");
             }
         }
 

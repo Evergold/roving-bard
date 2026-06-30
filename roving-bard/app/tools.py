@@ -160,6 +160,8 @@ ocr_parser = LocalOCRParser()
 mapper = TrackMapper(mappings=config.get("mappings", []))
 # Shared caching for GUI visualization
 latest_screenshot_bytes = None
+latest_full_screenshot_bytes = None
+minimap_detected = False
 latest_parse_result = {
     "parsed_location": None,
     "parsed_coordinates": None,

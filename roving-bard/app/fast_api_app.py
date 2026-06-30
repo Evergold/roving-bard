@@ -317,6 +317,10 @@ def get_env_status():
 @app.get("/api/status", dependencies=[Depends(verify_api_key)])
 def api_status():
     """Returns the current playback status and loaded configuration."""
+    # Initialize simulation screen on first status load if needed
+    if tools.latest_full_screenshot_bytes is None:
+        initialize_simulation_screen()
+        
     return {
         "current_track": tools.player.current_track,
         "volume": tools.player.volume,
@@ -331,6 +335,7 @@ def api_status():
         "end_time": getattr(tools.player, "end_time", None) if getattr(tools.player, "end_time", None) is not None else getattr(tools.player, "track_duration", 0.0),
         "active_instrument": tools.player.active_instrument if tools.player.active_instrument is not None else tools.player.get_default_instrument(),
         "is_abc": tools.player.current_track.lower().endswith(".abc") if tools.player.current_track else False,
+        "minimap_detected": getattr(tools, "minimap_detected", False),
     }
 
 
@@ -419,10 +424,62 @@ def api_config(req: ConfigUpdateRequest):
         return {"status": "error", "message": str(e)}
 
 
+def initialize_simulation_screen():
+    """Loads the first test screen on startup if in simulation mode."""
+    import os
+    from PIL import Image
+    from io import BytesIO
+    
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    capture_dir = os.path.join(os.path.dirname(app_dir), "capture")
+    
+    test_files = []
+    if os.path.exists(capture_dir):
+        test_files = sorted([
+            f for f in os.listdir(capture_dir)
+            if f.lower().startswith("test_") and f.lower().endswith(('.png', '.jpg', '.jpeg'))
+        ])
+    
+    if test_files:
+        tools.grabber.test_index = 0
+        filename = test_files[0]
+        filepath = os.path.join(capture_dir, filename)
+        try:
+            full_img = Image.open(filepath).convert("RGB")
+            print(f"[ScreenGrabber] Init Simulation: Loaded {filename}")
+            
+            # Run minimap detection
+            bounds, detected = tools.grabber.detect_minimap(full_img)
+            if detected:
+                tools.grabber.bounds = bounds
+                tools.minimap_detected = True
+            else:
+                config = tools.load_config()
+                tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                tools.minimap_detected = False
+            
+            # Update bytes
+            buf = BytesIO()
+            full_img.save(buf, format="PNG")
+            tools.latest_full_screenshot_bytes = buf.getvalue()
+            
+            cropped_img = tools.grabber.crop_image(full_img)
+            buf_crop = BytesIO()
+            cropped_img.save(buf_crop, format="PNG")
+            tools.latest_screenshot_bytes = buf_crop.getvalue()
+            
+            # Update tools.config in memory
+            tools.config["minimap_bounds"] = tools.grabber.bounds
+        except Exception as e:
+            print(f"[ScreenGrabber] Failed to initialize simulation screen: {e}")
+
+
 @app.get("/api/screenshot", dependencies=[Depends(verify_api_key)])
-def api_screenshot():
-    """Returns the latest cropped screenshot image, or a transparent placeholder."""
-    if tools.latest_screenshot_bytes:
+def api_screenshot(full: bool = False):
+    """Returns the latest cropped (or full) screenshot image, or a transparent placeholder."""
+    if full and tools.latest_full_screenshot_bytes:
+        return Response(content=tools.latest_full_screenshot_bytes, media_type="image/png")
+    elif not full and tools.latest_screenshot_bytes:
         return Response(content=tools.latest_screenshot_bytes, media_type="image/png")
 
     # 1x1 transparent PNG fallback
@@ -432,16 +489,76 @@ def api_screenshot():
 
 @app.post("/api/screenshot/refresh", dependencies=[Depends(verify_api_key)])
 def api_screenshot_refresh():
-    """Reloads the current capture from disk/screen and updates latest_screenshot_bytes without running OCR."""
-    full_img = tools.grabber.capture_full()
-    if not full_img:
-        return {"status": "error", "message": "Failed to capture/load screenshot."}
+    """Reloads the current capture from disk/screen, runs auto-detection, and updates cache."""
+    import os
+    from PIL import Image
+    from io import BytesIO
+    
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    capture_dir = os.path.join(os.path.dirname(app_dir), "capture")
+    
+    # Check if we have test screens for simulation mode (starts with 'test_')
+    test_files = []
+    if os.path.exists(capture_dir):
+        test_files = sorted([
+            f for f in os.listdir(capture_dir)
+            if f.lower().startswith("test_") and f.lower().endswith(('.png', '.jpg', '.jpeg'))
+        ])
+        
+    if test_files:
+        # Cycle through test screens
+        if not hasattr(tools.grabber, "test_index"):
+            tools.grabber.test_index = 0
+        else:
+            tools.grabber.test_index = (tools.grabber.test_index + 1) % len(test_files)
+            
+        filename = test_files[tools.grabber.test_index]
+        filepath = os.path.join(capture_dir, filename)
+        try:
+            full_img = Image.open(filepath).convert("RGB")
+            print(f"[ScreenGrabber] Simulation Mode: Loaded {filename} (Index: {tools.grabber.test_index})")
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to load test screen: {e}"}
+    else:
+        # Fallback to live capture
+        full_img = tools.grabber.capture_full()
+        if not full_img:
+            return {"status": "error", "message": "Failed to capture/load screenshot."}
+
     try:
-        from io import BytesIO
+        # Run minimap detection on the full image
+        bounds, detected = tools.grabber.detect_minimap(full_img)
+        
+        if detected:
+            tools.grabber.bounds = bounds
+            tools.minimap_detected = True
+        else:
+            # Fallback to mapping.yaml bounds
+            config = tools.load_config()
+            tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+            tools.minimap_detected = False
+            bounds = tools.grabber.bounds
+            
+        # Update tools.config in memory
+        tools.config["minimap_bounds"] = tools.grabber.bounds
+            
+        # Update latest full screenshot bytes
         buf = BytesIO()
         full_img.save(buf, format="PNG")
-        tools.latest_screenshot_bytes = buf.getvalue()
-        return {"status": "success", "message": "Screenshot reloaded successfully."}
+        tools.latest_full_screenshot_bytes = buf.getvalue()
+        
+        # Update cropped screenshot bytes
+        cropped_img = tools.grabber.crop_image(full_img)
+        buf_crop = BytesIO()
+        cropped_img.save(buf_crop, format="PNG")
+        tools.latest_screenshot_bytes = buf_crop.getvalue()
+        
+        return {
+            "status": "success",
+            "message": "Screenshot reloaded successfully.",
+            "detected": detected,
+            "bounds": bounds
+        }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
