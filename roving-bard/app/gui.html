@@ -2409,9 +2409,14 @@
         }
 
         body.light-theme .visual-crop-box {
-            background-color: rgba(46, 93, 168, 0.1) !important;
+            background-color: transparent !important;
             box-shadow: none !important;
-            border-color: var(--neon-blue) !important;
+            border-color: #00f2fe !important;
+            color: #00f2fe !important;
+        }
+        body.light-theme .resize-handle::after {
+            background-color: #00f2fe !important;
+            box-shadow: 0 0 6px #00f2fe !important;
         }
 
         body.light-theme .mapping-item.selected-track {
@@ -3440,14 +3445,12 @@
                         </svg>
                         <span data-loc="bounding_box_selector">BOUNDING BOX SELECTOR</span>
                     </div>
-                    <span>mapping.yaml</span>
                 </div>
                 <div class="card-body-wrapper">
                     <div class="form-section">
                         <div class="bounds-visualizer">
                             <div class="bounds-visualizer-grid"></div>
                             <div id="visual-crop-box" class="visual-crop-box">
-                                <span class="crop-box-label" style="pointer-events: none;" data-loc="minimap_crop_box">MINIMAP CROP BOX</span>
                                 <div class="resize-handle tl" data-dir="tl"></div>
                                 <div class="resize-handle tr" data-dir="tr"></div>
                                 <div class="resize-handle bl" data-dir="bl"></div>
