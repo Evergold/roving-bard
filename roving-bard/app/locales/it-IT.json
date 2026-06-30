@@ -188,5 +188,11 @@
     "failed_cycle_ocr": "Impossibile alternare l'OCR: ",
     "error_cycle_ocr": "Errore durante il ciclo OCR.",
     "segment_exists_prefix": "Il segmento \"",
-    "segment_exists_suffix": "\" esiste già"
+    "segment_exists_suffix": "\" esiste già",
+    "soundfont_label": "SoundFont",
+    "soundfont_musescore": "MuseScore General (HQ)",
+    "soundfont_fluid": "FluidR3 (Legacy)",
+    "soundfont_changed": "SoundFont aggiornato con successo!",
+    "soundfont_change_failed": "Impossibile aggiornare il SoundFont: ",
+    "soundfont_change_error": "Errore durante l'aggiornamento del SoundFont."
 }

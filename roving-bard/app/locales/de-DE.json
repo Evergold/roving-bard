@@ -188,5 +188,11 @@
     "failed_cycle_ocr": "Fehler beim Durchlaufen der OCR: ",
     "error_cycle_ocr": "Fehler beim Durchlaufen der OCR.",
     "segment_exists_prefix": "Segment \"",
-    "segment_exists_suffix": "\" existiert bereits"
+    "segment_exists_suffix": "\" existiert bereits",
+    "soundfont_label": "SoundFont",
+    "soundfont_musescore": "MuseScore General (HQ)",
+    "soundfont_fluid": "FluidR3 (Legacy)",
+    "soundfont_changed": "SoundFont erfolgreich aktualisiert!",
+    "soundfont_change_failed": "Fehler beim Aktualisieren der SoundFont: ",
+    "soundfont_change_error": "Fehler beim Aktualisieren der SoundFont."
 }

@@ -155,6 +155,7 @@ config = load_config()
 
 # Initialize core player elements
 player = SafeMusicPlayer(playlist_dir=config.get("playlist_directory", "audio"))
+player.update_soundfont(config.get("active_soundfont"))
 grabber = ScreenGrabber(bounds_config=config.get("minimap_bounds"))
 ocr_parser = LocalOCRParser()
 mapper = TrackMapper(mappings=config.get("mappings", []))

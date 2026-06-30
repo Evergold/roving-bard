@@ -670,37 +670,7 @@ class SafeMusicPlayer:
         self._playhead = 0
         self._eq_zi = {}  # band -> zi array for filter state
         self.soundfont_path = None
-
-        # Set SDL_SOUNDFONTS to enable correct MIDI instrument synthesis on Linux
-        env_soundfont = os.environ.get("SDL_SOUNDFONTS")
-        if env_soundfont and os.path.exists(env_soundfont):
-            print(f"Using pre-configured SDL_SOUNDFONTS: {env_soundfont}")
-            self.soundfont_path = env_soundfont
-        else:
-            soundfont_paths = []
-            if self.playlist_dir and os.path.exists(self.playlist_dir):
-                try:
-                    for filename in sorted(os.listdir(self.playlist_dir)):
-                        if filename.lower().endswith((".sf2", ".sf3")):
-                            soundfont_paths.append(os.path.join(self.playlist_dir, filename))
-                except Exception as e:
-                    print(f"Error scanning playlist_dir for soundfonts: {e}")
-
-            soundfont_paths.extend([
-                "/usr/share/sounds/sf2/FluidR3_GM.sf2",
-                "/usr/share/sounds/sf2/default-GM.sf2",
-                "/usr/share/sounds/sf2/TimGM6mb.sf2",
-                "/usr/share/sounds/sf3/FluidR3_GM.sf3",
-                "/usr/share/sounds/sf3/default.sf3",
-                "/usr/share/midi/soundfont/FluidR3_GM.sf2",
-                "/usr/share/midi/soundfont/default.sf2",
-            ])
-            for path in soundfont_paths:
-                if os.path.exists(path):
-                    os.environ["SDL_SOUNDFONTS"] = path
-                    self.soundfont_path = path
-                    print(f"Set SDL_SOUNDFONTS environment variable to {path}")
-                    break
+        self._init_soundfont()
 
         # Check if fluidsynth is available on the system for WAV synthesis
         self.fluidsynth_available = False
@@ -746,12 +716,64 @@ class SafeMusicPlayer:
                 except Exception:
                     pass
                 self._sf = None
-            if self._ffmpeg_proc:
-                try:
-                    self._ffmpeg_proc.terminate()
-                except Exception:
-                    pass
                 self._ffmpeg_proc = None
+
+    def _init_soundfont(self):
+        """Initializes the soundfont path using environment variables or fallback directories."""
+        env_soundfont = os.environ.get("SDL_SOUNDFONTS")
+        if env_soundfont and os.path.exists(env_soundfont):
+            print(f"Using pre-configured SDL_SOUNDFONTS: {env_soundfont}")
+            self.soundfont_path = env_soundfont
+        else:
+            soundfont_paths = []
+            if self.playlist_dir and os.path.exists(self.playlist_dir):
+                try:
+                    for filename in sorted(os.listdir(self.playlist_dir)):
+                        if filename.lower().endswith((".sf2", ".sf3")):
+                            soundfont_paths.append(os.path.join(self.playlist_dir, filename))
+                except Exception as e:
+                    print(f"Error scanning playlist_dir for soundfonts: {e}")
+
+            soundfont_paths.extend([
+                "/usr/share/sounds/sf2/FluidR3_GM.sf2",
+                "/usr/share/sounds/sf2/default-GM.sf2",
+                "/usr/share/sounds/sf2/TimGM6mb.sf2",
+                "/usr/share/sounds/sf3/FluidR3_GM.sf3",
+                "/usr/share/sounds/sf3/default.sf3",
+                "/usr/share/midi/soundfont/FluidR3_GM.sf2",
+                "/usr/share/midi/soundfont/default.sf2",
+            ])
+            for path in soundfont_paths:
+                if os.path.exists(path):
+                    os.environ["SDL_SOUNDFONTS"] = path
+                    self.soundfont_path = path
+                    print(f"Set SDL_SOUNDFONTS environment variable to {path}")
+                    break
+
+    def update_soundfont(self, soundfont_name: str | None):
+        """Updates the active soundfont to the one specified in the configuration."""
+        if not soundfont_name:
+            self._init_soundfont()
+            return
+
+        # Check if the soundfont exists in playlist_dir
+        path_in_playlist = os.path.join(self.playlist_dir, soundfont_name)
+        if os.path.exists(path_in_playlist):
+            self.soundfont_path = path_in_playlist
+            os.environ["SDL_SOUNDFONTS"] = path_in_playlist
+            print(f"[SafeMusicPlayer] Set active SoundFont to {path_in_playlist}")
+            return
+
+        # Check if the soundfont is a system path
+        if os.path.exists(soundfont_name):
+            self.soundfont_path = soundfont_name
+            os.environ["SDL_SOUNDFONTS"] = soundfont_name
+            print(f"[SafeMusicPlayer] Set active SoundFont to {soundfont_name}")
+            return
+
+        # Otherwise, fall back to default search
+        print(f"[SafeMusicPlayer] SoundFont not found: {soundfont_name}. Falling back to default search.")
+        self._init_soundfont()
 
     def _prepare_abc_midi(self, track_path, start_pos):
         try:

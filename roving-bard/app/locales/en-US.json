@@ -188,5 +188,11 @@
     "failed_cycle_ocr": "Failed to cycle OCR: ",
     "error_cycle_ocr": "Error cycling OCR.",
     "segment_exists_prefix": "Segment \"",
-    "segment_exists_suffix": "\" already exists"
+    "segment_exists_suffix": "\" already exists",
+    "soundfont_label": "SoundFont",
+    "soundfont_musescore": "MuseScore General (HQ)",
+    "soundfont_fluid": "FluidR3 (Legacy)",
+    "soundfont_changed": "SoundFont updated successfully!",
+    "soundfont_change_failed": "Failed to update SoundFont: ",
+    "soundfont_change_error": "Error updating SoundFont."
 }

@@ -188,5 +188,11 @@
     "failed_cycle_ocr": "Не удалось сменить режим OCR: ",
     "error_cycle_ocr": "Ошибка при смене режима OCR.",
     "segment_exists_prefix": "Сегмент \"",
-    "segment_exists_suffix": "\" уже существует"
+    "segment_exists_suffix": "\" уже существует",
+    "soundfont_label": "Саундфон",
+    "soundfont_musescore": "MuseScore General (HQ)",
+    "soundfont_fluid": "FluidR3 (Legacy)",
+    "soundfont_changed": "Саундфон успешно обновлен!",
+    "soundfont_change_failed": "Не удалось обновить саундфон: ",
+    "soundfont_change_error": "Ошибка при обновлении саундфона."
 }
