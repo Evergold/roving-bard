@@ -181,5 +181,7 @@
     "scan_failed": "Error al escanear: ",
     "scan_error": "Error de escaneo.",
     "refresh_capture_failed": "Error al actualizar la captura: ",
-    "refresh_capture_error": "Error al actualizar la captura."
+    "refresh_capture_error": "Error al actualizar la captura.",
+    "failed_update_bounds": "Error al actualizar los límites: ",
+    "error_update_bounds": "Error al actualizar los límites manuales."
 }

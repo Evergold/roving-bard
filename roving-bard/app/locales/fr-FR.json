@@ -181,5 +181,7 @@
     "scan_failed": "Échec du scan : ",
     "scan_error": "Erreur de scan.",
     "refresh_capture_failed": "Échec de l'actualisation de la capture : ",
-    "refresh_capture_error": "Erreur lors de l'actualisation de la capture."
+    "refresh_capture_error": "Erreur lors de l'actualisation de la capture.",
+    "failed_update_bounds": "Échec de la mise à jour des limites : ",
+    "error_update_bounds": "Erreur lors de la mise à jour des limites manuelles."
 }

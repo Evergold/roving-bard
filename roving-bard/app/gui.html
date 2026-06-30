@@ -3929,11 +3929,11 @@
                         timestamp: res.timestamp
                     });
                 } else {
-                    showToast("Failed to update bounds: " + res.message, "error");
+                    showToast(t("failed_update_bounds", "Failed to update bounds: ") + res.message, "error");
                 }
             } catch (err) {
                 console.error("Error updating manual bounds:", err);
-                showToast("Error updating manual bounds.", "error");
+                showToast(t("error_update_bounds", "Error updating manual bounds."), "error");
             }
         }
 

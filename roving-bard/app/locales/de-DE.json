@@ -181,5 +181,7 @@
     "scan_failed": "Scan fehlgeschlagen: ",
     "scan_error": "Scan-Fehler.",
     "refresh_capture_failed": "Aktualisierung der Aufnahme fehlgeschlagen: ",
-    "refresh_capture_error": "Fehler beim Aktualisieren der Aufnahme."
+    "refresh_capture_error": "Fehler beim Aktualisieren der Aufnahme.",
+    "failed_update_bounds": "Fehler beim Aktualisieren der Grenzen: ",
+    "error_update_bounds": "Fehler beim Aktualisieren der manuellen Grenzen."
 }

@@ -181,5 +181,7 @@
     "scan_failed": "Scan failed: ",
     "scan_error": "Scan error.",
     "refresh_capture_failed": "Failed to refresh capture: ",
-    "refresh_capture_error": "Error refreshing capture."
+    "refresh_capture_error": "Error refreshing capture.",
+    "failed_update_bounds": "Failed to update bounds: ",
+    "error_update_bounds": "Error updating manual bounds."
 }

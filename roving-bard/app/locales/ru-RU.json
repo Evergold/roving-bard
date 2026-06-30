@@ -181,5 +181,7 @@
     "scan_failed": "Сбой сканирования: ",
     "scan_error": "Ошибка сканирования.",
     "refresh_capture_failed": "Не удалось обновить снимок: ",
-    "refresh_capture_error": "Ошибка при обновлении снимка."
+    "refresh_capture_error": "Ошибка при обновлении снимка.",
+    "failed_update_bounds": "Не удалось обновить границы: ",
+    "error_update_bounds": "Ошибка при обновлении ручных границ."
 }
