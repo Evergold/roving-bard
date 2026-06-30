@@ -1258,8 +1258,33 @@
             font-family: 'Space Mono', monospace;
             color: var(--neon-blue);
             font-weight: bold;
-            transition: all 0.3s ease;
+            z-index: 5;
         }
+
+        /* Resize handles for manual crop box */
+        .resize-handle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-blue);
+            border: 1px solid #1c202a;
+            border-radius: 50%;
+            display: none;
+            z-index: 10;
+        }
+
+        /* Only show handles and move cursor when manual entry is enabled */
+        .visual-crop-box.resizable {
+            cursor: move;
+        }
+        .visual-crop-box.resizable .resize-handle {
+            display: block;
+        }
+
+        .resize-handle.tl { top: -4px; left: -4px; cursor: nwse-resize; }
+        .resize-handle.tr { top: -4px; right: -4px; cursor: nesw-resize; }
+        .resize-handle.bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
+        .resize-handle.br { bottom: -4px; right: -4px; cursor: nwse-resize; }
 
         /* Buttons styling */
         .btn {
@@ -3359,7 +3384,11 @@
                         <div class="bounds-visualizer">
                             <div class="bounds-visualizer-grid"></div>
                             <div id="visual-crop-box" class="visual-crop-box" data-loc="minimap_crop_box">
-                                MINIMAP CROP BOX
+                                <span class="crop-box-label" style="pointer-events: none;">MINIMAP CROP BOX</span>
+                                <div class="resize-handle tl"></div>
+                                <div class="resize-handle tr"></div>
+                                <div class="resize-handle bl"></div>
+                                <div class="resize-handle br"></div>
                             </div>
                         </div>
                         
@@ -3724,11 +3753,8 @@
                 
                 updateVisualizerBounds();
                 
-                // Disable controls if detection was successful
-                const inputs = ['bounds-x', 'bounds-y', 'bounds-w', 'bounds-h'];
-                inputs.forEach(id => {
-                    document.getElementById(id).disabled = status.minimap_detected || false;
-                });
+                // Update manual entry mode based on whether minimap was detected
+                setManualEntryMode(!status.minimap_detected);
 
                 // Update now playing UI
                 updatePlayerUI(status);
@@ -3790,6 +3816,141 @@
             if (configData) {
                 configData.minimap_bounds = { x, y, width: w, height: h };
             }
+        }
+
+        function setManualEntryMode(manualEnabled) {
+            const inputs = ['bounds-x', 'bounds-y', 'bounds-w', 'bounds-h'];
+            inputs.forEach(id => {
+                document.getElementById(id).disabled = !manualEnabled;
+            });
+            
+            const box = document.getElementById('visual-crop-box');
+            if (box) {
+                if (manualEnabled) {
+                    box.classList.add('resizable');
+                } else {
+                    box.classList.remove('resizable');
+                }
+            }
+        }
+
+        let isDragging = false;
+        let isResizing = false;
+        let resizeDirection = '';
+        let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+        function initCropBoxInteractions() {
+            const box = document.getElementById('visual-crop-box');
+            const visualizer = document.querySelector('.bounds-visualizer');
+            if (!box || !visualizer) return;
+            
+            box.addEventListener('mousedown', (e) => {
+                if (document.getElementById('bounds-x').disabled) return;
+                if (e.target.classList.contains('resize-handle')) return;
+                
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                const rect = box.getBoundingClientRect();
+                const parentRect = visualizer.getBoundingClientRect();
+                
+                startLeft = rect.left - parentRect.left;
+                startTop = rect.top - parentRect.top;
+                startWidth = rect.width;
+                startHeight = rect.height;
+                
+                e.preventDefault();
+            });
+            
+            box.querySelectorAll('.resize-handle').forEach(handle => {
+                handle.addEventListener('mousedown', (e) => {
+                    if (document.getElementById('bounds-x').disabled) return;
+                    
+                    isResizing = true;
+                    resizeDirection = handle.className.split(' ')[1];
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    
+                    const rect = box.getBoundingClientRect();
+                    const parentRect = visualizer.getBoundingClientRect();
+                    
+                    startLeft = rect.left - parentRect.left;
+                    startTop = rect.top - parentRect.top;
+                    startWidth = rect.width;
+                    startHeight = rect.height;
+                    
+                    e.stopPropagation();
+                    e.preventDefault();
+                });
+            });
+            
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging && !isResizing) return;
+                
+                const parentRect = visualizer.getBoundingClientRect();
+                const pW = parentRect.width;
+                const pH = parentRect.height;
+                if (pW <= 0 || pH <= 0) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                let newLeft = startLeft;
+                let newTop = startTop;
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                
+                if (isDragging) {
+                    newLeft = Math.max(0, Math.min(pW - startWidth, startLeft + dx));
+                    newTop = Math.max(0, Math.min(pH - startHeight, startTop + dy));
+                } else if (isResizing) {
+                    if (resizeDirection === 'br') {
+                        newWidth = Math.max(20, Math.min(pW - startLeft, startWidth + dx));
+                        newHeight = Math.max(20, Math.min(pH - startTop, startHeight + dy));
+                    } else if (resizeDirection === 'bl') {
+                        const maxDx = startWidth - 20;
+                        const actualDx = Math.max(-startLeft, Math.min(maxDx, dx));
+                        newLeft = startLeft + actualDx;
+                        newWidth = startWidth - actualDx;
+                        newHeight = Math.max(20, Math.min(pH - startTop, startHeight + dy));
+                    } else if (resizeDirection === 'tr') {
+                        const maxDy = startHeight - 20;
+                        const actualDy = Math.max(-startTop, Math.min(maxDy, dy));
+                        newTop = startTop + actualDy;
+                        newHeight = startHeight - actualDy;
+                        newWidth = Math.max(20, Math.min(pW - startLeft, startWidth + dx));
+                    } else if (resizeDirection === 'tl') {
+                        const maxDx = startWidth - 20;
+                        const actualDx = Math.max(-startLeft, Math.min(maxDx, dx));
+                        newLeft = startLeft + actualDx;
+                        newWidth = startWidth - actualDx;
+                        
+                        const maxDy = startHeight - 20;
+                        const actualDy = Math.max(-startTop, Math.min(maxDy, dy));
+                        newTop = startTop + actualDy;
+                        newHeight = startHeight - actualDy;
+                    }
+                }
+                
+                // Convert to normalized coordinates (0 to 1) with 3 decimal precision
+                const normX = parseFloat((newLeft / pW).toFixed(3));
+                const normY = parseFloat((newTop / pH).toFixed(3));
+                const normW = parseFloat((newWidth / pW).toFixed(3));
+                const normH = parseFloat((newHeight / pH).toFixed(3));
+                
+                document.getElementById('bounds-x').value = normX;
+                document.getElementById('bounds-y').value = normY;
+                document.getElementById('bounds-w').value = normW;
+                document.getElementById('bounds-h').value = normH;
+                
+                updateVisualizerBounds();
+            });
+            
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                isResizing = false;
+            });
         }
 
 
@@ -4152,8 +4313,19 @@
                 });
                 const res = await response.json();
                 loadDashboard();
+                
+                if (res.status === 'success') {
+                    if (!res.parsed_location || !res.parsed_coordinates) {
+                        showToast("Could not parse location or coordinates from the crop box. Please adjust bounds.", "warn");
+                    } else {
+                        showToast(`Successfully matched: ${res.parsed_location} (${res.parsed_coordinates})`, "success");
+                    }
+                } else {
+                    showToast("Scan failed: " + res.message, "error");
+                }
             } catch (err) {
                 console.error(t("err_scan_screen"), err);
+                showToast("Scan error.", "error");
             }
         }
 
@@ -4173,11 +4345,8 @@
                         document.getElementById('bounds-h').value = res.bounds.height;
                         updateVisualizerBounds();
                         
-                        // Disable controls if detection was successful
-                        const inputs = ['bounds-x', 'bounds-y', 'bounds-w', 'bounds-h'];
-                        inputs.forEach(id => {
-                            document.getElementById(id).disabled = res.detected;
-                        });
+                        // Update manual entry mode based on whether minimap was detected
+                        setManualEntryMode(!res.detected);
                         
                         if (res.detected) {
                             showToast("Minimap detected successfully!", "success");
@@ -6977,6 +7146,7 @@
         // ============================================================
         window.onload = async () => {
             initLibrarySort();
+            initCropBoxInteractions();
             // Escape key: close any active popover panel
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
