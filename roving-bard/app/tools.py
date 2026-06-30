@@ -162,6 +162,7 @@ mapper = TrackMapper(mappings=config.get("mappings", []))
 latest_screenshot_bytes = None
 latest_full_screenshot_bytes = None
 minimap_detected = False
+current_ocr_pass = 0
 latest_parse_result = {
     "parsed_location": None,
     "parsed_coordinates": None,
@@ -235,43 +236,38 @@ def check_screen_and_update_music() -> dict:
     Returns:
         dict containing the extraction result (location, coordinates) and action taken.
     """
-    global latest_screenshot_bytes, latest_parse_result
+    global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_parse_result, current_ocr_pass
     full_img = grabber.capture_full()
     if not full_img:
         return {"status": "error", "message": "Failed to capture screenshot."}
 
-    # Cache image as bytes for GUI (full capture for now, eventually cropped)
-    try:
-        buf = BytesIO()
-        full_img.save(buf, format="PNG")
-        latest_screenshot_bytes = buf.getvalue()
-    except Exception as e:
-        print(f"Error caching screenshot: {e}")
-
     # Crop to bounds for OCR processing
     img = grabber.crop_image(full_img)
 
-    # Step 1: Attempt local OCR
-    print("[Pipeline] Attempting local Tesseract OCR...")
-    location, coordinates, ns, ew = ocr_parser.run_ocr(img)
-    method = "Local OCR"
+    # Cache full and cropped images as bytes for GUI
+    try:
+        # Save full screenshot
+        buf_full = BytesIO()
+        full_img.save(buf_full, format="PNG")
+        latest_full_screenshot_bytes = buf_full.getvalue()
+        
+        # Save cropped screenshot
+        buf_crop = BytesIO()
+        img.save(buf_crop, format="PNG")
+        latest_screenshot_bytes = buf_crop.getvalue()
+    except Exception as e:
+        print(f"Error caching screenshot: {e}")
 
-    # Step 2: Fallback to Gemini Multimodal if OCR failed to get location or coordinates
+    # Step 1: Attempt local OCR
+    print(f"[Pipeline] Attempting local Tesseract OCR (Pass {current_ocr_pass})...")
+    location, coordinates, ns, ew = ocr_parser.run_ocr(img, current_ocr_pass)
+    method = f"Local OCR (Pass {current_ocr_pass})"
+
+    # Step 2: Fallback to Gemini Multimodal if OCR failed (DISABLED BY USER)
     if not coordinates or not location:
         print(
-            "[Pipeline] Local OCR was inconclusive. Falling back to Gemini Multimodal Vision..."
+            "[Pipeline] Local OCR was inconclusive. Gemini Vision fallback is currently disabled."
         )
-        model_name = config.get("model_name", "gemini/gemini-1.5-flash")
-        gemini_loc, gemini_coord, gemini_ns, gemini_ew = call_gemini_vision(
-            img, model_name
-        )
-
-        if gemini_coord or gemini_loc:
-            location = gemini_loc or location
-            coordinates = gemini_coord or coordinates
-            ns = gemini_ns if gemini_ns is not None else ns
-            ew = gemini_ew if gemini_ew is not None else ew
-            method = f"Gemini Vision fallback ({model_name})"
 
     print(
         f"[Pipeline] Result: Location='{location}', Coordinates='{coordinates}' (via {method})"

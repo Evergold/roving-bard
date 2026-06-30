@@ -25,6 +25,8 @@ import pytesseract
 from PIL import Image
 from tinytag import TinyTag
 
+CAPTURE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "capture")
+
 
 
 
@@ -1725,32 +1727,39 @@ class ScreenGrabber:
 # Local OCR and parsing
 class LocalOCRParser:
     @staticmethod
-    def preprocess_image(pil_img):
-        """Applies HSV white masking, dilation, and 3x resizing for optimal game text OCR."""
+    def preprocess_image(pil_img, ocr_pass=0):
+        """Applies different preprocessing techniques based on the selected OCR pass."""
         cv_img = np.array(pil_img)
         cv_img = cv_img[:, :, ::-1].copy()  # Convert RGB to BGR
 
-        # 1. Convert to HSV and isolate white text
-        hsv = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
-        lower_white = np.array([0, 0, 180])
-        upper_white = np.array([180, 40, 255])
-        mask = cv2.inRange(hsv, lower_white, upper_white)
-
-        # If the mask has very few white pixels, it might not be a standard white-on-transparent crop.
-        # Fallback to standard grayscale + Otsu thresholding in that case.
-        if cv2.countNonZero(mask) < 50:
+        if ocr_pass == 0:
+            # Pass 0: HSV white mask (Value 180-255, Saturation 0-45) + 2x2 kernel dilation + 3x resize
+            hsv = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
+            lower_white = np.array([0, 0, 180])
+            upper_white = np.array([180, 45, 255])
+            mask = cv2.inRange(hsv, lower_white, upper_white)
+            
+            kernel = np.ones((2, 2), np.uint8)
+            dilated = cv2.dilate(mask, kernel, iterations=1)
+            upscaled = cv2.resize(dilated, (0, 0), fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
+            return upscaled
+            
+        elif ocr_pass == 1:
+            # Pass 1: HSV white mask with lower Value threshold (Value 140-255) + no dilation + 3x resize
+            hsv = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
+            lower_white = np.array([0, 0, 140])
+            upper_white = np.array([180, 55, 255])
+            mask = cv2.inRange(hsv, lower_white, upper_white)
+            
+            upscaled = cv2.resize(mask, (0, 0), fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
+            return upscaled
+            
+        else:
+            # Pass 2: Grayscale + 2x resize + Otsu thresholding
             gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
             resized = cv2.resize(gray, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
             _, thresh = cv2.threshold(resized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             return thresh
-
-        # 2. Dilate slightly to thicken the thin letters
-        kernel = np.ones((2, 2), np.uint8)
-        dilated = cv2.dilate(mask, kernel, iterations=1)
-
-        # 3. Upscale 3x for Tesseract (Tesseract loves large text, >30px height)
-        upscaled = cv2.resize(dilated, (0, 0), fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
-        return upscaled
 
     @staticmethod
     def parse_text(text):
@@ -1766,10 +1775,8 @@ class LocalOCRParser:
             # We replace trailing digits with cardinal directions:
             # - First number (latitude): trailing 8 or 2 -> S, trailing 4 -> N
             # - Second number (longitude): trailing 8, 4, or 7 -> W
-            # Let's do a simple regex substitution for these common patterns:
             cleaned_line = line
             # Match coordinate patterns with either letters or digits at the end:
-            # group 1: latitude float, group 2: latitude direction/digit, group 3: longitude float, group 4: longitude direction/digit
             coord_sub_pattern = re.compile(
                 r"(\d+(?:\.\d+)?)\s*([NS824])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847])", re.IGNORECASE
             )
@@ -1794,7 +1801,6 @@ class LocalOCRParser:
             lines.append(cleaned_line)
 
         # Coordinate pattern: e.g. 19.3N, 70.9W or 14.9S, 103.1E
-        # Lat/NS: N is positive, S is negative. Long/EW: E is positive, W is negative.
         coord_pattern = re.compile(
             r"(\d+(?:\.\d+)?)\s*([NS])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW])", re.IGNORECASE
         )
@@ -1829,9 +1835,15 @@ class LocalOCRParser:
 
         return location, coordinates, ns_val, ew_val
 
-    def run_ocr(self, pil_img):
+    def run_ocr(self, pil_img, ocr_pass=0):
         try:
-            processed = self.preprocess_image(pil_img)
+            # 1. Crop only the bottom 30% of the bounding box to isolate the text and eliminate map noise
+            width, height = pil_img.size
+            text_y_start = int(height * 0.70)
+            text_img = pil_img.crop((0, text_y_start, width, height))
+            
+            # 2. Preprocess the text image based on the selected OCR pass
+            processed = self.preprocess_image(text_img, ocr_pass)
             
             # Ensure our offline wordlist exists
             app_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1856,7 +1868,25 @@ class LocalOCRParser:
             )
             
             raw_text = pytesseract.image_to_string(processed, config=config)
-            return self.parse_text(raw_text)
+            location, coordinates, ns, ew = self.parse_text(raw_text)
+            
+            # 3. Apply programmatic fuzzy matching against the local dictionary
+            if location:
+                words = []
+                if os.path.exists(wordlist_path):
+                    try:
+                        with open(wordlist_path, 'r', encoding='utf-8') as f:
+                            words = [line.strip() for line in f if line.strip()]
+                    except Exception as e:
+                        print(f"Error reading wordlist: {e}")
+                if words:
+                    import difflib
+                    matches = difflib.get_close_matches(location, words, n=1, cutoff=0.5)
+                    if matches:
+                        print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
+                        location = matches[0]
+                        
+            return location, coordinates, ns, ew
         except Exception as e:
             print(f"Local OCR engine execution error: {e}")
             return None, None, None, None

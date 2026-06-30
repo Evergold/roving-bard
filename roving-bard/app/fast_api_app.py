@@ -428,7 +428,6 @@ def initialize_simulation_screen():
     """Loads the first test screen on startup if in simulation mode."""
     import os
     from PIL import Image
-    from io import BytesIO
     
     app_dir = os.path.dirname(os.path.abspath(__file__))
     capture_dir = os.path.join(os.path.dirname(app_dir), "capture")
@@ -458,18 +457,11 @@ def initialize_simulation_screen():
                 tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
                 tools.minimap_detected = False
             
-            # Update bytes
-            buf = BytesIO()
-            full_img.save(buf, format="PNG")
-            tools.latest_full_screenshot_bytes = buf.getvalue()
-            
-            cropped_img = tools.grabber.crop_image(full_img)
-            buf_crop = BytesIO()
-            cropped_img.save(buf_crop, format="PNG")
-            tools.latest_screenshot_bytes = buf_crop.getvalue()
-            
             # Update tools.config in memory
             tools.config["minimap_bounds"] = tools.grabber.bounds
+            
+            # Run the scan pipeline to cache images, run OCR, and update status
+            tools.check_screen_and_update_music()
         except Exception as e:
             print(f"[ScreenGrabber] Failed to initialize simulation screen: {e}")
 
@@ -492,7 +484,6 @@ def api_screenshot_refresh():
     """Reloads the current capture from disk/screen, runs auto-detection, and updates cache."""
     import os
     from PIL import Image
-    from io import BytesIO
     
     app_dir = os.path.dirname(os.path.abspath(__file__))
     capture_dir = os.path.join(os.path.dirname(app_dir), "capture")
@@ -542,16 +533,8 @@ def api_screenshot_refresh():
         # Update tools.config in memory
         tools.config["minimap_bounds"] = tools.grabber.bounds
             
-        # Update latest full screenshot bytes
-        buf = BytesIO()
-        full_img.save(buf, format="PNG")
-        tools.latest_full_screenshot_bytes = buf.getvalue()
-        
-        # Update cropped screenshot bytes
-        cropped_img = tools.grabber.crop_image(full_img)
-        buf_crop = BytesIO()
-        cropped_img.save(buf_crop, format="PNG")
-        tools.latest_screenshot_bytes = buf_crop.getvalue()
+        # Run the scan pipeline to cache images, run OCR, and update status
+        tools.check_screen_and_update_music()
         
         return {
             "status": "success",
@@ -561,6 +544,23 @@ def api_screenshot_refresh():
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/ocr/wrong", dependencies=[Depends(verify_api_key)])
+def api_ocr_wrong():
+    """Tells the backend that the OCR was wrong, cycling to the next preprocessing pass."""
+    # Cycle ocr_pass between 0, 1, 2
+    tools.current_ocr_pass = (tools.current_ocr_pass + 1) % 3
+    print(f"[OCR] User clicked 'Wrong?'. Cycling to OCR Pass {tools.current_ocr_pass}")
+    
+    # Rerun the scan pipeline
+    res = tools.check_screen_and_update_music()
+    return {
+        "status": "success",
+        "ocr_pass": tools.current_ocr_pass,
+        "parsed_location": res.get("parsed_location"),
+        "parsed_coordinates": res.get("parsed_coordinates")
+    }
 
 
 @app.get("/api/audio-files", dependencies=[Depends(verify_api_key)])

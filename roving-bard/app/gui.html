@@ -1286,6 +1286,24 @@
         .resize-handle.bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
         .resize-handle.br { bottom: -4px; right: -4px; cursor: nwse-resize; }
 
+        /* "Wrong?" button styling */
+        .btn-wrong {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-left: 10px;
+            font-family: 'Space Mono', monospace;
+            transition: all 0.2s ease;
+        }
+        .btn-wrong:hover {
+            background: rgba(255, 68, 68, 0.3);
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+        }
+
         /* Buttons styling */
         .btn {
             background: linear-gradient(135deg, var(--accent) 0%, #6200ea 100%);
@@ -3341,7 +3359,7 @@
                 <div class="card-body-wrapper">
                     <div class="capture-grid">
                         <div class="screenshot-container">
-                            <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onerror="showNoScreenshot()">
+                            <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onload="showScreenshot()" onerror="showNoScreenshot()">
                             <div id="no-screenshot-message" class="no-screenshot" style="display: none;" data-loc="no_screen_captures">
                                 No screen captures cached yet.<br><span style="font-size: 0.8rem; opacity: 0.7;">Click Scan Screen to capture.</span>
                             </div>
@@ -4204,15 +4222,27 @@
             
             let methodText = parse.method || "None";
             if (methodText === "Local OCR") methodText = t("method_local_ocr");
+            else if (methodText.startsWith("Local OCR (Pass")) {
+                methodText = methodText.replace("Local OCR", t("method_local_ocr"));
+            }
             else if (methodText === "Gemini Vision Fallback") methodText = t("method_gemini_fallback");
             else if (methodText === "Simulation") methodText = t("method_simulation");
             else if (methodText === "None") methodText = t("none");
-            document.getElementById('parse-route').innerText = methodText;
+            
+            if (parse.parsed_location || parse.parsed_coordinates) {
+                document.getElementById('parse-route').innerHTML = `${methodText} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+            } else {
+                document.getElementById('parse-route').innerText = methodText;
+            }
 
             document.getElementById('matched-track-file').innerText = parse.matched_track || t("none");
             document.getElementById('parse-timestamp').innerText = parse.timestamp || "--:--:--";
             
             // Toggle screenshot view
+            showScreenshot();
+        }
+
+        function showScreenshot() {
             document.getElementById('screenshot-view').style.display = 'block';
             document.getElementById('no-screenshot-message').style.display = 'none';
         }
@@ -4220,6 +4250,24 @@
         function showNoScreenshot() {
             document.getElementById('screenshot-view').style.display = 'none';
             document.getElementById('no-screenshot-message').style.display = 'block';
+        }
+
+        async function reportWrongOcr() {
+            try {
+                const response = await apiFetch('/api/ocr/wrong', {
+                    method: 'POST'
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    showToast(`Retrying OCR with preprocessing Pass ${res.ocr_pass}...`, "info");
+                    await loadDashboard();
+                } else {
+                    showToast("Failed to cycle OCR: " + res.message, "error");
+                }
+            } catch (err) {
+                console.error("Error cycling OCR:", err);
+                showToast("Error cycling OCR.", "error");
+            }
         }
 
         function reloadScreenshot() {
@@ -4344,23 +4392,12 @@
                 });
                 const res = await response.json();
                 if (res.status === 'success') {
-                    reloadScreenshot();
+                    await loadDashboard();
                     
-                    if (res.bounds) {
-                        document.getElementById('bounds-x').value = res.bounds.x;
-                        document.getElementById('bounds-y').value = res.bounds.y;
-                        document.getElementById('bounds-w').value = res.bounds.width;
-                        document.getElementById('bounds-h').value = res.bounds.height;
-                        updateVisualizerBounds();
-                        
-                        // Update manual entry mode based on whether minimap was detected
-                        setManualEntryMode(!res.detected);
-                        
-                        if (res.detected) {
-                            showToast(t("minimap_detect_success", "Minimap detected successfully!"), "success");
-                        } else {
-                            showToast(t("minimap_detect_failed", "Minimap detection failed. Falling back to manual entry."), "warn");
-                        }
+                    if (res.detected) {
+                        showToast(t("minimap_detect_success", "Minimap detected successfully!"), "success");
+                    } else {
+                        showToast(t("minimap_detect_failed", "Minimap detection failed. Falling back to manual entry."), "warn");
                     }
                 } else {
                     showToast(t("refresh_capture_failed", "Failed to refresh capture: ") + res.message, "error");
