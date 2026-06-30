@@ -183,5 +183,10 @@
     "refresh_capture_failed": "Не удалось обновить снимок: ",
     "refresh_capture_error": "Ошибка при обновлении снимка.",
     "failed_update_bounds": "Не удалось обновить границы: ",
-    "error_update_bounds": "Ошибка при обновлении ручных границ."
+    "error_update_bounds": "Ошибка при обновлении ручных границ.",
+    "ocr_retry_pass": "Повторный запуск OCR с шагом предобработки ",
+    "failed_cycle_ocr": "Не удалось сменить режим OCR: ",
+    "error_cycle_ocr": "Ошибка при смене режима OCR.",
+    "segment_exists_prefix": "Сегмент \"",
+    "segment_exists_suffix": "\" уже существует"
 }

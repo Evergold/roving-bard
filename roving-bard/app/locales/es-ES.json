@@ -183,5 +183,10 @@
     "refresh_capture_failed": "Error al actualizar la captura: ",
     "refresh_capture_error": "Error al actualizar la captura.",
     "failed_update_bounds": "Error al actualizar los límites: ",
-    "error_update_bounds": "Error al actualizar los límites manuales."
+    "error_update_bounds": "Error al actualizar los límites manuales.",
+    "ocr_retry_pass": "Reintentando OCR con pase de preprocesamiento ",
+    "failed_cycle_ocr": "Error al alternar el OCR: ",
+    "error_cycle_ocr": "Error al alternar el OCR.",
+    "segment_exists_prefix": "El segmento \"",
+    "segment_exists_suffix": "\" ya existe"
 }

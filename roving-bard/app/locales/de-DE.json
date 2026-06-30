@@ -183,5 +183,10 @@
     "refresh_capture_failed": "Aktualisierung der Aufnahme fehlgeschlagen: ",
     "refresh_capture_error": "Fehler beim Aktualisieren der Aufnahme.",
     "failed_update_bounds": "Fehler beim Aktualisieren der Grenzen: ",
-    "error_update_bounds": "Fehler beim Aktualisieren der manuellen Grenzen."
+    "error_update_bounds": "Fehler beim Aktualisieren der manuellen Grenzen.",
+    "ocr_retry_pass": "OCR-Wiederholung mit Vorverarbeitungsschritt ",
+    "failed_cycle_ocr": "Fehler beim Durchlaufen der OCR: ",
+    "error_cycle_ocr": "Fehler beim Durchlaufen der OCR.",
+    "segment_exists_prefix": "Segment \"",
+    "segment_exists_suffix": "\" existiert bereits"
 }

@@ -4381,14 +4381,14 @@
                 });
                 const res = await response.json();
                 if (res.status === 'success') {
-                    showToast(`Retrying OCR with preprocessing Pass ${res.ocr_pass}...`, "info");
+                    showToast(t("ocr_retry_pass", "Retrying OCR with preprocessing Pass ") + res.ocr_pass + "...", "info");
                     await loadDashboard();
                 } else {
-                    showToast("Failed to cycle OCR: " + res.message, "error");
+                    showToast(t("failed_cycle_ocr", "Failed to cycle OCR: ") + res.message, "error");
                 }
             } catch (err) {
                 console.error("Error cycling OCR:", err);
-                showToast("Error cycling OCR.", "error");
+                showToast(t("error_cycle_ocr", "Error cycling OCR."), "error");
             }
         }
 
@@ -5300,7 +5300,7 @@
                 // Guard against duplicate segment names
                 if (segments.some(s => s.name === segmentName)) {
                     input.style.borderColor = '#f59e0b';
-                    showToast(`Segment "${segmentName}" already exists`, 'warn');
+                    showToast(t("segment_exists_prefix", 'Segment "') + segmentName + t("segment_exists_suffix", '" already exists'), 'warn');
                     return;
                 }
                 closeExportPopover();
@@ -8127,7 +8127,7 @@
                     const newName = input.value.trim();
                     if (newName && newName !== oldName) {
                         if (segments.some(s => s.name === newName)) {
-                            showToast(`Segment "${newName}" already exists`, 'warn');
+                            showToast(t("segment_exists_prefix", 'Segment "') + newName + t("segment_exists_suffix", '" already exists'), 'warn');
                             nameSpan.innerHTML = originalHtml;
                             return;
                         }

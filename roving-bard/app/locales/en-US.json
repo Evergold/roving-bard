@@ -183,5 +183,10 @@
     "refresh_capture_failed": "Failed to refresh capture: ",
     "refresh_capture_error": "Error refreshing capture.",
     "failed_update_bounds": "Failed to update bounds: ",
-    "error_update_bounds": "Error updating manual bounds."
+    "error_update_bounds": "Error updating manual bounds.",
+    "ocr_retry_pass": "Retrying OCR with preprocessing Pass ",
+    "failed_cycle_ocr": "Failed to cycle OCR: ",
+    "error_cycle_ocr": "Error cycling OCR.",
+    "segment_exists_prefix": "Segment \"",
+    "segment_exists_suffix": "\" already exists"
 }
