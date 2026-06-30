@@ -171,5 +171,7 @@
     "clear_cache_label": "Vider le cache audio",
     "clear_cache_success": "Cache audio vidé avec succès !",
     "clear_cache_failed": "Échec du vidage du cache audio : ",
-    "clear_btn_label": "Vider"
+    "clear_btn_label": "Vider",
+    "sort_asc_title": "Trier par ordre alphabétique (A-Z)",
+    "sort_desc_title": "Trier par ordre alphabétique (Z-A)"
 }

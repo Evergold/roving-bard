@@ -171,5 +171,7 @@
     "clear_cache_label": "Audiocache leeren",
     "clear_cache_success": "Audiocache erfolgreich geleert!",
     "clear_cache_failed": "Audiocache konnte nicht geleert werden: ",
-    "clear_btn_label": "Leeren"
+    "clear_btn_label": "Leeren",
+    "sort_asc_title": "Alphabetisch sortieren (A-Z)",
+    "sort_desc_title": "Alphabetisch sortieren (Z-A)"
 }

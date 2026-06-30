@@ -171,5 +171,7 @@
     "clear_cache_label": "Очистить аудио-кэш",
     "clear_cache_success": "Аудио-кэш успешно очищен!",
     "clear_cache_failed": "Не удалось очистить аудио-кэш: ",
-    "clear_btn_label": "Очистить"
+    "clear_btn_label": "Очистить",
+    "sort_asc_title": "Сортировать по алфавиту (А-Я)",
+    "sort_desc_title": "Сортировать по алфавиту (Я-А)"
 }

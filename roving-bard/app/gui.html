@@ -2371,6 +2371,30 @@
             text-shadow: none !important;
         }
 
+        .sort-btn {
+            background: none;
+            border: none;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sort-btn:hover {
+            color: var(--text-main) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+        body.light-theme .sort-btn:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+        }
+        .sort-btn.active {
+            color: var(--neon-blue) !important;
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        }
+
         .theme-btn, .font-size-btn {
             background: none;
             border: none;
@@ -3366,7 +3390,28 @@
                         </svg>
                         <span data-loc="audio_library">AUDIO LIBRARY</span>
                     </div>
-                    <div>
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                        <!-- Sort Toggle Group -->
+                        <div class="sort-toggle-group" style="display: flex; align-items: center; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 20px; padding: 2px; height: 32px; box-sizing: border-box;" onclick="event.stopPropagation()">
+                            <button id="sort-asc-btn" class="sort-btn" onclick="setLibrarySort('asc')" data-loc-title="sort_asc_title" title="Sort Alphabetically (A-Z)" style="border-radius: 14px; padding: 0 8px; height: 100%;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                                    <line x1="4" y1="12" x2="14" y2="12"></line>
+                                    <line x1="4" y1="18" x2="8" y2="18"></line>
+                                    <polyline points="16 16 20 12 24 16"></polyline>
+                                    <line x1="20" y1="12" x2="20" y2="22"></line>
+                                </svg>
+                            </button>
+                            <button id="sort-desc-btn" class="sort-btn" onclick="setLibrarySort('desc')" data-loc-title="sort_desc_title" title="Sort Alphabetically (Z-A)" style="border-radius: 14px; padding: 0 8px; height: 100%;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                                    <line x1="4" y1="12" x2="14" y2="12"></line>
+                                    <line x1="4" y1="18" x2="8" y2="18"></line>
+                                    <polyline points="16 18 20 22 24 18"></polyline>
+                                    <line x1="20" y1="12" x2="20" y2="22"></line>
+                                </svg>
+                            </button>
+                        </div>
                         <input type="file" id="audio-file-input" accept=".wav,.mp3,.ogg,.flac,.mp4,.abc,.mid,.midi" style="display: none;" onchange="uploadAudioFile(this)">
                         <button class="btn" style="padding: 0.55rem 1.4rem; font-size: 0.95rem;" onclick="document.getElementById('audio-file-input').click()" data-loc="add_file">+ Add File</button>
                     </div>
@@ -4147,6 +4192,13 @@
                     return matchesSearch && matchesTag && matchesExtension;
                 });
 
+                // Sort matched files alphabetically
+                if (librarySortOrder === 'asc') {
+                    matchedFiles.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                } else {
+                    matchedFiles.sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+                }
+
                 if (audioLibraryFiles.length === 0) {
                     const emptyFiles = document.createElement('div');
                     emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
@@ -4244,6 +4296,13 @@
                     const matchesTag = !tagVal || segTags.includes(tagVal);
                     return matchesSearch && matchesTag;
                 });
+
+                // Sort matched segments alphabetically
+                if (librarySortOrder === 'asc') {
+                    matchedSegments.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+                } else {
+                    matchedSegments.sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' }));
+                }
 
                 if (segments.length === 0) {
                     const emptySegments = document.createElement('div');
@@ -6848,6 +6907,7 @@
         // Initial load
         // ============================================================
         window.onload = async () => {
+            initLibrarySort();
             // Escape key: close any active popover panel
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {

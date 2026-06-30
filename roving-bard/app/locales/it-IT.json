@@ -171,5 +171,7 @@
     "clear_cache_label": "Cancella cache audio",
     "clear_cache_success": "Cache audio cancellata con successo!",
     "clear_cache_failed": "Impossibile cancellare la cache audio: ",
-    "clear_btn_label": "Cancella"
+    "clear_btn_label": "Cancella",
+    "sort_asc_title": "Ordina alfabeticamente (A-Z)",
+    "sort_desc_title": "Ordina alfabeticamente (Z-A)"
 }

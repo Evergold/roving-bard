@@ -171,5 +171,7 @@
     "clear_cache_label": "Clear Audio Cache",
     "clear_cache_success": "Audio cache cleared successfully!",
     "clear_cache_failed": "Failed to clear audio cache: ",
-    "clear_btn_label": "Clear"
+    "clear_btn_label": "Clear",
+    "sort_asc_title": "Sort Alphabetically (A-Z)",
+    "sort_desc_title": "Sort Alphabetically (Z-A)"
 }
