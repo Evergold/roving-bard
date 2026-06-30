@@ -207,7 +207,6 @@
 
         /* Instrument Popover Panel */
         #instrument-panel {
-            display: none;
             position: fixed;   /* escapes card overflow:hidden */
             z-index: 2000;
             background: rgba(18, 24, 36, 0.96);
@@ -218,13 +217,18 @@
             box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
             min-width: 320px;
             max-width: 340px;
-            animation: inst-pop-in 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: translateY(-8px) scale(0.97);
+            transform-origin: top right;
         }
-        #instrument-panel.instrument-panel-open { display: block; }
-
-        @keyframes inst-pop-in {
-            from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+        #instrument-panel.instrument-panel-open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
         }
 
         .instrument-header {
@@ -615,7 +619,6 @@
         }
 
         #eq-panel {
-            display: none;
             position: fixed;   /* escapes card overflow:hidden */
             /* top/right set dynamically by JS on open */
             z-index: 2000;
@@ -626,13 +629,18 @@
             padding: 1.25rem 1.5rem 1.5rem;
             box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
             min-width: 500px;
-            animation: eq-pop-in 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: translateY(-8px) scale(0.97);
+            transform-origin: top right;
         }
-        #eq-panel.eq-panel-open { display: block; }
-
-        @keyframes eq-pop-in {
-            from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+        #eq-panel.eq-panel-open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
         }
 
         .eq-header {
@@ -3756,16 +3764,10 @@
                     if (eqBtn) eqBtn.classList.remove('eq-active');
                 }
 
-                panel.style.display = 'block';
                 panel.classList.add('instrument-panel-open');
                 if (btn) btn.classList.add('inst-active');
                 positionInstrumentPanel();
-                // Replay open animation
-                panel.style.animation = 'none';
-                panel.offsetHeight;
-                panel.style.animation = '';
             } else {
-                panel.style.display = 'none';
                 panel.classList.remove('instrument-panel-open');
                 if (btn) btn.classList.remove('inst-active');
             }
@@ -6414,10 +6416,6 @@
                 panel.classList.add('eq-panel-open');
                 btn.classList.add('eq-active');
                 positionEQPanel();
-                // Replay open animation
-                panel.style.animation = 'none';
-                panel.offsetHeight;
-                panel.style.animation = '';
             } else {
                 panel.classList.remove('eq-panel-open');
                 btn.classList.remove('eq-active');
@@ -6861,6 +6859,17 @@
                         eqPanelOpen = false;
                         if (panel) panel.classList.remove('eq-panel-open');
                         if (btn) btn.classList.remove('eq-active');
+                        dismissed = true;
+                    }
+                    // Instrument panel
+                    if (instPanelOpen) {
+                        const panel = document.getElementById('instrument-panel');
+                        const btn = document.getElementById('instrument-btn');
+                        instPanelOpen = false;
+                        if (panel) {
+                            panel.classList.remove('instrument-panel-open');
+                        }
+                        if (btn) btn.classList.remove('inst-active');
                         dismissed = true;
                     }
                     // Menu popover
