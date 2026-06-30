@@ -424,6 +424,57 @@ def api_config(req: ConfigUpdateRequest):
         return {"status": "error", "message": str(e)}
 
 
+class BoundsUpdateRequest(BaseModel):
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+@app.post("/api/config/bounds", dependencies=[Depends(verify_api_key)])
+def api_update_bounds(req: BoundsUpdateRequest):
+    """Updates manual bounds in mapping.yaml, enforces size safeguards, and triggers a rescan."""
+    x = max(0.0, min(1.0, req.x))
+    y = max(0.0, min(1.0, req.y))
+    w = max(0.05, min(0.30, req.width))
+    h = max(0.05, min(0.45, req.height))
+    
+    try:
+        import os
+        import yaml
+        
+        # Load current config
+        if os.path.exists(tools.CONFIG_PATH):
+            with open(tools.CONFIG_PATH) as f:
+                config = yaml.safe_load(f) or {}
+        else:
+            config = {}
+            
+        config["minimap_bounds"] = {"x": x, "y": y, "width": w, "height": h}
+        
+        with open(tools.CONFIG_PATH, "w") as f:
+            yaml.safe_dump(config, f)
+            
+        # Hot-reload in memory
+        tools.config = config
+        tools.grabber.bounds = config["minimap_bounds"]
+        
+        # Crop the screenshot, rerun OCR, and update music!
+        res = tools.check_screen_and_update_music()
+        
+        return {
+            "status": "success",
+            "bounds": tools.grabber.bounds,
+            "parsed_location": res.get("parsed_location"),
+            "parsed_coordinates": res.get("parsed_coordinates"),
+            "method": res.get("method"),
+            "matched_track": res.get("matched_track"),
+            "timestamp": res.get("timestamp")
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 def initialize_simulation_screen():
     """Loads the first test screen on startup if in simulation mode."""
     import os

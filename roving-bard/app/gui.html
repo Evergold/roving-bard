@@ -1262,29 +1262,46 @@
         }
 
         /* Resize handles for manual crop box */
+        /* Resize handles for manual crop box */
         .resize-handle {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background-color: var(--neon-blue);
-            border: 1px solid #1c202a;
-            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
             display: none;
             z-index: 10;
         }
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--neon-blue);
+            border: 1.5px solid #fff;
+            border-radius: 50%;
+            top: 5px;
+            left: 5px;
+            box-shadow: 0 0 6px var(--neon-blue);
+            transition: all 0.2s ease;
+        }
+        .resize-handle:hover::after {
+            transform: scale(1.25);
+            background-color: #fff;
+            box-shadow: 0 0 12px var(--neon-blue);
+        }
 
         /* Only show handles and move cursor when manual entry is enabled */
-        .visual-crop-box.resizable {
-            cursor: move;
+        .resizable {
+            cursor: move !important;
         }
-        .visual-crop-box.resizable .resize-handle {
-            display: block;
+        .resizable .resize-handle {
+            display: block !important;
         }
 
-        .resize-handle.tl { top: -4px; left: -4px; cursor: nwse-resize; }
-        .resize-handle.tr { top: -4px; right: -4px; cursor: nesw-resize; }
-        .resize-handle.bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
-        .resize-handle.br { bottom: -4px; right: -4px; cursor: nwse-resize; }
+        .resize-handle.tl { top: -10px; left: -10px; cursor: nwse-resize; }
+        .resize-handle.tr { top: -10px; right: -10px; cursor: nesw-resize; }
+        .resize-handle.bl { bottom: -10px; left: -10px; cursor: nesw-resize; }
+        .resize-handle.br { bottom: -10px; right: -10px; cursor: nwse-resize; }
 
         /* "Wrong?" button styling */
         .btn-wrong {
@@ -3401,34 +3418,33 @@
                     <div class="form-section">
                         <div class="bounds-visualizer">
                             <div class="bounds-visualizer-grid"></div>
-                            <div id="visual-crop-box" class="visual-crop-box" data-loc="minimap_crop_box">
-                                <span class="crop-box-label" style="pointer-events: none;">MINIMAP CROP BOX</span>
-                                <div class="resize-handle tl"></div>
-                                <div class="resize-handle tr"></div>
-                                <div class="resize-handle bl"></div>
-                                <div class="resize-handle br"></div>
+                            <div id="visual-crop-box" class="visual-crop-box">
+                                <span class="crop-box-label" style="pointer-events: none;" data-loc="minimap_crop_box">MINIMAP CROP BOX</span>
+                                <div class="resize-handle tl" data-dir="tl"></div>
+                                <div class="resize-handle tr" data-dir="tr"></div>
+                                <div class="resize-handle bl" data-dir="bl"></div>
+                                <div class="resize-handle br" data-dir="br"></div>
                             </div>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="bounds-x" data-loc="x_position_label">X Position (0-1)</label>
-                                <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                                <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()" onchange="triggerManualBoundsRescan()">
                             </div>
                             <div class="form-group">
                                 <label for="bounds-y" data-loc="y_position_label">Y Position (0-1)</label>
-                                <input type="number" id="bounds-y" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                                <input type="number" id="bounds-y" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()" onchange="triggerManualBoundsRescan()">
                             </div>
                             <div class="form-group">
                                 <label for="bounds-w" data-loc="width_label">Width (0-1)</label>
-                                <input type="number" id="bounds-w" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                                <input type="number" id="bounds-w" min="0.05" max="0.30" step="0.01" oninput="updateVisualizerBounds()" onchange="triggerManualBoundsRescan()">
                             </div>
                             <div class="form-group">
                                 <label for="bounds-h" data-loc="height_label">Height (0-1)</label>
-                                <input type="number" id="bounds-h" min="0.01" max="1" step="0.01" oninput="updateVisualizerBounds()">
+                                <input type="number" id="bounds-h" min="0.05" max="0.45" step="0.01" oninput="updateVisualizerBounds()" onchange="triggerManualBoundsRescan()">
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -3845,6 +3861,7 @@
         }
 
         function setManualEntryMode(manualEnabled) {
+            console.log("[CropBox] setManualEntryMode called. manualEnabled =", manualEnabled);
             const inputs = ['bounds-x', 'bounds-y', 'bounds-w', 'bounds-h'];
             inputs.forEach(id => {
                 document.getElementById(id).disabled = !manualEnabled;
@@ -3857,7 +3874,66 @@
                 } else {
                     box.classList.remove('resizable');
                 }
+                console.log("[CropBox] Box classList after setManualEntryMode:", box.classList.toString());
+                
+                // Log computed styles and bounding rects of handles
+                const handles = box.querySelectorAll('.resize-handle');
+                handles.forEach((h, idx) => {
+                    const r = h.getBoundingClientRect();
+                    const computedDisplay = window.getComputedStyle(h).display;
+                    console.log(`[CropBox] Handle ${idx} (${h.className}): width=${r.width}, height=${r.height}, top=${r.top}, left=${r.left}, computedDisplay=${computedDisplay}`);
+                });
             }
+        }
+
+        async function updateManualBoundsAndRescan(x, y, w, h) {
+            // Apply safeguards/clamping
+            x = Math.max(0, Math.min(1, x));
+            y = Math.max(0, Math.min(1, y));
+            w = Math.max(0.05, Math.min(0.30, w));
+            h = Math.max(0.05, Math.min(0.45, h));
+            
+            // Update input values in case they were clamped
+            document.getElementById('bounds-x').value = x;
+            document.getElementById('bounds-y').value = y;
+            document.getElementById('bounds-w').value = w;
+            document.getElementById('bounds-h').value = h;
+            
+            updateVisualizerBounds();
+            
+            try {
+                const response = await apiFetch('/api/config/bounds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x, y, width: w, height: h })
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    reloadScreenshot();
+                    
+                    // Update Active Screen Detection UI
+                    updateParseUI({
+                        parsed_location: res.parsed_location,
+                        parsed_coordinates: res.parsed_coordinates,
+                        method: res.method,
+                        matched_track: res.matched_track,
+                        timestamp: res.timestamp
+                    });
+                } else {
+                    showToast("Failed to update bounds: " + res.message, "error");
+                }
+            } catch (err) {
+                console.error("Error updating manual bounds:", err);
+                showToast("Error updating manual bounds.", "error");
+            }
+        }
+
+        function triggerManualBoundsRescan() {
+            const x = parseFloat(document.getElementById('bounds-x').value) || 0;
+            const y = parseFloat(document.getElementById('bounds-y').value) || 0;
+            const w = parseFloat(document.getElementById('bounds-w').value) || 0.15;
+            const h = parseFloat(document.getElementById('bounds-h').value) || 0.15;
+            updateManualBoundsAndRescan(x, y, w, h);
         }
 
         let isDragging = false;
@@ -3869,6 +3945,9 @@
             const box = document.getElementById('visual-crop-box');
             const visualizer = document.querySelector('.bounds-visualizer');
             if (!box || !visualizer) return;
+            
+            console.log("[CropBox] Initializing interactions. Found handles:", box.querySelectorAll('.resize-handle').length);
+            console.log("[CropBox] Box classList on init:", box.classList.toString());
             
             box.addEventListener('mousedown', (e) => {
                 if (document.getElementById('bounds-x').disabled) return;
@@ -3892,9 +3971,9 @@
             box.querySelectorAll('.resize-handle').forEach(handle => {
                 handle.addEventListener('mousedown', (e) => {
                     if (document.getElementById('bounds-x').disabled) return;
-                    
                     isResizing = true;
-                    resizeDirection = handle.className.split(' ')[1];
+                    resizeDirection = handle.getAttribute('data-dir');
+                    console.log("[CropBox] Handle mousedown. Direction:", resizeDirection);
                     startX = e.clientX;
                     startY = e.clientY;
                     
@@ -3922,6 +4001,8 @@
                 const dx = e.clientX - startX;
                 const dy = e.clientY - startY;
                 
+                console.log("[CropBox] Mousemove. isDragging:", isDragging, "isResizing:", isResizing, "dir:", resizeDirection, "dx:", dx, "dy:", dy, "startLeft:", startLeft, "startTop:", startTop, "pW:", pW, "pH:", pH);
+                
                 let newLeft = startLeft;
                 let newTop = startTop;
                 let newWidth = startWidth;
@@ -3931,31 +4012,56 @@
                     newLeft = Math.max(0, Math.min(pW - startWidth, startLeft + dx));
                     newTop = Math.max(0, Math.min(pH - startHeight, startTop + dy));
                 } else if (isResizing) {
+                    const minW_px = pW * 0.05;
+                    const maxW_px = pW * 0.30;
+                    const minH_px = pH * 0.05;
+                    const maxH_px = pH * 0.45;
+
                     if (resizeDirection === 'br') {
-                        newWidth = Math.max(20, Math.min(pW - startLeft, startWidth + dx));
-                        newHeight = Math.max(20, Math.min(pH - startTop, startHeight + dy));
+                        newWidth = Math.max(minW_px, Math.min(Math.min(pW - startLeft, maxW_px), startWidth + dx));
+                        newHeight = Math.max(minH_px, Math.min(Math.min(pH - startTop, maxH_px), startHeight + dy));
                     } else if (resizeDirection === 'bl') {
-                        const maxDx = startWidth - 20;
-                        const actualDx = Math.max(-startLeft, Math.min(maxDx, dx));
-                        newLeft = startLeft + actualDx;
-                        newWidth = startWidth - actualDx;
-                        newHeight = Math.max(20, Math.min(pH - startTop, startHeight + dy));
+                        let targetW = startWidth - dx;
+                        targetW = Math.max(minW_px, Math.min(maxW_px, targetW));
+                        let targetLeft = startLeft + startWidth - targetW;
+                        if (targetLeft < 0) {
+                            targetLeft = 0;
+                            targetW = startLeft + startWidth;
+                        }
+                        newLeft = targetLeft;
+                        newWidth = targetW;
+                        newHeight = Math.max(minH_px, Math.min(Math.min(pH - startTop, maxH_px), startHeight + dy));
                     } else if (resizeDirection === 'tr') {
-                        const maxDy = startHeight - 20;
-                        const actualDy = Math.max(-startTop, Math.min(maxDy, dy));
-                        newTop = startTop + actualDy;
-                        newHeight = startHeight - actualDy;
-                        newWidth = Math.max(20, Math.min(pW - startLeft, startWidth + dx));
+                        newWidth = Math.max(minW_px, Math.min(Math.min(pW - startLeft, maxW_px), startWidth + dx));
+                        let targetH = startHeight - dy;
+                        targetH = Math.max(minH_px, Math.min(maxH_px, targetH));
+                        let targetTop = startTop + startHeight - targetH;
+                        if (targetTop < 0) {
+                            targetTop = 0;
+                            targetH = startTop + startHeight;
+                        }
+                        newTop = targetTop;
+                        newHeight = targetH;
                     } else if (resizeDirection === 'tl') {
-                        const maxDx = startWidth - 20;
-                        const actualDx = Math.max(-startLeft, Math.min(maxDx, dx));
-                        newLeft = startLeft + actualDx;
-                        newWidth = startWidth - actualDx;
+                        let targetW = startWidth - dx;
+                        targetW = Math.max(minW_px, Math.min(maxW_px, targetW));
+                        let targetLeft = startLeft + startWidth - targetW;
+                        if (targetLeft < 0) {
+                            targetLeft = 0;
+                            targetW = startLeft + startWidth;
+                        }
+                        newLeft = targetLeft;
+                        newWidth = targetW;
                         
-                        const maxDy = startHeight - 20;
-                        const actualDy = Math.max(-startTop, Math.min(maxDy, dy));
-                        newTop = startTop + actualDy;
-                        newHeight = startHeight - actualDy;
+                        let targetH = startHeight - dy;
+                        targetH = Math.max(minH_px, Math.min(maxH_px, targetH));
+                        let targetTop = startTop + startHeight - targetH;
+                        if (targetTop < 0) {
+                            targetTop = 0;
+                            targetH = startTop + startHeight;
+                        }
+                        newTop = targetTop;
+                        newHeight = targetH;
                     }
                 }
                 
@@ -3974,8 +4080,15 @@
             });
             
             window.addEventListener('mouseup', () => {
-                isDragging = false;
-                isResizing = false;
+                if (isDragging || isResizing) {
+                    isDragging = false;
+                    isResizing = false;
+                    const x = parseFloat(document.getElementById('bounds-x').value);
+                    const y = parseFloat(document.getElementById('bounds-y').value);
+                    const w = parseFloat(document.getElementById('bounds-w').value);
+                    const h = parseFloat(document.getElementById('bounds-h').value);
+                    updateManualBoundsAndRescan(x, y, w, h);
+                }
             });
         }
 
@@ -7190,8 +7303,16 @@
         // Initial load
         // ============================================================
         window.onload = async () => {
-            initLibrarySort();
-            initCropBoxInteractions();
+            try {
+                initCropBoxInteractions();
+            } catch (e) {
+                console.error("Error initializing crop box interactions:", e);
+            }
+            try {
+                initLibrarySort();
+            } catch (e) {
+                console.error("Error initializing library sort:", e);
+            }
             // Escape key: close any active popover panel
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
