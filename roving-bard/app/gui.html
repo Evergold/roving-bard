@@ -231,6 +231,17 @@
             transform: translateY(0) scale(1);
         }
 
+        /* SoundFont Spinner Animation */
+        .soundfont-icon-loading {
+            animation: soundfont-spin 1.5s linear infinite;
+            color: var(--accent) !important;
+            transform-origin: center;
+        }
+        @keyframes soundfont-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .instrument-header {
             display: flex;
             justify-content: space-between;
@@ -2934,7 +2945,7 @@
                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                         <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="soundfont_label">SoundFont</span>
                         <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
+                            <svg id="soundfont-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0; transition: color 0.2s ease;">
                                 <path d="M9 18V5l12-2v13"></path>
                                 <circle cx="6" cy="18" r="3"></circle>
                                 <circle cx="18" cy="16" r="3"></circle>
@@ -2944,6 +2955,7 @@
                                 <option value="FluidR3_GM.sf2" data-loc="soundfont_fluid">FluidR3 (Legacy)</option>
                             </select>
                         </div>
+                        <div id="soundfont-download-progress" style="display: none; font-size: 0.75rem; color: var(--accent); margin-top: 0.2rem; font-family: 'Space Mono', monospace; width: fit-content; max-width: 280px; white-space: normal;"></div>
                     </div>
 
                     <!-- Clear Cache Option -->
@@ -4231,10 +4243,75 @@
             }
         }
 
+        let isDownloadingSoundFont = false;
+
+        function updateSoundFontDropdown(status) {
+            const select = document.getElementById('soundfont-select');
+            if (!select) return;
+            
+            // If currently downloading, don't rebuild the options as it might disrupt the user interaction
+            if (isDownloadingSoundFont || select.disabled) return;
+
+            const available = status.available_soundfonts || [];
+            const active = (status.config_data && status.config_data.active_soundfont) || "MuseScore_General.sf3";
+            
+            let html = '';
+            
+            // 1. MuseScore General (HQ)
+            html += `<option value="MuseScore_General.sf3" ${active === "MuseScore_General.sf3" ? "selected" : ""}>MuseScore General (HQ)</option>`;
+            
+            // 2. MuseScore General (ULTRA)
+            html += `<option value="MuseScore_General.sf2" ${active === "MuseScore_General.sf2" ? "selected" : ""}>MuseScore General (ULTRA)</option>`;
+            
+            // 3. FluidR3 (Legacy) - Only show if detected
+            if (available.includes("FluidR3_GM.sf2")) {
+                html += `<option value="FluidR3_GM.sf2" ${active === "FluidR3_GM.sf2" ? "selected" : ""}>FluidR3 (Legacy)</option>`;
+            }
+            
+            select.innerHTML = html;
+        }
+
         async function changeSoundFont(value) {
             if (!configData) return;
-            configData.active_soundfont = value;
+            
+            // Check if they selected the lossless version and it is not yet downloaded
+            const available = (currentPlaybackStatus && currentPlaybackStatus.available_soundfonts) || [];
+            if (value === "MuseScore_General.sf2" && !available.includes("MuseScore_General.sf2")) {
+                // Start download!
+                try {
+                    const select = document.getElementById('soundfont-select');
+                    if (select) select.disabled = true;
+                    
+                    const progressDiv = document.getElementById('soundfont-download-progress');
+                    if (progressDiv) {
+                        progressDiv.style.display = 'block';
+                        progressDiv.innerText = t("downloading_ultra", "Downloading MuseScore General (ULTRA)... 0%");
+                    }
+                    
+                    const icon = document.getElementById('soundfont-icon');
+                    if (icon) icon.classList.add('soundfont-icon-loading');
+                    
+                    showToast(t("download_started", "Downloading MuseScore General (ULTRA). Please wait..."), "info");
+                    
+                    await apiFetch('/api/soundfont/download', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ soundfont: "MuseScore_General.sf2" })
+                    });
+                    
+                    isDownloadingSoundFont = true;
+                    pollSoundFontDownload();
+                } catch (err) {
+                    console.error("Error starting SoundFont download:", err);
+                    showToast(t("download_start_failed", "Failed to start download."), "error");
+                    resetSoundFontSelect();
+                }
+                return;
+            }
+            
+            // Regular soundfont change
             try {
+                configData.active_soundfont = value;
                 const response = await apiFetch('/api/config', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -4246,15 +4323,66 @@
                     loadDashboard();
                 } else {
                     showToast(t("soundfont_change_failed", "Failed to update SoundFont: ") + res.message, "error");
+                    resetSoundFontSelect();
                 }
             } catch (err) {
                 console.error("Error updating SoundFont:", err);
                 showToast(t("soundfont_change_error", "Error updating SoundFont."), "error");
+                resetSoundFontSelect();
             }
+        }
+
+        function resetSoundFontSelect() {
+            const select = document.getElementById('soundfont-select');
+            if (select) {
+                select.disabled = false;
+                select.value = (configData && configData.active_soundfont) || "MuseScore_General.sf3";
+            }
+            const progressDiv = document.getElementById('soundfont-download-progress');
+            if (progressDiv) progressDiv.style.display = 'none';
+            const icon = document.getElementById('soundfont-icon');
+            if (icon) icon.classList.remove('soundfont-icon-loading');
+        }
+
+        function pollSoundFontDownload() {
+            if (!isDownloadingSoundFont) return;
+            
+            setTimeout(async () => {
+                try {
+                    const response = await apiFetch('/api/soundfont/download/status');
+                    const status = await response.json();
+                    
+                    const progressDiv = document.getElementById('soundfont-download-progress');
+                    if (status.status === "downloading") {
+                        if (progressDiv) {
+                            progressDiv.innerText = t("downloading_ultra", "Downloading MuseScore General (ULTRA)... ") + status.progress + "%";
+                        }
+                        pollSoundFontDownload();
+                    } else if (status.status === "success") {
+                        isDownloadingSoundFont = false;
+                        showToast(t("download_complete", "Download complete!"), "success");
+                        showToast(t("soundfont_changed", "SoundFont updated successfully!"), "success");
+                        await loadDashboard();
+                        resetSoundFontSelect();
+                    } else if (status.status === "error") {
+                        isDownloadingSoundFont = false;
+                        showToast(t("download_failed", "Download failed: ") + status.error, "error");
+                        resetSoundFontSelect();
+                    }
+                } catch (err) {
+                    console.error("Error polling download status:", err);
+                    isDownloadingSoundFont = false;
+                    showToast(t("download_connection_error", "Connection error. Soundfont download failed."), "error");
+                    resetSoundFontSelect();
+                }
+            }, 1000);
         }
 
         function updatePlayerUI(status) {
             console.log("[Player UI] updatePlayerUI called. Track:", status.current_track, "Paused:", status.paused);
+            
+            // Update SoundFont dropdown options
+            updateSoundFontDropdown(status);
             // Disable EQ settings if .abc or .mid/.midi is selected
             const currentTrackLower = status.current_track ? status.current_track.toLowerCase() : '';
             const isAbc = currentTrackLower.endsWith('.abc');

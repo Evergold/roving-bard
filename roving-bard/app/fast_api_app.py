@@ -310,6 +310,29 @@ def get_locales():
 
 
 
+def get_available_soundfonts(playlist_dir: str) -> list[str]:
+    available = []
+    
+    # 1. MuseScore General (HQ)
+    if os.path.exists(os.path.join(playlist_dir, "MuseScore_General.sf3")):
+        available.append("MuseScore_General.sf3")
+        
+    # 2. MuseScore General (ULTRA)
+    if os.path.exists(os.path.join(playlist_dir, "MuseScore_General.sf2")):
+        available.append("MuseScore_General.sf2")
+        
+    # 3. FluidR3 (Legacy)
+    fluid_paths = [
+        os.path.join(playlist_dir, "FluidR3_GM.sf2"),
+        "/usr/share/sounds/sf2/FluidR3_GM.sf2",
+        "/usr/share/midi/soundfont/FluidR3_GM.sf2",
+    ]
+    if any(os.path.exists(p) for p in fluid_paths):
+        available.append("FluidR3_GM.sf2")
+        
+    return available
+
+
 @app.get("/api/env-status")
 def get_env_status():
     """Returns the presence of API key environment variables (without returning their values)."""
@@ -342,7 +365,102 @@ def api_status():
         "active_instrument": tools.player.active_instrument if tools.player.active_instrument is not None else tools.player.get_default_instrument(),
         "is_abc": tools.player.current_track.lower().endswith(".abc") if tools.player.current_track else False,
         "minimap_detected": getattr(tools, "minimap_detected", False),
+        "available_soundfonts": get_available_soundfonts(tools.player.playlist_dir),
     }
+
+
+import threading
+import requests
+
+# Global download state
+soundfont_download_state = {
+    "status": "idle",       # "idle", "downloading", "success", "error"
+    "progress": 0,          # 0 to 100
+    "error": None
+}
+soundfont_download_lock = threading.Lock()
+
+def download_soundfont_task(url: str, dest_path: str):
+    global soundfont_download_state
+    tmp_path = dest_path + ".tmp"
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        total_size = int(response.headers.get('content-length', 0))
+        
+        downloaded = 0
+        with open(tmp_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=65536):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        percent = int((downloaded / total_size) * 100)
+                        with soundfont_download_lock:
+                            soundfont_download_state["progress"] = percent
+                            
+        # Rename tmp to final
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+        os.rename(tmp_path, dest_path)
+        
+        # Automatically update config to use the new soundfont and hot-reload
+        tools.config["active_soundfont"] = os.path.basename(dest_path)
+        with open(tools.CONFIG_PATH, "w") as f:
+            yaml.safe_dump(tools.config, f)
+            
+        # Hot-reload in player
+        tools.player.update_soundfont(tools.config["active_soundfont"])
+        
+        with soundfont_download_lock:
+            soundfont_download_state["status"] = "success"
+            soundfont_download_state["progress"] = 100
+            
+    except Exception as e:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+        with soundfont_download_lock:
+            soundfont_download_state["status"] = "error"
+            soundfont_download_state["error"] = str(e)
+
+class SoundFontDownloadRequest(BaseModel):
+    soundfont: str
+
+@app.post("/api/soundfont/download", dependencies=[Depends(verify_api_key)])
+def api_download_soundfont(req: SoundFontDownloadRequest):
+    global soundfont_download_state
+    
+    if req.soundfont != "MuseScore_General.sf2":
+        raise HTTPException(status_code=400, detail="Unsupported SoundFont for download")
+        
+    dest_path = os.path.join(tools.player.playlist_dir, req.soundfont)
+    if os.path.exists(dest_path):
+        return {"status": "success", "message": "SoundFont already exists"}
+        
+    with soundfont_download_lock:
+        if soundfont_download_state["status"] == "downloading":
+            return {"status": "downloading", "message": "Download already in progress"}
+            
+        soundfont_download_state = {
+            "status": "downloading",
+            "progress": 0,
+            "error": None
+        }
+        
+    url = "https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General.sf2"
+    thread = threading.Thread(target=download_soundfont_task, args=(url, dest_path))
+    thread.daemon = True
+    thread.start()
+    
+    return {"status": "downloading", "message": "Download started"}
+
+@app.get("/api/soundfont/download/status", dependencies=[Depends(verify_api_key)])
+def api_download_soundfont_status():
+    with soundfont_download_lock:
+        return soundfont_download_state
 
 
 @app.post("/api/control", dependencies=[Depends(verify_api_key)])

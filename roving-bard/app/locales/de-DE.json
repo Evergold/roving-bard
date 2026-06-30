@@ -194,5 +194,12 @@
     "soundfont_fluid": "FluidR3 (Legacy)",
     "soundfont_changed": "SoundFont erfolgreich aktualisiert!",
     "soundfont_change_failed": "Fehler beim Aktualisieren der SoundFont: ",
-    "soundfont_change_error": "Fehler beim Aktualisieren der SoundFont."
+    "soundfont_change_error": "Fehler beim Aktualisieren der SoundFont.",
+    "download_label": "Herunterladen",
+    "downloading_ultra": "Lade MuseScore General (ULTRA) herunter... ",
+    "download_started": "Lade MuseScore General (ULTRA) herunter. Bitte warten...",
+    "download_start_failed": "Fehler beim Starten des Downloads.",
+    "download_complete": "Download abgeschlossen!",
+    "download_failed": "Download fehlgeschlagen: ",
+    "download_connection_error": "Verbindungsfehler. Soundfont-Download fehlgeschlagen."
 }

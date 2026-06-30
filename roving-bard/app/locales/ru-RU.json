@@ -194,5 +194,12 @@
     "soundfont_fluid": "FluidR3 (Legacy)",
     "soundfont_changed": "Саундфон успешно обновлен!",
     "soundfont_change_failed": "Не удалось обновить саундфон: ",
-    "soundfont_change_error": "Ошибка при обновлении саундфона."
+    "soundfont_change_error": "Ошибка при обновлении саундфона.",
+    "download_label": "Скачать",
+    "downloading_ultra": "Скачивание MuseScore General (ULTRA)... ",
+    "download_started": "Скачивание MuseScore General (ULTRA). Пожалуйста, подождите...",
+    "download_start_failed": "Не удалось запустить скачивание.",
+    "download_complete": "Скачивание завершено!",
+    "download_failed": "Ошибка скачивания: ",
+    "download_connection_error": "Ошибка подключения. Не удалось скачать саундфон."
 }
