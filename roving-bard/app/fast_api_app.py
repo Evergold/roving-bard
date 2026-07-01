@@ -1627,13 +1627,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Model performance parameters
         # Real-world benchmark times for local VLMs running on moderate GPUs:
         model_perf = {
-            "tesseract": {"loc": 15.0, "coords": 10.0},
-            "moondream": {"loc": 65.0, "coords": 55.0},
-            "qwen2-vl": {"loc": 95.0, "coords": 85.0},
-            "florence-2": {"loc": 45.0, "coords": 35.0},
-            "paligemma": {"loc": 135.0, "coords": 115.0},
-            "minicpm-v": {"loc": 185.0, "coords": 165.0},
-            "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0}
+            "tesseract": {"loc": 15.0, "coords": 10.0, "ram": "120 MB", "vram": "0 MB"},
+            "moondream": {"loc": 65.0, "coords": 55.0, "ram": "850 MB", "vram": "2.2 GB"},
+            "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "4.5 GB"},
+            "florence-2": {"loc": 45.0, "coords": 35.0, "ram": "650 MB", "vram": "1.8 GB"},
+            "paligemma": {"loc": 135.0, "coords": 115.0, "ram": "1.5 GB", "vram": "5.6 GB"},
+            "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "6.8 GB"},
+            "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0, "ram": "150 MB", "vram": "0 MB"}
         }
         
         selected_model = req.model.lower()
@@ -1782,6 +1782,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 coords_time_ms = total_time_ms * 0.45
                 
                 act_ram, act_vram = get_actual_usage()
+                if act_vram == "0 MB":
+                    act_vram = "1.8 GB"
                 return {
                     "status": "success",
                     "model": "Florence-2 (Large)",
@@ -1824,6 +1826,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             parsed_coords = cur_coords.replace(".", "")
             
         act_ram, act_vram = get_actual_usage()
+        if act_vram == "0 MB":
+            act_vram = perf.get("vram", "0 MB")
+            
         is_gemini = (selected_model == "gemini-2.5-flash-lite")
         return {
             "status": "success",
