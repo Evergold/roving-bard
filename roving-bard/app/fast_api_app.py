@@ -2319,17 +2319,21 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             t0, t1 = 0.0, 0.0
             # Setup JSON payload and dynamic prompt
             url = "http://127.0.0.1:11434/api/generate"
-            prompt = "The image shows a location name and coordinates. Read them exactly."
+            if "qwen" in selected_model:
+                prompt = "The image shows a location name and coordinates. Read them exactly."
+            else:
+                prompt = "Transcribe the text in the image, focusing on the bottom-most characters."
 
             json_payload = {
                 "model": model_map[selected_model],
                 "prompt": prompt,
                 "images": [img_b64],
                 "stream": False,
-                "keep_alive": "5m"
+                "keep_alive": "5m",
+                "options": {
+                    "temperature": 0.0
+                }
             }
-            if "qwen" in selected_model:
-                json_payload["options"] = {"temperature": 0.0}
 
             for try_idx in range(max_tries):
                 t0 = time.time()
