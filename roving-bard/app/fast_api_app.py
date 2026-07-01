@@ -1595,7 +1595,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
     import time
     from PIL import Image
     
-    if tools.latest_location_processed_bytes is None:
+    if tools.latest_location_raw_bytes is None:
         return {"status": "error", "message": "No preprocessed screenshot available. Please perform a screen scan first."}
         
     try:
@@ -1605,8 +1605,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             return format_memory_size(ram), format_memory_size(vram)
 
         # Load the PIL image that is fed to the models
-        # (This keeps the comparison fair since we feed them the exact same cropped+processed binary data!)
-        text_img = Image.open(io.BytesIO(tools.latest_location_processed_bytes))
+        # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
+        text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
         
         # Get the current active coordinates and location from tools.latest_parse_result 
         cur_loc = tools.latest_parse_result.get("parsed_location") or "Unknown"
