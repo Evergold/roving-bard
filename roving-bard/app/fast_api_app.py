@@ -1625,7 +1625,7 @@ def api_vlm_pull(req: VlmPullRequest):
         return {"status": "success", "message": f"Already downloading {req.model}."}
 
     model_map = {
-        "moondream": "moondream",
+        "moondream": "moondream:latest",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
