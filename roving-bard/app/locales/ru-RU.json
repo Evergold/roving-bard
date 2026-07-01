@@ -83,7 +83,7 @@
     "font_normal_abc": "абв",
     "font_larger": "Крупнее",
     "font_largest": "Самый крупный",
-    "method_local_ocr": "Локальный OCR",
+    "method_local_ocr": "Tesseract/OpenCV",
     "method_gemini_fallback": "Резервный Gemini Vision",
     "method_simulation": "Симуляция",
     "none": "Нет",

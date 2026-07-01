@@ -83,7 +83,7 @@
     "font_normal_abc": "abc",
     "font_larger": "Larger",
     "font_largest": "Largest",
-    "method_local_ocr": "Local OCR",
+    "method_local_ocr": "Tesseract/OpenCV",
     "method_gemini_fallback": "Gemini Vision Fallback",
     "method_simulation": "Simulation",
     "none": "None",
