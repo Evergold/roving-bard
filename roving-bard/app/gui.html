@@ -4823,10 +4823,13 @@
                 const locTime = parse.loc_time_ms !== undefined ? `${parse.loc_time_ms.toFixed(1)} ms` : "0.0 ms";
                 const coordsTime = parse.coords_time_ms !== undefined ? `${parse.coords_time_ms.toFixed(1)} ms` : "0.0 ms";
                 const totalTime = parse.total_time_ms !== undefined ? `${parse.total_time_ms.toFixed(1)} ms` : "0.0 ms";
+                const preprocessTime = parse.preprocess_time_ms !== undefined ? `${parse.preprocess_time_ms.toFixed(1)} ms` : "0.0 ms";
                 
                 document.getElementById('stat-loc-time').innerText = locTime;
                 document.getElementById('stat-coords-time').innerText = coordsTime;
                 document.getElementById('stat-total-time').innerText = totalTime;
+                const prepEl = document.getElementById('stat-preprocess-time');
+                if (prepEl) prepEl.innerText = preprocessTime;
 
                 const vramEl = document.getElementById('stat-vram');
                 const ramEl = document.getElementById('stat-ram');
