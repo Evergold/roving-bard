@@ -1868,9 +1868,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 t0 = time.time()
                 url = "http://localhost:11434/api/generate"
                 prompt = (
-                    "You are an OCR parser. Analyze this image and output a JSON object containing the location name "
-                    "in 'parsed_location' (e.g. 'Tinnudir') and the coordinates in 'parsed_coordinates' "
-                    "(e.g. '12.3S, 45.6W'). Return only the JSON object."
+                    "Perform OCR on this image. Transcribe all visible text. Do not output JSON or explanation."
                 )
                 response = requests.post(
                     url, 
