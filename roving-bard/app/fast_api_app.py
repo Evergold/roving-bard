@@ -1295,7 +1295,7 @@ def sync_ollama_ready_states():
                 if model_id == "moondream":
                     ollama_names = ["moondream", "moondream:latest"]
                 elif model_id == "qwen2-vl":
-                    ollama_names = ["qwen2-vl:2b", "qwen2-vl:2b-instruct", "qwen2-vl"]
+                    ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2-vl:2b", "qwen2-vl"]
                 elif model_id == "paligemma":
                     ollama_names = ["paligemma", "paligemma:latest"]
                 elif model_id == "minicpm-v":
@@ -1478,7 +1478,7 @@ def api_vlm_pull(req: VlmPullRequest):
 
     model_map = {
         "moondream": "moondream",
-        "qwen2-vl": "qwen2-vl:2b",
+        "qwen2-vl": "qwen2.5vl",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
     }
@@ -1892,7 +1892,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         else:
             model_map = {
                 "moondream": "moondream",
-                "qwen2-vl": "qwen2-vl:2b",
+                "qwen2-vl": "qwen2.5vl",
                 "paligemma": "paligemma",
                 "minicpm-v": "minicpm-v"
             }
