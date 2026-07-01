@@ -3619,6 +3619,9 @@
                                     <div><span data-loc="vlm_loc_parse">Loc Parse</span>: <span id="stat-loc-time">0.0 ms</span></div>
                                     <div><span data-loc="vlm_coords_parse">Coords Parse</span>: <span id="stat-coords-time">0.0 ms</span></div>
                                 </div>
+                                <div id="vlm-preprocess" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: flex-start; gap: 0.5rem; width: 100%; margin-top: 0.25rem;">
+                                     <div><span data-loc="vlm_preprocess">Pre-processing</span>: <span id="stat-preprocess-time" style="color: #a272ff; font-weight: bold;">0.0 ms</span></div>
+                                </div>
                                 <div id="vlm-resources" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.35rem; width: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.35rem;">
                                     <div><span id="label-vram" data-loc="vlm_est_vram">Est VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
                                     <div><span id="label-ram" data-loc="vlm_est_ram">Est RAM </span>: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
@@ -4996,6 +4999,7 @@
             document.getElementById('stat-loc-time').innerText = runningText;
             document.getElementById('stat-coords-time').innerText = runningText;
             document.getElementById('stat-total-time').innerText = runningText;
+            document.getElementById('stat-preprocess-time').innerText = runningText;
 
             try {
                 const response = await apiFetch('/api/ocr/try_vlm', {
@@ -5014,6 +5018,7 @@
                     document.getElementById('stat-loc-time').innerText = (res.loc_time_ms !== null && res.loc_time_ms !== undefined) ? `${res.loc_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-coords-time').innerText = (res.coords_time_ms !== null && res.coords_time_ms !== undefined) ? `${res.coords_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
+                    document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
 
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
@@ -5089,6 +5094,8 @@
             const ramLabel = document.getElementById('label-ram');
             if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
             if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+            const prepEl = document.getElementById('stat-preprocess-time');
+            if (prepEl) prepEl.innerText = "0.0 ms";
             loadDashboard();
         }
 
