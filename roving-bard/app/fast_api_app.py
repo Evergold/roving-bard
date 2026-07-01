@@ -1472,7 +1472,12 @@ def run_florence_ocr(image):
     from transformers import AutoProcessor, AutoModelForCausalLM
     
     if florence_model is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
         print(f"[Florence-2] Loading microsoft/Florence-2-large on {device}...")
         florence_model = AutoModelForCausalLM.from_pretrained(
             "microsoft/Florence-2-large", 
