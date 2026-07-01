@@ -224,5 +224,7 @@
     "vlm_toast_ready_suffix": "è pronto per essere provato!",
     "vlm_toast_success_prefix": "Elaborato con successo con",
     "vlm_toast_failed_prefix": "Processo VLM fallito:",
-    "vlm_toast_error": "Errore durante l'elaborazione con VLM."
+    "vlm_toast_error": "Errore durante l'elaborazione con VLM.",
+    "vlm_act_vram": "VRAM eff.",
+    "vlm_act_ram": "RAM eff. "
 }

@@ -224,5 +224,7 @@
     "vlm_toast_ready_suffix": "готов к тестированию!",
     "vlm_toast_success_prefix": "Успешно обработано с помощью",
     "vlm_toast_failed_prefix": "Сбой процесса VLM:",
-    "vlm_toast_error": "Ошибка обработки с помощью VLM."
+    "vlm_toast_error": "Ошибка обработки с помощью VLM.",
+    "vlm_act_vram": "Факт VRAM",
+    "vlm_act_ram": "Факт RAM "
 }

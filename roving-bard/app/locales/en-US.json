@@ -224,5 +224,7 @@
     "vlm_toast_ready_suffix": "is ready to try!",
     "vlm_toast_success_prefix": "Successfully processed with",
     "vlm_toast_failed_prefix": "VLM process failed:",
-    "vlm_toast_error": "Error processing with VLM."
+    "vlm_toast_error": "Error processing with VLM.",
+    "vlm_act_vram": "Act VRAM",
+    "vlm_act_ram": "Act RAM "
 }
