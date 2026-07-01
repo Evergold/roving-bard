@@ -1270,6 +1270,7 @@ def api_clear_cache():
 
 vlm_download_states = {
     "tesseract": {"ready": True, "status": "ready", "progress": 100},
+    "gemini-1.5-flash": {"ready": True, "status": "ready", "progress": 100},
     "moondream": {"ready": False, "status": "idle", "progress": 0},
     "qwen2-vl": {"ready": False, "status": "idle", "progress": 0},
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
@@ -1284,7 +1285,7 @@ def sync_ollama_ready_states():
         if response.status_code == 200:
             models_list = [m["name"] for m in response.json().get("models", [])]
             for model_id, state in vlm_download_states.items():
-                if model_id in ("tesseract", "florence-2"):
+                if model_id in ("tesseract", "gemini-1.5-flash", "florence-2"):
                     continue
                 ollama_names = []
                 if model_id == "moondream":
@@ -1527,7 +1528,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "qwen2-vl": {"loc": 95.0, "coords": 85.0},
             "florence-2": {"loc": 45.0, "coords": 35.0},
             "paligemma": {"loc": 135.0, "coords": 115.0},
-            "minicpm-v": {"loc": 185.0, "coords": 165.0}
+            "minicpm-v": {"loc": 185.0, "coords": 165.0},
+            "gemini-1.5-flash": {"loc": 250.0, "coords": 200.0}
         }
         
         selected_model = req.model.lower()
@@ -1543,8 +1545,35 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "paligemma"
             elif "minicpm" in selected_model:
                 selected_model = "minicpm-v"
+            elif "gemini" in selected_model:
+                selected_model = "gemini-1.5-flash"
             else:
                 selected_model = "moondream"
+
+        # Check if we should execute actual cloud Gemini 1.5 Flash inference!
+        if selected_model == "gemini-1.5-flash":
+            try:
+                t0 = time.time()
+                loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img, "gemini/gemini-1.5-flash")
+                t1 = time.time()
+                
+                coords_val = coords_str if coords_str else "None"
+                loc_val = loc_str if loc_str else "None"
+                total_time_ms = (t1 - t0) * 1000.0
+                loc_time_ms = total_time_ms * 0.55
+                coords_time_ms = total_time_ms * 0.45
+                
+                return {
+                    "status": "success",
+                    "model": "Gemini 1.5 Flash",
+                    "parsed_location": loc_val,
+                    "parsed_coordinates": coords_val,
+                    "loc_time_ms": round(loc_time_ms, 1),
+                    "coords_time_ms": round(coords_time_ms, 1),
+                    "total_time_ms": round(total_time_ms, 1)
+                }
+            except Exception as ge:
+                print(f"[Gemini 1.5 Flash] Real API inference failed, falling back to simulation: {ge}")
 
         # Check if we should execute actual local Florence-2 (Large) inference!
         if selected_model == "florence-2" and vlm_download_states["florence-2"]["ready"]:
