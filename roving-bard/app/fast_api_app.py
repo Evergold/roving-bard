@@ -1648,7 +1648,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         if selected_model == "tesseract":
             try:
                 t0 = time.time()
-                from app import tools
                 pass_num = getattr(tools, "current_ocr_pass", 2)
                 loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
                 t1 = time.time()
