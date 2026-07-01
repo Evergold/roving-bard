@@ -42,7 +42,7 @@ project/
 - **On-Demand SoundFont Downloader**: Download the uncompressed, lossless `MuseScore_General.sf2` SoundFont directly from the Preferences menu, with background thread updates.
 - **High-Fidelity Cross-Platform Audio Engine (Windows, Linux, macOS)**: Features a robust, low-latency `sounddevice` engine (built on PortAudio). It delivers studio-grade real-time SoundFont MIDI/ABC synthesis, smooth logarithmic volume-fading transitions, and high-fidelity parametric EQ filtering natively across all major operating systems.
 - **10-Band Parametric EQ**: Adjust playback frequencies (32 Hz – 16 kHz) in real-time using cross-platform scipy-powered IIR peaking filters.
-- **Audio Library & Track Management**: Scan, search, and manage your music library with full metadata tagging support. Supports uploading new tracks directly from the GUI, extracting embedded tag details (titles, artists, albums, durations, and bitrates), and sorting/filtering tracks by type (Wave, MP3, Ogg Vorbis, FLAC, ABC Notation, and MIDI).
+- **Audio Library & Track Management**: Scan, search, and manage your music library with full metadata tagging support. Supports uploading new tracks directly from the GUI, extracting embedded tag details (titles, artists, albums, durations, and bitrates), and sorting/filtering tracks by type (Wave, MP3, Ogg Vorbis, FLAC, AAC, M4A, ABC Notation, and MIDI).
 - **Audio Segments & Custom Slices**: Define, save, and play custom audio loops/slices of tracks with independent volume, panning, and 10-band EQ settings.
 
 ---
