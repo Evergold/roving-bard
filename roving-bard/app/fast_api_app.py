@@ -1595,7 +1595,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
     import time
     from PIL import Image
     
-    if tools.latest_location_raw_bytes is None:
+    if tools.latest_location_raw_bytes is None or tools.latest_screenshot_bytes is None:
         return {"status": "error", "message": "No preprocessed screenshot available. Please perform a screen scan first."}
         
     try:
@@ -1607,6 +1607,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
         text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
+        text_img_2x = Image.open(io.BytesIO(tools.latest_screenshot_bytes))
         
         # Get the current active coordinates and location from tools.latest_parse_result 
         cur_loc = tools.latest_parse_result.get("parsed_location") or "Unknown"
@@ -1643,7 +1644,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "tesseract"
             else:
                 selected_model = "moondream"
-
+ 
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
             try:
@@ -1651,7 +1652,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
                 tp1 = time.time()
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
-
+ 
                 t0 = time.time()
                 pass_num = getattr(tools, "current_ocr_pass", 2)
                 loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
@@ -1678,20 +1679,20 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 }
             except Exception as te:
                 print(f"[Tesseract] Real inference failed, falling back to simulation: {te}")
-
+ 
         # Check if we should execute actual cloud Gemini 1.5 Flash inference!
         if selected_model == "gemini-1.5-flash":
             try:
                 tp0 = time.time()
                 buffered = io.BytesIO()
-                text_img.save(buffered, format="PNG")
+                text_img_2x.save(buffered, format="PNG")
                 import base64
                 _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
                 tp1 = time.time()
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
-
+ 
                 t0 = time.time()
-                loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img, "gemini/gemini-1.5-flash")
+                loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img_2x, "gemini/gemini-1.5-flash")
                 t1 = time.time()
                 
                 coords_val = coords_str if coords_str else "None"
@@ -1713,16 +1714,16 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 }
             except Exception as ge:
                 print(f"[Gemini 1.5 Flash] Real API inference failed, falling back to simulation: {ge}")
-
+ 
         # Check if we should execute actual local Florence-2 (Large) inference!
         if selected_model == "florence-2" and vlm_download_states["florence-2"]["ready"]:
             try:
                 tp0 = time.time()
                 device = florence_model.device
-                inputs = florence_processor(text="<OCR>", images=text_img, return_tensors="pt").to(device)
+                inputs = florence_processor(text="<OCR>", images=text_img_2x, return_tensors="pt").to(device)
                 tp1 = time.time()
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
-
+ 
                 t0 = time.time()
                 generated_ids = florence_model.generate(
                     input_ids=inputs["input_ids"],
@@ -1733,7 +1734,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 raw_text = florence_processor.post_process_generation(
                     generated_ids, 
                     task="<OCR>", 
-                    image_size=text_img.size
+                    image_size=text_img_2x.size
                 )["<OCR>"]
                 t1 = time.time()
                 
