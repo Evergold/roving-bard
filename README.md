@@ -170,6 +170,15 @@ uv run python run_player.py
 ```
 This loop runs independently, scanning the screen and playing music directly in the terminal.
 
+## 🎮 Simulation Mode & Local Testing
+
+To allow development, testing, and benchmarking of the OCR/VLM pipeline without needing to run the live *Lord of the Rings Online* game client, Roving Bard features a built-in **Simulation Mode**:
+
+* **How it Works**: When the server is launched and live screen capture is disabled (default `OFF`), the system uses static test screens stored sequentially in the `capture/` directory.
+* **File Naming Conventions**: Simulation screenshot files placed in the `capture/` directory must start with `test_` (case-insensitive) and use a supported image format extension (`.png`, `.jpg`, or `.jpeg`), for example: `test_1.png`, `test_2.jpg`. The backend sorts these files alphabetically and numerically, loading and cycling them sequentially.
+* **Stepping Through Screens**: Pressing **Refresh Capture** in the web dashboard loads the next test screen in the sorted sequence.
+* **Testing OCR / VLMs**: You can click **Try** or **Scan Screen** to run any local VLM (like Moondream or Qwen2.5-VL) or OpenCV + Tesseract OCR against these pre-captured simulation screenshots. This lets you observe coordinates, location match speeds, and memory stats under identical local environments without actual screen capture overhead.
+
 ---
 
 ## ⚙️ Configuration (`audio/mapping.yaml`)
