@@ -2319,7 +2319,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             t0, t1 = 0.0, 0.0
             # Setup JSON payload and dynamic prompt
             url = "http://127.0.0.1:11434/api/generate"
-            prompt = "The image shows a location name and coordinates. Read them exactly."
+            if "qwen" in selected_model:
+                prompt = "The image shows a location name and coordinates. Read them exactly."
+            else:
+                prompt = "What does the text at the bottom of the image say?"
 
             json_payload = {
                 "model": model_map[selected_model],
