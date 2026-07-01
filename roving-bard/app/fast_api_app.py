@@ -1273,6 +1273,7 @@ vlm_download_states = {
     "gemini-2.5-flash-lite": {"ready": True, "status": "ready", "progress": 100},
     "moondream": {"ready": False, "status": "idle", "progress": 0},
     "qwen2-vl": {"ready": False, "status": "idle", "progress": 0},
+    "qwen2.5-vl": {"ready": False, "status": "idle", "progress": 0},
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
     "paligemma": {"ready": False, "status": "idle", "progress": 0},
     "minicpm-v": {"ready": False, "status": "idle", "progress": 0},
@@ -1295,7 +1296,9 @@ def sync_ollama_ready_states():
                 if model_id == "moondream":
                     ollama_names = ["moondream", "moondream:latest"]
                 elif model_id == "qwen2-vl":
-                    ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2-vl:2b", "qwen2-vl"]
+                    ollama_names = ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b"]
+                elif model_id == "qwen2.5-vl":
+                    ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"]
                 elif model_id == "paligemma":
                     ollama_names = ["paligemma", "paligemma:latest"]
                 elif model_id == "minicpm-v":
@@ -1358,8 +1361,121 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
         else:
             print(f"[VLM Pull] Error pulling {ollama_name}: {e}")
             state["status"] = f"failed: {str(e)}"
- 
- 
+
+
+def pull_qwen2_vl_huggingface_task():
+    global vlm_download_states, active_downloads
+    state = vlm_download_states["qwen2-vl"]
+    state["status"] = "downloading"
+    state["progress"] = 0
+    cancel_evt = active_downloads["qwen2-vl"]["cancel_event"]
+    
+    try:
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        models_dir = os.path.join(app_dir, "models")
+        os.makedirs(models_dir, exist_ok=True)
+        
+        gguf_path = os.path.join(models_dir, "Qwen2-VL-2B-Instruct-Q4_K_M.gguf")
+        proj_path = os.path.join(models_dir, "mmproj-Qwen2-VL-2B-Instruct-f16.gguf")
+        modelfile_path = os.path.join(models_dir, "Modelfile_qwen2_vl")
+        
+        files_to_download = [
+            {
+                "url": "https://huggingface.co/bartowski/Qwen2-VL-2B-Instruct-GGUF/resolve/main/Qwen2-VL-2B-Instruct-Q4_K_M.gguf",
+                "path": gguf_path,
+                "size": 986047232
+            },
+            {
+                "url": "https://huggingface.co/bartowski/Qwen2-VL-2B-Instruct-GGUF/resolve/main/mmproj-Qwen2-VL-2B-Instruct-f16.gguf",
+                "path": proj_path,
+                "size": 1331656192
+            }
+        ]
+        
+        total_combined_size = sum(f["size"] for f in files_to_download)
+        downloaded_so_far = 0
+        
+        for file_info in files_to_download:
+            url = file_info["url"]
+            dest = file_info["path"]
+            
+            # Skip if file already fully exists
+            if os.path.exists(dest) and os.path.getsize(dest) == file_info["size"]:
+                downloaded_so_far += file_info["size"]
+                continue
+                
+            headers = {}
+            temp_size = 0
+            if os.path.exists(dest):
+                temp_size = os.path.getsize(dest)
+                if temp_size < file_info["size"]:
+                    headers["Range"] = f"bytes={temp_size}-"
+                    downloaded_so_far += temp_size
+                else:
+                    os.remove(dest)
+                    temp_size = 0
+                    
+            mode = "ab" if temp_size > 0 else "wb"
+            response = requests.get(url, headers=headers, stream=True, timeout=30)
+            active_downloads["qwen2-vl"]["response"] = response
+            
+            if response.status_code in (200, 206):
+                with open(dest, mode) as f:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if cancel_evt.is_set():
+                            response.close()
+                            break
+                        if chunk:
+                            f.write(chunk)
+                            downloaded_so_far += len(chunk)
+                            progress = min(99, int((downloaded_so_far / total_combined_size) * 100))
+                            state["progress"] = progress
+                            state["status"] = f"downloading ({progress}%)"
+                            
+            if cancel_evt.is_set():
+                break
+                
+        if cancel_evt.is_set():
+            state["status"] = "paused"
+            return
+            
+        if not (os.path.exists(gguf_path) and os.path.getsize(gguf_path) == files_to_download[0]["size"]):
+            raise Exception("Base GGUF model download incomplete or corrupted.")
+        if not (os.path.exists(proj_path) and os.path.getsize(proj_path) == files_to_download[1]["size"]):
+            raise Exception("Multimodal projector download incomplete or corrupted.")
+            
+        state["status"] = "building model in ollama"
+        with open(modelfile_path, "w") as mf:
+            mf.write(f"FROM {gguf_path}\n")
+            mf.write(f"ADAPTER {proj_path}\n")
+            
+        import subprocess
+        process = subprocess.Popen(
+            ["ollama", "create", "qwen2-vl", "-f", modelfile_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        active_downloads["qwen2-vl"]["subprocess"] = process
+        
+        stdout, stderr = process.communicate()
+        if process.returncode == 0:
+            state["ready"] = True
+            state["status"] = "ready"
+            state["progress"] = 100
+            print("[Qwen2-VL] Registered custom legacy Qwen2-VL model in Ollama successfully!")
+        else:
+            raise Exception(f"ollama create failed: {stderr or stdout}")
+            
+    except Exception as e:
+        print(f"[Qwen2-VL] Error during Hugging Face pull/build: {e}")
+        if cancel_evt.is_set():
+            state["status"] = "paused"
+        else:
+            state["status"] = f"failed: {str(e)}"
+            state["progress"] = 0
+
+
 def simulate_vlm_download(model_id: str):
     import time
     global vlm_download_states, active_downloads
@@ -1478,7 +1594,7 @@ def api_vlm_pull(req: VlmPullRequest):
 
     model_map = {
         "moondream": "moondream",
-        "qwen2-vl": "qwen2.5vl",
+        "qwen2.5-vl": "qwen2.5vl",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
     }
@@ -1486,11 +1602,16 @@ def api_vlm_pull(req: VlmPullRequest):
     # Initialize active downloads entry
     active_downloads[model_id] = {
         "cancel_event": threading.Event(),
-        "response": None
+        "response": None,
+        "subprocess": None
     }
 
     if model_id == "florence-2":
         t = threading.Thread(target=pull_florence_model_task)
+        t.daemon = True
+        t.start()
+    elif model_id == "qwen2-vl":
+        t = threading.Thread(target=pull_qwen2_vl_huggingface_task)
         t.daemon = True
         t.start()
     elif model_id in model_map:
@@ -1523,6 +1644,12 @@ def api_vlm_pause(req: VlmPauseRequest):
         if resp_obj:
             try:
                 resp_obj.close()
+            except Exception:
+                pass
+        subp = active_downloads[model_id].get("subprocess")
+        if subp:
+            try:
+                subp.terminate()
             except Exception:
                 pass
                 
@@ -1748,6 +1875,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "tesseract": {"loc": 15.0, "coords": 10.0, "ram": "120 MB", "vram": "0 MB"},
             "moondream": {"loc": 65.0, "coords": 55.0, "ram": "850 MB", "vram": "2.2 GB"},
             "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "4.5 GB"},
+            "qwen2.5-vl": {"loc": 85.0, "coords": 75.0, "ram": "1.4 GB", "vram": "5.0 GB"},
             "florence-2": {"loc": 45.0, "coords": 35.0, "ram": "650 MB", "vram": "1.8 GB"},
             "paligemma": {"loc": 135.0, "coords": 115.0, "ram": "1.5 GB", "vram": "5.6 GB"},
             "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "6.8 GB"},
@@ -1759,6 +1887,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             # Clean matching of model key name
             if "moondream" in selected_model:
                 selected_model = "moondream"
+            elif "qwen2.5" in selected_model or "qwen25" in selected_model:
+                selected_model = "qwen2.5-vl"
             elif "qwen" in selected_model:
                 selected_model = "qwen2-vl"
             elif "florence" in selected_model:
@@ -1888,11 +2018,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "actual_vram": act_vram
             }
  
-        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, PaliGemma, MiniCPM-V)!
+        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, Qwen2.5-VL, PaliGemma, MiniCPM-V)!
         else:
             model_map = {
                 "moondream": "moondream",
-                "qwen2-vl": "qwen2.5vl",
+                "qwen2-vl": "qwen2-vl",
+                "qwen2.5-vl": "qwen2.5vl",
                 "paligemma": "paligemma",
                 "minicpm-v": "minicpm-v"
             }
