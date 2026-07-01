@@ -243,4 +243,39 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert res["model"] == "Tesseract/OpenCV"
     assert res["parsed_location"] != "Unknown"
     
+    # 4. Trigger download/pull for a local VLM (paligemma)
+    pull_url = BASE_URL + "/api/ocr/vlm_pull"
+    response = requests.post(pull_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    
+    # Check status changed to downloading
+    response = requests.get(status_url, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["states"]["paligemma"]["status"].startswith("downloading")
+    
+    # 5. Pause the download
+    pause_url = BASE_URL + "/api/ocr/vlm_pause"
+    response = requests.post(pause_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    
+    # Check status changed to paused
+    response = requests.get(status_url, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["states"]["paligemma"]["status"] == "paused"
+    
+    # 6. Resume/pull again
+    response = requests.post(pull_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    
+    # Check status changed back to downloading
+    response = requests.get(status_url, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["states"]["paligemma"]["status"].startswith("downloading")
+    
+    # Clean up by pausing
+    requests.post(pause_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    
     logger.info("VLM endpoints test completed successfully")

@@ -3605,9 +3605,12 @@
                                 
                                 <!-- VLM Download / Setup Progress Indicator -->
                                 <div id="vlm-download-container" style="display: none; background: rgba(255, 255, 255, 0.05); padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-family: 'Space Mono', monospace; font-size: 0.7rem; width: 100%;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; align-items: center;">
                                         <span id="vlm-download-status" data-loc="vlm_downloading_status">Setting up model...</span>
-                                        <span id="vlm-download-percent">0%</span>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span id="vlm-download-percent">0%</span>
+                                            <button id="btn-vlm-download-action" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 3px; font-size: 0.6rem; padding: 1px 4px; cursor: pointer; display: none; font-family: 'Space Mono', monospace;" onclick="handleVlmDownloadAction()"></button>
+                                        </div>
                                     </div>
                                     <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; width: 100%; overflow: hidden;">
                                         <div id="vlm-download-bar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.2s ease;"></div>
@@ -4919,19 +4922,59 @@
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
                 
-                if (vramEl) vramEl.innerText = "---";
-                if (ramEl) ramEl.innerText = "---";
-                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
-                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
+                async function handleVlmDownloadAction() {
+            const modelSelect = document.getElementById('vlm-model-select');
+            const selectedVal = modelSelect.value;
+            const btn = document.getElementById('btn-vlm-download-action');
+            const currentAction = btn.innerText;
+
+            try {
+                if (currentAction === "Pause") {
+                    await apiFetch('/api/ocr/vlm_pause', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ model: selectedVal })
+                    });
+                    
+                    if (vlmStatusPollInterval) {
+                        clearInterval(vlmStatusPollInterval);
+                        vlmStatusPollInterval = null;
+                    }
+                    
+                    document.getElementById('vlm-download-status').innerText = `Paused ${selectedVal}`;
+                    btn.innerText = "Resume";
+                    modelSelect.disabled = false;
+                    document.getElementById('btn-vlm-try').disabled = false;
+                    showToast("Download paused", "info");
+                } else {
+                    await apiFetch('/api/ocr/vlm_pull', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ model: selectedVal })
+                    });
+                    
+                    document.getElementById('vlm-download-bar').style.backgroundColor = 'var(--accent)';
+                    document.getElementById('vlm-download-status').innerText = `Setting up ${selectedVal}...`;
+                    btn.innerText = "Pause";
+                    modelSelect.disabled = true;
+                    document.getElementById('btn-vlm-try').disabled = true;
+                    
+                    if (vlmStatusPollInterval) clearInterval(vlmStatusPollInterval);
+                    vlmStatusPollInterval = setInterval(() => pollVLMDownloadStatus(selectedVal, false), 500);
+                    showToast("Resuming download...", "info");
+                }
+            } catch (err) {
+                console.error("Error managing VLM download action:", err);
+                showToast("Action failed", "error");
             }
         }
- 
+
         async function onVLMSelectChange() {
             if (vlmStatusPollInterval) {
                 clearInterval(vlmStatusPollInterval);
                 vlmStatusPollInterval = null;
             }
- 
+  
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
             
@@ -4949,36 +4992,70 @@
                 };
                 activeVLMModel = friendlyNames[selectedVal] || selectedVal;
             }
- 
+  
             // Re-render cached stats or blank placeholders for selected VLM benchmarking method
             updateVLMStatsUI(selectedVal);
- 
+  
             if (selectedVal === 'tesseract' || selectedVal === 'gemini-2.5-flash-lite') {
                 document.getElementById('btn-vlm-try').disabled = false;
                 document.getElementById('vlm-download-container').style.display = 'none';
+                modelSelect.disabled = false;
                 return;
             }
-
+ 
             try {
                 const response = await apiFetch('/api/ocr/vlm_status');
                 const data = await response.json();
                 const modelState = data.states[selectedVal];
+                const actionBtn = document.getElementById('btn-vlm-download-action');
 
-                if (modelState && modelState.ready) {
-                    document.getElementById('btn-vlm-try').disabled = false;
-                    document.getElementById('vlm-download-container').style.display = 'none';
-                } else if (modelState && modelState.status.startsWith('downloading')) {
-                    // Actively downloading, show setup bar and disable Try button
-                    document.getElementById('btn-vlm-try').disabled = true;
-                    document.getElementById('vlm-download-container').style.display = 'block';
-                    vlmStatusPollInterval = setInterval(() => pollVLMDownloadStatus(selectedVal, false), 500);
+                if (modelState) {
+                    if (modelState.ready) {
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        document.getElementById('vlm-download-container').style.display = 'none';
+                        modelSelect.disabled = false;
+                    } else if (modelState.status.startsWith('downloading')) {
+                        document.getElementById('btn-vlm-try').disabled = true;
+                        document.getElementById('vlm-download-container').style.display = 'block';
+                        actionBtn.style.display = 'inline-block';
+                        actionBtn.innerText = "Pause";
+                        document.getElementById('vlm-download-bar').style.backgroundColor = 'var(--accent)';
+                        modelSelect.disabled = true;
+                        
+                        vlmStatusPollInterval = setInterval(() => pollVLMDownloadStatus(selectedVal, false), 500);
+                    } else if (modelState.status === 'paused') {
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        document.getElementById('vlm-download-container').style.display = 'block';
+                        actionBtn.style.display = 'inline-block';
+                        actionBtn.innerText = "Resume";
+                        document.getElementById('vlm-download-bar').style.backgroundColor = '';
+                        document.getElementById('vlm-download-status').innerText = `Paused ${selectedVal}`;
+                        document.getElementById('vlm-download-percent').innerText = `${modelState.progress}%`;
+                        document.getElementById('vlm-download-bar').style.width = `${modelState.progress}%`;
+                        modelSelect.disabled = false;
+                    } else if (modelState.status.startsWith('failed') || modelState.status.startsWith('error')) {
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        document.getElementById('vlm-download-container').style.display = 'block';
+                        actionBtn.style.display = 'inline-block';
+                        actionBtn.innerText = "Retry";
+                        document.getElementById('vlm-download-bar').style.backgroundColor = '#ff5f5f';
+                        document.getElementById('vlm-download-status').innerText = `Failed ${selectedVal}: ${modelState.status}`;
+                        document.getElementById('vlm-download-percent').innerText = `${modelState.progress}%`;
+                        document.getElementById('vlm-download-bar').style.width = `${modelState.progress}%`;
+                        modelSelect.disabled = false;
+                    } else {
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        document.getElementById('vlm-download-container').style.display = 'none';
+                        modelSelect.disabled = false;
+                    }
                 } else {
-                    // Idle local model, enable Try button so clicking it initiates the download
                     document.getElementById('btn-vlm-try').disabled = false;
                     document.getElementById('vlm-download-container').style.display = 'none';
+                    modelSelect.disabled = false;
                 }
             } catch (err) {
                 console.error("Error checking VLM status:", err);
+                modelSelect.disabled = false;
             }
         }
 
@@ -4987,18 +5064,54 @@
                 const response = await apiFetch('/api/ocr/vlm_status');
                 const data = await response.json();
                 const modelState = data.states[modelName];
+                const modelSelect = document.getElementById('vlm-model-select');
+                const actionBtn = document.getElementById('btn-vlm-download-action');
 
                 if (modelState) {
                     const settingUpText = t("vlm_setting_up", "Setting up");
                     document.getElementById('vlm-download-status').innerText = `${settingUpText} ${modelName}: ${modelState.status}`;
                     document.getElementById('vlm-download-percent').innerText = `${modelState.progress}%`;
                     document.getElementById('vlm-download-bar').style.width = `${modelState.progress}%`;
+                    
+                    actionBtn.style.display = 'inline-block';
+
+                    if (modelState.status.startsWith('downloading')) {
+                        actionBtn.innerText = "Pause";
+                        document.getElementById('vlm-download-bar').style.backgroundColor = 'var(--accent)';
+                        modelSelect.disabled = true;
+                        document.getElementById('btn-vlm-try').disabled = true;
+                    } else if (modelState.status === 'paused') {
+                        actionBtn.innerText = "Resume";
+                        document.getElementById('vlm-download-bar').style.backgroundColor = '';
+                        modelSelect.disabled = false;
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        
+                        if (vlmStatusPollInterval) {
+                            clearInterval(vlmStatusPollInterval);
+                            vlmStatusPollInterval = null;
+                        }
+                    } else if (modelState.status.startsWith('failed') || modelState.status.startsWith('error')) {
+                        actionBtn.innerText = "Retry";
+                        document.getElementById('vlm-download-bar').style.backgroundColor = '#ff5f5f';
+                        modelSelect.disabled = false;
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        
+                        if (vlmStatusPollInterval) {
+                            clearInterval(vlmStatusPollInterval);
+                            vlmStatusPollInterval = null;
+                        }
+                    }
 
                     if (modelState.ready) {
-                        clearInterval(vlmStatusPollInterval);
-                        vlmStatusPollInterval = null;
+                        if (vlmStatusPollInterval) {
+                            clearInterval(vlmStatusPollInterval);
+                            vlmStatusPollInterval = null;
+                        }
+                        actionBtn.style.display = 'none';
                         document.getElementById('vlm-download-container').style.display = 'none';
+                        modelSelect.disabled = false;
                         document.getElementById('btn-vlm-try').disabled = false;
+                        
                         const readySuffix = t("vlm_toast_ready_suffix", "is ready to try!");
                         showToast(`${modelName} ${readySuffix}`, "success");
                         
@@ -5025,17 +5138,20 @@
                 const response = await apiFetch('/api/ocr/vlm_status');
                 const data = await response.json();
                 const modelState = data.states[selectedVal];
+                const actionBtn = document.getElementById('btn-vlm-download-action');
  
                 if (modelState && modelState.ready) {
                     executeVLMRealTrial(selectedVal);
                 } else {
-                    // Trigger download and start polling with auto-run!
                     document.getElementById('btn-vlm-try').disabled = true;
                     document.getElementById('btn-vlm-reset').disabled = true;
                     modelSelect.disabled = true;
                     document.getElementById('vlm-download-container').style.display = 'block';
+                    actionBtn.style.display = 'inline-block';
+                    actionBtn.innerText = "Pause";
+                    document.getElementById('vlm-download-bar').style.backgroundColor = 'var(--accent)';
  
-                    if (!modelState || modelState.status === 'idle') {
+                    if (!modelState || modelState.status === 'idle' || modelState.status === 'paused' || modelState.status.startsWith('failed') || modelState.status.startsWith('error')) {
                         await apiFetch('/api/ocr/vlm_pull', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
@@ -5049,6 +5165,8 @@
             } catch (err) {
                 console.error("Error starting VLM download trial:", err);
                 showToast("Error starting model download.", "error");
+                modelSelect.disabled = false;
+                document.getElementById('btn-vlm-try').disabled = false;
             }
         }
  

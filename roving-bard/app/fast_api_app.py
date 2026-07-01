@@ -1278,6 +1278,8 @@ vlm_download_states = {
     "minicpm-v": {"ready": False, "status": "idle", "progress": 0},
 }
 
+active_downloads = {}
+
 
 def sync_ollama_ready_states():
     try:
@@ -1287,7 +1289,7 @@ def sync_ollama_ready_states():
             for model_id, state in vlm_download_states.items():
                 if model_id in ("tesseract", "gemini-2.5-flash-lite", "florence-2"):
                     continue
-                if state["status"].startswith("downloading"):
+                if state["status"].startswith("downloading") or state["status"] == "paused" or state["status"].startswith("failed"):
                     continue
                 ollama_names = []
                 if model_id == "moondream":
@@ -1308,14 +1310,20 @@ def sync_ollama_ready_states():
  
  
 def pull_ollama_model_task(model_id: str, ollama_name: str):
-    global vlm_download_states
-    vlm_download_states[model_id]["status"] = "downloading"
-    vlm_download_states[model_id]["progress"] = 0
+    global vlm_download_states, active_downloads
+    state = vlm_download_states[model_id]
+    state["status"] = "downloading"
+    cancel_evt = active_downloads[model_id]["cancel_event"]
     try:
         url = "http://localhost:11434/api/pull"
         response = requests.post(url, json={"name": ollama_name}, stream=True, timeout=1200)
+        active_downloads[model_id]["response"] = response
+        
         if response.status_code == 200:
             for line in response.iter_lines():
+                if cancel_evt.is_set():
+                    response.close()
+                    break
                 if not line:
                     continue
                 try:
@@ -1326,42 +1334,52 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
                     
                     if total > 0:
                         progress = int((completed / total) * 100)
-                        if progress > vlm_download_states[model_id]["progress"]:
-                            vlm_download_states[model_id]["progress"] = progress
-                        current_p = vlm_download_states[model_id]["progress"]
-                        vlm_download_states[model_id]["status"] = f"downloading ({current_p}%)"
+                        if progress > state["progress"]:
+                            state["progress"] = progress
+                        current_p = state["progress"]
+                        state["status"] = f"downloading ({current_p}%)"
                     elif status_text:
-                        vlm_download_states[model_id]["status"] = status_text
+                        state["status"] = status_text
                         
                     if status_text == "success":
-                        vlm_download_states[model_id]["ready"] = True
-                        vlm_download_states[model_id]["status"] = "ready"
-                        vlm_download_states[model_id]["progress"] = 100
+                        state["ready"] = True
+                        state["status"] = "ready"
+                        state["progress"] = 100
                         break
                 except Exception:
                     pass
+            if cancel_evt.is_set():
+                state["status"] = "paused"
         else:
             raise Exception(f"Ollama returned status {response.status_code}")
     except Exception as e:
-        print(f"[VLM Pull] Error pulling {ollama_name}: {e}")
-        simulate_vlm_download(model_id)
+        if cancel_evt.is_set():
+            state["status"] = "paused"
+        else:
+            print(f"[VLM Pull] Error pulling {ollama_name}: {e}")
+            state["status"] = f"failed: {str(e)}"
  
  
 def simulate_vlm_download(model_id: str):
     import time
-    global vlm_download_states
-    vlm_download_states[model_id]["status"] = "downloading"
-    for p in range(0, 101, 10):
-        vlm_download_states[model_id]["progress"] = p
-        vlm_download_states[model_id]["status"] = f"downloading ({p}%)"
+    global vlm_download_states, active_downloads
+    state = vlm_download_states[model_id]
+    state["status"] = "downloading"
+    cancel_evt = active_downloads[model_id]["cancel_event"]
+    for p in range(state["progress"], 101, 10):
+        if cancel_evt.is_set():
+            state["status"] = "paused"
+            return
+        state["progress"] = p
+        state["status"] = f"downloading ({p}%)"
         time.sleep(0.3)
-    vlm_download_states[model_id]["ready"] = True
-    vlm_download_states[model_id]["status"] = "ready"
-    vlm_download_states[model_id]["progress"] = 100
+    state["ready"] = True
+    state["status"] = "ready"
+    state["progress"] = 100
  
  
 def sync_florence_ready_state():
-    if vlm_download_states["florence-2"]["status"].startswith("downloading"):
+    if vlm_download_states["florence-2"]["status"].startswith("downloading") or vlm_download_states["florence-2"]["status"] == "paused" or vlm_download_states["florence-2"]["status"].startswith("failed"):
         return
     cache_dir = os.path.expanduser("~/.cache/huggingface/hub/models--microsoft--Florence-2-large")
     if os.path.exists(cache_dir):
@@ -1377,21 +1395,23 @@ def sync_florence_ready_state():
 
 
 def pull_florence_model_task():
-    global vlm_download_states
-    vlm_download_states["florence-2"]["status"] = "downloading"
-    vlm_download_states["florence-2"]["progress"] = 5
+    global vlm_download_states, active_downloads
+    state = vlm_download_states["florence-2"]
+    state["status"] = "downloading"
+    state["progress"] = 5
     
+    cancel_evt = active_downloads["florence-2"]["cancel_event"]
     stop_event = threading.Event()
     def increment_progress():
         import time
         p = 5
-        while not stop_event.is_set() and p < 95:
+        while not stop_event.is_set() and not cancel_evt.is_set() and p < 95:
             time.sleep(1.0)
             p += 2
             if p > 95:
                 p = 95
-            vlm_download_states["florence-2"]["progress"] = p
-            vlm_download_states["florence-2"]["status"] = f"downloading ({p}%)"
+            state["progress"] = p
+            state["status"] = f"downloading ({p}%)"
             
     inc_t = threading.Thread(target=increment_progress)
     inc_t.daemon = True
@@ -1400,20 +1420,35 @@ def pull_florence_model_task():
     try:
         from transformers import AutoProcessor, AutoModelForCausalLM
         print("[Florence-2] Downloading microsoft/Florence-2-large in background...")
+        if cancel_evt.is_set():
+            raise Exception("Download cancelled by user.")
         AutoModelForCausalLM.from_pretrained("microsoft/Florence-2-large", trust_remote_code=True)
+        if cancel_evt.is_set():
+            raise Exception("Download cancelled by user.")
         AutoProcessor.from_pretrained("microsoft/Florence-2-large", trust_remote_code=True)
         
         stop_event.set()
         inc_t.join()
-        vlm_download_states["florence-2"]["ready"] = True
-        vlm_download_states["florence-2"]["status"] = "ready"
-        vlm_download_states["florence-2"]["progress"] = 100
-        print("[Florence-2] microsoft/Florence-2-large downloaded and cached successfully!")
+        
+        if cancel_evt.is_set():
+            state["status"] = "paused"
+        else:
+            state["ready"] = True
+            state["status"] = "ready"
+            state["progress"] = 100
+            print("[Florence-2] microsoft/Florence-2-large downloaded and cached successfully!")
     except Exception as e:
         print(f"[Florence-2] Error downloading model: {e}")
         stop_event.set()
-        vlm_download_states["florence-2"]["status"] = f"error: {str(e)}"
-        vlm_download_states["florence-2"]["progress"] = 0
+        try:
+            inc_t.join(timeout=1.0)
+        except:
+            pass
+        if cancel_evt.is_set():
+            state["status"] = "paused"
+        else:
+            state["status"] = f"failed: {str(e)}"
+            state["progress"] = 0
 
 
 @app.get("/api/ocr/vlm_status", dependencies=[Depends(verify_api_key)])
@@ -1448,6 +1483,12 @@ def api_vlm_pull(req: VlmPullRequest):
         "minicpm-v": "minicpm-v"
     }
 
+    # Initialize active downloads entry
+    active_downloads[model_id] = {
+        "cancel_event": threading.Event(),
+        "response": None
+    }
+
     if model_id == "florence-2":
         t = threading.Thread(target=pull_florence_model_task)
         t.daemon = True
@@ -1462,6 +1503,31 @@ def api_vlm_pull(req: VlmPullRequest):
         t.start()
         
     return {"status": "success", "message": f"Started setup for {req.model}."}
+
+
+class VlmPauseRequest(BaseModel):
+    model: str
+
+
+@app.post("/api/ocr/vlm_pause", dependencies=[Depends(verify_api_key)])
+def api_vlm_pause(req: VlmPauseRequest):
+    """Pauses or cancels an active VLM download/pull."""
+    model_id = req.model.lower()
+    if model_id not in vlm_download_states:
+        return {"status": "error", "message": f"Unknown model: {req.model}"}
+        
+    # Trigger cancellation
+    if model_id in active_downloads:
+        active_downloads[model_id]["cancel_event"].set()
+        resp_obj = active_downloads[model_id]["response"]
+        if resp_obj:
+            try:
+                resp_obj.close()
+            except Exception:
+                pass
+                
+    vlm_download_states[model_id]["status"] = "paused"
+    return {"status": "success", "message": f"Paused download for {req.model}."}
 
 
 class VlmTryRequest(BaseModel):
