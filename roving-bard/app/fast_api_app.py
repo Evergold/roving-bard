@@ -761,6 +761,15 @@ def api_screenshot_processed():
     return Response(content=transparent_png, media_type="image/png")
 
 
+@app.get("/api/screenshot/location_raw", dependencies=[Depends(verify_api_key)])
+def api_screenshot_location_raw():
+    """Returns the latest raw unbinarized location screenshot image, or a transparent placeholder."""
+    if tools.latest_location_raw_bytes:
+        return Response(content=tools.latest_location_raw_bytes, media_type="image/png")
+    transparent_png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82"
+    return Response(content=transparent_png, media_type="image/png")
+
+
 def initialize_simulation_screen():
     """Loads the first test screen on startup if in simulation mode."""
     import os
@@ -2303,12 +2312,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             max_tries = 2 if is_first_run else 1
             response = None
             t0, t1 = 0.0, 0.0
+            # Setup JSON payload and dynamic prompt
             url = "http://127.0.0.1:11434/api/generate"
-            prompt = (
-                "Transcribe the text in the image, focusing on the bottom-most characters."
-            )
-            
-            # Setup JSON payload (enforce 0.0 temperature for Qwen models only)
+            if "qwen" in selected_model:
+                prompt = "The image shows a location name and coordinates. Read them exactly."
+            else:
+                prompt = "Transcribe the text in the image, focusing on the bottom-most characters."
+
             json_payload = {
                 "model": model_map[selected_model],
                 "prompt": prompt,
@@ -2350,8 +2360,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             
             if response and response.status_code == 200:
-                if selected_model in ("moondream", "qwen2-vl"):
-                    warmed_models.add(selected_model)
+                # Only mark as warmed if it actually returned a valid parse to avoid getting stuck in cold state
+                if (loc_str and loc_str != "None") or (coords_str and coords_str != "None"):
+                    if selected_model in ("moondream", "qwen2-vl"):
+                        warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
