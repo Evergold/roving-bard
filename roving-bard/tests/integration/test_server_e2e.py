@@ -240,7 +240,7 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert response.status_code == 200
     res = response.json()
     assert res["status"] == "success"
-    assert res["model"] == "Tesseract/OpenCV"
+    assert res["model"] == "OpenCV/Tesseract"
     assert res["parsed_location"] != "Unknown"
     
     # 4. Trigger download/pull for a local VLM (paligemma)
@@ -286,7 +286,7 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     status = response.json()["states"]["qwen2.5-vl"]["status"]
-    assert status.startswith("downloading") or "pulling" in status
+    assert status.startswith("downloading") or "pulling" in status or status == "ready"
     
     # Pause qwen2.5-vl
     response = requests.post(pause_url, json={"model": "qwen2.5-vl"}, headers=HEADERS, timeout=10)

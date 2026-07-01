@@ -3597,7 +3597,7 @@
                                 <div style="font-weight: bold; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;" data-loc="vlm_benchmarking">VLM Benchmarking</div>
                                 <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; width: 100%; align-items: center;">
                                     <select id="vlm-model-select" style="flex: 1; height: 32px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 4px; padding: 0 0.5rem;" onchange="onVLMSelectChange()">
-                                        <option value="tesseract" data-loc="vlm_tesseract_opt">Tesseract/OpenCV (Default)</option>
+                                        <option value="tesseract" data-loc="vlm_tesseract_opt">OpenCV/Tesseract (Default)</option>
                                         <option value="moondream">Moondream2</option>
                                         <option value="qwen2-vl">Qwen2-VL (2B)</option>
                                         <option value="qwen2.5-vl">Qwen2.5-VL (3B)</option>
@@ -4851,7 +4851,7 @@
                 if (selectedVal === 'tesseract') {
                     // Update default Tesseract stats
                     const statMethod = document.getElementById('stat-method');
-                    if (statMethod) statMethod.innerText = "Tesseract/OpenCV";
+                    if (statMethod) statMethod.innerText = "OpenCV/Tesseract";
                     const locTime = parse.loc_time_ms !== undefined ? `${parse.loc_time_ms.toFixed(1)} ms` : "0.0 ms";
                     const coordsTime = parse.coords_time_ms !== undefined ? `${parse.coords_time_ms.toFixed(1)} ms` : "0.0 ms";
                     const totalTime = parse.total_time_ms !== undefined ? `${parse.total_time_ms.toFixed(1)} ms` : "0.0 ms";
@@ -4884,7 +4884,7 @@
                     ram: finalRam,
                     vramLabel: vramLabelText,
                     ramLabel: ramLabelText,
-                    methodLabel: "Tesseract/OpenCV"
+                    methodLabel: "OpenCV/Tesseract"
                 };
             }
 
@@ -4906,7 +4906,7 @@
             
             const statMethod = document.getElementById('stat-method');
             const friendlyNames = {
-                'tesseract': 'Tesseract/OpenCV',
+                'tesseract': 'OpenCV/Tesseract',
                 'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
                 'moondream': 'Moondream2',
                 'qwen2-vl': 'Qwen2-VL (2B)',
@@ -5233,7 +5233,7 @@
             document.getElementById('parse-bearing').innerText = "";
  
             const friendlyNames = {
-                'tesseract': 'Tesseract/OpenCV',
+                'tesseract': 'OpenCV/Tesseract',
                 'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
                 'moondream': 'Moondream2',
                 'qwen2-vl': 'Qwen2-VL (2B)',

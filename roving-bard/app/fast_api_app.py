@@ -2180,7 +2180,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             act_ram, act_vram = get_peak_usage()
             return {
                 "status": "success",
-                "model": "Tesseract/OpenCV",
+                "model": "OpenCV/Tesseract",
                 "parsed_location": loc_val,
                 "parsed_coordinates": coords_val,
                 "raw_location": raw_loc if raw_loc != "None" else None,
