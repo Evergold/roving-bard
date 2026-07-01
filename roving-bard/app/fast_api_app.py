@@ -1350,8 +1350,8 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
                             state["progress"] = progress
                         current_p = state["progress"]
                         state["status"] = f"downloading ({current_p}%)"
-                    elif status_text:
-                        state["status"] = status_text
+                    elif status_text and status_text != "success":
+                        state["status"] = f"downloading - {status_text}"
                         
                     if status_text == "success":
                         state["ready"] = True
