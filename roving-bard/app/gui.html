@@ -4824,8 +4824,8 @@
 
                 const hasActual = (parse.actual_ram !== null && parse.actual_ram !== undefined);
                 const finalRam = hasActual ? parse.actual_ram : "~30 MB";
-                const finalVram = (parse.actual_vram !== null && parse.actual_vram !== undefined) ? parse.actual_vram : "0 MB";
-                const vramLabelText = (parse.actual_vram !== null && parse.actual_vram !== undefined) ? t("vlm_act_vram", "Act VRAM") : t("vlm_est_vram", "Est VRAM");
+                const finalVram = "0 MB";
+                const vramLabelText = t("vlm_est_vram", "Est VRAM");
                 const ramLabelText = hasActual ? t("vlm_act_ram", "Act RAM ") : t("vlm_est_ram", "Est RAM ");
 
                 if (selectedVal === 'tesseract') {
@@ -5116,7 +5116,7 @@
                     const vramLabel = document.getElementById('label-vram');
                     const ramLabel = document.getElementById('label-ram');
 
-                    if (res.actual_vram) {
+                    if (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-1.5-flash') {
                         if (vramEl) vramEl.innerText = res.actual_vram;
                         if (vramLabel) vramLabel.innerText = t("vlm_act_vram", "Act VRAM");
                     } else {
