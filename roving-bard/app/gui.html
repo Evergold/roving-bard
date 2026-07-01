@@ -3003,6 +3003,115 @@
         body.light-theme .audio-tab:hover {
             background: rgba(0, 0, 0, 0.05);
         }
+
+        /* Session Log UI Styles */
+        .log-trigger-btn {
+            background: transparent;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            width: 38px;
+            height: 38px;
+        }
+        .log-trigger-btn:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        body.light-theme .log-trigger-btn:hover {
+            background-color: rgba(0, 0, 0, 0.06);
+        }
+        .log-trigger-btn:active {
+            transform: scale(0.95);
+        }
+        .log-trigger-btn.active svg {
+            stroke: var(--accent) !important;
+        }
+        .log-trigger-btn svg {
+            stroke: var(--text-muted);
+            transition: stroke 0.2s ease;
+        }
+        .log-trigger-btn:hover svg {
+            stroke: var(--text-main);
+        }
+        .log-popover {
+            left: 6rem !important;
+            width: 320px;
+            height: 350px;
+            transform-origin: top left;
+        }
+        body.light-theme .log-popover {
+            background: rgba(210, 213, 216, 0.95) !important;
+            border: 1px solid #b4b8c0 !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+        }
+        body.light-theme .log-popover.active {
+            background: rgb(210, 213, 216) !important;
+        }
+        .log-filter-btn {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .log-filter-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
+        .log-filter-btn.active {
+            background: var(--accent);
+            color: white !important;
+            border-color: var(--accent);
+        }
+        body.light-theme .log-filter-btn {
+            background: rgba(0, 0, 0, 0.04);
+        }
+        .log-item {
+            border-left: 3px solid transparent;
+            padding-left: 6px;
+            margin-bottom: 2px;
+            word-break: break-word;
+        }
+        .log-item-error {
+            border-left-color: #ef4444;
+            color: #f87171;
+        }
+        body.light-theme .log-item-error {
+            color: #dc2626;
+        }
+        .log-item-warn {
+            border-left-color: #f59e0b;
+            color: #fbbf24;
+        }
+        body.light-theme .log-item-warn {
+            color: #d97706;
+        }
+        .log-item-info {
+            border-left-color: #3b82f6;
+            color: #60a5fa;
+        }
+        body.light-theme .log-item-info {
+            color: #2563eb;
+        }
+        .log-item-success {
+            border-left-color: #10b981;
+            color: #34d399;
+        }
+        body.light-theme .log-item-success {
+            color: #059669;
+        }
+        .log-item-time {
+            color: var(--text-muted);
+            margin-right: 6px;
+            font-size: 0.7rem;
+        }
     </style>
 </head>
 <body>
@@ -3124,6 +3233,42 @@
                         <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
                             <button id="clear-cache-btn" class="font-size-btn" onclick="clearAudioCache(event)" style="height: 48px; min-width: 80px; font-size: 0.95rem; border-radius: 24px; border: none; padding: 0 20px; transition: all 0.2s ease;" data-loc="clear_btn_label" disabled>Clear</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Log Trigger Button -->
+            <button id="log-trigger-btn" class="log-trigger-btn" onclick="toggleLogPopover(event)" title="Session Log">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span id="log-badge" style="display: none; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent);"></span>
+            </button>
+
+            <!-- Session Log Pop-over -->
+            <div id="log-popover" class="menu-popover log-popover">
+                <div id="log-popover-inner" style="display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 1.2rem;">
+                    <div style="font-size: 0.95rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
+                        <span>Session Log</span>
+                        <button onclick="clearSessionLogs(event)" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+                            Clear
+                        </button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.4rem; margin-bottom: 0.8rem; font-family: 'Space Mono', monospace; font-size: 0.7rem;">
+                        <button onclick="filterLogs('all')" class="log-filter-btn active" id="filter-all-btn">ALL</button>
+                        <button onclick="filterLogs('error')" class="log-filter-btn" id="filter-error-btn">ERROR</button>
+                        <button onclick="filterLogs('warn')" class="log-filter-btn" id="filter-warn-btn">WARN</button>
+                        <button onclick="filterLogs('info')" class="log-filter-btn" id="filter-info-btn">INFO</button>
+                        <button onclick="filterLogs('success')" class="log-filter-btn" id="filter-success-btn">SUCCESS</button>
+                    </div>
+
+                    <div id="log-messages-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; font-family: 'Space Mono', monospace; font-size: 0.75rem; line-height: 1.3;">
+                        <div id="log-empty-msg" style="color: var(--text-muted); text-align: center; margin-top: auto; margin-bottom: auto;">No log messages yet.</div>
                     </div>
                 </div>
             </div>
@@ -6583,7 +6728,13 @@
             popover.classList.remove('active');
         }
 
+        let logPopoverOpen = false;
+        let activeLogFilter = 'all';
+        window.sessionLogs = window.sessionLogs || [];
+
         function showToast(message, type = 'error', durationMs = 3000) {
+            saveLogToSession(message, type);
+
             const container = document.getElementById('toast-container');
             if (!container) return;
             const toast = document.createElement('div');
@@ -6596,6 +6747,107 @@
                 toast.classList.remove('show');
                 toast.addEventListener('transitionend', () => toast.remove(), { once: true });
             }, durationMs);
+        }
+
+        function saveLogToSession(message, type) {
+            window.sessionLogs = window.sessionLogs || [];
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            window.sessionLogs.push({
+                message: message,
+                type: type,
+                timestamp: timeStr
+            });
+            if (window.sessionLogs.length > 500) {
+                window.sessionLogs.shift();
+            }
+            if (!logPopoverOpen) {
+                const badge = document.getElementById('log-badge');
+                if (badge) badge.style.display = 'block';
+            }
+            if (logPopoverOpen) {
+                renderLogs();
+            }
+        }
+
+        function toggleLogPopover(event) {
+            if (event) event.stopPropagation();
+            if (menuPopoverOpen) {
+                toggleMenuPopOver();
+            }
+            const popover = document.getElementById('log-popover');
+            const logBtn = document.getElementById('log-trigger-btn');
+            if (!popover) return;
+            if (logPopoverOpen) {
+                popover.classList.remove('active');
+                if (logBtn) logBtn.classList.remove('active');
+                logPopoverOpen = false;
+            } else {
+                popover.classList.add('active');
+                if (logBtn) logBtn.classList.add('active');
+                logPopoverOpen = true;
+                const badge = document.getElementById('log-badge');
+                if (badge) badge.style.display = 'none';
+                renderLogs();
+            }
+        }
+
+        function clearSessionLogs(event) {
+            if (event) event.stopPropagation();
+            window.sessionLogs = [];
+            renderLogs();
+            const badge = document.getElementById('log-badge');
+            if (badge) badge.style.display = 'none';
+        }
+
+        function filterLogs(filterType) {
+            activeLogFilter = filterType;
+            const filters = ['all', 'error', 'warn', 'info', 'success'];
+            filters.forEach(f => {
+                const btn = document.getElementById(`filter-${f}-btn`);
+                if (btn) {
+                    if (f === filterType) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+            renderLogs();
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('log-messages-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const logs = window.sessionLogs || [];
+            const filteredLogs = logs.filter(log => {
+                if (activeLogFilter === 'all') return true;
+                return log.type === activeLogFilter;
+            });
+            if (filteredLogs.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.id = 'log-empty-msg';
+                emptyMsg.style.color = 'var(--text-muted)';
+                emptyMsg.style.textAlign = 'center';
+                emptyMsg.style.marginTop = 'auto';
+                emptyMsg.style.marginBottom = 'auto';
+                emptyMsg.textContent = 'No messages of this severity.';
+                container.appendChild(emptyMsg);
+                return;
+            }
+            filteredLogs.slice().reverse().forEach(log => {
+                const logItem = document.createElement('div');
+                logItem.className = `log-item log-item-${log.type}`;
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-item-time';
+                timeSpan.textContent = `[${log.timestamp}]`;
+                const textSpan = document.createElement('span');
+                textSpan.textContent = log.message;
+                logItem.appendChild(timeSpan);
+                logItem.appendChild(textSpan);
+                container.appendChild(logItem);
+            });
         }
 
         async function executeExportSegment(trimmedName) {
@@ -7298,6 +7550,12 @@
             const menuBtn = document.getElementById('menu-scroll-top-btn');
             if (menuPopoverOpen && popover && !popover.contains(event.target) && (!menuBtn || !menuBtn.contains(event.target))) {
                 toggleMenuPopOver();
+            }
+            // Close log popover if clicked outside
+            const logPopover = document.getElementById('log-popover');
+            const logBtn = document.getElementById('log-trigger-btn');
+            if (logPopoverOpen && logPopover && !logPopover.contains(event.target) && (!logBtn || !logBtn.contains(event.target))) {
+                toggleLogPopover();
             }
         });
 
