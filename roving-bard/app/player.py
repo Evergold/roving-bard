@@ -1939,22 +1939,37 @@ class LocalOCRParser:
             raw_coords = match.group(0)
             
         raw_loc = "None"
-        lines = []
-        for line in text.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            lines.append(line)
-            
-        for line in lines:
-            c_match = coord_pattern.search(line)
-            if c_match:
-                coord_start, coord_end = c_match.span()
-                line = line[:coord_start] + " " + line[coord_end:]
-            cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
-            if len(cleaned) > 2:
-                raw_loc = cleaned
-                break
+        if location:
+            words_in_text = re.findall(r"[a-zA-Z'’\-]+", text)
+            import difflib
+            best_word = None
+            best_score = 0.0
+            for w in words_in_text:
+                if len(w) > 2:
+                    score = difflib.SequenceMatcher(None, w.lower(), location.lower()).ratio()
+                    if score > best_score:
+                        best_score = score
+                        best_word = w
+            if best_word and best_score >= 0.65:
+                raw_loc = best_word
+
+        if raw_loc == "None":
+            lines = []
+            for line in text.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                lines.append(line)
+                
+            for line in lines:
+                c_match = coord_pattern.search(line)
+                if c_match:
+                    coord_start, coord_end = c_match.span()
+                    line = line[:coord_start] + " " + line[coord_end:]
+                cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
+                if len(cleaned) > 2:
+                    raw_loc = cleaned
+                    break
                 
         return {
             "parsed_location": location if location else "None",
