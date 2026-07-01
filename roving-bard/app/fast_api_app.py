@@ -1647,6 +1647,11 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
             try:
+                tp0 = time.time()
+                _ = tools.ocr_parser.preprocess_image(text_img, pass_num=2)
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
+
                 t0 = time.time()
                 pass_num = getattr(tools, "current_ocr_pass", 2)
                 loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
@@ -1666,6 +1671,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "parsed_coordinates": coords_val,
                     "loc_time_ms": round(loc_time_ms, 1),
                     "coords_time_ms": round(coords_time_ms, 1),
+                    "preprocess_time_ms": round(preprocess_time_ms, 1),
                     "total_time_ms": round(total_time_ms, 1),
                     "actual_ram": act_ram,
                     "actual_vram": act_vram
@@ -1676,6 +1682,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual cloud Gemini 1.5 Flash inference!
         if selected_model == "gemini-1.5-flash":
             try:
+                tp0 = time.time()
+                buffered = io.BytesIO()
+                text_img.save(buffered, format="PNG")
+                import base64
+                _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
+
                 t0 = time.time()
                 loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img, "gemini/gemini-1.5-flash")
                 t1 = time.time()
@@ -1692,6 +1706,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "parsed_coordinates": coords_val,
                     "loc_time_ms": None,
                     "coords_time_ms": None,
+                    "preprocess_time_ms": round(preprocess_time_ms, 1),
                     "total_time_ms": round(total_time_ms, 1),
                     "actual_ram": act_ram,
                     "actual_vram": act_vram
@@ -1702,8 +1717,24 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual local Florence-2 (Large) inference!
         if selected_model == "florence-2" and vlm_download_states["florence-2"]["ready"]:
             try:
+                tp0 = time.time()
+                device = florence_model.device
+                inputs = florence_processor(text="<OCR>", images=text_img, return_tensors="pt").to(device)
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
+
                 t0 = time.time()
-                raw_text = run_florence_ocr(text_img)
+                generated_ids = florence_model.generate(
+                    input_ids=inputs["input_ids"],
+                    pixel_values=inputs["pixel_values"],
+                    max_new_tokens=1024,
+                    num_beams=3
+                )
+                raw_text = florence_processor.post_process_generation(
+                    generated_ids, 
+                    task="<OCR>", 
+                    image_size=text_img.size
+                )["<OCR>"]
                 t1 = time.time()
                 
                 parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(raw_text)
@@ -1723,6 +1754,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "parsed_coordinates": coords_str,
                     "loc_time_ms": round(loc_time_ms, 1),
                     "coords_time_ms": round(coords_time_ms, 1),
+                    "preprocess_time_ms": round(preprocess_time_ms, 1),
                     "total_time_ms": round(total_time_ms, 1),
                     "actual_ram": act_ram,
                     "actual_vram": act_vram
@@ -1735,6 +1767,17 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         coords_time = perf["coords"]
         total_time = loc_time + coords_time
         
+        sim_preprocess = {
+            "tesseract": 4.5,
+            "gemini-1.5-flash": 2.1,
+            "moondream": 8.5,
+            "qwen2-vl": 12.0,
+            "florence-2": 10.0,
+            "paligemma": 15.0,
+            "minicpm-v": 18.0
+        }
+        preprocess_time_ms = sim_preprocess.get(selected_model, 10.0)
+
         # Simulate processing delay
         time.sleep(total_time / 1000.0)
         
@@ -1754,6 +1797,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "parsed_coordinates": parsed_coords,
             "loc_time_ms": None if is_gemini else loc_time,
             "coords_time_ms": None if is_gemini else coords_time,
+            "preprocess_time_ms": preprocess_time_ms,
             "total_time_ms": total_time,
             "actual_ram": act_ram,
             "actual_vram": act_vram
