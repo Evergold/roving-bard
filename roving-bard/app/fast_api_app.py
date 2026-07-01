@@ -1805,79 +1805,208 @@ def run_florence_ocr(image):
     return generated_text
 
 
+def get_ollama_pids():
+    """Returns a list of all running Ollama process PIDs on any platform."""
+    import platform
+    import subprocess
+    pids = []
+    sys_type = platform.system()
+    
+    # 1. Linux
+    if sys_type == "Linux":
+        try:
+            for pid_str in os.listdir("/proc"):
+                if pid_str.isdigit():
+                    try:
+                        with open(f"/proc/{pid_str}/comm", "r") as f:
+                            comm = f.read().strip().lower()
+                        if "ollama" in comm:
+                            pids.append(int(pid_str))
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+            
+    # 2. Windows
+    elif sys_type == "Windows":
+        import csv
+        try:
+            res = subprocess.check_output(
+                ["tasklist", "/NH", "/FO", "CSV", "/FI", "IMAGENAME eq ollama.exe"],
+                creationflags=0x08000000 # CREATE_NO_WINDOW
+            ).decode("utf-8", errors="ignore")
+            reader = csv.reader(res.strip().splitlines())
+            for row in reader:
+                if row and len(row) > 1:
+                    pids.append(int(row[1]))
+        except Exception:
+            pass
+            
+    # 3. macOS (Darwin)
+    elif sys_type == "Darwin":
+        try:
+            res = subprocess.check_output(["pgrep", "-f", "ollama"]).decode("utf-8")
+            for line in res.strip().splitlines():
+                if line.isdigit():
+                    pids.append(int(line))
+        except Exception:
+            pass
+            
+    return pids
+
+
 def get_process_ram_usage_bytes(pid=None):
-    """Gets the VmRSS (Resident Set Size) memory usage of a process (or current process if pid is None) in bytes."""
-    try:
-        target_pid = pid if pid is not None else "self"
-        with open(f"/proc/{target_pid}/status", "r") as f:
-            for line in f:
-                if line.startswith("VmRSS:"):
-                    parts = line.split()
-                    return int(parts[1]) * 1024
-    except Exception:
-        pass
+    """Gets the VmRSS (Resident Set Size) memory usage of a process in bytes."""
+    import platform
+    if pid is None:
+        pid = os.getpid()
+    sys_type = platform.system()
+
+    # 1. Linux
+    if sys_type == "Linux":
+        try:
+            with open(f"/proc/{pid}/status", "r") as f:
+                for line in f:
+                    if line.startswith("VmRSS:"):
+                        parts = line.split()
+                        return int(parts[1]) * 1024
+        except Exception:
+            pass
+
+    # 2. Windows (using ctypes)
+    elif sys_type == "Windows":
+        try:
+            import ctypes
+            from ctypes import wintypes
+            class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+                _fields_ = [
+                    ("cb", wintypes.DWORD),
+                    ("PageFaultCount", wintypes.DWORD),
+                    ("PeakWorkingSetSize", ctypes.c_size_t),
+                    ("WorkingSetSize", ctypes.c_size_t),
+                    ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                    ("PagefileUsage", ctypes.c_size_t),
+                    ("PeakPagefileUsage", ctypes.c_size_t),
+                ]
+            PROCESS_QUERY_INFORMATION = 0x0400
+            PROCESS_VM_READ = 0x0010
+            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid)
+            if handle:
+                try:
+                    counters = PROCESS_MEMORY_COUNTERS()
+                    counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+                    if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb):
+                        return counters.WorkingSetSize
+                finally:
+                    ctypes.windll.kernel32.CloseHandle(handle)
+        except Exception:
+            pass
+
+    # 3. macOS (using ps shell command fallback)
+    elif sys_type == "Darwin":
+        try:
+            import subprocess
+            res = subprocess.check_output(["ps", "-o", "rss=", "-p", str(pid)])
+            return int(res.strip()) * 1024
+        except Exception:
+            pass
+
     return 0
 
 
 def get_process_peak_ram_bytes(target_pid=None):
-    """Gets the peak RSS (VmHWM) memory of a process in bytes from /proc/<pid>/status."""
+    """Gets the peak RSS memory of a process in bytes."""
+    import platform
     if target_pid is None:
         target_pid = os.getpid()
-    try:
-        with open(f"/proc/{target_pid}/status", "r") as f:
-            for line in f:
-                if line.startswith("VmHWM:"):
-                    parts = line.split()
-                    return int(parts[1]) * 1024
-    except Exception:
-        pass
+    sys_type = platform.system()
+
+    # 1. Linux
+    if sys_type == "Linux":
+        try:
+            with open(f"/proc/{target_pid}/status", "r") as f:
+                for line in f:
+                    if line.startswith("VmHWM:"):
+                        parts = line.split()
+                        return int(parts[1]) * 1024
+        except Exception:
+            pass
+
+    # 2. Windows (using ctypes)
+    elif sys_type == "Windows":
+        try:
+            import ctypes
+            from ctypes import wintypes
+            class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+                _fields_ = [
+                    ("cb", wintypes.DWORD),
+                    ("PageFaultCount", wintypes.DWORD),
+                    ("PeakWorkingSetSize", ctypes.c_size_t),
+                    ("WorkingSetSize", ctypes.c_size_t),
+                    ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                    ("PagefileUsage", ctypes.c_size_t),
+                    ("PeakPagefileUsage", ctypes.c_size_t),
+                ]
+            PROCESS_QUERY_INFORMATION = 0x0400
+            PROCESS_VM_READ = 0x0010
+            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, target_pid)
+            if handle:
+                try:
+                    counters = PROCESS_MEMORY_COUNTERS()
+                    counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+                    if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb):
+                        return counters.PeakWorkingSetSize
+                finally:
+                    ctypes.windll.kernel32.CloseHandle(handle)
+        except Exception:
+            pass
+
+    # 3. macOS
+    elif sys_type == "Darwin":
+        if target_pid == os.getpid():
+            try:
+                import resource
+                return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            except Exception:
+                pass
+        return get_process_ram_usage_bytes(target_pid)
+
     return get_process_ram_usage_bytes(target_pid)
 
 
 def get_ollama_ram_usage_bytes():
     """Finds all running processes containing 'ollama' and returns their combined RSS memory in bytes."""
     total_ram = 0
-    try:
-        for pid_str in os.listdir("/proc"):
-            if pid_str.isdigit():
-                try:
-                    with open(f"/proc/{pid_str}/comm", "r") as f:
-                        comm = f.read().strip().lower()
-                    if "ollama" in comm:
-                        total_ram += get_process_ram_usage_bytes(int(pid_str))
-                except Exception:
-                    continue
-    except Exception:
-        pass
+    for pid in get_ollama_pids():
+        total_ram += get_process_ram_usage_bytes(pid)
     return total_ram
 
 
 def get_ollama_peak_ram_usage_bytes():
-    """Finds all running processes containing 'ollama' and returns their combined peak RSS (VmHWM) memory in bytes."""
+    """Finds all running processes containing 'ollama' and returns their combined peak RSS memory in bytes."""
     total_ram = 0
-    try:
-        for pid_str in os.listdir("/proc"):
-            if pid_str.isdigit():
-                try:
-                    with open(f"/proc/{pid_str}/comm", "r") as f:
-                        comm = f.read().strip().lower()
-                    if "ollama" in comm:
-                        total_ram += get_process_peak_ram_bytes(int(pid_str))
-                except Exception:
-                    continue
-    except Exception:
-        pass
+    for pid in get_ollama_pids():
+        total_ram += get_process_peak_ram_bytes(pid)
     return total_ram
 
 
 def get_gpu_vram_usage_bytes():
     """Gets the GPU memory usage of current process and any ollama processes in bytes."""
     import subprocess
+    import platform
     total_vram = 0
     try:
         import torch
         if torch.cuda.is_available():
             total_vram += torch.cuda.memory_allocated()
+        elif torch.backends.mps.is_available():
+            total_vram += torch.mps.driver_allocated_memory()
     except Exception:
         pass
 
@@ -1891,15 +2020,8 @@ def get_gpu_vram_usage_bytes():
         )
         if res.returncode == 0:
             pids_of_interest = {os.getpid()}
-            for pid_str in os.listdir("/proc"):
-                if pid_str.isdigit():
-                    try:
-                        with open(f"/proc/{pid_str}/comm", "r") as f:
-                            comm = f.read().strip().lower()
-                        if "ollama" in comm:
-                            pids_of_interest.add(int(pid_str))
-                    except Exception:
-                        continue
+            for pid in get_ollama_pids():
+                pids_of_interest.add(pid)
             
             for line in res.stdout.strip().split("\n"):
                 if not line:
@@ -1912,6 +2034,7 @@ def get_gpu_vram_usage_bytes():
                         total_vram += vram_mb * 1024 * 1024
     except Exception:
         pass
+        
     return total_vram
 
 
