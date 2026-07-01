@@ -1847,7 +1847,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             t0 = time.time()
             url = "http://localhost:11434/api/generate"
             prompt = (
-                "Perform OCR on this image. Transcribe all visible text. Do not output JSON or explanation."
+                "What text is written at the very bottom of this image?"
             )
             response = requests.post(
                 url, 
@@ -1865,6 +1865,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             
             if response.status_code == 200:
                 resp_json = response.json()
+                print(f"[Ollama VLM Raw JSON] Model: {selected_model}, JSON: {resp_json!r}", flush=True)
                 response_text = resp_json.get("response", "")
                 parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(response_text)
                 coords_str = parsed_coords if parsed_coords else "None"
