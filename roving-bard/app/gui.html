@@ -4811,8 +4811,17 @@
             }
 
             if (!activeVLMModel) {
-                document.getElementById('parse-location').innerText = parse.parsed_location || t("unknown_out_of_bounds");
-                document.getElementById('parse-coords').innerText = parse.parsed_coordinates || t("none");
+                let locHtml = parse.parsed_location || t("unknown_out_of_bounds");
+                if (parse.raw_location) {
+                    locHtml += " <span style='font-size: 0.8rem; opacity: 0.7; margin-left: 5px;'>[" + parse.raw_location + "]</span>";
+                }
+                document.getElementById('parse-location').innerHTML = locHtml;
+
+                let coordsHtml = parse.parsed_coordinates || t("none");
+                if (parse.raw_coordinates) {
+                    coordsHtml += "<br><span style='font-size: 0.8rem; opacity: 0.7;'>[" + parse.raw_coordinates + "]</span>";
+                }
+                document.getElementById('parse-coords').innerHTML = coordsHtml;
                 
                 let methodText = parse.method || "None";
                 if (methodText === "Local OCR") methodText = t("method_local_ocr");
@@ -5258,7 +5267,7 @@
                 const res = await response.json();
                 if (res.status === 'success') {
                     let locHtml = res.parsed_location || "None";
-                    if (res.raw_location && selectedVal !== 'tesseract') {
+                    if (res.raw_location) {
                         locHtml += " <span style='font-size: 0.8rem; opacity: 0.7; margin-left: 5px;'>[" + res.raw_location + "]</span>";
                     }
                     document.getElementById('parse-location').innerHTML = locHtml;

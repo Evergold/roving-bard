@@ -2166,6 +2166,11 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
             t1 = time.time()
             
+            raw_text = getattr(tools.ocr_parser, "latest_raw_text", "")
+            rich = tools.ocr_parser.parse_text_rich(raw_text)
+            raw_loc = rich["raw_location"]
+            raw_coords = rich["raw_coordinates"]
+            
             coords_val = coords_str if coords_str else "None"
             loc_val = loc_str if loc_str else "None"
             total_time_ms = (t1 - t0) * 1000.0
@@ -2178,8 +2183,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "model": "Tesseract/OpenCV",
                 "parsed_location": loc_val,
                 "parsed_coordinates": coords_val,
-                "raw_location": None,
-                "raw_coordinates": None,
+                "raw_location": raw_loc if raw_loc != "None" else None,
+                "raw_coordinates": raw_coords if raw_coords != "None" else None,
                 "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
                 "loc_time_ms": round(loc_time_ms, 1),
                 "coords_time_ms": round(coords_time_ms, 1),

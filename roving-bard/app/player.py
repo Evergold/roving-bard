@@ -2137,6 +2137,7 @@ class LocalOCRParser:
             )
             
             raw_text = pytesseract.image_to_string(processed, config=config)
+            self.latest_raw_text = raw_text
             location, coordinates, ns, ew = self.parse_text(raw_text)
             
             if location and words:
@@ -2176,19 +2177,16 @@ class LocalOCRParser:
             # 2. Run passes in ranked priority (Best: verified location and coordinates; Worst: neither)
             best_outcome = (None, None, None, None)
             best_rank = 0  # 0: none, 1: loc only, 2: coords only, 3: loc+coords, 4: verified loc+coords
+            best_raw_text = ""
             
             # Always run in [2, 1, 0] order to prioritize mathematically optimal Otsu binarization
             for pass_idx in [2, 1, 0]:
                 loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words)
+                raw_text = getattr(self, "latest_raw_text", "")
                 
                 is_verified = (loc in words) if (loc and words) else False
                 
                 # Rank this pass outcome:
-                # Rank 4: Found coordinates and a valid LOTRO location (Perfect)
-                # Rank 3: Found coordinates and some text location (unverified)
-                # Rank 2: Found coordinates only
-                # Rank 1: Found valid LOTRO location name only
-                # Rank 0: Found nothing useful
                 if loc and coords and is_verified:
                     rank = 4
                 elif loc and coords:
@@ -2203,7 +2201,9 @@ class LocalOCRParser:
                 if rank > best_rank:
                     best_rank = rank
                     best_outcome = (loc, coords, ns, ew)
+                    best_raw_text = raw_text
                     
+            self.latest_raw_text = best_raw_text
             return best_outcome
         except Exception as e:
             print(f"Local OCR engine execution error: {e}")

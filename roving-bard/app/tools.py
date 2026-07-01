@@ -449,6 +449,12 @@ def check_screen_and_update_music() -> dict:
     tesseract_total_ms = (t_end - t_start) * 1000.0
     method = f"Local OCR (Pass {current_ocr_pass})"
 
+    # Extract raw unfuzzy location/coordinates from Tesseract output
+    raw_text = getattr(ocr_parser, "latest_raw_text", "")
+    rich = ocr_parser.parse_text_rich(raw_text)
+    raw_location = rich["raw_location"]
+    raw_coordinates = rich["raw_coordinates"]
+
     # Step 2: Fallback to Gemini Multimodal if OCR failed (DISABLED BY USER)
     if not coordinates or not location:
         print(
@@ -487,6 +493,8 @@ def check_screen_and_update_music() -> dict:
     latest_parse_result = {
         "parsed_location": location,
         "parsed_coordinates": coordinates,
+        "raw_location": raw_location if raw_location != "None" else None,
+        "raw_coordinates": raw_coordinates if raw_coordinates != "None" else None,
         "parsed_bearing": bearing_str,
         "matched_track": track_file,
         "action": playback_action,
