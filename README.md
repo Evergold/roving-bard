@@ -101,8 +101,32 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 2. **Offline Ollama/GGUF Models (e.g., Moondream, Qwen2-VL, Qwen2.5-VL)**:
    Executed by the local Ollama server. Because Roving Bard communicates with Ollama via loopback HTTP REST API calls, Ollama acts as a middle-tier hardware manager, dynamically offloading GGUF model layers to CUDA (Nvidia), Metal (Apple), ROCm/DirectML (AMD), or oneAPI/SYCL (Intel) depending on what accelerator hardware it discovers on the host system.
 
+### 🧠 Built-in VLMs: Specifications & Briefs
+
+| Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
+|---|---|---|---|
+| **OpenCV + Tesseract** | `0 MB` | `800 MB` | CPU-only classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
+| **Florence-2 (Large)** | `1.8 GB` | `1.45 GB` | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
+| **Moondream2** | `2.2 GB` | `1.65 GB` | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
+| **Qwen2-VL (2B)** | `4.5 GB` | `2.0 GB` | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
+| **Qwen2.5-VL (3B)** | `5.0 GB` | `2.2 GB` | Next-generation VLM with enhanced spatial understanding and character transcription. Runs via Ollama. |
+| **PaliGemma (3B)** | `5.6 GB` | `2.3 GB` | Google's visual language model. Highly generalizable, but slower inference times on local hardware. Runs via Ollama. |
+| **MiniCPM-V 2.6** | `6.8 GB` | `2.8 GB` | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
+
+### ☁️ Built-in Cloud VLMs
+
+| Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
+|---|---|---|---|
+| **Gemini 2.5 Series Models** *(Default)* | `0 MB` | `800 MB` | Google's 2.5 generation cloud multimodal models. `Gemini 2.5 Flash Lite` is used as the default cloud VLM. Zero local GPU/VRAM footprint, high accuracy, but requires API key and internet. |
+| **Gemini 3.5 / 3.1 Series Models** | `0 MB` | `800 MB` | Google's latest generation cloud multimodal models (including `Gemini 3.5 Flash`, `Gemini 3.1 Flash Lite`, and `Gemini 3.1 Pro`). Offers superior reasoning speed and visual parsing capabilities. |
+
+*Note: Gemini 2.5 Flash Lite is configured as the default cloud VLM in Roving Bard. Alternate cloud models (including Claude / Haiku and GPT-4o) are supported as drop-in fallbacks via custom environment configuration.*
+
+
+
 ### 🛠️ Hardware Memory Management
 * **VRAM Monitoring**: The FastAPI backend queries active GPU memory usage via PyTorch (`torch.cuda.max_memory_allocated()`) or Metal drivers, exposing real-time peak VRAM consumption on the dashboard stats panel.
+* **LOTRO VRAM Conflict Notification**: Running hardware-accelerated local VLMs concurrently with *Lord of the Rings Online (LOTRO)* on a single GPU can exhaust system VRAM (LOTRO requires 2–4 GB of VRAM depending on graphic settings). Roving Bard actively monitors VRAM allocation; if the combined GPU allocation exceeds 90% of physical capacity (meaning LOTRO cannot safely remain in VRAM), the server notifies the user via log warnings and frontend toast alerts so they can switch to Tesseract or Gemini to prevent game stuttering or driver crashes.
 * **Auto-Deallocation on Switch**: To prevent VRAM fragmentation and multi-model collisions, the backend monitors the Ollama process state using `/api/ps`. When switching methods, the active local model is dynamically unloaded (`keep_alive: "0s"`) and verified clear before the new model is loaded, preventing silent fallback to CPU execution.
 
 ---
