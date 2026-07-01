@@ -14,6 +14,7 @@
 import base64
 import json
 import os
+import time
 from io import BytesIO
 
 import litellm
@@ -178,6 +179,10 @@ latest_parse_result = {
     "action": "stopped",
     "method": "None",
     "timestamp": None,
+    "loc_time_ms": 0.0,
+    "coords_time_ms": 0.0,
+    "preprocess_time_ms": 0.0,
+    "total_time_ms": 0.0,
 }
 
 
@@ -359,6 +364,7 @@ def check_screen_and_update_music() -> dict:
         print(f"Error cropping character: {e}")
 
     # Generate location processed crop (OCR preprocess)
+    t_prep_start = time.time()
     try:
         from PIL import Image
         loc_proc_np = ocr_parser.preprocess_image(text_img_1x, current_ocr_pass)
@@ -373,6 +379,8 @@ def check_screen_and_update_music() -> dict:
         latest_location_raw_bytes = buf_loc_raw.getvalue()
     except Exception as e_loc_proc:
         print(f"Error caching location images: {e_loc_proc}")
+    t_prep_end = time.time()
+    preprocess_time_ms = (t_prep_end - t_prep_start) * 1000.0
 
     # Create the 2x enlarged preview for the GUI
     try:
@@ -398,7 +406,6 @@ def check_screen_and_update_music() -> dict:
 
     # Step 1: Attempt local OCR on the 1x text-only image
     print(f"[Pipeline] Attempting local Tesseract OCR (Pass {current_ocr_pass})...")
-    import time
     t_start = time.time()
     location, coordinates, ns, ew = ocr_parser.run_ocr(text_img_1x, current_ocr_pass, already_cropped=True)
     t_end = time.time()
@@ -449,6 +456,7 @@ def check_screen_and_update_music() -> dict:
         "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
         "loc_time_ms": round(tesseract_total_ms * 0.55, 1),
         "coords_time_ms": round(tesseract_total_ms * 0.45, 1),
+        "preprocess_time_ms": round(preprocess_time_ms, 1),
         "total_time_ms": round(tesseract_total_ms, 1)
     }
 
