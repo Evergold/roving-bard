@@ -3620,8 +3620,8 @@
                                     <div><span data-loc="vlm_coords_parse">Coords Parse</span>: <span id="stat-coords-time">0.0 ms</span></div>
                                 </div>
                                 <div id="vlm-resources" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.35rem; width: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.35rem;">
-                                    <div><span data-loc="vlm_est_vram">Est VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
-                                    <div><span data-loc="vlm_est_ram">Est RAM </span>: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
+                                    <div><span id="label-vram" data-loc="vlm_est_vram">Est VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
+                                    <div><span id="label-ram" data-loc="vlm_est_ram">Est RAM </span>: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
                                 </div>
                             </div>
                         </div>
@@ -4869,6 +4869,11 @@
             if (vramEl) vramEl.innerText = resources.vram;
             if (ramEl) ramEl.innerText = resources.ram;
 
+            const vramLabel = document.getElementById('label-vram');
+            const ramLabel = document.getElementById('label-ram');
+            if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
+            if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+
             if (selectedVal === 'tesseract' || selectedVal === 'gemini-1.5-flash') {
                 document.getElementById('btn-vlm-try').disabled = false;
                 document.getElementById('vlm-download-container').style.display = 'none';
@@ -5014,20 +5019,46 @@
                     document.getElementById('stat-coords-time').innerText = `${res.coords_time_ms.toFixed(1)} ms`;
                     document.getElementById('stat-total-time').innerText = `${res.total_time_ms.toFixed(1)} ms`;
 
-                    const modelResources = {
-                        'tesseract': { vram: '0 MB', ram: '~30 MB' },
-                        'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
-                        'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
-                        'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
-                        'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
-                        'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
-                        'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
-                    };
-                    const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
-                    if (vramEl) vramEl.innerText = resources.vram;
-                    if (ramEl) ramEl.innerText = resources.ram;
+                    const vramLabel = document.getElementById('label-vram');
+                    const ramLabel = document.getElementById('label-ram');
+
+                    if (res.actual_vram) {
+                        if (vramEl) vramEl.innerText = res.actual_vram;
+                        if (vramLabel) vramLabel.innerText = t("vlm_act_vram", "Act VRAM");
+                    } else {
+                        const modelResources = {
+                            'tesseract': { vram: '0 MB', ram: '~30 MB' },
+                            'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
+                            'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
+                            'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
+                            'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
+                            'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
+                            'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
+                        };
+                        const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
+                        if (vramEl) vramEl.innerText = resources.vram;
+                        if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
+                    }
+
+                    if (res.actual_ram) {
+                        if (ramEl) ramEl.innerText = res.actual_ram;
+                        if (ramLabel) ramLabel.innerText = t("vlm_act_ram", "Act RAM ");
+                    } else {
+                        const modelResources = {
+                            'tesseract': { vram: '0 MB', ram: '~30 MB' },
+                            'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
+                            'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
+                            'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
+                            'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
+                            'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
+                            'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
+                        };
+                        const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
+                        if (ramEl) ramEl.innerText = resources.ram;
+                        if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+                    }
 
                     const successPrefix = t("vlm_toast_success_prefix", "Successfully processed with");
                     showToast(`${successPrefix} ${friendlyName}!`, "success");
@@ -5058,6 +5089,10 @@
             const ramEl = document.getElementById('stat-ram');
             if (vramEl) vramEl.innerText = "0 MB";
             if (ramEl) ramEl.innerText = "~30 MB";
+            const vramLabel = document.getElementById('label-vram');
+            const ramLabel = document.getElementById('label-ram');
+            if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
+            if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
             loadDashboard();
         }
 
