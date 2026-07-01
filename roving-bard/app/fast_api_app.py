@@ -1527,6 +1527,21 @@ def get_process_ram_usage_bytes(pid=None):
     return 0
 
 
+def get_process_peak_ram_bytes(target_pid=None):
+    """Gets the peak RSS (VmHWM) memory of a process in bytes from /proc/<pid>/status."""
+    if target_pid is None:
+        target_pid = os.getpid()
+    try:
+        with open(f"/proc/{target_pid}/status", "r") as f:
+            for line in f:
+                if line.startswith("VmHWM:"):
+                    parts = line.split()
+                    return int(parts[1]) * 1024
+    except Exception:
+        pass
+    return get_process_ram_usage_bytes(target_pid)
+
+
 def get_ollama_ram_usage_bytes():
     """Finds all running processes containing 'ollama' and returns their combined RSS memory in bytes."""
     total_ram = 0
@@ -1538,6 +1553,24 @@ def get_ollama_ram_usage_bytes():
                         comm = f.read().strip().lower()
                     if "ollama" in comm:
                         total_ram += get_process_ram_usage_bytes(int(pid_str))
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return total_ram
+
+
+def get_ollama_peak_ram_usage_bytes():
+    """Finds all running processes containing 'ollama' and returns their combined peak RSS (VmHWM) memory in bytes."""
+    total_ram = 0
+    try:
+        for pid_str in os.listdir("/proc"):
+            if pid_str.isdigit():
+                try:
+                    with open(f"/proc/{pid_str}/comm", "r") as f:
+                        comm = f.read().strip().lower()
+                    if "ollama" in comm:
+                        total_ram += get_process_peak_ram_bytes(int(pid_str))
                 except Exception:
                     continue
     except Exception:
@@ -1599,60 +1632,6 @@ def format_memory_size(bytes_val):
     return f"{int(mb_val)} MB"
 
 
-class PeakResourceMonitor:
-    def __init__(self, interval=0.02):
-        self.interval = interval
-        self.peak_ram_bytes = 0
-        self.peak_vram_bytes = 0
-        self.active = False
-        self.thread = None
-
-    def start(self):
-        self.peak_ram_bytes = 0
-        self.peak_vram_bytes = 0
-        self.active = True
-        
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.cuda.reset_peak_memory_stats()
-        except Exception:
-            pass
-            
-        self.thread = threading.Thread(target=self._monitor)
-        self.thread.daemon = True
-        self.thread.start()
-
-    def stop(self):
-        self.active = False
-        if self.thread:
-            self.thread.join(timeout=1.0)
-            
-        try:
-            import torch
-            if torch.cuda.is_available():
-                self.peak_vram_bytes = max(self.peak_vram_bytes, torch.cuda.max_memory_allocated())
-            elif torch.backends.mps.is_available():
-                self.peak_vram_bytes = max(self.peak_vram_bytes, torch.mps.driver_allocated_memory())
-        except Exception:
-            pass
-            
-        return format_memory_size(self.peak_ram_bytes), format_memory_size(self.peak_vram_bytes)
-
-    def _monitor(self):
-        import time
-        while self.active:
-            try:
-                ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
-                self.peak_ram_bytes = max(self.peak_ram_bytes, ram)
-                
-                vram = get_gpu_vram_usage_bytes()
-                self.peak_vram_bytes = max(self.peak_vram_bytes, vram)
-            except Exception:
-                pass
-            time.sleep(self.interval)
-
-
 @app.post("/api/ocr/try_vlm", dependencies=[Depends(verify_api_key)])
 def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
@@ -1664,9 +1643,24 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         return {"status": "error", "message": "No preprocessed screenshot available. Please perform a screen scan first."}
         
     try:
-        def get_actual_usage():
-            ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.reset_peak_memory_stats()
+        except Exception:
+            pass
+
+        def get_peak_usage():
+            ram = get_process_peak_ram_bytes() + get_ollama_peak_ram_usage_bytes()
             vram = get_gpu_vram_usage_bytes()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    vram = max(vram, torch.cuda.max_memory_allocated())
+                elif torch.backends.mps.is_available():
+                    vram = max(vram, torch.mps.driver_allocated_memory())
+            except Exception:
+                pass
             return format_memory_size(ram), format_memory_size(vram)
 
         # Load the PIL image that is fed to the models
@@ -1713,9 +1707,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
             try:
-                monitor = PeakResourceMonitor()
-                monitor.start()
-
                 tp0 = time.time()
                 _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
                 tp1 = time.time()
@@ -1732,7 +1723,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
                 
-                act_ram, act_vram = monitor.stop()
+                act_ram, act_vram = get_peak_usage()
                 return {
                     "status": "success",
                     "model": "Tesseract/OpenCV",
@@ -1752,9 +1743,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!
         if selected_model == "gemini-2.5-flash-lite":
             try:
-                monitor = PeakResourceMonitor()
-                monitor.start()
-
                 tp0 = time.time()
                 buffered = io.BytesIO()
                 text_img_2x.save(buffered, format="PNG")
@@ -1774,7 +1762,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 loc_val = loc_str if loc_str else "None"
                 total_time_ms = (t1 - t0) * 1000.0
                 
-                act_ram, act_vram = monitor.stop()
+                act_ram, act_vram = get_peak_usage()
                 return {
                     "status": "success",
                     "model": "Gemini 2.5 Flash Lite",
@@ -1796,10 +1784,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 preprocess_time_ms = 2.1
                 total_time_ms = 2200.0
                 
-                monitor2 = PeakResourceMonitor()
-                monitor2.start()
-                time.sleep(0.1)
-                act_ram, act_vram = monitor2.stop()
+                act_ram, act_vram = get_peak_usage()
                 return {
                     "status": "success",
                     "model": "Gemini 2.5 Flash Lite",
@@ -1816,9 +1801,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual local Florence-2 (Large) inference!
         if selected_model == "florence-2" and vlm_download_states["florence-2"]["ready"]:
             try:
-                monitor = PeakResourceMonitor()
-                monitor.start()
-
                 tp0 = time.time()
                 device = florence_model.device
                 inputs = florence_processor(text="<OCR>", images=text_img_2x, return_tensors="pt").to(device)
@@ -1846,7 +1828,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
                 
-                act_ram, act_vram = monitor.stop()
+                act_ram, act_vram = get_peak_usage()
                 return {
                     "status": "success",
                     "model": "Florence-2 (Large)",
@@ -1871,9 +1853,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         }
         if selected_model in model_map and vlm_download_states[selected_model]["ready"]:
             try:
-                monitor = PeakResourceMonitor()
-                monitor.start()
-
                 tp0 = time.time()
                 buffered = io.BytesIO()
                 text_img_2x.save(buffered, format="PNG")
@@ -1901,7 +1880,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 )
                 t1 = time.time()
                 
-                act_ram, act_vram = monitor.stop()
+                act_ram, act_vram = get_peak_usage()
                 
                 if response.status_code == 200:
                     resp_json = response.json()
@@ -1931,9 +1910,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             except Exception as oe:
                 print(f"[Ollama VLM] Real inference failed, falling back to simulation: {oe}")
                 
-        monitor = PeakResourceMonitor()
-        monitor.start()
-
         perf = model_perf[selected_model]
         loc_time = perf["loc"]
         coords_time = perf["coords"]
@@ -1960,7 +1936,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         if selected_model == "moondream" and cur_coords != "None":
             parsed_coords = cur_coords.replace(".", "")
             
-        act_ram, act_vram = monitor.stop()
+        act_ram, act_vram = get_peak_usage()
         is_gemini = (selected_model == "gemini-2.5-flash-lite")
         return {
             "status": "success",
