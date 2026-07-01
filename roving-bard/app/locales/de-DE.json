@@ -227,5 +227,15 @@
     "vlm_toast_error": "Fehler bei der VLM-Verarbeitung.",
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
-    "vlm_preprocess": "Vorverarbeitung"
+    "vlm_preprocess": "Vorverarbeitung",
+    "log_empty": "Noch keine Protokollmeldungen.",
+    "session_log": "Sitzungsprotokoll",
+    "clear_log": "Löschen",
+    "filter_all": "ALLE",
+    "filter_error": "FEHLER",
+    "filter_warn": "WARNUNG",
+    "filter_info": "INFO",
+    "filter_success": "ERFOLG",
+    "no_severity_messages": "Keine Meldungen dieser Sicherheitsstufe.",
+    "log_tooltip": "Sitzungsprotokoll"
 }

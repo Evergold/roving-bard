@@ -227,5 +227,15 @@
     "vlm_toast_error": "Error processing with VLM.",
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
-    "vlm_preprocess": "Pre-processing"
+    "vlm_preprocess": "Pre-processing",
+    "log_empty": "No log messages yet.",
+    "session_log": "Session Log",
+    "clear_log": "Clear",
+    "filter_all": "ALL",
+    "filter_error": "ERROR",
+    "filter_warn": "WARN",
+    "filter_info": "INFO",
+    "filter_success": "SUCCESS",
+    "no_severity_messages": "No messages of this severity.",
+    "log_tooltip": "Session Log"
 }

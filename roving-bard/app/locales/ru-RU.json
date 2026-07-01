@@ -227,5 +227,15 @@
     "vlm_toast_error": "Ошибка обработки с помощью VLM.",
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
-    "vlm_preprocess": "Предобработка"
+    "vlm_preprocess": "Предобработка",
+    "log_empty": "Сообщений пока нет.",
+    "session_log": "Журнал сессии",
+    "clear_log": "Очистить",
+    "filter_all": "ВСЕ",
+    "filter_error": "ОШИБКА",
+    "filter_warn": "ПРЕДУПРЕЖДЕНИЕ",
+    "filter_info": "ИНФО",
+    "filter_success": "УСПЕХ",
+    "no_severity_messages": "Нет сообщений этой степени важности.",
+    "log_tooltip": "Журнал сессии"
 }

@@ -3238,7 +3238,7 @@
             </div>
 
             <!-- Session Log Trigger Button -->
-            <button id="log-trigger-btn" class="log-trigger-btn" onclick="toggleLogPopover(event)" title="Session Log">
+            <button id="log-trigger-btn" class="log-trigger-btn" onclick="toggleLogPopover(event)" data-loc-title="log_tooltip" title="Session Log">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -3253,22 +3253,22 @@
             <div id="log-popover" class="menu-popover log-popover">
                 <div id="log-popover-inner" style="display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 1.2rem;">
                     <div style="font-size: 0.95rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
-                        <span>Session Log</span>
-                        <button onclick="clearSessionLogs(event)" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+                        <span data-loc="session_log">Session Log</span>
+                        <button onclick="clearSessionLogs(event)" data-loc="clear_log" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
                             Clear
                         </button>
                     </div>
                     
                     <div style="display: flex; gap: 0.4rem; margin-bottom: 0.8rem; font-family: 'Space Mono', monospace; font-size: 0.7rem;">
-                        <button onclick="filterLogs('all')" class="log-filter-btn active" id="filter-all-btn">ALL</button>
-                        <button onclick="filterLogs('error')" class="log-filter-btn" id="filter-error-btn">ERROR</button>
-                        <button onclick="filterLogs('warn')" class="log-filter-btn" id="filter-warn-btn">WARN</button>
-                        <button onclick="filterLogs('info')" class="log-filter-btn" id="filter-info-btn">INFO</button>
-                        <button onclick="filterLogs('success')" class="log-filter-btn" id="filter-success-btn">SUCCESS</button>
+                        <button onclick="filterLogs('all')" class="log-filter-btn active" id="filter-all-btn" data-loc="filter_all">ALL</button>
+                        <button onclick="filterLogs('error')" class="log-filter-btn" id="filter-error-btn" data-loc="filter_error">ERROR</button>
+                        <button onclick="filterLogs('warn')" class="log-filter-btn" id="filter-warn-btn" data-loc="filter_warn">WARN</button>
+                        <button onclick="filterLogs('info')" class="log-filter-btn" id="filter-info-btn" data-loc="filter_info">INFO</button>
+                        <button onclick="filterLogs('success')" class="log-filter-btn" id="filter-success-btn" data-loc="filter_success">SUCCESS</button>
                     </div>
 
                     <div id="log-messages-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; font-family: 'Space Mono', monospace; font-size: 0.75rem; line-height: 1.3;">
-                        <div id="log-empty-msg" style="color: var(--text-muted); text-align: center; margin-top: auto; margin-bottom: auto;">No log messages yet.</div>
+                        <div id="log-empty-msg" style="color: var(--text-muted); text-align: center; margin-top: auto; margin-bottom: auto;" data-loc="log_empty">No log messages yet.</div>
                     </div>
                 </div>
             </div>

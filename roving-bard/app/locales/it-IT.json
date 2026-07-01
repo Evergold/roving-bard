@@ -227,5 +227,15 @@
     "vlm_toast_error": "Errore durante l'elaborazione con VLM.",
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
-    "vlm_preprocess": "Pre-elaborazione"
+    "vlm_preprocess": "Pre-elaborazione",
+    "log_empty": "Ancora nessun messaggio di log.",
+    "session_log": "Registro di sessione",
+    "clear_log": "Cancella",
+    "filter_all": "TUTTO",
+    "filter_error": "ERRORE",
+    "filter_warn": "AVVISO",
+    "filter_info": "INFO",
+    "filter_success": "SUCCESSO",
+    "no_severity_messages": "Nessun messaggio di questa gravità.",
+    "log_tooltip": "Registro di sessione"
 }
