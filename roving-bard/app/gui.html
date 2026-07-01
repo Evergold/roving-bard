@@ -5241,6 +5241,11 @@
             document.getElementById('stat-coords-time').innerText = runningText;
             document.getElementById('stat-total-time').innerText = runningText;
             document.getElementById('stat-preprocess-time').innerText = runningText;
+            
+            const vramEl = document.getElementById('stat-vram');
+            const ramEl = document.getElementById('stat-ram');
+            if (vramEl) vramEl.innerText = "---";
+            if (ramEl) ramEl.innerText = "---";
  
             try {
                 const response = await apiFetch('/api/ocr/try_vlm', {
