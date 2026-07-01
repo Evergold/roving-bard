@@ -635,7 +635,7 @@ def get_abc_duration(filepath: str) -> float:
     return duration
 
 
-# Safe pygame mixer initialization
+# Safe sounddevice audio player initialization
 class SafeMusicPlayer:
     def __init__(self, playlist_dir="audio"):
         self.playlist_dir = playlist_dir

@@ -7,7 +7,7 @@ Roving Bard is a game-aware music player agent that captures the screen, recogni
 ## 📁 Project Structure
 
 ```
-capstone/
+project/
 ├── README.md                     # This documentation
 ├── threat_model.md               # STRIDE threat model assessment
 ├── roving-bard/                  # Core application directory
@@ -39,9 +39,11 @@ capstone/
 - **VLM Preprocessing & 4x Scaling**: Resizes the raw location crop by **4x (Lanczos)** before passing it to Vision-Language Models (VLMs) to ensure high-contrast character transcription.
 - **Vision-Language Model Fallbacks**: If local Tesseract OCR is inconclusive, queries a VLM (Gemini 2.5 Flash Lite, Florence-2, Moondream, Qwen2-VL, etc.).
 - **VLM Warmup & Unload REST Endpoints**: Warm up models in the background or trigger immediate unloads to manage GPU VRAM.
-- **On-Demand SoundFont Downloader**: Download the uncompressed `MuseScore_General.sf2` (ULTRA) SoundFont directly from the Preferences menu, with background thread updates.
-- **10-Band Parametric EQ**: Adjust playback frequencies (32 Hz – 16 kHz) in real-time with scipy-powered IIR peaking filters.
-- **Audio Segments**: Save, edit, and play custom loops/slices of files with dedicated EQ and volume profiles.
+- **On-Demand SoundFont Downloader**: Download the uncompressed, lossless `MuseScore_General.sf2` SoundFont directly from the Preferences menu, with background thread updates.
+- **High-Fidelity Cross-Platform Audio Engine (Windows, Linux, macOS)**: Features a robust, low-latency `sounddevice` engine (built on PortAudio). It delivers studio-grade real-time SoundFont MIDI/ABC synthesis, smooth logarithmic volume-fading transitions, and high-fidelity parametric EQ filtering natively across all major operating systems.
+- **10-Band Parametric EQ**: Adjust playback frequencies (32 Hz – 16 kHz) in real-time using cross-platform scipy-powered IIR peaking filters.
+- **Audio Library & Track Management**: Scan, search, and manage your music library with full metadata tagging support. Supports uploading new tracks directly from the GUI, extracting embedded tag details (titles, artists, albums, durations, and bitrates), and sorting/filtering tracks by type (Wave, MP3, Ogg Vorbis, FLAC, ABC Notation, and MIDI).
+- **Audio Segments & Custom Slices**: Define, save, and play custom audio loops/slices of tracks with independent volume, panning, and 10-band EQ settings.
 
 ---
 
@@ -53,17 +55,19 @@ capstone/
 - **google-agents-cli** — CLI for ADK agents — Install with `uv tool install google-agents-cli`
 
 ### System Dependencies
-- **Tesseract OCR**: Local OCR for minimap text (`sudo apt install tesseract-ocr`)
-- **SDL2 + SDL_mixer**: Pygame audio output (`sudo apt install libsdl2-mixer-2.0-0` if not bundled)
-- **libsndfile**: For soundfile EQ processing (`sudo apt install libsndfile1`)
+- **PortAudio**: Required for system audio output (`sudo apt install libportaudio2` on Linux).
+- **Tesseract OCR**: Local OCR for minimap text (`sudo apt install tesseract-ocr`).
+- **libsndfile**: For soundfile EQ processing (`sudo apt install libsndfile1`).
+- **FluidSynth** (Optional): `sudo apt install fluidsynth` on Linux. System-installed FluidSynth soundfonts, such as `FluidR3_GM.sf2` or `TimGM6mb.sf2`, are supported as legacy fallback options but are optional and not required due to our bundled SoundFont.
+- **Ollama** (Optional): Local VLM service manager required for running offline models like Moondream or Qwen (`curl -fsSL https://ollama.com/install.sh | sh` on Linux). (Note: The `ollama` Python package is not required as the backend communicates with the local Ollama server via direct HTTP REST API calls).
 
 ### Core Python Dependencies (managed via `pyproject.toml`)
 - `google-adk[gcp]` — Google Agent Development Kit & Cloud integrations
-- `pygame` — Audio output & player controls
+- `sounddevice` — Unified audio output and device routing
 - `pytesseract` & `opencv-python` — Screen OCR and screenshot processing
 - `scipy` & `soundfile` — Parametric EQ processing
 - `litellm` — Fallback vision-language model API calls
-- `torch` & `transformers` — Local VLM execution (Florence-2)
+- `torch` & `transformers` — Local VLM execution
 
 ### Environment Variables & API Keys
 To enable all features and display active integration badges in the GUI dashboard, export the following environment variables before starting the server:
@@ -134,6 +138,38 @@ mappings:
     ew_max: -60.0
     track_file: "cave.wav"
 ```
+
+---
+
+## 🎹 SoundFont Setup & MIDI Playback
+
+Roving Bard synthesizes `.mid` (MIDI) and `.abc` (ABC notation) music tracks in real-time. This synthesis is driven by a SoundFont file (`.sf2` or `.sf3`).
+
+### 1. Bundled SoundFont (SF3)
+To ensure MIDI and ABC playback works out of the box, a lightweight, compressed SoundFont is pre-bundled:
+- **File**: `roving-bard/audio/MuseScore_General.sf3`
+- **Configuration**: Set `active_soundfont: "MuseScore_General.sf3"` in `audio/mapping.yaml`.
+- **Why it is Better**: The bundled `MuseScore_General.sf3` file provides significantly higher instrument synthesis quality than system-default SoundFonts. Additionally, it is highly compressed (~35 MB vs. ~215 MB for the uncompressed `.sf2` version), avoiding the need to download large files over the internet on startup, reducing load times, and optimizing memory usage during playback.
+
+### 2. Legacy SoundFont Fallbacks (Optional)
+The engine automatically searches standard system directories for legacy FluidSynth soundfonts (e.g. `/usr/share/sounds/sf2/FluidR3_GM.sf2` or `/usr/share/midi/soundfont/default.sf2`) as fallbacks. These are supported but entirely optional, as the bundled MuseScore SoundFont provides superior acoustic performance and memory efficiency.
+
+### 3. High-Quality SoundFont Downloader (SF2)
+For high-fidelity audio synthesis, you can download the full, lossless **MuseScore General** SoundFont:
+- **File**: `MuseScore_General.sf2` (approx. 215 MB)
+- **How to Download**:
+  - Open the browser GUI dashboard (`http://localhost:8000/gui`).
+  - Navigate to **Preferences** (top-left) and under SoundFont select **MuseScore General (ULTRA)**.
+  - Alternatively, trigger the download via the REST API:
+    ```bash
+    curl -X POST http://localhost:8000/api/soundfont/download
+    ```
+- **Hot-swapping**: Once downloaded, select it from the SoundFont dropdown menu in the GUI or update `audio/mapping.yaml` to `active_soundfont: "MuseScore_General.sf2"`. The engine will reload it instantly without requiring a server restart.
+
+### 3. Dynamic Instrument Selection for ABC Tracks
+When playing ABC notation files, you can choose and hot-swap the active instrument directly from the dashboard:
+- **How to Use**: Click the **Instrument** button on the playback control bar in the GUI to open the instrument popover grid. Select from 12+ instrument presets (including Lute, Harp, Bagpipe, Flute, Clarinet, Fiddle, and Drums).
+- **Backend Synthesis**: The backend automatically recompiles the ABC notes to MIDI byte streams, setting the active instrument program number, and synthesizes the track on-the-fly.
 
 ---
 
