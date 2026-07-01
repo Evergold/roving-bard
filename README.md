@@ -75,6 +75,23 @@ To enable all features and display active integration badges in the GUI dashboar
 - `AGENT_API_KEY` (Optional / Recommended): Required to secure REST API routes when accessed by remote network clients. (Loopback connections from localhost bypass authorization for developer convenience).
 - `GEMINI_API_KEY` or `GOOGLE_API_KEY` (Optional): Required only if you select the cloud-based **Gemini 2.5 Flash Lite** vision fallback. Local OCR (Tesseract) and local VLM models (Florence-2, Moondream, Qwen, etc.) run entirely offline and do not require keys.
 
+## ⚡ GPU Acceleration Support
+
+Roving Bard utilizes local VLMs (such as Florence-2, Moondream, and Qwen2-VL) to perform zero-shot visual character transcription. To run these models at low latency, the backend leverages hardware acceleration across all major GPU vendors (Nvidia, Apple, AMD, Intel) on Windows, Linux, and macOS.
+
+### 🎮 Supported GPU Hardware & Frameworks
+
+| Vendor | OS | Acceleration API | Primary Driver Stack | Platform Nuances |
+|---|---|---|---|---|
+| **Nvidia** | Windows, Linux | **CUDA** | NVIDIA Proprietary Driver & CUDA Toolkit | Default target for GGUF/Ollama and PyTorch. Ensure PyTorch CUDA version matches GPU compute capability (e.g., PyTorch 12.x builds require compute capability &ge; 7.5; older cards like GTX 1070/Pascal use 6.1 and will trigger compatibility warnings in PyTorch but are fully accelerated directly in Ollama/llama.cpp GGUF runs). |
+| **Apple Silicon (M1–M4)** | macOS | **Metal (MPS)** | Apple Metal Framework (Native) | Apple macOS uses Unified Memory Architecture (UMA) where system RAM and VRAM are shared dynamically. Ollama auto-allocates layers to Metal. In PyTorch, acceleration uses `torch.backends.mps` natively. |
+| **AMD** | Windows, Linux | **ROCm / DirectML** | AMD ROCm (Linux) / Radeon Software (Windows) | On Linux, ROCm requires matching kernel drivers. PyTorch requires installing the AMD-compatible build (`torch+rocm`). On Windows, Ollama utilizes DirectML/HIP drivers to offload model layers. |
+| **Intel** | Windows, Linux | **oneAPI (SYCL) / DirectML** | Intel oneAPI Base Toolkit / Intel Graphics Drivers | Intel Arc discrete GPUs and Xe integrated graphics are supported in Ollama via oneAPI/SYCL. For local PyTorch execution, acceleration is enabled via the Intel Extension for PyTorch (IPEX) or OpenVINO. |
+
+### 🛠️ Hardware Memory Management
+* **VRAM Monitoring**: The FastAPI backend queries active GPU memory usage via PyTorch (`torch.cuda.max_memory_allocated()`) or Metal drivers, exposing real-time peak VRAM consumption on the dashboard stats panel.
+* **Auto-Deallocation on Switch**: To prevent VRAM fragmentation and multi-model collisions, the backend monitors the Ollama process state using `/api/ps`. When switching methods, the active local model is dynamically unloaded (`keep_alive: "0s"`) and verified clear before the new model is loaded, preventing silent fallback to CPU execution.
+
 ---
 
 ## 🚀 Quick Start
