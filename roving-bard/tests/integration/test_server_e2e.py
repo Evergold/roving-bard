@@ -240,7 +240,7 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert response.status_code == 200
     res = response.json()
     assert res["status"] == "success"
-    assert res["model"] == "OpenCV/Tesseract"
+    assert res["model"] == "OpenCV+Tesseract"
     assert res["parsed_location"] != "Unknown"
     
     # 4. Trigger download/pull for a local VLM (paligemma)
