@@ -8709,9 +8709,6 @@
                     if (modelSelect) {
                         modelSelect.value = savedVLM;
                         await onVLMSelectChange();
-                        if (savedVLM !== 'tesseract') {
-                            trySelectedVLM();
-                        }
                     }
                 }
             } catch (e_vlm) {
