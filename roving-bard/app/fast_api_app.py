@@ -1713,7 +1713,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
 
     model_map = {
         "moondream": "moondream:latest",
-        "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
+        "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
@@ -1762,7 +1762,7 @@ def api_vlm_unload(req: VlmUnloadRequest):
 
     model_map = {
         "moondream": "moondream:latest",
-        "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
+        "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
@@ -2301,7 +2301,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         else:
             model_map = {
                 "moondream": "moondream:latest",
-                "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
+                "qwen2-vl": "qwen2-vl",
                 "qwen2.5-vl": "qwen2.5vl:3b",
                 "paligemma": "paligemma",
                 "minicpm-v": "minicpm-v"
