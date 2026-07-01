@@ -88,6 +88,19 @@ Roving Bard utilizes local VLMs (such as Florence-2, Moondream, and Qwen2-VL) to
 | **AMD** | Windows, Linux | **ROCm / DirectML** | AMD ROCm (Linux) / Radeon Software (Windows) | On Linux, ROCm requires matching kernel drivers. PyTorch requires installing the AMD-compatible build (`torch+rocm`). On Windows, Ollama utilizes DirectML/HIP drivers to offload model layers. |
 | **Intel** | Windows, Linux | **oneAPI (SYCL) / DirectML** | Intel oneAPI Base Toolkit / Intel Graphics Drivers | Intel Arc discrete GPUs and Xe integrated graphics are supported in Ollama via oneAPI/SYCL. For local PyTorch execution, acceleration is enabled via the Intel Extension for PyTorch (IPEX) or OpenVINO. |
 
+### 🔧 Hardware Resolution Layer
+
+Roving Bard resolves and coordinates the hardware execution target across two distinct runtime environments:
+
+1. **Python-Native Models (e.g., Florence-2)**:
+   Executed natively by our FastAPI backend using PyTorch. The backend dynamically determines and binds the target compute device at model initialization:
+   * **Nvidia/AMD GPUs**: PyTorch checks `torch.cuda.is_available()` to bind model memory to `"cuda"`. On AMD Linux configurations, ROCm-enabled PyTorch builds map AMD hardware directly to CUDA calls natively.
+   * **Apple Silicon (M1–M4)**: Checks `torch.backends.mps.is_available()` to bind model memory to `"mps"`, leveraging Apple's native Metal Performance Shaders.
+   * **Intel Arc/CPUs**: Discrete Intel Arc GPUs run accelerated via the Intel Extension for PyTorch (IPEX) or OpenVINO, while standard configurations fall back to optimized, multi-threaded CPU tensor operations.
+
+2. **Offline Ollama/GGUF Models (e.g., Moondream, Qwen2-VL, Qwen2.5-VL)**:
+   Executed by the local Ollama server. Because Roving Bard communicates with Ollama via loopback HTTP REST API calls, Ollama acts as a middle-tier hardware manager, dynamically offloading GGUF model layers to CUDA (Nvidia), Metal (Apple), ROCm/DirectML (AMD), or oneAPI/SYCL (Intel) depending on what accelerator hardware it discovers on the host system.
+
 ### 🛠️ Hardware Memory Management
 * **VRAM Monitoring**: The FastAPI backend queries active GPU memory usage via PyTorch (`torch.cuda.max_memory_allocated()`) or Metal drivers, exposing real-time peak VRAM consumption on the dashboard stats panel.
 * **Auto-Deallocation on Switch**: To prevent VRAM fragmentation and multi-model collisions, the backend monitors the Ollama process state using `/api/ps`. When switching methods, the active local model is dynamically unloaded (`keep_alive: "0s"`) and verified clear before the new model is loaded, preventing silent fallback to CPU execution.
