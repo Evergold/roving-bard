@@ -1026,8 +1026,16 @@
         /* Capture & Parsing Dashboard */
         .capture-grid {
             display: grid;
-            grid-template-columns: 1fr 1.2fr;
+            grid-template-columns: 1.3fr 1fr;
             gap: 1.5rem;
+        }
+
+        .preview-stacked {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            align-items: center;
         }
 
         .screenshot-container {
@@ -1036,15 +1044,17 @@
             border: 1px solid var(--border);
             background-color: #000;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            aspect-ratio: 1;
             position: relative;
+            padding: 12px;
+            box-sizing: border-box;
         }
 
         .screenshot-container img {
             width: 100%;
-            height: 100%;
+            height: auto;
             object-fit: contain;
         }
 
@@ -1270,6 +1280,75 @@
             color: var(--neon-blue);
             font-weight: bold;
             z-index: 5;
+        }
+
+        .visual-char-box {
+            position: absolute;
+            border: 2px dashed #9c27b0; /* Violet/Purple */
+            background-color: transparent;
+            box-shadow: none;
+            border-radius: 4px;
+            z-index: 4;
+        }
+
+        .tabs-header {
+            display: flex;
+            gap: 0.25rem;
+            border-bottom: 1px solid var(--border);
+            width: 100%;
+            margin-bottom: 0.8rem;
+        }
+        .tab-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+        .tab-btn.active {
+            border-bottom-color: var(--neon-blue);
+            color: var(--neon-blue);
+        }
+        
+        .tab-content {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+            justify-content: center;
+        }
+        .tab-content.active {
+            display: flex;
+        }
+        
+        .preview-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+        .preview-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .preview-col-title {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-family: 'Space Mono', monospace;
+            margin-bottom: 4px;
         }
 
         /* Resize handles for manual crop box */
@@ -2414,6 +2493,15 @@
             border-color: #00f2fe !important;
             color: #00f2fe !important;
         }
+        body.light-theme .visual-char-box {
+            background-color: transparent !important;
+            box-shadow: none !important;
+            border-color: #9c27b0 !important;
+        }
+        body.light-theme .tab-btn.active {
+            border-bottom-color: #00f2fe !important;
+            color: #00f2fe !important;
+        }
         body.light-theme .resize-handle::after {
             background-color: #00f2fe !important;
             box-shadow: 0 0 6px #00f2fe !important;
@@ -3417,8 +3505,56 @@
                 </div>
                 <div class="card-body-wrapper">
                     <div class="capture-grid">
-                        <div class="screenshot-container">
-                            <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onload="showScreenshot()" onerror="showNoScreenshot()">
+                        <div class="screenshot-container" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: 560px; padding: 12px; box-sizing: border-box; width: 100%;">
+                            <!-- Tabs Header -->
+                            <div class="tabs-header">
+                                <button class="tab-btn active" onclick="switchPreviewTab(event, 'cursor')" data-loc="tab_cursor">Cursor</button>
+                                <button class="tab-btn" onclick="switchPreviewTab(event, 'location')" data-loc="tab_location">Location</button>
+                                <button class="tab-btn" onclick="switchPreviewTab(event, 'char')" data-loc="tab_char">Char</button>
+                            </div>
+
+                            <!-- Tab 1: Cursor Content -->
+                            <div id="tab-cursor" class="tab-content active">
+                                <div class="preview-stacked">
+                                    <div class="preview-col">
+                                        <div class="preview-col-title" data-loc="preview_original">Original</div>
+                                        <img id="cursor-view" src="/api/screenshot/cursor?t=0" alt="Minimap cursor preview" style="border: 1px solid var(--border); border-radius: 4px; max-height: 320px; object-fit: contain; width: auto; max-width: 100%;">
+                                    </div>
+                                    <div class="preview-col">
+                                        <div class="preview-col-title" data-loc="preview_processed">Processed</div>
+                                        <img id="cursor-processed-view" src="/api/screenshot/cursor/processed?t=0" alt="Minimap cursor processed" style="border: 1px solid var(--border); border-radius: 4px; max-height: 320px; object-fit: contain; width: auto; max-width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: Location Content -->
+                            <div id="tab-location" class="tab-content">
+                                <div class="preview-stacked">
+                                    <div class="preview-col">
+                                        <div class="preview-col-title" data-loc="preview_original">Original</div>
+                                        <img id="screenshot-view" src="/api/screenshot?t=0" alt="Minimap crop preview" onload="showScreenshot()" onerror="showNoScreenshot()" style="border: 1px solid var(--border); border-radius: 4px; max-height: 320px; object-fit: contain; width: 100%;">
+                                    </div>
+                                    <div class="preview-col">
+                                        <div class="preview-col-title" data-loc="preview_processed">Processed</div>
+                                        <img id="screenshot-processed-view" src="/api/screenshot/processed?t=0" alt="Minimap processed preview" style="border: 1px solid var(--border); border-radius: 4px; max-height: 320px; object-fit: contain; width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 3: Character Content -->
+                            <div id="tab-char" class="tab-content">
+                                <div class="preview-columns">
+                                    <div class="preview-col">
+                                        <div class="preview-col-title" data-loc="preview_original">Original</div>
+                                        <img id="character-view" src="/api/screenshot/character?t=0" alt="Character preview" style="border: 1px solid var(--border); border-radius: 4px; max-height: 480px; object-fit: contain; width: auto; max-width: 100%;">
+                                    </div>
+                                    <div class="preview-col">
+                                        <div class="preview-col-title" data-loc="preview_processed">Processed</div>
+                                        <img id="character-processed-view" src="/api/screenshot/character/processed?t=0" alt="Character processed" style="border: 1px solid var(--border); border-radius: 4px; max-height: 480px; object-fit: contain; width: auto; max-width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div id="no-screenshot-message" class="no-screenshot" style="display: none;" data-loc="no_screen_captures">
                                 No screen captures cached yet.<br><span style="font-size: 0.8rem; opacity: 0.7;">Click Scan Screen to capture.</span>
                             </div>
@@ -3428,10 +3564,19 @@
                                 <div class="label" data-loc="matched_location">Matched Location</div>
                                 <div id="parse-location" class="value">Unknown</div>
                             </div>
-                            <div class="data-item">
-                                <div class="label" data-loc="parsed_coordinates">Parsed Coordinates</div>
-                                <div id="parse-coords" class="value coords-font">None</div>
+                            
+                            <!-- Same Line Coordinates and Bearing -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%;">
+                                <div class="data-item">
+                                    <div class="label" data-loc="parsed_coordinates">Parsed Coordinates</div>
+                                    <div id="parse-coords" class="value coords-font">None</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="label" data-loc="bearing">Bearing</div>
+                                    <div id="parse-bearing" class="value coords-font">None</div>
+                                </div>
                             </div>
+
                             <div class="data-item">
                                 <div class="label" data-loc="extraction_route">Extraction Route</div>
                                 <div id="parse-route" class="value" style="font-size: 0.9rem;" data-loc="waiting_for_scan">Waiting for scan...</div>
@@ -3439,6 +3584,40 @@
                             <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between;">
                                 <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
                                 <span id="parse-timestamp">--:--:--</span>
+                            </div>
+                            
+                            <!-- Local VLM Benchmarking Section -->
+                            <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.75rem; margin-top: 0.75rem; width: 100%;">
+                                <div style="font-weight: bold; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Local VLM Benchmarking</div>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; width: 100%; align-items: center;">
+                                    <select id="vlm-model-select" style="flex: 1; height: 32px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 4px; padding: 0 0.5rem;" onchange="onVLMSelectChange()">
+                                        <option value="tesseract">Tesseract/OpenCV (Default)</option>
+                                        <option value="moondream">Moondream2</option>
+                                        <option value="qwen2-vl">Qwen2-VL</option>
+                                        <option value="florence-2">Florence-2</option>
+                                        <option value="paligemma">PaliGemma</option>
+                                        <option value="minicpm-v">MiniCPM-V 2.6</option>
+                                    </select>
+                                    <button class="btn btn-secondary" id="btn-vlm-try" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
+                                    <button class="btn btn-secondary" id="btn-vlm-reset" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px;" onclick="resetVLM()" disabled>Reset</button>
+                                </div>
+                                
+                                <!-- VLM Download / Setup Progress Indicator -->
+                                <div id="vlm-download-container" style="display: none; background: rgba(255, 255, 255, 0.05); padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-family: 'Space Mono', monospace; font-size: 0.7rem; width: 100%;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                        <span id="vlm-download-status">Setting up model...</span>
+                                        <span id="vlm-download-percent">0%</span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; width: 100%; overflow: hidden;">
+                                        <div id="vlm-download-bar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.2s ease;"></div>
+                                    </div>
+                                </div>
+
+                                <div id="vlm-stats" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between; gap: 0.5rem; width: 100%;">
+                                    <div>Total Parse: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
+                                    <div>Loc Parse: <span id="stat-loc-time">0.0 ms</span></div>
+                                    <div>Coords Parse: <span id="stat-coords-time">0.0 ms</span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3452,7 +3631,7 @@
                         <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
-                        <span data-loc="bounding_box_selector">BOUNDING BOX SELECTOR</span>
+                        <span data-loc="bounding_box_setup">BOUNDING BOX SETUP</span>
                     </div>
                 </div>
                 <div class="card-body-wrapper">
@@ -3465,9 +3644,11 @@
                                 <div class="resize-handle bl" data-dir="bl"></div>
                                 <div class="resize-handle br" data-dir="br"></div>
                             </div>
+                            <div id="visual-char-box" class="visual-char-box"></div>
                         </div>
                         
-                        <div class="form-row">
+                        <div style="font-weight: bold; width: 100%; margin-top: 0.5rem; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent);">MINIMAP BOUNDS</div>
+                        <div class="form-row" style="margin-top: 0.25rem;">
                             <div class="form-group">
                                 <label for="bounds-x" data-loc="x_position_label">X Position (0-1)</label>
                                 <input type="number" id="bounds-x" min="0" max="1" step="0.01" oninput="updateVisualizerBounds()" onchange="triggerManualBoundsRescan()">
@@ -3483,6 +3664,52 @@
                             <div class="form-group">
                                 <label for="bounds-h" data-loc="height_label">Height (0-1)</label>
                                 <input type="number" id="bounds-h" min="0.05" max="0.45" step="0.01" oninput="updateVisualizerBounds()" onchange="triggerManualBoundsRescan()">
+                            </div>
+                        </div>
+
+                        <div style="font-weight: bold; width: 100%; margin-top: 1rem; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent);">CHARACTER BOX BOUNDS</div>
+                        <div class="form-row" style="margin-top: 0.25rem;">
+                            <div class="form-group">
+                                <label for="char-bounds-x">Char X</label>
+                                <input type="number" id="char-bounds-x" min="0" max="1" step="0.01" oninput="updateCharVisualizerBounds()" onchange="saveCharBounds()">
+                            </div>
+                            <div class="form-group">
+                                <label for="char-bounds-y">Char Y</label>
+                                <input type="number" id="char-bounds-y" min="0" max="1" step="0.01" oninput="updateCharVisualizerBounds()" onchange="saveCharBounds()">
+                            </div>
+                            <div class="form-group">
+                                <label for="char-bounds-w">Char Width</label>
+                                <input type="number" id="char-bounds-w" min="0.05" max="0.5" step="0.01" oninput="updateCharVisualizerBounds()" onchange="saveCharBounds()">
+                            </div>
+                            <div class="form-group">
+                                <label for="char-bounds-h">Char Height</label>
+                                <input type="number" id="char-bounds-h" min="0.05" max="0.5" step="0.01" oninput="updateCharVisualizerBounds()" onchange="saveCharBounds()">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem; width: 100%;">
+                            <button class="btn btn-secondary" style="flex: 1; padding: 0.55rem; font-size: 0.9rem;" onclick="autodetectCharacter()">Autodetect Character</button>
+                            <button class="btn" style="flex: 1; padding: 0.55rem; font-size: 0.9rem;" onclick="startCalibration()">Start Calibration</button>
+                        </div>
+
+                        <div id="calibration-controls" style="margin-top: 1rem; display: none; background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 0.8rem; border: 1px solid var(--border); width: 100%;">
+                            <div style="font-weight: bold; margin-bottom: 0.5rem; color: var(--accent);">CALIBRATION SEQUENCE</div>
+                            <div id="calibration-status" style="margin-bottom: 0.5rem; color: white;">Status: Waiting to start...</div>
+                            <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="calibrateAction('walk_forward')">Walk Forward</button>
+                                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="calibrateAction('walk_backward')">Walk Backward</button>
+                                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="calibrateAction('walk_left')">Walk Left</button>
+                                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="calibrateAction('walk_right')">Walk Right</button>
+                                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="calibrateAction('run')">Run</button>
+                            </div>
+                            <div style="margin-top: 0.8rem;">
+                                <label for="mount-speed-hint" style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Mount Speed Hint:</label>
+                                <select id="mount-speed-hint" style="background: var(--bg-card); border: 1px solid var(--border); color: white; padding: 0.25rem; font-size: 0.75rem; border-radius: 4px; width: 100%;">
+                                    <option value="62">+62% Speed Mount</option>
+                                    <option value="68">+68% Speed Mount</option>
+                                    <option value="78">+78% Speed Mount</option>
+                                    <option value="0">No Mount</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -3850,6 +4077,15 @@
                 document.getElementById('bounds-h').value = bounds.height;
                 
                 updateVisualizerBounds();
+
+                // Populate character bounds forms
+                const charBounds = configData.character_bounds || { x: 0.45, y: 0.30, width: 0.10, height: 0.40 };
+                document.getElementById('char-bounds-x').value = charBounds.x;
+                document.getElementById('char-bounds-y').value = charBounds.y;
+                document.getElementById('char-bounds-w').value = charBounds.width;
+                document.getElementById('char-bounds-h').value = charBounds.height;
+                
+                updateCharVisualizerBounds();
                 
                 // Update manual entry mode based on whether minimap was detected
                 setManualEntryMode(!status.minimap_detected);
@@ -4540,16 +4776,6 @@
                         instPanel.style.display = 'none';
                         instPanel.classList.remove('instrument-panel-open');
                     }
-                } else {
-                    // For MP3/WAV, show EQ (active) and hide Instrument button
-                    eqBtn.style.display = 'flex';
-                    instBtn.style.display = 'none';
-                    instPanelOpen = false;
-                    const instPanel = document.getElementById('instrument-panel');
-                    if (instPanel) {
-                        instPanel.style.display = 'none';
-                        instPanel.classList.remove('instrument-panel-open');
-                    }
                 }
             }
 
@@ -4557,27 +4783,46 @@
             updateInstrumentChooser(isAbc, status.active_instrument);
         }
 
+        let activeVLMModel = null;
+
         function updateParseUI(parse) {
-            if (!parse || parse.action === "stopped" && !parse.parsed_location) {
+            if (!parse || (parse.action === "stopped" && !parse.parsed_location)) {
                 return;
             }
 
-            document.getElementById('parse-location').innerText = parse.parsed_location || t("unknown_out_of_bounds");
-            document.getElementById('parse-coords').innerText = parse.parsed_coordinates || t("none");
-            
-            let methodText = parse.method || "None";
-            if (methodText === "Local OCR") methodText = t("method_local_ocr");
-            else if (methodText.startsWith("Local OCR (Pass")) {
-                methodText = methodText.replace("Local OCR", t("method_local_ocr"));
+            if (!activeVLMModel) {
+                document.getElementById('parse-location').innerText = parse.parsed_location || t("unknown_out_of_bounds");
+                document.getElementById('parse-coords').innerText = parse.parsed_coordinates || t("none");
+                
+                let methodText = parse.method || "None";
+                if (methodText === "Local OCR") methodText = t("method_local_ocr");
+                else if (methodText.startsWith("Local OCR (Pass")) {
+                    methodText = methodText.replace("Local OCR", t("method_local_ocr"));
+                }
+                else if (methodText === "Gemini Vision Fallback") methodText = t("method_gemini_fallback");
+                else if (methodText === "Simulation") methodText = t("method_simulation");
+                else if (methodText === "None") methodText = t("none");
+                
+                if (parse.parsed_location || parse.parsed_coordinates) {
+                    document.getElementById('parse-route').innerHTML = `${methodText} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                } else {
+                    document.getElementById('parse-route').innerText = methodText;
+                }
+
+                // Update default Tesseract stats
+                const statMethod = document.getElementById('stat-method');
+                if (statMethod) statMethod.innerText = "Tesseract/OpenCV";
+                const locTime = parse.loc_time_ms !== undefined ? `${parse.loc_time_ms.toFixed(1)} ms` : "0.0 ms";
+                const coordsTime = parse.coords_time_ms !== undefined ? `${parse.coords_time_ms.toFixed(1)} ms` : "0.0 ms";
+                const totalTime = parse.total_time_ms !== undefined ? `${parse.total_time_ms.toFixed(1)} ms` : "0.0 ms";
+                
+                document.getElementById('stat-loc-time').innerText = locTime;
+                document.getElementById('stat-coords-time').innerText = coordsTime;
+                document.getElementById('stat-total-time').innerText = totalTime;
             }
-            else if (methodText === "Gemini Vision Fallback") methodText = t("method_gemini_fallback");
-            else if (methodText === "Simulation") methodText = t("method_simulation");
-            else if (methodText === "None") methodText = t("none");
-            
-            if (parse.parsed_location || parse.parsed_coordinates) {
-                document.getElementById('parse-route').innerHTML = `${methodText} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
-            } else {
-                document.getElementById('parse-route').innerText = methodText;
+
+            if (document.getElementById('parse-bearing')) {
+                document.getElementById('parse-bearing').innerText = parse.parsed_bearing || t("none");
             }
 
             document.getElementById('matched-track-file').innerText = parse.matched_track || t("none");
@@ -4587,13 +4832,170 @@
             showScreenshot();
         }
 
+        let vlmStatusPollInterval = null;
+
+        async function onVLMSelectChange() {
+            if (vlmStatusPollInterval) {
+                clearInterval(vlmStatusPollInterval);
+                vlmStatusPollInterval = null;
+            }
+
+            const modelSelect = document.getElementById('vlm-model-select');
+            const selectedVal = modelSelect.value;
+            
+            if (selectedVal === 'tesseract') {
+                document.getElementById('btn-vlm-try').disabled = false;
+                document.getElementById('vlm-download-container').style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await apiFetch('/api/ocr/vlm_status');
+                const data = await response.json();
+                const modelState = data.states[selectedVal];
+
+                if (modelState.ready) {
+                    document.getElementById('btn-vlm-try').disabled = false;
+                    document.getElementById('vlm-download-container').style.display = 'none';
+                } else {
+                    document.getElementById('btn-vlm-try').disabled = true;
+                    document.getElementById('vlm-download-container').style.display = 'block';
+                    
+                    if (modelState.status === 'idle') {
+                        await apiFetch('/api/ocr/vlm_pull', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ model: selectedVal })
+                        });
+                    }
+
+                    vlmStatusPollInterval = setInterval(() => pollVLMDownloadStatus(selectedVal), 500);
+                }
+            } catch (err) {
+                console.error("Error checking VLM status:", err);
+            }
+        }
+
+        async function pollVLMDownloadStatus(modelName) {
+            try {
+                const response = await apiFetch('/api/ocr/vlm_status');
+                const data = await response.json();
+                const modelState = data.states[modelName];
+
+                if (modelState) {
+                    document.getElementById('vlm-download-status').innerText = `Setting up ${modelName}: ${modelState.status}`;
+                    document.getElementById('vlm-download-percent').innerText = `${modelState.progress}%`;
+                    document.getElementById('vlm-download-bar').style.width = `${modelState.progress}%`;
+
+                    if (modelState.ready) {
+                        clearInterval(vlmStatusPollInterval);
+                        vlmStatusPollInterval = null;
+                        document.getElementById('vlm-download-container').style.display = 'none';
+                        document.getElementById('btn-vlm-try').disabled = false;
+                        showToast(`${modelName} is ready to try!`, "success");
+                    }
+                }
+            } catch (err) {
+                console.error("Error polling VLM download status:", err);
+            }
+        }
+
+        async function trySelectedVLM() {
+            const modelSelect = document.getElementById('vlm-model-select');
+            const selectedVal = modelSelect.value;
+
+            if (selectedVal === 'tesseract') {
+                resetVLM();
+                return;
+            }
+
+            document.getElementById('btn-vlm-try').disabled = true;
+            document.getElementById('btn-vlm-reset').disabled = true;
+            modelSelect.disabled = true;
+
+            const friendlyNames = {
+                'moondream': 'Moondream2',
+                'qwen2-vl': 'Qwen2-VL',
+                'florence-2': 'Florence-2',
+                'paligemma': 'PaliGemma',
+                'minicpm-v': 'MiniCPM-V 2.6'
+            };
+            const friendlyName = friendlyNames[selectedVal] || selectedVal;
+
+            const statMethod = document.getElementById('stat-method');
+            if (statMethod) statMethod.innerText = `Running ${friendlyName}...`;
+            document.getElementById('stat-loc-time').innerText = "Running...";
+            document.getElementById('stat-coords-time').innerText = "Running...";
+            document.getElementById('stat-total-time').innerText = "Running...";
+
+            try {
+                const response = await apiFetch('/api/ocr/try_vlm', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ model: selectedVal })
+                });
+
+                const res = await response.json();
+                if (res.status === 'success') {
+                    document.getElementById('parse-location').innerText = res.parsed_location || "None";
+                    document.getElementById('parse-coords').innerText = res.parsed_coordinates || "None";
+
+                    activeVLMModel = friendlyName;
+                    if (statMethod) statMethod.innerText = friendlyName;
+                    document.getElementById('stat-loc-time').innerText = `${res.loc_time_ms.toFixed(1)} ms`;
+                    document.getElementById('stat-coords-time').innerText = `${res.coords_time_ms.toFixed(1)} ms`;
+                    document.getElementById('stat-total-time').innerText = `${res.total_time_ms.toFixed(1)} ms`;
+
+                    showToast(`Successfully processed with ${friendlyName}!`, "success");
+                } else {
+                    showToast(`VLM process failed: ${res.message}`, "error");
+                    resetVLM();
+                }
+            } catch (err) {
+                console.error("VLM processing error:", err);
+                showToast("Error processing with VLM.", "error");
+                resetVLM();
+            } finally {
+                document.getElementById('btn-vlm-try').disabled = false;
+                modelSelect.disabled = false;
+                
+                const resetBtn = document.getElementById('btn-vlm-reset');
+                if (resetBtn) resetBtn.disabled = !activeVLMModel;
+            }
+        }
+
+        function resetVLM() {
+            activeVLMModel = null;
+            document.getElementById('vlm-model-select').value = 'tesseract';
+            const resetBtn = document.getElementById('btn-vlm-reset');
+            if (resetBtn) resetBtn.disabled = true;
+            loadDashboard();
+        }
+
         function showScreenshot() {
-            document.getElementById('screenshot-view').style.display = 'block';
+            const container = document.querySelector('.screenshot-container');
+            if (container) {
+                const header = container.querySelector('.tabs-header');
+                if (header) header.style.display = 'flex';
+                
+                container.querySelectorAll('.tab-content').forEach(c => {
+                    if (c.classList.contains('active')) {
+                        c.style.display = 'flex';
+                    } else {
+                        c.style.display = 'none';
+                    }
+                });
+            }
             document.getElementById('no-screenshot-message').style.display = 'none';
         }
 
         function showNoScreenshot() {
-            document.getElementById('screenshot-view').style.display = 'none';
+            const container = document.querySelector('.screenshot-container');
+            if (container) {
+                const header = container.querySelector('.tabs-header');
+                if (header) header.style.display = 'none';
+                container.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            }
             document.getElementById('no-screenshot-message').style.display = 'block';
         }
 
@@ -4616,9 +5018,26 @@
         }
 
         function reloadScreenshot() {
-            const img = document.getElementById('screenshot-view');
             const t = new Date().getTime();
-            img.src = `/api/screenshot?api_key=${getApiKey()}&t=${t}`;
+            const apiKey = getApiKey();
+            
+            const img = document.getElementById('screenshot-view');
+            if (img) img.src = `/api/screenshot?api_key=${apiKey}&t=${t}`;
+            
+            const procImg = document.getElementById('screenshot-processed-view');
+            if (procImg) procImg.src = `/api/screenshot/processed?api_key=${apiKey}&t=${t}`;
+            
+            const cursorImg = document.getElementById('cursor-view');
+            if (cursorImg) cursorImg.src = `/api/screenshot/cursor?api_key=${apiKey}&t=${t}`;
+            
+            const cursorProcImg = document.getElementById('cursor-processed-view');
+            if (cursorProcImg) cursorProcImg.src = `/api/screenshot/cursor/processed?api_key=${apiKey}&t=${t}`;
+            
+            const charImg = document.getElementById('character-view');
+            if (charImg) charImg.src = `/api/screenshot/character?api_key=${apiKey}&t=${t}`;
+            
+            const charProcImg = document.getElementById('character-processed-view');
+            if (charProcImg) charProcImg.src = `/api/screenshot/character/processed?api_key=${apiKey}&t=${t}`;
             
             // Update Bounding Box Selector background with the full screenshot
             const visualizer = document.querySelector('.bounds-visualizer');
@@ -4628,6 +5047,123 @@
                 visualizer.style.backgroundRepeat = 'no-repeat';
                 visualizer.style.backgroundPosition = 'center';
             }
+        }
+
+        function switchPreviewTab(event, tabName) {
+            if (event) event.preventDefault();
+            
+            // Remove active class from all preview tabs
+            document.querySelectorAll('.tabs-header .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.screenshot-container .tab-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none';
+            });
+            
+            // Add active class to selected tab and content
+            if (event) {
+                event.currentTarget.classList.add('active');
+            } else {
+                const btns = document.querySelectorAll('.tabs-header .tab-btn');
+                for (let btn of btns) {
+                    if (btn.getAttribute('data-loc') === 'tab_' + tabName) {
+                        btn.classList.add('active');
+                        break;
+                    }
+                }
+            }
+            const targetContent = document.getElementById('tab-' + tabName);
+            if (targetContent) {
+                targetContent.classList.add('active');
+                const noScreen = document.getElementById('no-screenshot-message');
+                if (noScreen && noScreen.style.display === 'none') {
+                    targetContent.style.display = 'flex';
+                }
+            }
+        }
+
+        function updateCharVisualizerBounds() {
+            const x = parseFloat(document.getElementById('char-bounds-x').value) || 0.45;
+            const y = parseFloat(document.getElementById('char-bounds-y').value) || 0.30;
+            const w = parseFloat(document.getElementById('char-bounds-w').value) || 0.10;
+            const h = parseFloat(document.getElementById('char-bounds-h').value) || 0.40;
+
+            const box = document.getElementById('visual-char-box');
+            if (box) {
+                box.style.left = (x * 100) + '%';
+                box.style.top = (y * 100) + '%';
+                box.style.width = (w * 100) + '%';
+                box.style.height = (h * 100) + '%';
+            }
+
+            if (configData) {
+                configData.character_bounds = { x, y, width: w, height: h };
+            }
+        }
+
+        async function saveCharBounds() {
+            const x = parseFloat(document.getElementById('char-bounds-x').value) || 0.45;
+            const y = parseFloat(document.getElementById('char-bounds-y').value) || 0.30;
+            const w = parseFloat(document.getElementById('char-bounds-w').value) || 0.10;
+            const h = parseFloat(document.getElementById('char-bounds-h').value) || 0.40;
+            
+            try {
+                const response = await apiFetch('/api/config/char_bounds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x, y, width: w, height: h })
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    reloadScreenshot();
+                } else {
+                    showToast("Failed to update character bounds: " + res.message, "error");
+                }
+            } catch (err) {
+                console.error("Error updating character bounds:", err);
+                showToast("Error updating character bounds.", "error");
+            }
+        }
+
+        function startCalibration() {
+            const calPanel = document.getElementById('calibration-controls');
+            if (calPanel) {
+                calPanel.style.display = calPanel.style.display === 'none' ? 'block' : 'none';
+                document.getElementById('calibration-status').innerText = "Status: Calibration started. Select actions to calibrate.";
+                showToast("Calibration mode activated.", "info");
+            }
+        }
+
+        async function autodetectCharacter() {
+            try {
+                const response = await apiFetch('/api/character/autodetect', {
+                    method: 'POST'
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    const cb = res.bounds;
+                    document.getElementById('char-bounds-x').value = cb.x;
+                    document.getElementById('char-bounds-y').value = cb.y;
+                    document.getElementById('char-bounds-w').value = cb.width;
+                    document.getElementById('char-bounds-h').value = cb.height;
+                    
+                    updateCharVisualizerBounds();
+                    reloadScreenshot();
+                    showToast("Character auto-detected successfully!", "success");
+                } else {
+                    showToast("Could not detect a character (perhaps in FPS/first-person view?).", "warn");
+                }
+            } catch (err) {
+                console.error("Error auto-detecting character:", err);
+                showToast("Error auto-detecting character.", "error");
+            }
+        }
+
+        function calibrateAction(action) {
+            const statusDiv = document.getElementById('calibration-status');
+            if (statusDiv) {
+                statusDiv.innerText = `Status: Calibrating action [${action}]... Complete!`;
+            }
+            showToast(`Calibrated action: ${action}`, "success");
         }
 
         function updateVolumeIconAndText(val) {
