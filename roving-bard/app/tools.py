@@ -183,6 +183,8 @@ latest_parse_result = {
     "coords_time_ms": 0.0,
     "preprocess_time_ms": 0.0,
     "total_time_ms": 0.0,
+    "actual_ram": None,
+    "actual_vram": None
 }
 
 
@@ -237,6 +239,37 @@ def call_gemini_vision(img, model_name):
     except Exception as e:
         print(f"Error executing Gemini Vision fallback: {e}")
         return None, None, None, None
+
+
+def get_actual_usage():
+    """Get actual RAM and VRAM usage on Linux systems."""
+    try:
+        import os
+        pid = os.getpid()
+        ram_mb = 0
+        with open(f"/proc/{pid}/status", "r") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        ram_mb = int(parts[1]) // 1024
+                    break
+        
+        vram_mb = 0
+        import subprocess
+        try:
+            res = subprocess.run(
+                ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, check=True, timeout=1.0
+            )
+            vram_mb = int(res.stdout.strip())
+        except Exception:
+            pass
+            
+        return f"{ram_mb} MB", f"{vram_mb} MB"
+    except Exception as e:
+        print(f"Error getting actual memory usage: {e}")
+        return None, None
 
 
 # Agent Tools
@@ -445,6 +478,7 @@ def check_screen_and_update_music() -> dict:
         playback_action = "stopped"
 
     import datetime
+    act_ram, act_vram = get_actual_usage()
 
     latest_parse_result = {
         "parsed_location": location,
@@ -457,7 +491,9 @@ def check_screen_and_update_music() -> dict:
         "loc_time_ms": round(tesseract_total_ms * 0.55, 1),
         "coords_time_ms": round(tesseract_total_ms * 0.45, 1),
         "preprocess_time_ms": round(preprocess_time_ms, 1),
-        "total_time_ms": round(tesseract_total_ms, 1)
+        "total_time_ms": round(tesseract_total_ms, 1),
+        "actual_ram": act_ram,
+        "actual_vram": act_vram
     }
 
     return {
