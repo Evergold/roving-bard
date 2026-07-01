@@ -205,7 +205,7 @@
     "sort_type_title": "Group by File Type",
     "tab_cursor": "CURSOR",
     "tab_location": "LOCATION",
-    "tab_char": "CHAR",
+    "tab_char": "CHARACTER",
     "preview_original": "Original",
     "preview_processed": "Processed",
     "bounding_box_setup": "BOUNDING BOX SETUP",
