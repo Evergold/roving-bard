@@ -2169,49 +2169,60 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         }
 
         # Check if we are switching models and need to unload the previous local VLM from GPU memory.
-        # We only unload if both the old and new models are local VLMs (switching between local GPU models).
-        # If we switch to Tesseract or Gemini (0 VRAM), we keep the VLM loaded in GPU memory for instant switch-back.
-        if currently_loaded_vlm and currently_loaded_vlm in old_model_map and selected_model in old_model_map and currently_loaded_vlm != selected_model:
-            old_model = currently_loaded_vlm
-            currently_loaded_vlm = None  # Reset tracking immediately
-            old_model_tag = old_model_map.get(old_model)
-            if old_model_tag:
-                try:
-                    print(f"[VLM Memory Management] Switched from {old_model} to {selected_model}. Unloading {old_model_tag} to free GPU VRAM...", flush=True)
-                    requests.post(
-                        "http://127.0.0.1:11434/api/generate",
-                        json={
-                            "model": old_model_tag,
-                            "prompt": "",
-                            "keep_alive": "0s",
-                            "stream": False
-                        },
-                        timeout=10
-                    )
-                    # Clear from warmed models so it does warmup on next load
-                    if old_model in warmed_models:
-                        warmed_models.remove(old_model)
-                        
-                    # Deterministically wait until the model is completely removed from memory
-                    # (Poll /api/ps up to 10 times with 300ms intervals)
-                    import time
-                    for wait_idx in range(10):
-                        time.sleep(0.3)
-                        try:
-                            ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
-                            if ps_res.status_code == 200:
-                                active_models = [m.get("name", "") for m in ps_res.json().get("models", [])]
-                                # Check if our old model tag is still loaded
-                                if not any(old_model_tag in m or m in old_model_tag for m in active_models):
-                                    print(f"[VLM Memory Management] {old_model_tag} successfully cleared from VRAM in {(wait_idx+1)*300}ms.", flush=True)
-                                    break
-                        except Exception as ps_err:
-                            print(f"[VLM Memory Management] Error checking memory: {ps_err}", flush=True)
-                    else:
-                        print(f"[VLM Memory Management] Warning: {old_model_tag} did not clear within 3 seconds, proceeding anyway.", flush=True)
-                        
-                except Exception as e:
-                    print(f"[VLM Memory Management] Failed to unload {old_model}: {e}", flush=True)
+        # We only unload if the newly selected model is a local GPU VLM. To be completely sure VRAM is cleared,
+        # we check /api/ps and unload ALL currently loaded models that are different from the selected model.
+        if selected_model in old_model_map:
+            try:
+                ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
+                if ps_res.status_code == 200:
+                    loaded_models = ps_res.json().get("models", [])
+                    target_tag = old_model_map[selected_model]
+                    
+                    unloaded_any = False
+                    for m in loaded_models:
+                        loaded_name = m.get("name", "")
+                        # Skip if it is already the model we want to run
+                        if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
+                            continue
+                            
+                        print(f"[VLM Memory Management] Unloading loaded model {loaded_name} to clear VRAM...", flush=True)
+                        requests.post(
+                            "http://127.0.0.1:11434/api/generate",
+                            json={
+                                "model": loaded_name,
+                                "prompt": "",
+                                "keep_alive": "0s",
+                                "stream": False
+                            },
+                            timeout=10
+                        )
+                        unloaded_any = True
+                        # Clear matching key from warmed models so it warms up next time
+                        for k in old_model_map:
+                            if old_model_map[k] in loaded_name or loaded_name in old_model_map[k]:
+                                if k in warmed_models:
+                                    warmed_models.remove(k)
+                                    
+                    # If we unloaded another model, wait until memory is fully cleared
+                    if unloaded_any:
+                        import time
+                        for wait_idx in range(15):
+                            time.sleep(0.2)
+                            try:
+                                check_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
+                                if check_res.status_code == 200:
+                                    current_loaded = [x.get("name", "") for x in check_res.json().get("models", [])]
+                                    # Safe if no other models are loaded
+                                    other_loaded = [n for n in current_loaded if not (target_tag in n or n in target_tag)]
+                                    if not other_loaded:
+                                        print(f"[VLM Memory Management] VRAM successfully cleared of other models in {(wait_idx+1)*200}ms.", flush=True)
+                                        break
+                            except Exception as check_err:
+                                print(f"[VLM Memory Management] Error checking memory: {check_err}", flush=True)
+                        else:
+                            print(f"[VLM Memory Management] Warning: VRAM did not fully clear of other models within 3 seconds.", flush=True)
+            except Exception as e:
+                print(f"[VLM Memory Management] Error managing VRAM: {e}", flush=True)
 
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
