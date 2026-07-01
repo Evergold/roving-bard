@@ -4850,7 +4850,7 @@
                     methodText = routeDisplayNames[selectedVal] || selectedVal;
                 }
                 
-                if (parse.parsed_location || parse.parsed_coordinates) {
+                if (selectedVal === 'tesseract' && (parse.parsed_location || parse.parsed_coordinates)) {
                     document.getElementById('parse-route').innerHTML = `${methodText} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
                 } else {
                     document.getElementById('parse-route').innerText = methodText;
@@ -5061,7 +5061,7 @@
             if (routeEl) {
                 const hasLocation = parseLoc && parseLoc !== "Unknown" && parseLoc !== "";
                 const hasCoords = parseCoords && parseCoords !== "None" && parseCoords !== "";
-                if (hasLocation || hasCoords) {
+                if (selectedVal === 'tesseract' && (hasLocation || hasCoords)) {
                     routeEl.innerHTML = `${routeName} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
                 } else {
                     routeEl.innerText = routeName;
