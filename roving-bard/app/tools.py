@@ -294,10 +294,12 @@ def check_screen_and_update_music() -> dict:
     # Crop to bounds for OCR processing
     img = grabber.crop_image(full_img)
 
-    # Crop to location and coordinates (bottom 42%) at 1x for OCR
+    # Crop to location and coordinates (bottom 42%, middle 76% horizontally) at 1x for OCR
     w, h = img.size
     y_start = int(h * 0.58)
-    text_img_1x = img.crop((0, y_start, w, h))
+    x_min = int(w * 0.12)
+    x_max = int(w * 0.88)
+    text_img_1x = img.crop((x_min, y_start, x_max, h))
 
     # Parse bearing from red cursor at the center of the minimap and crop it
     bearing_deg = None
@@ -422,7 +424,7 @@ def check_screen_and_update_music() -> dict:
     # Create the 2x enlarged preview for the GUI
     try:
         from PIL import Image
-        img_2x = text_img_1x.resize((w * 2, int((h - y_start) * 2)), Image.Resampling.LANCZOS)
+        img_2x = text_img_1x.resize((text_img_1x.width * 2, text_img_1x.height * 2), Image.Resampling.LANCZOS)
     except Exception as e:
         print(f"Error resizing minimap text area: {e}")
         img_2x = text_img_1x
