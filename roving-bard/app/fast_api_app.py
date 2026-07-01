@@ -1270,7 +1270,7 @@ def api_clear_cache():
 
 vlm_download_states = {
     "tesseract": {"ready": True, "status": "ready", "progress": 100},
-    "gemini-1.5-flash": {"ready": True, "status": "ready", "progress": 100},
+    "gemini-2.5-flash-lite": {"ready": True, "status": "ready", "progress": 100},
     "moondream": {"ready": False, "status": "idle", "progress": 0},
     "qwen2-vl": {"ready": False, "status": "idle", "progress": 0},
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
@@ -1285,7 +1285,7 @@ def sync_ollama_ready_states():
         if response.status_code == 200:
             models_list = [m["name"] for m in response.json().get("models", [])]
             for model_id, state in vlm_download_states.items():
-                if model_id in ("tesseract", "gemini-1.5-flash", "florence-2"):
+                if model_id in ("tesseract", "gemini-2.5-flash-lite", "florence-2"):
                     continue
                 ollama_names = []
                 if model_id == "moondream":
@@ -1622,7 +1622,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "florence-2": {"loc": 45.0, "coords": 35.0},
             "paligemma": {"loc": 135.0, "coords": 115.0},
             "minicpm-v": {"loc": 185.0, "coords": 165.0},
-            "gemini-1.5-flash": {"loc": 250.0, "coords": 200.0}
+            "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0}
         }
         
         selected_model = req.model.lower()
@@ -1639,7 +1639,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             elif "minicpm" in selected_model:
                 selected_model = "minicpm-v"
             elif "gemini" in selected_model:
-                selected_model = "gemini-1.5-flash"
+                selected_model = "gemini-2.5-flash-lite"
             elif "tesseract" in selected_model:
                 selected_model = "tesseract"
             else:
@@ -1680,8 +1680,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             except Exception as te:
                 print(f"[Tesseract] Real inference failed, falling back to simulation: {te}")
  
-        # Check if we should execute actual cloud Gemini 1.5 Flash inference!
-        if selected_model == "gemini-1.5-flash":
+        # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!
+        if selected_model == "gemini-2.5-flash-lite":
             try:
                 tp0 = time.time()
                 buffered = io.BytesIO()
@@ -1692,7 +1692,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
  
                 t0 = time.time()
-                loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img_2x, "gemini/gemini-1.5-flash")
+                loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img_2x, "gemini/gemini-2.5-flash-lite")
                 t1 = time.time()
                 
                 coords_val = coords_str if coords_str else "None"
@@ -1702,7 +1702,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 act_ram, act_vram = get_actual_usage()
                 return {
                     "status": "success",
-                    "model": "Gemini 1.5 Flash",
+                    "model": "Gemini 2.5 Flash Lite",
                     "parsed_location": loc_val,
                     "parsed_coordinates": coords_val,
                     "loc_time_ms": None,
@@ -1713,7 +1713,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "actual_vram": act_vram
                 }
             except Exception as ge:
-                print(f"[Gemini 1.5 Flash] Real API inference failed, falling back to simulation: {ge}")
+                print(f"[Gemini 2.5 Flash Lite] Real API inference failed, falling back to simulation: {ge}")
  
         # Check if we should execute actual local Florence-2 (Large) inference!
         if selected_model == "florence-2" and vlm_download_states["florence-2"]["ready"]:
@@ -1770,7 +1770,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         
         sim_preprocess = {
             "tesseract": 4.5,
-            "gemini-1.5-flash": 2.1,
+            "gemini-2.5-flash-lite": 2.1,
             "moondream": 8.5,
             "qwen2-vl": 12.0,
             "florence-2": 10.0,
@@ -1778,7 +1778,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "minicpm-v": 18.0
         }
         preprocess_time_ms = sim_preprocess.get(selected_model, 10.0)
-
+ 
         # Simulate processing delay
         time.sleep(total_time / 1000.0)
         
@@ -1790,7 +1790,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             parsed_coords = cur_coords.replace(".", "")
             
         act_ram, act_vram = get_actual_usage()
-        is_gemini = (selected_model == "gemini-1.5-flash")
+        is_gemini = (selected_model == "gemini-2.5-flash-lite")
         return {
             "status": "success",
             "model": req.model,

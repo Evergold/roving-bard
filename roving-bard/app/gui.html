@@ -3597,7 +3597,7 @@
                                         <option value="florence-2">Florence-2</option>
                                         <option value="paligemma">PaliGemma</option>
                                         <option value="minicpm-v">MiniCPM-V 2.6</option>
-                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Cloud)</option>
+                                        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Cloud)</option>
                                     </select>
                                     <button class="btn btn-secondary" id="btn-vlm-try" data-loc="vlm_try_btn" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
                                     <button class="btn btn-secondary" id="btn-vlm-reset" data-loc="vlm_reset_btn" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px;" onclick="resetVLM()" disabled>Reset</button>
@@ -4887,7 +4887,7 @@
             const statMethod = document.getElementById('stat-method');
             const friendlyNames = {
                 'tesseract': 'Tesseract/OpenCV',
-                'gemini-1.5-flash': 'Gemini 1.5 Flash (Cloud)',
+                'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite (Cloud)',
                 'moondream': 'Moondream2',
                 'qwen2-vl': 'Qwen2-VL',
                 'florence-2': 'Florence-2',
@@ -4895,7 +4895,7 @@
                 'minicpm-v': 'MiniCPM-V 2.6'
             };
             const friendlyName = friendlyNames[modelName] || modelName;
-
+ 
             if (cached) {
                 if (statMethod) statMethod.innerText = cached.methodLabel || friendlyName;
                 document.getElementById('stat-loc-time').innerText = (cached.loc_time_ms !== null && cached.loc_time_ms !== undefined) ? `${cached.loc_time_ms.toFixed(1)} ms` : "--- ms";
@@ -4909,7 +4909,7 @@
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
             }
-
+ 
             const vramEl = document.getElementById('stat-vram');
             const ramEl = document.getElementById('stat-ram');
             const vramLabel = document.getElementById('label-vram');
@@ -4920,13 +4920,13 @@
             if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
             if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
         }
-
+ 
         async function onVLMSelectChange() {
             if (vlmStatusPollInterval) {
                 clearInterval(vlmStatusPollInterval);
                 vlmStatusPollInterval = null;
             }
-
+ 
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
             
@@ -4935,7 +4935,7 @@
                 activeVLMModel = null;
             } else {
                 const friendlyNames = {
-                    'gemini-1.5-flash': 'Gemini 1.5 Flash (Cloud)',
+                    'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite (Cloud)',
                     'moondream': 'Moondream2',
                     'qwen2-vl': 'Qwen2-VL',
                     'florence-2': 'Florence-2',
@@ -4944,11 +4944,11 @@
                 };
                 activeVLMModel = friendlyNames[selectedVal] || selectedVal;
             }
-
+ 
             // Re-render cached stats or blank placeholders for selected VLM benchmarking method
             updateVLMStatsUI(selectedVal);
-
-            if (selectedVal === 'tesseract' || selectedVal === 'gemini-1.5-flash') {
+ 
+            if (selectedVal === 'tesseract' || selectedVal === 'gemini-2.5-flash-lite') {
                 document.getElementById('btn-vlm-try').disabled = false;
                 document.getElementById('vlm-download-container').style.display = 'none';
                 return;
@@ -5010,17 +5010,17 @@
         async function trySelectedVLM() {
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
-
-            if (selectedVal === 'tesseract' || selectedVal === 'gemini-1.5-flash') {
+ 
+            if (selectedVal === 'tesseract' || selectedVal === 'gemini-2.5-flash-lite') {
                 executeVLMRealTrial(selectedVal);
                 return;
             }
-
+ 
             try {
                 const response = await apiFetch('/api/ocr/vlm_status');
                 const data = await response.json();
                 const modelState = data.states[selectedVal];
-
+ 
                 if (modelState && modelState.ready) {
                     executeVLMRealTrial(selectedVal);
                 } else {
@@ -5029,7 +5029,7 @@
                     document.getElementById('btn-vlm-reset').disabled = true;
                     modelSelect.disabled = true;
                     document.getElementById('vlm-download-container').style.display = 'block';
-
+ 
                     if (!modelState || modelState.status === 'idle') {
                         await apiFetch('/api/ocr/vlm_pull', {
                             method: 'POST',
@@ -5037,7 +5037,7 @@
                             body: JSON.stringify({ model: selectedVal })
                         });
                     }
-
+ 
                     if (vlmStatusPollInterval) clearInterval(vlmStatusPollInterval);
                     vlmStatusPollInterval = setInterval(() => pollVLMDownloadStatus(selectedVal, true), 500);
                 }
@@ -5046,16 +5046,16 @@
                 showToast("Error starting model download.", "error");
             }
         }
-
+ 
         async function executeVLMRealTrial(selectedVal) {
             const modelSelect = document.getElementById('vlm-model-select');
             document.getElementById('btn-vlm-try').disabled = true;
             document.getElementById('btn-vlm-reset').disabled = true;
             modelSelect.disabled = true;
-
+ 
             const friendlyNames = {
                 'tesseract': 'Tesseract/OpenCV',
-                'gemini-1.5-flash': 'Gemini 1.5 Flash',
+                'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
                 'moondream': 'Moondream2',
                 'qwen2-vl': 'Qwen2-VL',
                 'florence-2': 'Florence-2',
@@ -5063,7 +5063,7 @@
                 'minicpm-v': 'MiniCPM-V 2.6'
             };
             const friendlyName = friendlyNames[selectedVal] || selectedVal;
-
+ 
             const statMethod = document.getElementById('stat-method');
             const runningText = t("vlm_running_status", "Running...");
             if (statMethod) statMethod.innerText = `${runningText} (${friendlyName})`;
@@ -5071,47 +5071,47 @@
             document.getElementById('stat-coords-time').innerText = runningText;
             document.getElementById('stat-total-time').innerText = runningText;
             document.getElementById('stat-preprocess-time').innerText = runningText;
-
+ 
             try {
                 const response = await apiFetch('/api/ocr/try_vlm', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ model: selectedVal })
                 });
-
+ 
                 const res = await response.json();
                 if (res.status === 'success') {
                     document.getElementById('parse-location').innerText = res.parsed_location || "None";
                     document.getElementById('parse-coords').innerText = res.parsed_coordinates || "None";
-
+ 
                     activeVLMModel = friendlyName;
                     if (statMethod) statMethod.innerText = friendlyName;
                     document.getElementById('stat-loc-time').innerText = (res.loc_time_ms !== null && res.loc_time_ms !== undefined) ? `${res.loc_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-coords-time').innerText = (res.coords_time_ms !== null && res.coords_time_ms !== undefined) ? `${res.coords_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
-
+ 
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
                     const vramLabel = document.getElementById('label-vram');
                     const ramLabel = document.getElementById('label-ram');
-
-                    if (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-1.5-flash') {
+ 
+                    if (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-2.5-flash-lite') {
                         if (vramEl) vramEl.innerText = res.actual_vram;
                     } else {
                         if (vramEl) vramEl.innerText = "---";
                     }
                     if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
-
+ 
                     if (res.actual_ram) {
                         if (ramEl) ramEl.innerText = res.actual_ram;
                     } else {
                         if (ramEl) ramEl.innerText = "---";
                     }
                     if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
-
+ 
                     // Cache the trial result stats in memory
-                    const finalVram = (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-1.5-flash') ? res.actual_vram : "---";
+                    const finalVram = (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-2.5-flash-lite') ? res.actual_vram : "---";
                     const finalRam = res.actual_ram || "---";
                     vlmStatsCache[selectedVal] = {
                         loc_time_ms: res.loc_time_ms,
@@ -5124,7 +5124,7 @@
                         ramLabel: t("vlm_est_ram", "RAM "),
                         methodLabel: friendlyName
                     };
-
+ 
                     const successPrefix = t("vlm_toast_success_prefix", "Successfully processed with");
                     showToast(`${successPrefix} ${friendlyName}!`, "success");
                 } else {

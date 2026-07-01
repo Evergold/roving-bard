@@ -74,7 +74,7 @@ def main():
     generate_mock_tracks(playlist_dir)
 
     polling_interval = config.get("polling_interval", 2.0)
-    model_name = config.get("model_name", "gemini/gemini-1.5-flash")
+    model_name = config.get("model_name", "gemini/gemini-2.5-flash-lite")
     bounds = config.get("minimap_bounds", {})
 
     print("Configuration Loaded:")

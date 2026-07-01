@@ -145,7 +145,7 @@ def load_config():
         "minimap_bounds": {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15},
         "transitions": {"fade_out_ms": 1500, "fade_in_ms": 1500},
         "playlist_directory": "audio",
-        "model_name": "gemini/gemini-1.5-flash",
+        "model_name": "gemini/gemini-2.5-flash-lite",
         "polling_interval": 2.0,
         "mappings": [],
         "api_key": None,
@@ -190,8 +190,9 @@ latest_parse_result = {
 
 def call_gemini_vision(img, model_name):
     """Fallback vision call using LiteLLM to extract coordinates and location."""
-    if "gemini-1.5-flash" in model_name:
-        model_name = "gemini/gemini-2.5-flash"
+    if "gemini-1.5-flash" in model_name or "gemini-2.5-flash" in model_name:
+        if "lite" not in model_name:
+            model_name = "gemini/gemini-2.5-flash-lite"
         
     buffered = BytesIO()
     img.save(buffered, format="PNG")
@@ -224,10 +225,10 @@ def call_gemini_vision(img, model_name):
             response_format={"type": "json_object"},
         )
         content = response.choices[0].message.content.strip()
-        if content.startswith("```json"):
-            content = content.replace("```json", "", 1).replace("```", "", 1).strip()
-        elif content.startswith("```"):
-            content = content.replace("```", "", 1).replace("```", "", 1).strip()
+        start_idx = content.find("{")
+        end_idx = content.rfind("}")
+        if start_idx != -1 and end_idx != -1:
+            content = content[start_idx:end_idx+1]
 
         parsed = json.loads(content)
         # Convert location and coordinates string to matching values

@@ -33,10 +33,11 @@ os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
 
 # Resolve model from configuration (mapping.yaml)
-# LiteLLM format: e.g. "gemini/gemini-1.5-flash", "openai/gpt-4o", etc.
-model_name = config.get("model_name", "gemini/gemini-1.5-flash")
-if model_name == "gemini/gemini-1.5-flash":
-    model_name = "gemini/gemini-2.5-flash"
+# LiteLLM format: e.g. "gemini/gemini-2.5-flash-lite", "openai/gpt-4o", etc.
+model_name = config.get("model_name", "gemini/gemini-2.5-flash-lite")
+if "gemini-1.5-flash" in model_name or "gemini-2.5-flash" in model_name:
+    if "lite" not in model_name:
+        model_name = "gemini/gemini-2.5-flash-lite"
 
 root_agent = Agent(
     name="roving_bard",
