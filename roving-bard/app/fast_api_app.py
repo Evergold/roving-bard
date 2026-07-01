@@ -1502,6 +1502,92 @@ def run_florence_ocr(image):
     return generated_text
 
 
+def get_process_ram_usage_bytes(pid=None):
+    """Gets the VmRSS (Resident Set Size) memory usage of a process (or current process if pid is None) in bytes."""
+    try:
+        target_pid = pid if pid is not None else "self"
+        with open(f"/proc/{target_pid}/status", "r") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    parts = line.split()
+                    return int(parts[1]) * 1024
+    except Exception:
+        pass
+    return 0
+
+
+def get_ollama_ram_usage_bytes():
+    """Finds all running processes containing 'ollama' and returns their combined RSS memory in bytes."""
+    total_ram = 0
+    try:
+        for pid_str in os.listdir("/proc"):
+            if pid_str.isdigit():
+                try:
+                    with open(f"/proc/{pid_str}/comm", "r") as f:
+                        comm = f.read().strip().lower()
+                    if "ollama" in comm:
+                        total_ram += get_process_ram_usage_bytes(int(pid_str))
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return total_ram
+
+
+def get_gpu_vram_usage_bytes():
+    """Gets the GPU memory usage of current process and any ollama processes in bytes."""
+    import subprocess
+    total_vram = 0
+    try:
+        import torch
+        if torch.cuda.is_available():
+            total_vram += torch.cuda.memory_allocated()
+    except Exception:
+        pass
+
+    try:
+        res = subprocess.run(
+            ["nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=1
+        )
+        if res.returncode == 0:
+            pids_of_interest = {os.getpid()}
+            for pid_str in os.listdir("/proc"):
+                if pid_str.isdigit():
+                    try:
+                        with open(f"/proc/{pid_str}/comm", "r") as f:
+                            comm = f.read().strip().lower()
+                        if "ollama" in comm:
+                            pids_of_interest.add(int(pid_str))
+                    except Exception:
+                        continue
+            
+            for line in res.stdout.strip().split("\n"):
+                if not line:
+                    continue
+                parts = line.split(",")
+                if len(parts) == 2:
+                    pid = int(parts[0].strip())
+                    vram_mb = int(parts[1].strip())
+                    if pid in pids_of_interest:
+                        total_vram += vram_mb * 1024 * 1024
+    except Exception:
+        pass
+    return total_vram
+
+
+def format_memory_size(bytes_val):
+    if bytes_val <= 0:
+        return "0 MB"
+    mb_val = bytes_val / (1024 * 1024)
+    if mb_val >= 1000:
+        return f"{mb_val / 1024:.2f} GB"
+    return f"{int(mb_val)} MB"
+
+
 @app.post("/api/ocr/try_vlm", dependencies=[Depends(verify_api_key)])
 def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
@@ -1513,6 +1599,11 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         return {"status": "error", "message": "No preprocessed screenshot available. Please perform a screen scan first."}
         
     try:
+        def get_actual_usage():
+            ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
+            vram = get_gpu_vram_usage_bytes()
+            return format_memory_size(ram), format_memory_size(vram)
+
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same cropped+processed binary data!)
         text_img = Image.open(io.BytesIO(tools.latest_location_processed_bytes))
@@ -1563,6 +1654,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
                 
+                act_ram, act_vram = get_actual_usage()
                 return {
                     "status": "success",
                     "model": "Gemini 1.5 Flash",
@@ -1570,7 +1662,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "parsed_coordinates": coords_val,
                     "loc_time_ms": round(loc_time_ms, 1),
                     "coords_time_ms": round(coords_time_ms, 1),
-                    "total_time_ms": round(total_time_ms, 1)
+                    "total_time_ms": round(total_time_ms, 1),
+                    "actual_ram": act_ram,
+                    "actual_vram": act_vram
                 }
             except Exception as ge:
                 print(f"[Gemini 1.5 Flash] Real API inference failed, falling back to simulation: {ge}")
@@ -1591,6 +1685,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
                 
+                act_ram, act_vram = get_actual_usage()
                 return {
                     "status": "success",
                     "model": "Florence-2 (Large)",
@@ -1598,7 +1693,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "parsed_coordinates": coords_str,
                     "loc_time_ms": round(loc_time_ms, 1),
                     "coords_time_ms": round(coords_time_ms, 1),
-                    "total_time_ms": round(total_time_ms, 1)
+                    "total_time_ms": round(total_time_ms, 1),
+                    "actual_ram": act_ram,
+                    "actual_vram": act_vram
                 }
             except Exception as fe:
                 print(f"[Florence-2] Real inference failed, falling back to simulation: {fe}")
@@ -1618,6 +1715,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         if selected_model == "moondream" and cur_coords != "None":
             parsed_coords = cur_coords.replace(".", "")
             
+        act_ram, act_vram = get_actual_usage()
         return {
             "status": "success",
             "model": req.model,
@@ -1625,7 +1723,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "parsed_coordinates": parsed_coords,
             "loc_time_ms": loc_time,
             "coords_time_ms": coords_time,
-            "total_time_ms": total_time
+            "total_time_ms": total_time,
+            "actual_ram": act_ram,
+            "actual_vram": act_vram
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
