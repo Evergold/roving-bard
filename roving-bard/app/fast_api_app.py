@@ -1650,9 +1650,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         except Exception:
             pass
 
-        def get_peak_usage():
-            ram = get_process_peak_ram_bytes() + get_ollama_peak_ram_usage_bytes()
-            vram = get_gpu_vram_usage_bytes()
+        def get_peak_usage(is_ollama=False):
+            if is_ollama:
+                ram = get_process_peak_ram_bytes() + get_ollama_peak_ram_usage_bytes()
+                vram = get_gpu_vram_usage_bytes()
+            else:
+                ram = get_process_peak_ram_bytes()
+                vram = 0
             try:
                 import torch
                 if torch.cuda.is_available():
@@ -1880,7 +1884,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 )
                 t1 = time.time()
                 
-                act_ram, act_vram = get_peak_usage()
+                act_ram, act_vram = get_peak_usage(is_ollama=True)
                 
                 if response.status_code == 200:
                     resp_json = response.json()
