@@ -2394,30 +2394,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
             
-            # Warm up the model synchronously with a simple 1x1 dummy image if it is run for the first time in this session.
-            # This ensures CUDA context initialization is fully completed before we run the actual screenshot OCR.
-            is_first_run = (selected_model in ("moondream", "qwen2-vl") and selected_model not in warmed_models)
-            if is_first_run:
-                try:
-                    print(f"[VLM Warmup] Warming up {selected_model} synchronously with dummy image...", flush=True)
-                    dummy_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-                    requests.post(
-                        "http://127.0.0.1:11434/api/generate",
-                        json={
-                            "model": model_map[selected_model],
-                            "prompt": "warmup",
-                            "images": [dummy_img],
-                            "stream": False,
-                            "keep_alive": "5m",
-                            "options": {
-                                "num_predict": 5
-                            }
-                        },
-                        timeout=90
-                    )
-                    warmed_models.add(selected_model)
-                except Exception as w_err:
-                    print(f"[VLM Warmup] Warmup request failed: {w_err}", flush=True)
             max_tries = 1
             response = None
             t0, t1 = 0.0, 0.0
