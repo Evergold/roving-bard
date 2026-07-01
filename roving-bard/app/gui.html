@@ -5087,6 +5087,11 @@
                 };
                 activeVLMModel = friendlyNames[selectedVal] || selectedVal;
             }
+            
+            const resetBtn = document.getElementById('btn-vlm-reset');
+            if (resetBtn) {
+                resetBtn.disabled = !activeVLMModel || (selectedVal === 'tesseract');
+            }
   
             // Immediately update the Extraction Route display name when model selection changes
             const routeDisplayNames = {
