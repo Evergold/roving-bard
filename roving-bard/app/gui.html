@@ -5088,6 +5088,7 @@
                 if (res.status === 'success') {
                     document.getElementById('parse-location').innerText = res.parsed_location || "None";
                     document.getElementById('parse-coords').innerText = res.parsed_coordinates || "None";
+                    document.getElementById('parse-bearing').innerText = res.parsed_bearing || "None";
  
                     activeVLMModel = friendlyName;
                     if (statMethod) statMethod.innerText = friendlyName;

@@ -1670,6 +1670,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "model": "Tesseract/OpenCV",
                     "parsed_location": loc_val,
                     "parsed_coordinates": coords_val,
+                    "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
                     "loc_time_ms": round(loc_time_ms, 1),
                     "coords_time_ms": round(coords_time_ms, 1),
                     "preprocess_time_ms": round(preprocess_time_ms, 1),
