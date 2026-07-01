@@ -210,7 +210,7 @@
     "preview_processed": "Processed",
     "bounding_box_setup": "BOUNDING BOX SETUP",
     "vlm_benchmarking": "VLM Benchmarking",
-    "vlm_tesseract_opt": "OpenCV / Tesseract (Default)",
+    "vlm_tesseract_opt": "OpenCV / Tesseract",
     "vlm_try_btn": "Try",
     "vlm_reset_btn": "Reset",
     "vlm_downloading_status": "Setting up model...",

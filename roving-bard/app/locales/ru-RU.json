@@ -210,7 +210,7 @@
     "preview_processed": "Обработан",
     "bounding_box_setup": "НАСТРОЙКА ОБЛАСТИ ОГРАНИЧЕНИЯ",
     "vlm_benchmarking": "Тестирование VLM",
-    "vlm_tesseract_opt": "OpenCV / Tesseract (По умолчанию)",
+    "vlm_tesseract_opt": "OpenCV / Tesseract",
     "vlm_try_btn": "Тест",
     "vlm_reset_btn": "Сброс",
     "vlm_downloading_status": "Настройка модели...",

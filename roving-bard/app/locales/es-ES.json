@@ -210,7 +210,7 @@
     "preview_processed": "Procesado",
     "bounding_box_setup": "CONFIGURACIÓN DE ÁREA DE CAPTURA",
     "vlm_benchmarking": "Prueba de VLM",
-    "vlm_tesseract_opt": "OpenCV / Tesseract (Predeterminado)",
+    "vlm_tesseract_opt": "OpenCV / Tesseract",
     "vlm_try_btn": "Probar",
     "vlm_reset_btn": "Restablecer",
     "vlm_downloading_status": "Configurando el modelo...",
