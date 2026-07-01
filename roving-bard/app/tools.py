@@ -190,6 +190,9 @@ latest_parse_result = {
 
 def call_gemini_vision(img, model_name):
     """Fallback vision call using LiteLLM to extract coordinates and location."""
+    if "gemini-1.5-flash" in model_name:
+        model_name = "gemini/gemini-2.5-flash"
+        
     buffered = BytesIO()
     img.save(buffered, format="PNG")
     img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")

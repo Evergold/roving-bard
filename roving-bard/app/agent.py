@@ -35,6 +35,8 @@ os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
 # Resolve model from configuration (mapping.yaml)
 # LiteLLM format: e.g. "gemini/gemini-1.5-flash", "openai/gpt-4o", etc.
 model_name = config.get("model_name", "gemini/gemini-1.5-flash")
+if model_name == "gemini/gemini-1.5-flash":
+    model_name = "gemini/gemini-2.5-flash"
 
 root_agent = Agent(
     name="roving_bard",
