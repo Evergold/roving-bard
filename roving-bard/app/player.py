@@ -2025,17 +2025,49 @@ class LocalOCRParser:
 
             # Remove symbols/noise, check if it looks like a location name
             cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
-            if len(cleaned) > 2:  # At least 3 chars
+            
+            # Clean leading 'xt' or 'xtr' visual noise from VLM border misreads
+            cleaned_lower = cleaned.lower()
+            if cleaned_lower.startswith("xtr") and len(cleaned) > 5:
+                cleaned = cleaned[3:]
+            elif cleaned_lower.startswith("xt") and len(cleaned) > 4:
+                cleaned = cleaned[2:]
+
+            if len(cleaned) > 2:
                 if not first_candidate:
                     first_candidate = cleaned
                 if words:
                     import difflib
+                    # 1. Try matching the full cleaned line
                     matches = difflib.get_close_matches(cleaned, words, n=1, cutoff=0.6)
                     if matches:
                         ratio = difflib.SequenceMatcher(None, cleaned.lower(), matches[0].lower()).ratio()
+                        # Substring match reinforcement for VLM circle border crops
+                        if len(cleaned) >= 4 and cleaned.lower() in matches[0].lower():
+                            ratio = 1.0
                         if ratio > best_loc_score:
                             best_loc_score = ratio
                             best_loc = matches[0]
+                    
+                    # 2. Try matching individual words if full-line match is weak
+                    if best_loc_score < 0.85:
+                        for word in cleaned.split():
+                            w_cleaned = word
+                            w_lower = word.lower()
+                            if w_lower.startswith("xtr") and len(word) > 5:
+                                w_cleaned = word[3:]
+                            elif w_lower.startswith("xt") and len(word) > 4:
+                                w_cleaned = word[2:]
+                            
+                            if len(w_cleaned) > 2:
+                                w_matches = difflib.get_close_matches(w_cleaned, words, n=1, cutoff=0.7)
+                                if w_matches:
+                                    w_ratio = difflib.SequenceMatcher(None, w_cleaned.lower(), w_matches[0].lower()).ratio()
+                                    if len(w_cleaned) >= 4 and w_cleaned.lower() in w_matches[0].lower():
+                                        w_ratio = 1.0
+                                    if w_ratio > best_loc_score:
+                                        best_loc_score = w_ratio
+                                        best_loc = w_matches[0]
                             
         location = best_loc if (best_loc and best_loc_score > 0.80) else first_candidate
 

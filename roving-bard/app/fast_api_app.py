@@ -1914,7 +1914,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             t0 = time.time()
             url = "http://localhost:11434/api/generate"
             prompt = (
-                "What text is written at the very bottom of this image?"
+                "Transcribe the text in the image, focusing on the bottom-most characters."
             )
             response = requests.post(
                 url, 

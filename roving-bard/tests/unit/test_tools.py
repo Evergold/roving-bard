@@ -76,3 +76,14 @@ def test_parse_text_same_line():
         assert ns == -11.9
         assert ew == -67.8
 
+    # VLM specific circle border noise cases
+    vlm_noise_texts = [
+        "xtrinudir 11.9S, 67.8W",
+        "xtnudir 11.9S, 67.8W",
+        "xtractable Tinnudir 11.9S, 67.8W"
+    ]
+    for text in vlm_noise_texts:
+        loc, coords, ns, ew = LocalOCRParser.parse_text(text)
+        assert loc == "Tinnudir"
+        assert coords == "11.9S, 67.8W"
+
