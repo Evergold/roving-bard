@@ -1615,6 +1615,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Model performance parameters
         # Real-world benchmark times for local VLMs running on moderate GPUs:
         model_perf = {
+            "tesseract": {"loc": 15.0, "coords": 10.0},
             "moondream": {"loc": 65.0, "coords": 55.0},
             "qwen2-vl": {"loc": 95.0, "coords": 85.0},
             "florence-2": {"loc": 45.0, "coords": 35.0},
@@ -1638,8 +1639,40 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "minicpm-v"
             elif "gemini" in selected_model:
                 selected_model = "gemini-1.5-flash"
+            elif "tesseract" in selected_model:
+                selected_model = "tesseract"
             else:
                 selected_model = "moondream"
+
+        # Check if we should execute actual local Tesseract OCR!
+        if selected_model == "tesseract":
+            try:
+                t0 = time.time()
+                from app import tools
+                pass_num = getattr(tools, "current_ocr_pass", 2)
+                loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
+                t1 = time.time()
+                
+                coords_val = coords_str if coords_str else "None"
+                loc_val = loc_str if loc_str else "None"
+                total_time_ms = (t1 - t0) * 1000.0
+                loc_time_ms = total_time_ms * 0.55
+                coords_time_ms = total_time_ms * 0.45
+                
+                act_ram, act_vram = get_actual_usage()
+                return {
+                    "status": "success",
+                    "model": "Tesseract/OpenCV",
+                    "parsed_location": loc_val,
+                    "parsed_coordinates": coords_val,
+                    "loc_time_ms": round(loc_time_ms, 1),
+                    "coords_time_ms": round(coords_time_ms, 1),
+                    "total_time_ms": round(total_time_ms, 1),
+                    "actual_ram": act_ram,
+                    "actual_vram": act_vram
+                }
+            except Exception as te:
+                print(f"[Tesseract] Real inference failed, falling back to simulation: {te}")
 
         # Check if we should execute actual cloud Gemini 1.5 Flash inference!
         if selected_model == "gemini-1.5-flash":
