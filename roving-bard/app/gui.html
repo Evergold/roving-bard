@@ -3597,13 +3597,13 @@
                                 <div style="font-weight: bold; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;" data-loc="vlm_benchmarking">VLM Benchmarking</div>
                                 <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; width: 100%; align-items: center;">
                                     <select id="vlm-model-select" style="flex: 1; height: 32px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 4px; padding: 0 0.5rem;" onchange="onVLMSelectChange()">
-                                        <option value="tesseract" data-loc="vlm_tesseract_opt">OpenCV+Tesseract (Default)</option>
-                                        <option value="moondream">OpenCV+Moondream2</option>
-                                        <option value="qwen2-vl">OpenCV+Qwen2-VL (2B)</option>
-                                        <option value="qwen2.5-vl">OpenCV+Qwen2.5-VL (3B)</option>
-                                        <option value="florence-2">OpenCV+Florence-2</option>
-                                        <option value="paligemma">OpenCV+PaliGemma</option>
-                                        <option value="minicpm-v">OpenCV+MiniCPM-V 2.6</option>
+                                        <option value="tesseract" data-loc="vlm_tesseract_opt">OpenCV / Tesseract (Default)</option>
+                                        <option value="moondream">Moondream2</option>
+                                        <option value="qwen2-vl">Qwen2-VL (2B)</option>
+                                        <option value="qwen2.5-vl">Qwen2.5-VL (3B)</option>
+                                        <option value="florence-2">Florence-2</option>
+                                        <option value="paligemma">PaliGemma</option>
+                                        <option value="minicpm-v">MiniCPM-V 2.6</option>
                                         <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                                     </select>
                                     <button class="btn btn-secondary" id="btn-vlm-try" data-loc="vlm_try_btn" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
@@ -4823,24 +4823,38 @@
                 }
                 document.getElementById('parse-coords').innerHTML = coordsHtml;
                 
+                // Check currently selected dropdown value
+                const modelSelect = document.getElementById('vlm-model-select');
+                const selectedVal = modelSelect ? modelSelect.value : 'tesseract';
+
                 let methodText = parse.method || "None";
-                if (methodText === "Local OCR") methodText = t("method_local_ocr");
-                else if (methodText.startsWith("Local OCR (Pass")) {
-                    methodText = methodText.replace("Local OCR", t("method_local_ocr"));
+                if (methodText === "Simulation") {
+                    methodText = t("method_simulation");
+                } else if (methodText === "None") {
+                    methodText = t("none");
+                } else if (selectedVal === 'tesseract') {
+                    if (methodText === "Local OCR") methodText = "OpenCV+Tesseract";
+                    else if (methodText.startsWith("Local OCR (Pass")) {
+                        methodText = methodText.replace("Local OCR", "OpenCV+Tesseract");
+                    }
+                } else {
+                    const routeDisplayNames = {
+                        'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                        'moondream': 'OpenCV+Moondream2',
+                        'qwen2-vl': 'OpenCV+Qwen2-VL (2B)',
+                        'qwen2.5-vl': 'OpenCV+Qwen2.5-VL (3B)',
+                        'florence-2': 'OpenCV+Florence-2',
+                        'paligemma': 'OpenCV+PaliGemma',
+                        'minicpm-v': 'OpenCV+MiniCPM-V 2.6'
+                    };
+                    methodText = routeDisplayNames[selectedVal] || selectedVal;
                 }
-                else if (methodText === "Gemini Vision Fallback") methodText = t("method_gemini_fallback");
-                else if (methodText === "Simulation") methodText = t("method_simulation");
-                else if (methodText === "None") methodText = t("none");
                 
                 if (parse.parsed_location || parse.parsed_coordinates) {
                     document.getElementById('parse-route').innerHTML = `${methodText} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
                 } else {
                     document.getElementById('parse-route').innerText = methodText;
                 }
-
-                // Check currently selected dropdown value
-                const modelSelect = document.getElementById('vlm-model-select');
-                const selectedVal = modelSelect ? modelSelect.value : 'tesseract';
 
                 const hasActual = (parse.actual_ram !== null && parse.actual_ram !== undefined);
                 const finalRam = hasActual ? parse.actual_ram : "---";
@@ -5027,6 +5041,31 @@
                     'minicpm-v': 'MiniCPM-V 2.6'
                 };
                 activeVLMModel = friendlyNames[selectedVal] || selectedVal;
+            }
+  
+            // Immediately update the Extraction Route display name when model selection changes
+            const routeDisplayNames = {
+                'tesseract': 'OpenCV+Tesseract',
+                'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                'moondream': 'OpenCV+Moondream2',
+                'qwen2-vl': 'OpenCV+Qwen2-VL (2B)',
+                'qwen2.5-vl': 'OpenCV+Qwen2.5-VL (3B)',
+                'florence-2': 'OpenCV+Florence-2',
+                'paligemma': 'OpenCV+PaliGemma',
+                'minicpm-v': 'OpenCV+MiniCPM-V 2.6'
+            };
+            const routeName = routeDisplayNames[selectedVal] || selectedVal;
+            const parseLoc = document.getElementById('parse-location').innerText;
+            const parseCoords = document.getElementById('parse-coords').innerText;
+            const routeEl = document.getElementById('parse-route');
+            if (routeEl) {
+                const hasLocation = parseLoc && parseLoc !== "Unknown" && parseLoc !== "";
+                const hasCoords = parseCoords && parseCoords !== "None" && parseCoords !== "";
+                if (hasLocation || hasCoords) {
+                    routeEl.innerHTML = `${routeName} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                } else {
+                    routeEl.innerText = routeName;
+                }
             }
   
             // Re-render cached stats or blank placeholders for selected VLM benchmarking method
