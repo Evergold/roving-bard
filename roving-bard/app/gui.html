@@ -5253,7 +5253,7 @@
                 if (res.status === 'success') {
                     let locHtml = res.parsed_location || "None";
                     if (res.raw_location && selectedVal !== 'tesseract') {
-                        locHtml += "<br><span style='font-size: 0.8rem; opacity: 0.7;'>[" + res.raw_location + "]</span>";
+                        locHtml += " <span style='font-size: 0.8rem; opacity: 0.7; margin-left: 5px;'>[" + res.raw_location + "]</span>";
                     }
                     document.getElementById('parse-location').innerHTML = locHtml;
 
