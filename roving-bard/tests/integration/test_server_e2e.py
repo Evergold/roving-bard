@@ -215,3 +215,32 @@ def test_collect_feedback(server_fixture: subprocess.Popen[str]) -> None:
         FEEDBACK_URL, json=feedback_data, headers=HEADERS, timeout=10
     )
     assert response.status_code == 200
+
+
+def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
+    """Test the VLM benchmarking and download status endpoints."""
+    logger.info("Starting VLM endpoints test")
+    
+    # 1. Check vlm status initially
+    status_url = BASE_URL + "/api/ocr/vlm_status"
+    response = requests.get(status_url, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["states"]["tesseract"]["ready"] is True
+    
+    # 2. Trigger screen scan to cache raw screenshot bytes
+    action_url = BASE_URL + "/api/control"
+    response = requests.post(action_url, json={"action": "scan"}, headers=HEADERS, timeout=15)
+    assert response.status_code == 200
+    
+    # 3. Test try_vlm with tesseract (since it is ready)
+    try_url = BASE_URL + "/api/ocr/try_vlm"
+    response = requests.post(try_url, json={"model": "tesseract"}, headers=HEADERS, timeout=15)
+    assert response.status_code == 200
+    res = response.json()
+    assert res["status"] == "success"
+    assert res["model"] == "Tesseract/OpenCV"
+    assert res["parsed_location"] != "Unknown"
+    
+    logger.info("VLM endpoints test completed successfully")
