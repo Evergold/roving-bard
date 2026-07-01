@@ -1606,7 +1606,7 @@ def api_vlm_pull(req: VlmPullRequest):
 
     model_map = {
         "moondream": "moondream",
-        "qwen2.5-vl": "qwen2.5vl",
+        "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
     }
@@ -1688,7 +1688,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
     model_map = {
         "moondream": "moondream",
         "qwen2-vl": "qwen2-vl:2b",
-        "qwen2.5-vl": "qwen2.5vl",
+        "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
     }
@@ -1737,7 +1737,7 @@ def api_vlm_unload(req: VlmUnloadRequest):
     model_map = {
         "moondream": "moondream",
         "qwen2-vl": "qwen2-vl",
-        "qwen2.5-vl": "qwen2.5vl",
+        "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
     }
@@ -2269,7 +2269,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             model_map = {
                 "moondream": "moondream",
                 "qwen2-vl": "qwen2-vl",
-                "qwen2.5-vl": "qwen2.5vl",
+                "qwen2.5-vl": "qwen2.5vl:3b",
                 "paligemma": "paligemma",
                 "minicpm-v": "minicpm-v"
             }
