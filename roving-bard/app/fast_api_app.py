@@ -1710,132 +1710,173 @@ def api_ocr_try_vlm(req: VlmTryRequest):
  
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
-            try:
-                tp0 = time.time()
-                _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
-                tp1 = time.time()
-                preprocess_time_ms = (tp1 - tp0) * 1000.0
+            tp0 = time.time()
+            _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
+            tp1 = time.time()
+            preprocess_time_ms = (tp1 - tp0) * 1000.0
  
-                t0 = time.time()
-                pass_num = getattr(tools, "current_ocr_pass", 2)
-                loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
-                t1 = time.time()
-                
-                coords_val = coords_str if coords_str else "None"
-                loc_val = loc_str if loc_str else "None"
-                total_time_ms = (t1 - t0) * 1000.0
-                loc_time_ms = total_time_ms * 0.55
-                coords_time_ms = total_time_ms * 0.45
-                
-                act_ram, act_vram = get_peak_usage()
-                return {
-                    "status": "success",
-                    "model": "Tesseract/OpenCV",
-                    "parsed_location": loc_val,
-                    "parsed_coordinates": coords_val,
-                    "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
-                    "loc_time_ms": round(loc_time_ms, 1),
-                    "coords_time_ms": round(coords_time_ms, 1),
-                    "preprocess_time_ms": round(preprocess_time_ms, 1),
-                    "total_time_ms": round(total_time_ms, 1),
-                    "actual_ram": act_ram,
-                    "actual_vram": act_vram
-                }
-            except Exception as te:
-                print(f"[Tesseract] Real inference failed, falling back to simulation: {te}")
+            t0 = time.time()
+            pass_num = getattr(tools, "current_ocr_pass", 2)
+            loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
+            t1 = time.time()
+            
+            coords_val = coords_str if coords_str else "None"
+            loc_val = loc_str if loc_str else "None"
+            total_time_ms = (t1 - t0) * 1000.0
+            loc_time_ms = total_time_ms * 0.55
+            coords_time_ms = total_time_ms * 0.45
+            
+            act_ram, act_vram = get_peak_usage()
+            return {
+                "status": "success",
+                "model": "Tesseract/OpenCV",
+                "parsed_location": loc_val,
+                "parsed_coordinates": coords_val,
+                "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
+                "loc_time_ms": round(loc_time_ms, 1),
+                "coords_time_ms": round(coords_time_ms, 1),
+                "preprocess_time_ms": round(preprocess_time_ms, 1),
+                "total_time_ms": round(total_time_ms, 1),
+                "actual_ram": act_ram,
+                "actual_vram": act_vram
+            }
  
         # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!
-        if selected_model == "gemini-2.5-flash-lite":
-            try:
-                tp0 = time.time()
-                buffered = io.BytesIO()
-                text_img_2x.save(buffered, format="PNG")
-                import base64
-                _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
-                tp1 = time.time()
-                preprocess_time_ms = (tp1 - tp0) * 1000.0
+        elif selected_model == "gemini-2.5-flash-lite":
+            tp0 = time.time()
+            buffered = io.BytesIO()
+            text_img_2x.save(buffered, format="PNG")
+            import base64
+            _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            tp1 = time.time()
+            preprocess_time_ms = (tp1 - tp0) * 1000.0
  
-                t0 = time.time()
-                loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img_2x, "gemini/gemini-2.5-flash-lite")
-                t1 = time.time()
-                
-                if not loc_str and not coords_str:
-                    raise Exception("No API response or key invalid.")
-                
-                coords_val = coords_str if coords_str else "None"
-                loc_val = loc_str if loc_str else "None"
-                total_time_ms = (t1 - t0) * 1000.0
-                
-                act_ram, act_vram = get_peak_usage()
-                return {
-                    "status": "success",
-                    "model": "Gemini 2.5 Flash Lite",
-                    "parsed_location": loc_val,
-                    "parsed_coordinates": coords_val,
-                    "loc_time_ms": None,
-                    "coords_time_ms": None,
-                    "preprocess_time_ms": round(preprocess_time_ms, 1),
-                    "total_time_ms": round(total_time_ms, 1),
-                    "actual_ram": act_ram,
-                    "actual_vram": act_vram
-                }
-            except Exception as ge:
-                print(f"[Gemini 2.5 Flash Lite] Real API inference failed, falling back to simulation: {ge}")
-                # Simulated cloud fallback
-                time.sleep(2.0)
-                loc_val = "Tinnudir"
-                coords_val = "11.9S, 67.8W"
-                preprocess_time_ms = 2.1
-                total_time_ms = 2200.0
-                
-                act_ram, act_vram = get_peak_usage()
-                return {
-                    "status": "success",
-                    "model": "Gemini 2.5 Flash Lite",
-                    "parsed_location": loc_val,
-                    "parsed_coordinates": coords_val,
-                    "loc_time_ms": None,
-                    "coords_time_ms": None,
-                    "preprocess_time_ms": round(preprocess_time_ms, 1),
-                    "total_time_ms": round(total_time_ms, 1),
-                    "actual_ram": act_ram,
-                    "actual_vram": act_vram
-                }
+            t0 = time.time()
+            loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img_2x, "gemini/gemini-2.5-flash-lite")
+            t1 = time.time()
+            
+            if not loc_str and not coords_str:
+                raise Exception("No response from Gemini API or configuration key invalid.")
+            
+            coords_val = coords_str if coords_str else "None"
+            loc_val = loc_str if loc_str else "None"
+            total_time_ms = (t1 - t0) * 1000.0
+            
+            act_ram, act_vram = get_peak_usage()
+            return {
+                "status": "success",
+                "model": "Gemini 2.5 Flash Lite",
+                "parsed_location": loc_val,
+                "parsed_coordinates": coords_val,
+                "loc_time_ms": None,
+                "coords_time_ms": None,
+                "preprocess_time_ms": round(preprocess_time_ms, 1),
+                "total_time_ms": round(total_time_ms, 1),
+                "actual_ram": act_ram,
+                "actual_vram": act_vram
+            }
  
         # Check if we should execute actual local Florence-2 (Large) inference!
-        if selected_model == "florence-2" and vlm_download_states["florence-2"]["ready"]:
-            try:
-                tp0 = time.time()
-                device = florence_model.device
-                inputs = florence_processor(text="<OCR>", images=text_img_2x, return_tensors="pt").to(device)
-                tp1 = time.time()
-                preprocess_time_ms = (tp1 - tp0) * 1000.0
- 
-                t0 = time.time()
-                generated_ids = florence_model.generate(
-                    input_ids=inputs["input_ids"],
-                    pixel_values=inputs["pixel_values"],
-                    max_new_tokens=1024,
-                    num_beams=3
-                )
-                raw_text = florence_processor.post_process_generation(
-                    generated_ids, 
-                    task="<OCR>", 
-                    image_size=text_img_2x.size
-                )["<OCR>"]
-                t1 = time.time()
+        elif selected_model == "florence-2":
+            if not vlm_download_states["florence-2"]["ready"]:
+                return {"status": "error", "message": "Florence-2 model is not downloaded/ready yet."}
                 
-                parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(raw_text)
+            tp0 = time.time()
+            device = florence_model.device
+            inputs = florence_processor(text="<OCR>", images=text_img_2x, return_tensors="pt").to(device)
+            tp1 = time.time()
+            preprocess_time_ms = (tp1 - tp0) * 1000.0
+ 
+            t0 = time.time()
+            generated_ids = florence_model.generate(
+                input_ids=inputs["input_ids"],
+                pixel_values=inputs["pixel_values"],
+                max_new_tokens=1024,
+                num_beams=3
+            )
+            raw_text = florence_processor.post_process_generation(
+                generated_ids, 
+                task="<OCR>", 
+                image_size=text_img_2x.size
+            )["<OCR>"]
+            t1 = time.time()
+            
+            parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(raw_text)
+            coords_str = parsed_coords if parsed_coords else "None"
+            loc_str = parsed_loc if parsed_loc else "None"
+            total_time_ms = (t1 - t0) * 1000.0
+            loc_time_ms = total_time_ms * 0.55
+            coords_time_ms = total_time_ms * 0.45
+            
+            act_ram, act_vram = get_peak_usage()
+            return {
+                "status": "success",
+                "model": "Florence-2 (Large)",
+                "parsed_location": loc_str,
+                "parsed_coordinates": coords_str,
+                "loc_time_ms": round(loc_time_ms, 1),
+                "coords_time_ms": round(coords_time_ms, 1),
+                "preprocess_time_ms": round(preprocess_time_ms, 1),
+                "total_time_ms": round(total_time_ms, 1),
+                "actual_ram": act_ram,
+                "actual_vram": act_vram
+            }
+ 
+        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, PaliGemma, MiniCPM-V)!
+        else:
+            model_map = {
+                "moondream": "moondream",
+                "qwen2-vl": "qwen2-vl:2b",
+                "paligemma": "paligemma",
+                "minicpm-v": "minicpm-v"
+            }
+            if selected_model not in model_map:
+                return {"status": "error", "message": f"Unsupported VLM model: {selected_model}"}
+                
+            if not vlm_download_states[selected_model]["ready"]:
+                return {"status": "error", "message": f"{selected_model.capitalize()} model is not downloaded/ready yet."}
+                
+            tp0 = time.time()
+            buffered = io.BytesIO()
+            text_img_2x.save(buffered, format="PNG")
+            import base64
+            img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            tp1 = time.time()
+            preprocess_time_ms = (tp1 - tp0) * 1000.0
+            
+            t0 = time.time()
+            url = "http://localhost:11434/api/generate"
+            prompt = (
+                "Perform OCR on this image. Transcribe all visible text. Do not output JSON or explanation."
+            )
+            response = requests.post(
+                url, 
+                json={
+                    "model": model_map[selected_model],
+                    "prompt": prompt,
+                    "images": [img_b64],
+                    "stream": False
+                },
+                timeout=60
+            )
+            t1 = time.time()
+            
+            act_ram, act_vram = get_peak_usage(is_ollama=True)
+            
+            if response.status_code == 200:
+                resp_json = response.json()
+                response_text = resp_json.get("response", "")
+                parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(response_text)
                 coords_str = parsed_coords if parsed_coords else "None"
                 loc_str = parsed_loc if parsed_loc else "None"
+                
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
                 
-                act_ram, act_vram = get_peak_usage()
                 return {
                     "status": "success",
-                    "model": "Florence-2 (Large)",
+                    "model": req.model,
                     "parsed_location": loc_str,
                     "parsed_coordinates": coords_str,
                     "loc_time_ms": round(loc_time_ms, 1),
@@ -1845,113 +1886,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "actual_ram": act_ram,
                     "actual_vram": act_vram
                 }
-            except Exception as fe:
-                print(f"[Florence-2] Real inference failed, falling back to simulation: {fe}")
-
-        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, PaliGemma, MiniCPM-V)!
-        model_map = {
-            "moondream": "moondream",
-            "qwen2-vl": "qwen2-vl:2b",
-            "paligemma": "paligemma",
-            "minicpm-v": "minicpm-v"
-        }
-        if selected_model in model_map and vlm_download_states[selected_model]["ready"]:
-            try:
-                tp0 = time.time()
-                buffered = io.BytesIO()
-                text_img_2x.save(buffered, format="PNG")
-                import base64
-                img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-                tp1 = time.time()
-                preprocess_time_ms = (tp1 - tp0) * 1000.0
-                
-                t0 = time.time()
-                url = "http://localhost:11434/api/generate"
-                prompt = (
-                    "Perform OCR on this image. Transcribe all visible text. Do not output JSON or explanation."
-                )
-                response = requests.post(
-                    url, 
-                    json={
-                        "model": model_map[selected_model],
-                        "prompt": prompt,
-                        "images": [img_b64],
-                        "stream": False
-                    },
-                    timeout=60
-                )
-                t1 = time.time()
-                
-                act_ram, act_vram = get_peak_usage(is_ollama=True)
-                
-                if response.status_code == 200:
-                    resp_json = response.json()
-                    response_text = resp_json.get("response", "")
-                    parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(response_text)
-                    coords_str = parsed_coords if parsed_coords else "None"
-                    loc_str = parsed_loc if parsed_loc else "None"
-                    
-                    total_time_ms = (t1 - t0) * 1000.0
-                    loc_time_ms = total_time_ms * 0.55
-                    coords_time_ms = total_time_ms * 0.45
-                    
-                    return {
-                        "status": "success",
-                        "model": req.model,
-                        "parsed_location": loc_str,
-                        "parsed_coordinates": coords_str,
-                        "loc_time_ms": round(loc_time_ms, 1),
-                        "coords_time_ms": round(coords_time_ms, 1),
-                        "preprocess_time_ms": round(preprocess_time_ms, 1),
-                        "total_time_ms": round(total_time_ms, 1),
-                        "actual_ram": act_ram,
-                        "actual_vram": act_vram
-                    }
-                else:
-                    raise Exception(f"Ollama returned status {response.status_code}")
-            except Exception as oe:
-                print(f"[Ollama VLM] Real inference failed, falling back to simulation: {oe}")
-                
-        perf = model_perf[selected_model]
-        loc_time = perf["loc"]
-        coords_time = perf["coords"]
-        total_time = loc_time + coords_time
-        
-        sim_preprocess = {
-            "tesseract": 4.5,
-            "gemini-2.5-flash-lite": 2.1,
-            "moondream": 8.5,
-            "qwen2-vl": 12.0,
-            "florence-2": 10.0,
-            "paligemma": 15.0,
-            "minicpm-v": 18.0
-        }
-        preprocess_time_ms = sim_preprocess.get(selected_model, 10.0)
- 
-        # Simulate processing delay
-        time.sleep(total_time / 1000.0)
-        
-        # Simulated best-effort location/coordinates output
-        parsed_loc = cur_loc
-        parsed_coords = cur_coords
-        
-        if selected_model == "moondream" and cur_coords != "None":
-            parsed_coords = cur_coords.replace(".", "")
-            
-        act_ram, act_vram = get_peak_usage()
-        is_gemini = (selected_model == "gemini-2.5-flash-lite")
-        return {
-            "status": "success",
-            "model": req.model,
-            "parsed_location": parsed_loc,
-            "parsed_coordinates": parsed_coords,
-            "loc_time_ms": None if is_gemini else loc_time,
-            "coords_time_ms": None if is_gemini else coords_time,
-            "preprocess_time_ms": preprocess_time_ms,
-            "total_time_ms": total_time,
-            "actual_ram": act_ram,
-            "actual_vram": act_vram
-        }
+            else:
+                raise Exception(f"Ollama returned status {response.status_code}")
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
