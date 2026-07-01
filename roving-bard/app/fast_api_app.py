@@ -1651,8 +1651,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 coords_val = coords_str if coords_str else "None"
                 loc_val = loc_str if loc_str else "None"
                 total_time_ms = (t1 - t0) * 1000.0
-                loc_time_ms = total_time_ms * 0.55
-                coords_time_ms = total_time_ms * 0.45
                 
                 act_ram, act_vram = get_actual_usage()
                 return {
@@ -1660,8 +1658,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "model": "Gemini 1.5 Flash",
                     "parsed_location": loc_val,
                     "parsed_coordinates": coords_val,
-                    "loc_time_ms": round(loc_time_ms, 1),
-                    "coords_time_ms": round(coords_time_ms, 1),
+                    "loc_time_ms": None,
+                    "coords_time_ms": None,
                     "total_time_ms": round(total_time_ms, 1),
                     "actual_ram": act_ram,
                     "actual_vram": act_vram
@@ -1716,13 +1714,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             parsed_coords = cur_coords.replace(".", "")
             
         act_ram, act_vram = get_actual_usage()
+        is_gemini = (selected_model == "gemini-1.5-flash")
         return {
             "status": "success",
             "model": req.model,
             "parsed_location": parsed_loc,
             "parsed_coordinates": parsed_coords,
-            "loc_time_ms": loc_time,
-            "coords_time_ms": coords_time,
+            "loc_time_ms": None if is_gemini else loc_time,
+            "coords_time_ms": None if is_gemini else coords_time,
             "total_time_ms": total_time,
             "actual_ram": act_ram,
             "actual_vram": act_vram
