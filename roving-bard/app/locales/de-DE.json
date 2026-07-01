@@ -202,5 +202,11 @@
     "download_complete": "Download abgeschlossen!",
     "download_failed": "Download fehlgeschlagen: ",
     "download_connection_error": "Verbindungsfehler. Soundfont-Download fehlgeschlagen.",
-    "sort_type_title": "Nach Dateityp gruppieren"
+    "sort_type_title": "Nach Dateityp gruppieren",
+    "tab_cursor": "CURSOR",
+    "tab_location": "ORT",
+    "tab_char": "CHARAKTER",
+    "preview_original": "Original",
+    "preview_processed": "Verarbeitet",
+    "bounding_box_setup": "BEGRENZUNGSRAHMEN-EINSTELLUNG"
 }

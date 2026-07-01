@@ -202,5 +202,11 @@
     "download_complete": "¡Descarga completada!",
     "download_failed": "Error de descarga: ",
     "download_connection_error": "Error de conexión. Falló la descarga de Soundfont.",
-    "sort_type_title": "Agrupar por tipo de archivo"
+    "sort_type_title": "Agrupar por tipo de archivo",
+    "tab_cursor": "CURSOR",
+    "tab_location": "UBICACIÓN",
+    "tab_char": "PERSONAJE",
+    "preview_original": "Original",
+    "preview_processed": "Procesado",
+    "bounding_box_setup": "CONFIGURACIÓN DE ÁREA DE CAPTURA"
 }

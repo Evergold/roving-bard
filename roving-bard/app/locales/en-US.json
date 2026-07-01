@@ -202,5 +202,11 @@
     "download_complete": "Download complete!",
     "download_failed": "Download failed: ",
     "download_connection_error": "Connection error. Soundfont download failed.",
-    "sort_type_title": "Group by File Type"
+    "sort_type_title": "Group by File Type",
+    "tab_cursor": "CURSOR",
+    "tab_location": "LOCATION",
+    "tab_char": "CHAR",
+    "preview_original": "Original",
+    "preview_processed": "Processed",
+    "bounding_box_setup": "BOUNDING BOX SETUP"
 }

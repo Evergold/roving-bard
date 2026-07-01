@@ -202,5 +202,11 @@
     "download_complete": "Download completato!",
     "download_failed": "Download fallito: ",
     "download_connection_error": "Errore di connessione. Download di Soundfont fallito.",
-    "sort_type_title": "Raggruppa per tipo di file"
+    "sort_type_title": "Raggruppa per tipo di file",
+    "tab_cursor": "CURSORE",
+    "tab_location": "POSIZIONE",
+    "tab_char": "PG",
+    "preview_original": "Originale",
+    "preview_processed": "Elaborato",
+    "bounding_box_setup": "CONFIGURAZIONE RETTANGOLO SELEZIONE"
 }
