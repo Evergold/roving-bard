@@ -3618,6 +3618,10 @@
                                     <div>Loc Parse: <span id="stat-loc-time">0.0 ms</span></div>
                                     <div>Coords Parse: <span id="stat-coords-time">0.0 ms</span></div>
                                 </div>
+                                <div id="vlm-resources" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between; margin-top: 0.35rem; width: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.35rem;">
+                                    <div>Est VRAM: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
+                                    <div>Est RAM: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4819,6 +4823,11 @@
                 document.getElementById('stat-loc-time').innerText = locTime;
                 document.getElementById('stat-coords-time').innerText = coordsTime;
                 document.getElementById('stat-total-time').innerText = totalTime;
+
+                const vramEl = document.getElementById('stat-vram');
+                const ramEl = document.getElementById('stat-ram');
+                if (vramEl) vramEl.innerText = "0 MB";
+                if (ramEl) ramEl.innerText = "~30 MB";
             }
 
             if (document.getElementById('parse-bearing')) {
@@ -4946,6 +4955,20 @@
                     document.getElementById('stat-coords-time').innerText = `${res.coords_time_ms.toFixed(1)} ms`;
                     document.getElementById('stat-total-time').innerText = `${res.total_time_ms.toFixed(1)} ms`;
 
+                    const modelResources = {
+                        'tesseract': { vram: '0 MB', ram: '~30 MB' },
+                        'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
+                        'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
+                        'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
+                        'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
+                        'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
+                    };
+                    const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
+                    const vramEl = document.getElementById('stat-vram');
+                    const ramEl = document.getElementById('stat-ram');
+                    if (vramEl) vramEl.innerText = resources.vram;
+                    if (ramEl) ramEl.innerText = resources.ram;
+
                     showToast(`Successfully processed with ${friendlyName}!`, "success");
                 } else {
                     showToast(`VLM process failed: ${res.message}`, "error");
@@ -4969,6 +4992,10 @@
             document.getElementById('vlm-model-select').value = 'tesseract';
             const resetBtn = document.getElementById('btn-vlm-reset');
             if (resetBtn) resetBtn.disabled = true;
+            const vramEl = document.getElementById('stat-vram');
+            const ramEl = document.getElementById('stat-ram');
+            if (vramEl) vramEl.innerText = "0 MB";
+            if (ramEl) ramEl.innerText = "~30 MB";
             loadDashboard();
         }
 
