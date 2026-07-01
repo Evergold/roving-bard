@@ -4792,6 +4792,7 @@
         }
 
         let activeVLMModel = null;
+        const vlmStatsCache = {};
 
         function updateParseUI(parse) {
             if (!parse || (parse.action === "stopped" && !parse.parsed_location)) {
@@ -4817,24 +4818,43 @@
                     document.getElementById('parse-route').innerText = methodText;
                 }
 
-                // Update default Tesseract stats
-                const statMethod = document.getElementById('stat-method');
-                if (statMethod) statMethod.innerText = "Tesseract/OpenCV";
-                const locTime = parse.loc_time_ms !== undefined ? `${parse.loc_time_ms.toFixed(1)} ms` : "0.0 ms";
-                const coordsTime = parse.coords_time_ms !== undefined ? `${parse.coords_time_ms.toFixed(1)} ms` : "0.0 ms";
-                const totalTime = parse.total_time_ms !== undefined ? `${parse.total_time_ms.toFixed(1)} ms` : "0.0 ms";
-                const preprocessTime = parse.preprocess_time_ms !== undefined ? `${parse.preprocess_time_ms.toFixed(1)} ms` : "0.0 ms";
-                
-                document.getElementById('stat-loc-time').innerText = locTime;
-                document.getElementById('stat-coords-time').innerText = coordsTime;
-                document.getElementById('stat-total-time').innerText = totalTime;
-                const prepEl = document.getElementById('stat-preprocess-time');
-                if (prepEl) prepEl.innerText = preprocessTime;
+                // Check currently selected dropdown value
+                const modelSelect = document.getElementById('vlm-model-select');
+                const selectedVal = modelSelect ? modelSelect.value : 'tesseract';
 
-                const vramEl = document.getElementById('stat-vram');
-                const ramEl = document.getElementById('stat-ram');
-                if (vramEl) vramEl.innerText = "0 MB";
-                if (ramEl) ramEl.innerText = "~30 MB";
+                if (selectedVal === 'tesseract') {
+                    // Update default Tesseract stats
+                    const statMethod = document.getElementById('stat-method');
+                    if (statMethod) statMethod.innerText = "Tesseract/OpenCV";
+                    const locTime = parse.loc_time_ms !== undefined ? `${parse.loc_time_ms.toFixed(1)} ms` : "0.0 ms";
+                    const coordsTime = parse.coords_time_ms !== undefined ? `${parse.coords_time_ms.toFixed(1)} ms` : "0.0 ms";
+                    const totalTime = parse.total_time_ms !== undefined ? `${parse.total_time_ms.toFixed(1)} ms` : "0.0 ms";
+                    const preprocessTime = parse.preprocess_time_ms !== undefined ? `${parse.preprocess_time_ms.toFixed(1)} ms` : "0.0 ms";
+                    
+                    document.getElementById('stat-loc-time').innerText = locTime;
+                    document.getElementById('stat-coords-time').innerText = coordsTime;
+                    document.getElementById('stat-total-time').innerText = totalTime;
+                    const prepEl = document.getElementById('stat-preprocess-time');
+                    if (prepEl) prepEl.innerText = preprocessTime;
+
+                    const vramEl = document.getElementById('stat-vram');
+                    const ramEl = document.getElementById('stat-ram');
+                    if (vramEl) vramEl.innerText = "0 MB";
+                    if (ramEl) ramEl.innerText = "~30 MB";
+                }
+
+                // Cache Tesseract stats in memory
+                vlmStatsCache['tesseract'] = {
+                    loc_time_ms: parse.loc_time_ms !== undefined ? parse.loc_time_ms : null,
+                    coords_time_ms: parse.coords_time_ms !== undefined ? parse.coords_time_ms : null,
+                    total_time_ms: parse.total_time_ms !== undefined ? parse.total_time_ms : null,
+                    preprocess_time_ms: parse.preprocess_time_ms !== undefined ? parse.preprocess_time_ms : null,
+                    vram: "0 MB",
+                    ram: "~30 MB",
+                    vramLabel: t("vlm_est_vram", "Est VRAM"),
+                    ramLabel: t("vlm_est_ram", "Est RAM "),
+                    methodLabel: "Tesseract/OpenCV"
+                };
             }
 
             if (document.getElementById('parse-bearing')) {
@@ -4850,6 +4870,66 @@
 
         let vlmStatusPollInterval = null;
 
+        function updateVLMStatsUI(modelName) {
+            const cached = vlmStatsCache[modelName];
+            
+            const statMethod = document.getElementById('stat-method');
+            const friendlyNames = {
+                'tesseract': 'Tesseract/OpenCV',
+                'gemini-1.5-flash': 'Gemini 1.5 Flash (Cloud)',
+                'moondream': 'Moondream2',
+                'qwen2-vl': 'Qwen2-VL',
+                'florence-2': 'Florence-2',
+                'paligemma': 'PaliGemma',
+                'minicpm-v': 'MiniCPM-V 2.6'
+            };
+            const friendlyName = friendlyNames[modelName] || modelName;
+
+            if (cached) {
+                if (statMethod) statMethod.innerText = cached.methodLabel || friendlyName;
+                document.getElementById('stat-loc-time').innerText = (cached.loc_time_ms !== null && cached.loc_time_ms !== undefined) ? `${cached.loc_time_ms.toFixed(1)} ms` : "--- ms";
+                document.getElementById('stat-coords-time').innerText = (cached.coords_time_ms !== null && cached.coords_time_ms !== undefined) ? `${cached.coords_time_ms.toFixed(1)} ms` : "--- ms";
+                document.getElementById('stat-total-time').innerText = (cached.total_time_ms !== null && cached.total_time_ms !== undefined) ? `${cached.total_time_ms.toFixed(1)} ms` : "--- ms";
+                document.getElementById('stat-preprocess-time').innerText = (cached.preprocess_time_ms !== null && cached.preprocess_time_ms !== undefined) ? `${cached.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
+                
+                const vramEl = document.getElementById('stat-vram');
+                const ramEl = document.getElementById('stat-ram');
+                const vramLabel = document.getElementById('label-vram');
+                const ramLabel = document.getElementById('label-ram');
+                
+                if (vramEl) vramEl.innerText = cached.vram;
+                if (ramEl) ramEl.innerText = cached.ram;
+                if (vramLabel) vramLabel.innerText = cached.vramLabel;
+                if (ramLabel) ramLabel.innerText = cached.ramLabel;
+            } else {
+                if (statMethod) statMethod.innerText = friendlyName;
+                document.getElementById('stat-loc-time').innerText = "--- ms";
+                document.getElementById('stat-coords-time').innerText = "--- ms";
+                document.getElementById('stat-total-time').innerText = "--- ms";
+                document.getElementById('stat-preprocess-time').innerText = "--- ms";
+                
+                const modelResources = {
+                    'tesseract': { vram: '0 MB', ram: '~30 MB' },
+                    'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
+                    'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
+                    'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
+                    'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
+                    'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
+                    'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
+                };
+                const resources = modelResources[modelName] || { vram: '0 MB', ram: '~30 MB' };
+                const vramEl = document.getElementById('stat-vram');
+                const ramEl = document.getElementById('stat-ram');
+                const vramLabel = document.getElementById('label-vram');
+                const ramLabel = document.getElementById('label-ram');
+                
+                if (vramEl) vramEl.innerText = resources.vram;
+                if (ramEl) ramEl.innerText = resources.ram;
+                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
+                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+            }
+        }
+
         async function onVLMSelectChange() {
             if (vlmStatusPollInterval) {
                 clearInterval(vlmStatusPollInterval);
@@ -4859,26 +4939,8 @@
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
             
-            // Update resource indicators immediately on selection change
-            const modelResources = {
-                'tesseract': { vram: '0 MB', ram: '~30 MB' },
-                'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
-                'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
-                'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
-                'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
-                'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
-                'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
-            };
-            const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
-            const vramEl = document.getElementById('stat-vram');
-            const ramEl = document.getElementById('stat-ram');
-            if (vramEl) vramEl.innerText = resources.vram;
-            if (ramEl) ramEl.innerText = resources.ram;
-
-            const vramLabel = document.getElementById('label-vram');
-            const ramLabel = document.getElementById('label-ram');
-            if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
-            if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+            // Re-render cached stats or blank placeholders for selected VLM benchmarking method
+            updateVLMStatsUI(selectedVal);
 
             if (selectedVal === 'tesseract' || selectedVal === 'gemini-1.5-flash') {
                 document.getElementById('btn-vlm-try').disabled = false;
@@ -5064,6 +5126,21 @@
                         if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
                     }
 
+                    // Cache the trial result stats in memory
+                    const finalVram = res.actual_vram || (res.actual_vram === "" ? "" : (document.getElementById('stat-vram') ? document.getElementById('stat-vram').innerText : "0 MB"));
+                    const finalRam = res.actual_ram || (res.actual_ram === "" ? "" : (document.getElementById('stat-ram') ? document.getElementById('stat-ram').innerText : "~30 MB"));
+                    vlmStatsCache[selectedVal] = {
+                        loc_time_ms: res.loc_time_ms,
+                        coords_time_ms: res.coords_time_ms,
+                        total_time_ms: res.total_time_ms,
+                        preprocess_time_ms: res.preprocess_time_ms,
+                        vram: finalVram,
+                        ram: finalRam,
+                        vramLabel: document.getElementById('label-vram') ? document.getElementById('label-vram').innerText : t("vlm_est_vram", "Est VRAM"),
+                        ramLabel: document.getElementById('label-ram') ? document.getElementById('label-ram').innerText : t("vlm_est_ram", "Est RAM "),
+                        methodLabel: friendlyName
+                    };
+
                     const successPrefix = t("vlm_toast_success_prefix", "Successfully processed with");
                     showToast(`${successPrefix} ${friendlyName}!`, "success");
                 } else {
@@ -5089,16 +5166,7 @@
             document.getElementById('vlm-model-select').value = 'tesseract';
             const resetBtn = document.getElementById('btn-vlm-reset');
             if (resetBtn) resetBtn.disabled = true;
-            const vramEl = document.getElementById('stat-vram');
-            const ramEl = document.getElementById('stat-ram');
-            if (vramEl) vramEl.innerText = "0 MB";
-            if (ramEl) ramEl.innerText = "~30 MB";
-            const vramLabel = document.getElementById('label-vram');
-            const ramLabel = document.getElementById('label-ram');
-            if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
-            if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
-            const prepEl = document.getElementById('stat-preprocess-time');
-            if (prepEl) prepEl.innerText = "0.0 ms";
+            updateVLMStatsUI('tesseract');
             loadDashboard();
         }
 
