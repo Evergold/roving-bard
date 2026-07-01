@@ -3623,8 +3623,8 @@
                                      <div><span data-loc="vlm_preprocess">Pre-processing</span>: <span id="stat-preprocess-time" style="color: #a272ff; font-weight: bold;">0.0 ms</span></div>
                                 </div>
                                 <div id="vlm-resources" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.35rem; width: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.35rem;">
-                                    <div><span id="label-vram" data-loc="vlm_est_vram">Est VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
-                                    <div><span id="label-ram" data-loc="vlm_est_ram">Est RAM </span>: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
+                                    <div><span id="label-vram" data-loc="vlm_est_vram">VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">---</span></div>
+                                    <div><span id="label-ram" data-loc="vlm_est_ram">RAM </span>: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">---</span></div>
                                 </div>
                             </div>
                         </div>
@@ -4823,10 +4823,10 @@
                 const selectedVal = modelSelect ? modelSelect.value : 'tesseract';
 
                 const hasActual = (parse.actual_ram !== null && parse.actual_ram !== undefined);
-                const finalRam = hasActual ? parse.actual_ram : "~30 MB";
-                const finalVram = "0 MB";
-                const vramLabelText = t("vlm_est_vram", "Est VRAM");
-                const ramLabelText = hasActual ? t("vlm_act_ram", "Act RAM ") : t("vlm_est_ram", "Est RAM ");
+                const finalRam = hasActual ? parse.actual_ram : "---";
+                const finalVram = "---";
+                const vramLabelText = t("vlm_est_vram", "VRAM");
+                const ramLabelText = t("vlm_est_ram", "RAM ");
 
                 if (selectedVal === 'tesseract') {
                     // Update default Tesseract stats
@@ -4910,8 +4910,8 @@
                 
                 if (vramEl) vramEl.innerText = cached.vram;
                 if (ramEl) ramEl.innerText = cached.ram;
-                if (vramLabel) vramLabel.innerText = cached.vramLabel;
-                if (ramLabel) ramLabel.innerText = cached.ramLabel;
+                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
+                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
             } else {
                 if (statMethod) statMethod.innerText = friendlyName;
                 document.getElementById('stat-loc-time').innerText = "--- ms";
@@ -4919,25 +4919,15 @@
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
                 
-                const modelResources = {
-                    'tesseract': { vram: '0 MB', ram: '~30 MB' },
-                    'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
-                    'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
-                    'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
-                    'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
-                    'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
-                    'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
-                };
-                const resources = modelResources[modelName] || { vram: '0 MB', ram: '~30 MB' };
                 const vramEl = document.getElementById('stat-vram');
                 const ramEl = document.getElementById('stat-ram');
                 const vramLabel = document.getElementById('label-vram');
                 const ramLabel = document.getElementById('label-ram');
                 
-                if (vramEl) vramEl.innerText = resources.vram;
-                if (ramEl) ramEl.innerText = resources.ram;
-                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
-                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+                if (vramEl) vramEl.innerText = "---";
+                if (ramEl) ramEl.innerText = "---";
+                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
+                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
             }
         }
 
@@ -5118,43 +5108,21 @@
 
                     if (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-1.5-flash') {
                         if (vramEl) vramEl.innerText = res.actual_vram;
-                        if (vramLabel) vramLabel.innerText = t("vlm_act_vram", "Act VRAM");
                     } else {
-                        const modelResources = {
-                            'tesseract': { vram: '0 MB', ram: '~30 MB' },
-                            'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
-                            'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
-                            'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
-                            'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
-                            'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
-                            'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
-                        };
-                        const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
-                        if (vramEl) vramEl.innerText = resources.vram;
-                        if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "Est VRAM");
+                        if (vramEl) vramEl.innerText = "---";
                     }
+                    if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
 
                     if (res.actual_ram) {
                         if (ramEl) ramEl.innerText = res.actual_ram;
-                        if (ramLabel) ramLabel.innerText = t("vlm_act_ram", "Act RAM ");
                     } else {
-                        const modelResources = {
-                            'tesseract': { vram: '0 MB', ram: '~30 MB' },
-                            'gemini-1.5-flash': { vram: '0 MB', ram: 'Negligible' },
-                            'moondream': { vram: '~1.8 GB', ram: '~350 MB' },
-                            'qwen2-vl': { vram: '~2.9 GB', ram: '~600 MB' },
-                            'florence-2': { vram: '~2.2 GB', ram: '~550 MB' },
-                            'paligemma': { vram: '~3.8 GB', ram: '~800 MB' },
-                            'minicpm-v': { vram: '~4.8 GB', ram: '~950 MB' }
-                        };
-                        const resources = modelResources[selectedVal] || { vram: '0 MB', ram: '~30 MB' };
-                        if (ramEl) ramEl.innerText = resources.ram;
-                        if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "Est RAM ");
+                        if (ramEl) ramEl.innerText = "---";
                     }
+                    if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
 
                     // Cache the trial result stats in memory
-                    const finalVram = res.actual_vram || (res.actual_vram === "" ? "" : (document.getElementById('stat-vram') ? document.getElementById('stat-vram').innerText : "0 MB"));
-                    const finalRam = res.actual_ram || (res.actual_ram === "" ? "" : (document.getElementById('stat-ram') ? document.getElementById('stat-ram').innerText : "~30 MB"));
+                    const finalVram = (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-1.5-flash') ? res.actual_vram : "---";
+                    const finalRam = res.actual_ram || "---";
                     vlmStatsCache[selectedVal] = {
                         loc_time_ms: res.loc_time_ms,
                         coords_time_ms: res.coords_time_ms,
@@ -5162,8 +5130,8 @@
                         preprocess_time_ms: res.preprocess_time_ms,
                         vram: finalVram,
                         ram: finalRam,
-                        vramLabel: document.getElementById('label-vram') ? document.getElementById('label-vram').innerText : t("vlm_est_vram", "Est VRAM"),
-                        ramLabel: document.getElementById('label-ram') ? document.getElementById('label-ram').innerText : t("vlm_est_ram", "Est RAM "),
+                        vramLabel: t("vlm_est_vram", "VRAM"),
+                        ramLabel: t("vlm_est_ram", "RAM "),
                         methodLabel: friendlyName
                     };
 
