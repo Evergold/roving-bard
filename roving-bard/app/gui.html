@@ -8781,6 +8781,9 @@
         
         function toggleMenuPopOver(event) {
             if (event) event.stopPropagation();
+            if (typeof logPopoverOpen !== 'undefined' && logPopoverOpen) {
+                toggleLogPopover();
+            }
             const popover = document.getElementById('menu-popover');
             const popoverInner = document.getElementById('menu-popover-inner');
             const menuBtn = document.getElementById('menu-scroll-top-btn');
