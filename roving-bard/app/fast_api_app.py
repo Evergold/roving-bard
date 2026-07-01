@@ -1837,8 +1837,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 return {"status": "error", "message": f"{selected_model.capitalize()} model is not downloaded/ready yet."}
                 
             tp0 = time.time()
+            text_img_4x = text_img.resize((text_img.width * 4, text_img.height * 4), Image.Resampling.LANCZOS)
             buffered = io.BytesIO()
-            text_img_2x.save(buffered, format="PNG")
+            text_img_4x.save(buffered, format="PNG")
             import base64
             img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
             tp1 = time.time()
