@@ -2246,7 +2246,8 @@
             color: #191c20 !important;
         }
 
-        body.light-theme #lang-select {
+        body.light-theme #lang-select,
+        body.light-theme #soundfont-select {
             background: transparent !important;
             color: var(--text-muted) !important;
             color-scheme: light;
@@ -2636,6 +2637,17 @@
         }
         body.light-theme #lang-select:hover {
             background: rgba(0, 0, 0, 0.05) !important;
+        }
+        #soundfont-select {
+            color: var(--text-muted) !important;
+            transition: color 0.2s ease;
+            color-scheme: dark;
+        }
+        body.light-theme #soundfont-select {
+            color-scheme: light;
+        }
+        #soundfont-select:hover {
+            color: var(--text-main) !important;
         }
         select option {
             background-color: var(--bg-base);
