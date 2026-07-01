@@ -2298,29 +2298,32 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
             
-            # Run inference (with a single auto-retry if Moondream is run for the first time in this session)
-            is_first_moondream_run = (selected_model == "moondream" and "moondream" not in warmed_models)
-            max_tries = 2 if is_first_moondream_run else 1
+            # Run inference (with a single auto-retry if Moondream or Qwen2-VL is run for the first time in this session)
+            is_first_run = (selected_model in ("moondream", "qwen2-vl") and selected_model not in warmed_models)
+            max_tries = 2 if is_first_run else 1
             response = None
             t0, t1 = 0.0, 0.0
             url = "http://127.0.0.1:11434/api/generate"
             prompt = (
                 "Transcribe the text in the image, focusing on the bottom-most characters."
             )
+            
+            # Setup JSON payload (enforce 0.0 temperature for Qwen models only)
+            json_payload = {
+                "model": model_map[selected_model],
+                "prompt": prompt,
+                "images": [img_b64],
+                "stream": False,
+                "keep_alive": "5m"
+            }
+            if "qwen" in selected_model:
+                json_payload["options"] = {"temperature": 0.0}
+
             for try_idx in range(max_tries):
                 t0 = time.time()
                 response = requests.post(
                     url,
-                    json={
-                        "model": model_map[selected_model],
-                        "prompt": prompt,
-                        "images": [img_b64],
-                        "stream": False,
-                        "keep_alive": "5m",
-                        "options": {
-                            "temperature": 0.0
-                        }
-                    },
+                    json=json_payload,
                     timeout=180
                 )
                 t1 = time.time()
@@ -2336,8 +2339,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     raw_loc = rich["raw_location"]
                     raw_coords = rich["raw_coordinates"]
                     
-                    if is_first_moondream_run and try_idx == 0:
-                        print("[Ollama VLM] Discarding first moondream run (warmup phase) and retrying...", flush=True)
+                    if is_first_run and try_idx == 0:
+                        print(f"[Ollama VLM] Discarding first {selected_model} run (warmup phase) and retrying...", flush=True)
                         continue
                     break
                 else:
@@ -2347,8 +2350,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             
             if response and response.status_code == 200:
-                if selected_model == "moondream":
-                    warmed_models.add("moondream")
+                if selected_model in ("moondream", "qwen2-vl"):
+                    warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
