@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import os
+import json
 
 from dotenv import load_dotenv
 
@@ -2404,7 +2405,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
 # Main execution
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="127.0.0.1", port=port)
 
 # Trigger reload trigger comment
