@@ -1447,7 +1447,19 @@ def pull_qwen2_vl_huggingface_task():
         state["status"] = "building model in ollama"
         with open(modelfile_path, "w") as mf:
             mf.write(f"FROM {gguf_path}\n")
-            mf.write(f"ADAPTER {proj_path}\n")
+            mf.write(f"ADAPTER {proj_path}\n\n")
+            mf.write('TEMPLATE """{{ if .System }}<|im_start|>system\n')
+            mf.write('{{ .System }}<|im_end|>\n')
+            mf.write('{{ end }}{{ range .Messages }}{{ if eq .Role "user" }}<|im_start|>user\n')
+            mf.write('{{ .Content }}<|im_end|>\n')
+            mf.write('{{ else if eq .Role "assistant" }}<|im_start|>assistant\n')
+            mf.write('{{ .Content }}<|im_end|>\n')
+            mf.write('{{ end }}{{ end }}<|im_start|>assistant\n')
+            mf.write('"""\n\n')
+            mf.write('PARAMETER stop "<|im_start|>"\n')
+            mf.write('PARAMETER stop "<|im_end|>"\n')
+            mf.write('PARAMETER temperature 0.2\n')
+            mf.write('PARAMETER num_predict 80\n')
             
         import subprocess
         process = subprocess.Popen(
