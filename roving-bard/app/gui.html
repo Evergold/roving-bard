@@ -4902,33 +4902,23 @@
                 document.getElementById('stat-coords-time').innerText = (cached.coords_time_ms !== null && cached.coords_time_ms !== undefined) ? `${cached.coords_time_ms.toFixed(1)} ms` : "--- ms";
                 document.getElementById('stat-total-time').innerText = (cached.total_time_ms !== null && cached.total_time_ms !== undefined) ? `${cached.total_time_ms.toFixed(1)} ms` : "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = (cached.preprocess_time_ms !== null && cached.preprocess_time_ms !== undefined) ? `${cached.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
-                
-                const vramEl = document.getElementById('stat-vram');
-                const ramEl = document.getElementById('stat-ram');
-                const vramLabel = document.getElementById('label-vram');
-                const ramLabel = document.getElementById('label-ram');
-                
-                if (vramEl) vramEl.innerText = cached.vram;
-                if (ramEl) ramEl.innerText = cached.ram;
-                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
-                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
             } else {
                 if (statMethod) statMethod.innerText = friendlyName;
                 document.getElementById('stat-loc-time').innerText = "--- ms";
                 document.getElementById('stat-coords-time').innerText = "--- ms";
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
-                
-                const vramEl = document.getElementById('stat-vram');
-                const ramEl = document.getElementById('stat-ram');
-                const vramLabel = document.getElementById('label-vram');
-                const ramLabel = document.getElementById('label-ram');
-                
-                if (vramEl) vramEl.innerText = "---";
-                if (ramEl) ramEl.innerText = "---";
-                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
-                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
             }
+
+            const vramEl = document.getElementById('stat-vram');
+            const ramEl = document.getElementById('stat-ram');
+            const vramLabel = document.getElementById('label-vram');
+            const ramLabel = document.getElementById('label-ram');
+            
+            if (vramEl) vramEl.innerText = "---";
+            if (ramEl) ramEl.innerText = "---";
+            if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
+            if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
         }
 
         async function onVLMSelectChange() {
