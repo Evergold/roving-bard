@@ -1695,6 +1695,7 @@ def api_vlm_pause(req: VlmPauseRequest):
 
 
 warmed_models = set()
+currently_loaded_vlm = None
 
 
 class VlmWarmupRequest(BaseModel):
@@ -1753,7 +1754,10 @@ class VlmUnloadRequest(BaseModel):
 @app.post("/api/ocr/vlm_unload", dependencies=[Depends(verify_api_key)])
 def api_vlm_unload(req: VlmUnloadRequest):
     """Triggers an immediate unload request to free the local VLM from memory."""
+    global currently_loaded_vlm
     model_id = req.model.lower()
+    if currently_loaded_vlm == model_id:
+        currently_loaded_vlm = None
     if model_id in warmed_models:
         warmed_models.remove(model_id)
     if model_id not in vlm_download_states:
@@ -2087,6 +2091,7 @@ def format_memory_size(bytes_val):
 @app.post("/api/ocr/try_vlm", dependencies=[Depends(verify_api_key)])
 def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
+    global currently_loaded_vlm
     import io
     import time
     from PIL import Image
@@ -2153,6 +2158,39 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "tesseract"
             else:
                 selected_model = "moondream"
+
+        # Check if we are switching models and need to unload the previous local VLM from GPU memory
+        if currently_loaded_vlm and currently_loaded_vlm != selected_model:
+            old_model = currently_loaded_vlm
+            currently_loaded_vlm = None  # Reset tracking immediately
+            
+            # Map clean key names to Ollama tags
+            old_model_map = {
+                "moondream": "moondream:latest",
+                "qwen2-vl": "qwen2-vl",
+                "qwen2.5-vl": "qwen2.5vl:3b",
+                "paligemma": "paligemma",
+                "minicpm-v": "minicpm-v"
+            }
+            old_model_tag = old_model_map.get(old_model)
+            if old_model_tag:
+                try:
+                    print(f"[VLM Memory Management] Switched from {old_model} to {selected_model}. Unloading {old_model_tag} to free GPU VRAM...", flush=True)
+                    requests.post(
+                        "http://127.0.0.1:11434/api/generate",
+                        json={
+                            "model": old_model_tag,
+                            "prompt": "",
+                            "keep_alive": "0s",
+                            "stream": False
+                        },
+                        timeout=10
+                    )
+                    # Clear from warmed models so it does warmup on next load
+                    if old_model in warmed_models:
+                        warmed_models.remove(old_model)
+                except Exception as e:
+                    print(f"[VLM Memory Management] Failed to unload {old_model}: {e}", flush=True)
 
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
@@ -2383,6 +2421,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             
             if response and response.status_code == 200:
+                currently_loaded_vlm = selected_model
                 if selected_model in ("moondream", "qwen2-vl"):
                     warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
