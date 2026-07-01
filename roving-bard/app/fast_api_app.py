@@ -2097,7 +2097,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
     from PIL import Image
     
     if tools.latest_location_raw_bytes is None or tools.latest_screenshot_bytes is None:
-        return {"status": "error", "message": "No preprocessed screenshot available. Please perform a screen scan first."}
+        print("[VLM Auto-Scan] No cached screenshot. Running automatic screen capture scan...", flush=True)
+        scan_res = tools.check_screen_and_update_music()
+        if scan_res.get("status") == "error":
+            return {"status": "error", "message": f"Failed to perform auto screen scan: {scan_res.get('message')}"}
         
     try:
         try:

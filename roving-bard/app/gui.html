@@ -8709,6 +8709,7 @@
                     if (modelSelect) {
                         modelSelect.value = savedVLM;
                         await onVLMSelectChange();
+                        trySelectedVLM();
                     }
                 }
             } catch (e_vlm) {
