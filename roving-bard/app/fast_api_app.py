@@ -2159,19 +2159,21 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             else:
                 selected_model = "moondream"
 
-        # Check if we are switching models and need to unload the previous local VLM from GPU memory
-        if currently_loaded_vlm and currently_loaded_vlm != selected_model:
+        # Map clean key names to Ollama tags
+        old_model_map = {
+            "moondream": "moondream:latest",
+            "qwen2-vl": "qwen2-vl",
+            "qwen2.5-vl": "qwen2.5vl:3b",
+            "paligemma": "paligemma",
+            "minicpm-v": "minicpm-v"
+        }
+
+        # Check if we are switching models and need to unload the previous local VLM from GPU memory.
+        # We only unload if both the old and new models are local VLMs (switching between local GPU models).
+        # If we switch to Tesseract or Gemini (0 VRAM), we keep the VLM loaded in GPU memory for instant switch-back.
+        if currently_loaded_vlm and currently_loaded_vlm in old_model_map and selected_model in old_model_map and currently_loaded_vlm != selected_model:
             old_model = currently_loaded_vlm
             currently_loaded_vlm = None  # Reset tracking immediately
-            
-            # Map clean key names to Ollama tags
-            old_model_map = {
-                "moondream": "moondream:latest",
-                "qwen2-vl": "qwen2-vl",
-                "qwen2.5-vl": "qwen2.5vl:3b",
-                "paligemma": "paligemma",
-                "minicpm-v": "minicpm-v"
-            }
             old_model_tag = old_model_map.get(old_model)
             if old_model_tag:
                 try:
@@ -2381,9 +2383,31 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
             
-            # Run inference (with a single auto-retry if Moondream or Qwen2-VL is run for the first time in this session)
+            # Warm up the model synchronously with a simple 1x1 dummy image if it is run for the first time in this session.
+            # This ensures CUDA context initialization is fully completed before we run the actual screenshot OCR.
             is_first_run = (selected_model in ("moondream", "qwen2-vl") and selected_model not in warmed_models)
-            max_tries = 2 if is_first_run else 1
+            if is_first_run:
+                try:
+                    print(f"[VLM Warmup] Warming up {selected_model} synchronously with dummy image...", flush=True)
+                    dummy_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    requests.post(
+                        "http://127.0.0.1:11434/api/generate",
+                        json={
+                            "model": model_map[selected_model],
+                            "prompt": "warmup",
+                            "images": [dummy_img],
+                            "stream": False,
+                            "keep_alive": "5m",
+                            "options": {
+                                "num_predict": 5
+                            }
+                        },
+                        timeout=90
+                    )
+                    warmed_models.add(selected_model)
+                except Exception as w_err:
+                    print(f"[VLM Warmup] Warmup request failed: {w_err}", flush=True)
+            max_tries = 1
             response = None
             t0, t1 = 0.0, 0.0
             # Setup JSON payload and dynamic prompt
@@ -2429,9 +2453,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     raw_loc = rich["raw_location"]
                     raw_coords = rich["raw_coordinates"]
                     
-                    if is_first_run and try_idx == 0 and (loc_str == "None" or coords_str == "None"):
-                        print(f"[Ollama VLM] First run (warmup phase) returned None/empty, retrying...", flush=True)
-                        continue
                     break
                 else:
                     if try_idx == max_tries - 1:
