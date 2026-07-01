@@ -1354,8 +1354,7 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
                         progress = int((completed / total) * 100)
                         if progress > state["progress"]:
                             state["progress"] = progress
-                        current_p = state["progress"]
-                        state["status"] = f"downloading ({current_p}%)"
+                        state["status"] = "downloading"
                     elif status_text and status_text != "success":
                         state["status"] = f"downloading - {status_text}"
                         
