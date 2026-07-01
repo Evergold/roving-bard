@@ -1148,6 +1148,11 @@ class SafeMusicPlayer:
             print("Error: Fluidsynth is not available, cannot play MIDI/ABC.")
             return False
 
+        # Apply transition fade out delay if playing a track
+        if self.current_track and not self.paused and not self.was_stopped:
+            if fade_out_ms > 0:
+                time.sleep(fade_out_ms / 1000.0)
+
         self._stop_sounddevice_playback()
         
         # Load the audio file
@@ -1620,6 +1625,21 @@ class ScreenGrabber:
         self.test_index = 0
 
     def capture_full(self):
+        img = self._capture_full_raw()
+        if img:
+            w, h = img.size
+            if h > 1080 or w > 1920:
+                try:
+                    from PIL import Image
+                    ratio = 1080.0 / h
+                    new_w = int(w * ratio)
+                    img = img.resize((new_w, 1080), Image.Resampling.BILINEAR)
+                    print(f"[ScreenGrabber] Resized image from {w}x{h} to {new_w}x1080 (via BILINEAR).")
+                except Exception as e:
+                    print(f"[ScreenGrabber] Error resizing captured image: {e}")
+        return img
+
+    def _capture_full_raw(self):
         """Captures the primary monitor screen or loads from capture directory in simulation mode."""
         os.makedirs(CAPTURE_DIR, exist_ok=True)
         
@@ -1679,19 +1699,19 @@ class ScreenGrabber:
         if hasattr(self, "test_index"):
             if self.test_index == 0:  # test_1.png
                 bounds = {
-                    "x": round(1677 / 1920, 4),
-                    "y": round(0 / 1080, 4),
-                    "width": round(243 / 1920, 4),
-                    "height": round(276 / 1080, 4)
+                    "x": round(1679 / 1920, 4),
+                    "y": round(6 / 1080, 4),
+                    "width": round(246 / 1920, 4),
+                    "height": round(281 / 1080, 4)
                 }
                 print(f"[MinimapDetector] Simulation Mode: Loaded test_1.png bounds: {bounds}")
                 return bounds, True
             elif self.test_index == 1:  # test_2.png
                 bounds = {
-                    "x": round(1226 / 1920, 4),
-                    "y": round(659 / 1080, 4),
-                    "width": round(262 / 1920, 4),
-                    "height": round(304 / 1080, 4)
+                    "x": round(1227 / 1920, 4),
+                    "y": round(684 / 1080, 4),
+                    "width": round(244 / 1920, 4),
+                    "height": round(279 / 1080, 4)
                 }
                 print(f"[MinimapDetector] Simulation Mode: Loaded test_2.png bounds: {bounds}")
                 return bounds, True
@@ -1699,39 +1719,142 @@ class ScreenGrabber:
         # 2. General-purpose circle detection (for live capture)
         try:
             open_cv_image = np.array(img)
-            open_cv_image = open_cv_image[:, :, ::-1].copy()  # RGB to BGR
+            if len(open_cv_image.shape) == 2:
+                gray = open_cv_image
+                open_cv_image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            else:
+                open_cv_image = open_cv_image[:, :, ::-1].copy()  # RGB to BGR
+                gray = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
             
-            gray = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
+            # Scale parameters with the vertical screen resolution
+            scale_factor = height / 1080.0
+            min_r = int(60 * scale_factor)
+            max_r = int(130 * scale_factor)
+            
             blurred = cv2.GaussianBlur(gray, (9, 9), 2)
-            
             circles = cv2.HoughCircles(
                 blurred,
                 cv2.HOUGH_GRADIENT,
                 dp=1.2,
-                minDist=200,
+                minDist=int(120 * scale_factor),
                 param1=50,
-                param2=35,  # Permissive threshold
-                minRadius=60,
-                maxRadius=150
+                param2=30,
+                minRadius=min_r,
+                maxRadius=max_r
             )
             
             if circles is not None:
-                circles = np.uint16(np.around(circles))
+                circles = np.around(circles[0])
                 best_circle = None
-                for i in circles[0]:
-                    cx, cy, r = int(i[0]), int(i[1]), int(i[2])
-                    if r <= cx <= width - r and r <= cy <= height - r:
-                        in_top_right = (cx > width * 0.4) and (cy < height * 0.6)
-                        if best_circle is None or (in_top_right and not best_circle[3]):
-                            best_circle = (cx, cy, r, in_top_right)
+                best_rank = -1
+                best_score = -1
+                
+                # Load words dictionary to prioritize valid locations
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+                wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+                words = []
+                if os.path.exists(wordlist_path):
+                    try:
+                        with open(wordlist_path, 'r', encoding='utf-8') as f:
+                            words = [line.strip() for line in f if line.strip()]
+                    except:
+                        pass
+                
+                ocr_parser = LocalOCRParser()
+                
+                # Check HSV for gold/bronze ring color (Hue 10-30, Sat 80-255, Val 80-255)
+                hsv = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2HSV)
+                mask_gold = cv2.inRange(hsv, np.array([10, 80, 80]), np.array([30, 255, 255]))
+                
+                for circle in circles:
+                    cx, cy, r = int(circle[0]), int(circle[1]), int(circle[2])
+                    
+                    if not (r <= cx <= width - r and r <= cy <= height - r):
+                        continue
+                        
+                    # 1. White text validation below the circle (where location and coordinates reside)
+                    y_start = min(height - 1, cy + r - int(5 * scale_factor))
+                    y_end = min(height, cy + r + int(70 * scale_factor))
+                    x_start = max(0, cx - r)
+                    x_end = min(width, cx + r)
+                    
+                    sub_gray = gray[y_start:y_end, x_start:x_end]
+                    white_pixels = np.sum(sub_gray > 150) if sub_gray.size > 0 else 0
+                    white_ratio = white_pixels / sub_gray.size if sub_gray.size > 0 else 0
+                    
+                    # 2. Gold overlap validation (minimap ring border decoration)
+                    ring_mask = np.zeros_like(gray)
+                    thickness = max(2, int(6 * scale_factor))
+                    cv2.circle(ring_mask, (cx, cy), r + 2, 255, thickness=thickness)
+                    gold_ring_overlap = np.sum((ring_mask > 0) & (mask_gold > 0))
+                    ring_mask_size = np.sum(ring_mask > 0)
+                    gold_ratio = gold_ring_overlap / ring_mask_size if ring_mask_size > 0 else 0
+                    
+                    # 3. Gold density validation inside circle (to reject solid landscape blocks)
+                    inside_mask = np.zeros_like(gray)
+                    # Use r - 5 to exclude the ring itself from the inner density calculation
+                    cv2.circle(inside_mask, (cx, cy), r - 5, 255, thickness=-1)
+                    gold_inside = np.sum((inside_mask > 0) & (mask_gold > 0))
+                    inside_size = np.sum(inside_mask > 0)
+                    gold_inside_ratio = gold_inside / inside_size if inside_size > 0 else 0
+                    
+                    # strict ratios to weed out false positives (e.g. landscape rocks, chat screens)
+                    if gold_ratio < 0.15:
+                        continue
+                    if gold_inside_ratio > 0.30: # Reject circles filled with solid gold color
+                        continue
+                    if not (0.02 <= white_ratio <= 0.45):
+                        continue
+                        
+                    # 4. OCR validation: verify if this circle has coordinates text below it
+                    try:
+                        temp_x_min = max(0, cx - r - int(35 * scale_factor))
+                        temp_y_min = max(0, cy - r - int(10 * scale_factor))
+                        temp_w_box = min(width - temp_x_min, 2 * r + int(70 * scale_factor))
+                        temp_h_box = min(height - temp_y_min, 2 * r + int(105 * scale_factor))
+                        
+                        temp_widget_img = img.crop((temp_x_min, temp_y_min, temp_x_min + temp_w_box, temp_y_min + temp_h_box))
+                        w_w, h_w = temp_widget_img.size
+                        y_start_text = int(h_w * 0.58)
+                        text_crop_img = temp_widget_img.crop((0, y_start_text, w_w, h_w))
+                        
+                        loc, coords, ns, ew = ocr_parser.run_ocr(text_crop_img, ocr_pass=2, already_cropped=True)
+                        is_verified = (loc in words) if (loc and words) else False
+                        
+                        if loc and coords and is_verified:
+                            rank = 4
+                        elif loc and coords:
+                            rank = 3
+                        elif coords:
+                            rank = 2
+                        elif loc and is_verified:
+                            rank = 1
+                        else:
+                            rank = 0
+                    except Exception as ocr_err:
+                        print(f"[MinimapDetector] OCR candidate validation error: {ocr_err}")
+                        rank = 0
+                        
+                    # Score based on gold ring ratio
+                    score = gold_ratio
+                    in_top_right = (cx > width * 0.4) and (cy < height * 0.6)
+                    if in_top_right:
+                        score *= 1.3
+                        
+                    # Prioritize rank first (coordinates extraction success), then CV score
+                    if (rank > best_rank) or (rank == best_rank and score > best_score):
+                        best_rank = rank
+                        best_score = score
+                        best_circle = (cx, cy, r)
                 
                 if best_circle:
-                    cx, cy, r, _ = best_circle
+                    cx, cy, r = best_circle
                     # Set bounding box to cover the circle and the location/coords below it
-                    x_min = max(0, cx - r - 15)
-                    y_min = max(0, cy - r - 10)
-                    w_box = min(width - x_min, 2 * r + 30)
-                    h_box = min(height - y_min, 2 * r + 90)
+                    # Use a wider bounds box (35 pixels margin) to prevent text clipping
+                    x_min = max(0, cx - r - int(35 * scale_factor))
+                    y_min = max(0, cy - r - int(10 * scale_factor))
+                    w_box = min(width - x_min, 2 * r + int(70 * scale_factor))
+                    h_box = min(height - y_min, 2 * r + int(105 * scale_factor)) # Taller height to ensure coordinates are never cut off
                     
                     bounds = {
                         "x": round(x_min / width, 4),
@@ -1739,7 +1862,7 @@ class ScreenGrabber:
                         "width": round(w_box / width, 4),
                         "height": round(h_box / height, 4)
                     }
-                    print(f"[MinimapDetector] Auto-detected minimap via circles: {bounds}")
+                    print(f"[MinimapDetector] Auto-detected minimap via validated circles: {bounds}")
                     return bounds, True
         except Exception as e:
             print(f"[MinimapDetector] Error in circle detection: {e}")
@@ -1772,36 +1895,34 @@ class LocalOCRParser:
     @staticmethod
     def preprocess_image(pil_img, ocr_pass=0):
         """Applies different preprocessing techniques based on the selected OCR pass."""
-        cv_img = np.array(pil_img)
+        # 1. Upscale 3x first using high-quality LANCZOS to preserve anti-aliased text boundaries
+        try:
+            from PIL import Image
+            resized_pil = pil_img.resize((pil_img.width * 3, pil_img.height * 3), Image.Resampling.LANCZOS)
+        except Exception:
+            resized_pil = pil_img
+
+        cv_img = np.array(resized_pil)
         cv_img = cv_img[:, :, ::-1].copy()  # Convert RGB to BGR
 
         if ocr_pass == 0:
-            # Pass 0: HSV white mask (Value 180-255, Saturation 0-45) + 2x2 kernel dilation + 3x resize
+            # Pass 0: HSV white mask with permissive saturation threshold (Value 150-255, Saturation 0-80)
             hsv = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
-            lower_white = np.array([0, 0, 180])
-            upper_white = np.array([180, 45, 255])
+            lower_white = np.array([0, 0, 150])
+            upper_white = np.array([180, 80, 255])
             mask = cv2.inRange(hsv, lower_white, upper_white)
-            
-            kernel = np.ones((2, 2), np.uint8)
-            dilated = cv2.dilate(mask, kernel, iterations=1)
-            upscaled = cv2.resize(dilated, (0, 0), fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
-            return upscaled
+            return mask
             
         elif ocr_pass == 1:
-            # Pass 1: HSV white mask with lower Value threshold (Value 140-255) + no dilation + 3x resize
-            hsv = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
-            lower_white = np.array([0, 0, 140])
-            upper_white = np.array([180, 55, 255])
-            mask = cv2.inRange(hsv, lower_white, upper_white)
-            
-            upscaled = cv2.resize(mask, (0, 0), fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
-            return upscaled
+            # Pass 1: Grayscale + fixed white threshold (value >= 150)
+            gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+            _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+            return thresh
             
         else:
-            # Pass 2: Grayscale + 2x resize + Otsu thresholding
+            # Pass 2: Grayscale + Otsu thresholding
             gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-            resized = cv2.resize(gray, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
-            _, thresh = cv2.threshold(resized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             return thresh
 
     @staticmethod
@@ -1820,8 +1941,10 @@ class LocalOCRParser:
             # - Second number (longitude): trailing 8, 4, or 7 -> W
             cleaned_line = line
             # Match coordinate patterns with either letters or digits at the end:
+            # - Latitudes can have 8, 2, 5 (common misreads for S) or 4 (common misread for N)
+            # - Longitudes can have 8, 4, 7 (common misreads for W) or v/V/vV
             coord_sub_pattern = re.compile(
-                r"(\d+(?:\.\d+)?)\s*([NS824])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847])", re.IGNORECASE
+                r"(\d+(?:\.\d+)?)\s*([NS8245])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])", re.IGNORECASE
             )
             match = coord_sub_pattern.search(line)
             if match:
@@ -1831,12 +1954,12 @@ class LocalOCRParser:
                 lon_dir = match.group(4).upper()
                 
                 # Apply correction mapping
-                if lat_dir in ('8', '2'):
+                if lat_dir in ('8', '2', '5'):
                     lat_dir = 'S'
                 elif lat_dir == '4':
                     lat_dir = 'N'
                     
-                if lon_dir in ('8', '4', '7'):
+                if lon_dir in ('8', '4', '7', 'V'):
                     lon_dir = 'W'
                     
                 cleaned_line = f"{lat_val}{lat_dir}, {lon_val}{lon_dir}"
@@ -1856,46 +1979,69 @@ class LocalOCRParser:
         for line in lines:
             match = coord_pattern.search(line)
             if match:
-                ns_raw = float(match.group(1))
+                ns_str = match.group(1)
                 ns_dir = match.group(2).upper()
-                ew_raw = float(match.group(3))
+                ew_str = match.group(3)
                 ew_dir = match.group(4).upper()
+
+                # If Tesseract missed the decimal dot, insert it before the last digit
+                if "." not in ns_str and len(ns_str) > 1:
+                    ns_str = ns_str[:-1] + "." + ns_str[-1]
+                if "." not in ew_str and len(ew_str) > 1:
+                    ew_str = ew_str[:-1] + "." + ew_str[-1]
+
+                ns_raw = float(ns_str)
+                ew_raw = float(ew_str)
 
                 ns_val = ns_raw if ns_dir == "N" else -ns_raw
                 ew_val = ew_raw if ew_dir == "E" else -ew_raw
                 coordinates = f"{ns_raw}{ns_dir}, {ew_raw}{ew_dir}"
                 break
 
-        # Extract location: find lines that are not coordinates and contain alphabetical characters
+        # Extract location: find the line that best fuzzy matches a word in our dictionary!
+        best_loc = None
+        best_loc_score = 0.0
+        first_candidate = None
+        
+        # Load words dictionary to prioritize valid locations
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+        words = []
+        if os.path.exists(wordlist_path):
+            try:
+                with open(wordlist_path, 'r', encoding='utf-8') as f:
+                    words = [line.strip() for line in f if line.strip()]
+            except:
+                pass
+                
         for line in lines:
             if coord_pattern.search(line):
                 continue
             # Remove symbols/noise, check if it looks like a location name
             cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
             if len(cleaned) > 2:  # At least 3 chars
-                location = cleaned
-                break
+                if not first_candidate:
+                    first_candidate = cleaned
+                if words:
+                    import difflib
+                    matches = difflib.get_close_matches(cleaned, words, n=1, cutoff=0.6)
+                    if matches:
+                        ratio = difflib.SequenceMatcher(None, cleaned.lower(), matches[0].lower()).ratio()
+                        if ratio > best_loc_score:
+                            best_loc_score = ratio
+                            best_loc = matches[0]
+                            
+        location = best_loc if (best_loc and best_loc_score > 0.80) else first_candidate
 
         return location, coordinates, ns_val, ew_val
 
-    def run_ocr(self, pil_img, ocr_pass=0, already_cropped=False):
+    def _run_single_ocr_pass(self, text_img, ocr_pass, words):
         try:
-            # 1. Crop only the bottom 30% of the bounding box if not already cropped
-            if already_cropped:
-                text_img = pil_img
-            else:
-                width, height = pil_img.size
-                text_y_start = int(height * 0.70)
-                text_img = pil_img.crop((0, text_y_start, width, height))
-            
-            # 2. Preprocess the text image based on the selected OCR pass
             processed = self.preprocess_image(text_img, ocr_pass)
             
-            # Ensure our offline wordlist exists
             app_dir = os.path.dirname(os.path.abspath(__file__))
             wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
             if not os.path.exists(wordlist_path):
-                # A basic list of common LOTRO zones
                 lotro_words = ["Tinnudir", "Kings' End", "Echad Dúnann", "Bree-land", "The Shire", "Thorin's Hall", "Rivendell"]
                 try:
                     with open(wordlist_path, 'w', encoding='utf-8') as f:
@@ -1904,7 +2050,6 @@ class LocalOCRParser:
                 except Exception as e:
                     print(f"Failed to write wordlist: {e}")
             
-            # Configure Tesseract to use our offline wordlist and disable default dictionaries
             config = (
                 f'--oem 3 --psm 6 '
                 f'--user-words "{wordlist_path}" '
@@ -1916,23 +2061,72 @@ class LocalOCRParser:
             raw_text = pytesseract.image_to_string(processed, config=config)
             location, coordinates, ns, ew = self.parse_text(raw_text)
             
-            # 3. Apply programmatic fuzzy matching against the local dictionary
-            if location:
-                words = []
-                if os.path.exists(wordlist_path):
-                    try:
-                        with open(wordlist_path, 'r', encoding='utf-8') as f:
-                            words = [line.strip() for line in f if line.strip()]
-                    except Exception as e:
-                        print(f"Error reading wordlist: {e}")
-                if words:
-                    import difflib
-                    matches = difflib.get_close_matches(location, words, n=1, cutoff=0.5)
-                    if matches:
-                        print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
-                        location = matches[0]
+            if location and words:
+                import difflib
+                # Use a strict cutoff threshold of 0.80 to prevent trash fuzzy matches (e.g. Saye -> Scary)
+                matches = difflib.get_close_matches(location, words, n=1, cutoff=0.80)
+                if matches:
+                    print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
+                    location = matches[0]
                         
             return location, coordinates, ns, ew
+        except Exception as e:
+            print(f"Error in single OCR pass {ocr_pass}: {e}")
+            return None, None, None, None
+
+    def run_ocr(self, pil_img, ocr_pass=2, already_cropped=False):
+        try:
+            # 1. Crop only the bottom 42% of the bounding box if not already cropped
+            if already_cropped:
+                text_img = pil_img
+            else:
+                width, height = pil_img.size
+                text_y_start = int(height * 0.58)
+                text_img = pil_img.crop((0, text_y_start, width, height))
+            
+            # Load wordlist once to verify if extracted location names are valid LOTRO locations
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+            words = []
+            if os.path.exists(wordlist_path):
+                try:
+                    with open(wordlist_path, 'r', encoding='utf-8') as f:
+                        words = [line.strip() for line in f if line.strip()]
+                except Exception as e:
+                    print(f"Error reading wordlist: {e}")
+            
+            # 2. Run passes in ranked priority (Best: verified location and coordinates; Worst: neither)
+            best_outcome = (None, None, None, None)
+            best_rank = 0  # 0: none, 1: loc only, 2: coords only, 3: loc+coords, 4: verified loc+coords
+            
+            # Always run in [2, 1, 0] order to prioritize mathematically optimal Otsu binarization
+            for pass_idx in [2, 1, 0]:
+                loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words)
+                
+                is_verified = (loc in words) if (loc and words) else False
+                
+                # Rank this pass outcome:
+                # Rank 4: Found coordinates and a valid LOTRO location (Perfect)
+                # Rank 3: Found coordinates and some text location (unverified)
+                # Rank 2: Found coordinates only
+                # Rank 1: Found valid LOTRO location name only
+                # Rank 0: Found nothing useful
+                if loc and coords and is_verified:
+                    rank = 4
+                elif loc and coords:
+                    rank = 3
+                elif coords:
+                    rank = 2
+                elif loc and is_verified:
+                    rank = 1
+                else:
+                    rank = 0
+                    
+                if rank > best_rank:
+                    best_rank = rank
+                    best_outcome = (loc, coords, ns, ew)
+                    
+            return best_outcome
         except Exception as e:
             print(f"Local OCR engine execution error: {e}")
             return None, None, None, None

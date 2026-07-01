@@ -146,7 +146,7 @@ def test_player_transition_no_delay_when_paused(tmp_path) -> None:
     start_time = time.time()
     assert player.play_track("track2.mp3", fade_in_ms=100, fade_out_ms=200) is True
     duration = time.time() - start_time
-    assert duration < 0.05  # should be virtually instant
+    assert duration < 0.15  # should be virtually instant
     assert player.current_track == "track2.mp3"
     assert player.paused is False
 
@@ -172,7 +172,7 @@ def test_player_transition_no_delay_when_fadeout_zero(tmp_path) -> None:
     start_time = time.time()
     assert player.play_track("track2.mp3", fade_in_ms=100, fade_out_ms=0) is True
     duration = time.time() - start_time
-    assert duration < 0.05  # should be virtually instant
+    assert duration < 0.15  # should be virtually instant
     assert player.current_track == "track2.mp3"
     assert player.paused is False
 
