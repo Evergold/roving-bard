@@ -65,6 +65,12 @@ capstone/
 - `litellm` — Fallback vision-language model API calls
 - `torch` & `transformers` — Local VLM execution (Florence-2)
 
+### Environment Variables & API Keys
+To enable all features and display active integration badges in the GUI dashboard, export the following environment variables before starting the server:
+
+- `AGENT_API_KEY` (Optional / Recommended): Required to secure REST API routes when accessed by remote network clients. (Loopback connections from localhost bypass authorization for developer convenience).
+- `GEMINI_API_KEY` or `GOOGLE_API_KEY` (Optional): Required only if you select the cloud-based **Gemini 2.5 Flash Lite** vision fallback. Local OCR (Tesseract) and local VLM models (Florence-2, Moondream, Qwen, etc.) run entirely offline and do not require keys.
+
 ---
 
 ## 🚀 Quick Start
