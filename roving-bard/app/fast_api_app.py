@@ -2372,8 +2372,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     raw_loc = rich["raw_location"]
                     raw_coords = rich["raw_coordinates"]
                     
-                    if is_first_run and try_idx == 0:
-                        print(f"[Ollama VLM] Discarding first {selected_model} run (warmup phase) and retrying...", flush=True)
+                    if is_first_run and try_idx == 0 and (loc_str == "None" or coords_str == "None"):
+                        print(f"[Ollama VLM] First run (warmup phase) returned None/empty, retrying...", flush=True)
                         continue
                     break
                 else:
