@@ -208,5 +208,21 @@
     "tab_char": "CHAR",
     "preview_original": "Original",
     "preview_processed": "Processed",
-    "bounding_box_setup": "BOUNDING BOX SETUP"
+    "bounding_box_setup": "BOUNDING BOX SETUP",
+    "vlm_benchmarking": "Local VLM Benchmarking",
+    "vlm_tesseract_opt": "Tesseract/OpenCV (Default)",
+    "vlm_try_btn": "Try",
+    "vlm_reset_btn": "Reset",
+    "vlm_downloading_status": "Setting up model...",
+    "vlm_total_parse": "Total Parse",
+    "vlm_loc_parse": "Loc Parse",
+    "vlm_coords_parse": "Coords Parse",
+    "vlm_est_vram": "Est VRAM",
+    "vlm_est_ram": "Est RAM ",
+    "vlm_setting_up": "Setting up",
+    "vlm_running_status": "Running...",
+    "vlm_toast_ready_suffix": "is ready to try!",
+    "vlm_toast_success_prefix": "Successfully processed with",
+    "vlm_toast_failed_prefix": "VLM process failed:",
+    "vlm_toast_error": "Error processing with VLM."
 }

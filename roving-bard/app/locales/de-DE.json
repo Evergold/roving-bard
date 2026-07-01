@@ -208,5 +208,21 @@
     "tab_char": "CHARAKTER",
     "preview_original": "Original",
     "preview_processed": "Verarbeitet",
-    "bounding_box_setup": "BEGRENZUNGSRAHMEN-EINSTELLUNG"
+    "bounding_box_setup": "BEGRENZUNGSRAHMEN-EINSTELLUNG",
+    "vlm_benchmarking": "Lokales VLM-Benchmarking",
+    "vlm_tesseract_opt": "Tesseract/OpenCV (Standard)",
+    "vlm_try_btn": "Testen",
+    "vlm_reset_btn": "Zurücksetzen",
+    "vlm_downloading_status": "Modell wird eingerichtet...",
+    "vlm_total_parse": "Gesamte Analyse",
+    "vlm_loc_parse": "Orts-Analyse",
+    "vlm_coords_parse": "Koord.-Analyse",
+    "vlm_est_vram": "Gesch. VRAM",
+    "vlm_est_ram": "Gesch. RAM ",
+    "vlm_setting_up": "Einrichtung von",
+    "vlm_running_status": "Läuft...",
+    "vlm_toast_ready_suffix": "ist bereit zum Testen!",
+    "vlm_toast_success_prefix": "Erfolgreich verarbeitet mit",
+    "vlm_toast_failed_prefix": "VLM-Prozess fehlgeschlagen:",
+    "vlm_toast_error": "Fehler bei der VLM-Verarbeitung."
 }

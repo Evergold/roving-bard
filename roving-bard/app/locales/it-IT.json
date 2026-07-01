@@ -208,5 +208,21 @@
     "tab_char": "PG",
     "preview_original": "Originale",
     "preview_processed": "Elaborato",
-    "bounding_box_setup": "CONFIGURAZIONE RETTANGOLO SELEZIONE"
+    "bounding_box_setup": "CONFIGURAZIONE RETTANGOLO SELEZIONE",
+    "vlm_benchmarking": "Benchmark VLM Locale",
+    "vlm_tesseract_opt": "Tesseract/OpenCV (Predefinito)",
+    "vlm_try_btn": "Prova",
+    "vlm_reset_btn": "Ripristina",
+    "vlm_downloading_status": "Configurazione del modello...",
+    "vlm_total_parse": "Analisi Totale",
+    "vlm_loc_parse": "Analisi Posizione",
+    "vlm_coords_parse": "Analisi Coordinate",
+    "vlm_est_vram": "VRAM stim.",
+    "vlm_est_ram": "RAM stim. ",
+    "vlm_setting_up": "Configurazione di",
+    "vlm_running_status": "In esecuzione...",
+    "vlm_toast_ready_suffix": "è pronto per essere provato!",
+    "vlm_toast_success_prefix": "Elaborato con successo con",
+    "vlm_toast_failed_prefix": "Processo VLM fallito:",
+    "vlm_toast_error": "Errore durante l'elaborazione con VLM."
 }
