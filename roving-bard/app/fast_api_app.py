@@ -1287,6 +1287,8 @@ def sync_ollama_ready_states():
             for model_id, state in vlm_download_states.items():
                 if model_id in ("tesseract", "gemini-2.5-flash-lite", "florence-2"):
                     continue
+                if state["status"].startswith("downloading"):
+                    continue
                 ollama_names = []
                 if model_id == "moondream":
                     ollama_names = ["moondream", "moondream:latest"]
@@ -1303,8 +1305,8 @@ def sync_ollama_ready_states():
                     state["progress"] = 100
     except Exception as e:
         print(f"[VLM Status] Could not connect to local Ollama: {e}")
-
-
+ 
+ 
 def pull_ollama_model_task(model_id: str, ollama_name: str):
     global vlm_download_states
     vlm_download_states[model_id]["status"] = "downloading"
@@ -1324,8 +1326,10 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
                     
                     if total > 0:
                         progress = int((completed / total) * 100)
-                        vlm_download_states[model_id]["progress"] = progress
-                        vlm_download_states[model_id]["status"] = f"downloading ({progress}%)"
+                        if progress > vlm_download_states[model_id]["progress"]:
+                            vlm_download_states[model_id]["progress"] = progress
+                        current_p = vlm_download_states[model_id]["progress"]
+                        vlm_download_states[model_id]["status"] = f"downloading ({current_p}%)"
                     elif status_text:
                         vlm_download_states[model_id]["status"] = status_text
                         
@@ -1341,8 +1345,8 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
     except Exception as e:
         print(f"[VLM Pull] Error pulling {ollama_name}: {e}")
         simulate_vlm_download(model_id)
-
-
+ 
+ 
 def simulate_vlm_download(model_id: str):
     import time
     global vlm_download_states
@@ -1354,9 +1358,11 @@ def simulate_vlm_download(model_id: str):
     vlm_download_states[model_id]["ready"] = True
     vlm_download_states[model_id]["status"] = "ready"
     vlm_download_states[model_id]["progress"] = 100
-
-
+ 
+ 
 def sync_florence_ready_state():
+    if vlm_download_states["florence-2"]["status"].startswith("downloading"):
+        return
     cache_dir = os.path.expanduser("~/.cache/huggingface/hub/models--microsoft--Florence-2-large")
     if os.path.exists(cache_dir):
         has_weights = False
