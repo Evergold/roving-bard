@@ -5364,7 +5364,11 @@
                     document.getElementById('parse-bearing').innerText = res.parsed_bearing || "None";
                     document.getElementById('parse-route').innerText = friendlyName;
  
-                    activeVLMModel = friendlyName;
+                    if (selectedVal === 'tesseract') {
+                        activeVLMModel = null;
+                    } else {
+                        activeVLMModel = friendlyName;
+                    }
                     if (statMethod) statMethod.innerText = friendlyName;
                     document.getElementById('stat-loc-time').innerText = (res.loc_time_ms !== null && res.loc_time_ms !== undefined) ? `${res.loc_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-coords-time').innerText = (res.coords_time_ms !== null && res.coords_time_ms !== undefined) ? `${res.coords_time_ms.toFixed(1)} ms` : "--- ms";
