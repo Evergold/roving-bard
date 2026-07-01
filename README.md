@@ -69,20 +69,28 @@ capstone/
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
-Run from the `roving-bard` directory:
+### 1. Clone the Repository
+Clone the project repository and navigate into the repository root directory:
+```bash
+git clone https://github.com/Evergold/roving-bard.git
+cd roving-bard
+```
+
+### 2. Install Dependencies
+Run dependency sync from the repository root:
 ```bash
 agents-cli install
 ```
 
-### 2. Start the FastAPI Web Server
-To start the server with auto-reloading enabled for development:
+### 3. Start the FastAPI Web Server
+To start the development server with auto-reloading enabled, navigate into the project subdirectory and run:
 ```bash
+cd roving-bard
 uv run uvicorn app.fast_api_app:app --reload
 ```
 The server will boot on `http://127.0.0.1:8000`.
 
-### 3. Open the GUI Dashboard
+### 4. Open the GUI Dashboard
 Once the server is running, navigate to:
 ```
 http://localhost:8000/gui
@@ -90,9 +98,10 @@ http://localhost:8000/gui
 * **Auto-Scanning**: Turn on the **Auto Scanning** toggle in the status header to begin scanning your screen at the configured interval.
 * **Localhost Access**: Loopback connections from localhost bypass API key authentication and display a green checkmark next to the status badge.
 
-### 4. Alternative: Standalone CLI Player Loop
-If you prefer running a command-line polling loop without the GUI:
+### 5. Alternative: Standalone CLI Player Loop
+If you prefer running a command-line polling loop without the GUI, navigate into the project subdirectory and run:
 ```bash
+cd roving-bard
 uv run python run_player.py
 ```
 This loop runs independently, scanning the screen and playing music directly in the terminal.
