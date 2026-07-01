@@ -4922,7 +4922,14 @@
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
                 
-                async function handleVlmDownloadAction() {
+                if (vramEl) vramEl.innerText = "---";
+                if (ramEl) ramEl.innerText = "---";
+                if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
+                if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
+            }
+        }
+
+        async function handleVlmDownloadAction() {
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
             const btn = document.getElementById('btn-vlm-download-action');
