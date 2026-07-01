@@ -2189,6 +2189,25 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     # Clear from warmed models so it does warmup on next load
                     if old_model in warmed_models:
                         warmed_models.remove(old_model)
+                        
+                    # Deterministically wait until the model is completely removed from memory
+                    # (Poll /api/ps up to 10 times with 300ms intervals)
+                    import time
+                    for wait_idx in range(10):
+                        time.sleep(0.3)
+                        try:
+                            ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
+                            if ps_res.status_code == 200:
+                                active_models = [m.get("name", "") for m in ps_res.json().get("models", [])]
+                                # Check if our old model tag is still loaded
+                                if not any(old_model_tag in m or m in old_model_tag for m in active_models):
+                                    print(f"[VLM Memory Management] {old_model_tag} successfully cleared from VRAM in {(wait_idx+1)*300}ms.", flush=True)
+                                    break
+                        except Exception as ps_err:
+                            print(f"[VLM Memory Management] Error checking memory: {ps_err}", flush=True)
+                    else:
+                        print(f"[VLM Memory Management] Warning: {old_model_tag} did not clear within 3 seconds, proceeding anyway.", flush=True)
+                        
                 except Exception as e:
                     print(f"[VLM Memory Management] Failed to unload {old_model}: {e}", flush=True)
 
