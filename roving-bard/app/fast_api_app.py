@@ -2157,10 +2157,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
         text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
-        # Qwen2-VL is most stable at 1x to avoid token context overflow. Qwen2.5-VL works optimally at 2x. Other models default to 4x.
-        if selected_model == "qwen2-vl":
-            scale_factor = 1
-        elif "qwen" in selected_model:
+        # Qwen models work optimally at 2x. Other models default to 4x.
+        if "qwen" in selected_model:
             scale_factor = 2
         else:
             scale_factor = 4
