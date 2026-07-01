@@ -1657,6 +1657,105 @@ def api_vlm_pause(req: VlmPauseRequest):
     return {"status": "success", "message": f"Paused download for {req.model}."}
 
 
+warmed_models = set()
+
+
+class VlmWarmupRequest(BaseModel):
+    model: str
+
+
+@app.post("/api/ocr/vlm_warmup", dependencies=[Depends(verify_api_key)])
+def api_vlm_warmup(req: VlmWarmupRequest):
+    """Triggers a background warmup request to load/warmup the local VLM."""
+    model_id = req.model.lower()
+    if model_id not in vlm_download_states:
+        return {"status": "error", "message": f"Unknown model: {req.model}"}
+    if not vlm_download_states[model_id]["ready"]:
+        return {"status": "success", "message": f"Model {req.model} is not ready yet."}
+
+    model_map = {
+        "moondream": "moondream",
+        "qwen2-vl": "qwen2-vl:2b",
+        "qwen2.5-vl": "qwen2.5vl",
+        "paligemma": "paligemma",
+        "minicpm-v": "minicpm-v"
+    }
+    if model_id not in model_map:
+        return {"status": "success", "message": "Warmup not required for this model."}
+
+    def run_warmup():
+        try:
+            url = "http://127.0.0.1:11434/api/generate"
+            dummy_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+            print(f"[VLM Warmup] Starting background warmup for {model_id}...", flush=True)
+            requests.post(
+                url,
+                json={
+                    "model": model_map[model_id],
+                    "prompt": "warmup",
+                    "images": [dummy_img],
+                    "stream": False,
+                    "keep_alive": -1
+                },
+                timeout=180
+            )
+            print(f"[VLM Warmup] Background warmup for {model_id} completed.", flush=True)
+        except Exception as e:
+            print(f"[VLM Warmup] Warmup failed for {model_id}: {e}", flush=True)
+
+    t = threading.Thread(target=run_warmup)
+    t.daemon = True
+    t.start()
+    return {"status": "success", "message": f"Triggered warmup for {req.model}."}
+
+
+class VlmUnloadRequest(BaseModel):
+    model: str
+
+
+@app.post("/api/ocr/vlm_unload", dependencies=[Depends(verify_api_key)])
+def api_vlm_unload(req: VlmUnloadRequest):
+    """Triggers an immediate unload request to free the local VLM from memory."""
+    model_id = req.model.lower()
+    if model_id in warmed_models:
+        warmed_models.remove(model_id)
+    if model_id not in vlm_download_states:
+        return {"status": "error", "message": f"Unknown model: {req.model}"}
+
+    model_map = {
+        "moondream": "moondream",
+        "qwen2-vl": "qwen2-vl",
+        "qwen2.5-vl": "qwen2.5vl",
+        "paligemma": "paligemma",
+        "minicpm-v": "minicpm-v"
+    }
+    if model_id not in model_map:
+        return {"status": "success", "message": "Unload not required/supported for this model."}
+
+    def run_unload():
+        try:
+            url = "http://127.0.0.1:11434/api/generate"
+            print(f"[VLM Unload] Starting immediate unload for {model_id}...", flush=True)
+            requests.post(
+                url,
+                json={
+                    "model": model_map[model_id],
+                    "prompt": "",
+                    "keep_alive": "0s",
+                    "stream": False
+                },
+                timeout=30
+            )
+            print(f"[VLM Unload] Immediate unload for {model_id} completed.", flush=True)
+        except Exception as e:
+            print(f"[VLM Unload] Unload failed for {model_id}: {e}", flush=True)
+
+    t = threading.Thread(target=run_unload)
+    t.daemon = True
+    t.start()
+    return {"status": "success", "message": f"Triggered unload for {req.model}."}
+
+
 class VlmTryRequest(BaseModel):
     model: str
 
@@ -2058,36 +2157,54 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
             
-            t0 = time.time()
-            url = "http://localhost:11434/api/generate"
+            # Run inference (with a single auto-retry if Moondream is run for the first time in this session)
+            is_first_moondream_run = (selected_model == "moondream" and "moondream" not in warmed_models)
+            max_tries = 2 if is_first_moondream_run else 1
+            response = None
+            t0, t1 = 0.0, 0.0
+            url = "http://127.0.0.1:11434/api/generate"
             prompt = (
                 "Transcribe the text in the image, focusing on the bottom-most characters."
             )
-            response = requests.post(
-                url, 
-                json={
-                    "model": model_map[selected_model],
-                    "prompt": prompt,
-                    "images": [img_b64],
-                    "stream": False
-                },
-                timeout=60
-            )
-            t1 = time.time()
-            
+            for try_idx in range(max_tries):
+                t0 = time.time()
+                response = requests.post(
+                    url, 
+                    json={
+                        "model": model_map[selected_model],
+                        "prompt": prompt,
+                        "images": [img_b64],
+                        "stream": False,
+                        "keep_alive": "5m"
+                    },
+                    timeout=180
+                )
+                t1 = time.time()
+                
+                if response.status_code == 200:
+                    resp_json = response.json()
+                    print(f"[Ollama VLM Raw JSON] Model: {selected_model} (Try {try_idx + 1}), JSON: {resp_json!r}", flush=True)
+                    response_text = resp_json.get("response", "")
+                    
+                    rich = tools.ocr_parser.parse_text_rich(response_text)
+                    loc_str = rich["parsed_location"]
+                    coords_str = rich["parsed_coordinates"]
+                    raw_loc = rich["raw_location"]
+                    raw_coords = rich["raw_coordinates"]
+                    
+                    if is_first_moondream_run and try_idx == 0:
+                        print("[Ollama VLM] Discarding first moondream run (warmup phase) and retrying...", flush=True)
+                        continue
+                    break
+                else:
+                    if try_idx == max_tries - 1:
+                        raise Exception(f"Ollama returned status {response.status_code}: {response.text}")
+                        
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             
-            if response.status_code == 200:
-                resp_json = response.json()
-                print(f"[Ollama VLM Raw JSON] Model: {selected_model}, JSON: {resp_json!r}", flush=True)
-                response_text = resp_json.get("response", "")
-                
-                rich = tools.ocr_parser.parse_text_rich(response_text)
-                loc_str = rich["parsed_location"]
-                coords_str = rich["parsed_coordinates"]
-                raw_loc = rich["raw_location"]
-                raw_coords = rich["raw_coordinates"]
-                
+            if response and response.status_code == 200:
+                if selected_model == "moondream":
+                    warmed_models.add("moondream")
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45

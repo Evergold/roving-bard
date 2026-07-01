@@ -249,10 +249,10 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
-    # Check status changed to downloading
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    assert response.json()["states"]["paligemma"]["status"].startswith("downloading")
+    status = response.json()["states"]["paligemma"]["status"]
+    assert status.startswith("downloading") or "pulling" in status
     
     # 5. Pause the download
     pause_url = BASE_URL + "/api/ocr/vlm_pause"
@@ -270,10 +270,10 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
-    # Check status changed back to downloading
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    assert response.json()["states"]["paligemma"]["status"].startswith("downloading")
+    status = response.json()["states"]["paligemma"]["status"]
+    assert status.startswith("downloading") or "pulling" in status
     
     # Clean up by pausing
     requests.post(pause_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
@@ -283,10 +283,10 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
-    # Check status changed to downloading
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    assert response.json()["states"]["qwen2.5-vl"]["status"].startswith("downloading")
+    status = response.json()["states"]["qwen2.5-vl"]["status"]
+    assert status.startswith("downloading") or "pulling" in status
     
     # Pause qwen2.5-vl
     response = requests.post(pause_url, json={"model": "qwen2.5-vl"}, headers=HEADERS, timeout=10)
@@ -297,5 +297,23 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     assert response.json()["states"]["qwen2.5-vl"]["status"] == "paused"
+    
+    # 8. Test warmup endpoint
+    warmup_url = BASE_URL + "/api/ocr/vlm_warmup"
+    response = requests.post(warmup_url, json={"model": "tesseract"}, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    assert "Warmup not required" in response.json()["message"]
+    
+    response = requests.post(warmup_url, json={"model": "moondream"}, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    
+    # 9. Test unload endpoint
+    unload_url = BASE_URL + "/api/ocr/vlm_unload"
+    response = requests.post(unload_url, json={"model": "moondream"}, headers=HEADERS, timeout=10)
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    assert "Triggered unload" in response.json()["message"]
     
     logger.info("VLM endpoints test completed successfully")

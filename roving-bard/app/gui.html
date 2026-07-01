@@ -4986,6 +4986,16 @@
   
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
+
+            // Unload previously warmed local model if switching to a different one or non-local one
+            if (currentlyWarmModel && currentlyWarmModel !== selectedVal) {
+                apiFetch('/api/ocr/vlm_unload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: currentlyWarmModel })
+                });
+                currentlyWarmModel = null;
+            }
             
             // Manage activeVLMModel locks dynamically
             if (selectedVal === 'tesseract') {
@@ -5024,6 +5034,12 @@
                         document.getElementById('btn-vlm-try').disabled = false;
                         document.getElementById('vlm-download-container').style.display = 'none';
                         modelSelect.disabled = false;
+                        apiFetch('/api/ocr/vlm_warmup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ model: selectedVal })
+                        });
+                        currentlyWarmModel = selectedVal;
                     } else if (modelState.status.startsWith('downloading')) {
                         document.getElementById('btn-vlm-try').disabled = true;
                         document.getElementById('vlm-download-container').style.display = 'block';
@@ -5124,6 +5140,15 @@
                         
                         const readySuffix = t("vlm_toast_ready_suffix", "is ready to try!");
                         showToast(`${modelName} ${readySuffix}`, "success");
+                        
+                        if (modelName === modelSelect.value) {
+                            apiFetch('/api/ocr/vlm_warmup', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ model: modelName })
+                            });
+                            currentlyWarmModel = modelName;
+                        }
                         
                         if (runBenchmarkAfterDownload) {
                             executeVLMRealTrial(modelName);
