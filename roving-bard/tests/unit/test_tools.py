@@ -87,3 +87,22 @@ def test_parse_text_same_line():
         assert loc == "Tinnudir"
         assert coords == "11.9S, 67.8W"
 
+
+def test_parse_text_rich():
+    """Verify parse_text_rich returns correct parsed and raw unfuzzy values."""
+    from app.player import LocalOCRParser
+    
+    # Check standard VLM response with noise
+    rich = LocalOCRParser.parse_text_rich("xtrinudir 11.9S, 67.8W")
+    assert rich["parsed_location"] == "Tinnudir"
+    assert rich["raw_location"] == "xtrinudir"
+    assert rich["parsed_coordinates"] == "11.9S, 67.8W"
+    assert rich["raw_coordinates"] == "11.9S, 67.8W"
+    
+    # Check Moondream warmup failure token
+    rich2 = LocalOCRParser.parse_text_rich("xtrp")
+    assert rich2["raw_location"] == "xtrp"
+    assert rich2["parsed_location"] in ("xtrp", "p", "None") # cleaned is "xtrp" -> "p", or "None" if filtered
+    assert rich2["parsed_coordinates"] == "None"
+    assert rich2["raw_coordinates"] == "None"
+

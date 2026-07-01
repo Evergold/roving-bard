@@ -1925,6 +1925,46 @@ class LocalOCRParser:
             _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             return thresh
 
+    @classmethod
+    def parse_text_rich(cls, text):
+        """Extracts parsed locations/coordinates alongside raw unfuzzy strings."""
+        location, coordinates, ns_val, ew_val = cls.parse_text(text)
+        
+        raw_coords = "None"
+        coord_pattern = re.compile(
+            r"(\d+(?:\.\d+)?)\s*([NS8245NS])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vVEW])", re.IGNORECASE
+        )
+        match = coord_pattern.search(text)
+        if match:
+            raw_coords = match.group(0)
+            
+        raw_loc = "None"
+        lines = []
+        for line in text.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            lines.append(line)
+            
+        for line in lines:
+            c_match = coord_pattern.search(line)
+            if c_match:
+                coord_start, coord_end = c_match.span()
+                line = line[:coord_start] + " " + line[coord_end:]
+            cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
+            if len(cleaned) > 2:
+                raw_loc = cleaned
+                break
+                
+        return {
+            "parsed_location": location if location else "None",
+            "parsed_coordinates": coordinates if coordinates else "None",
+            "ns_val": ns_val,
+            "ew_val": ew_val,
+            "raw_location": raw_loc if raw_loc else "None",
+            "raw_coordinates": raw_coords if raw_coords else "None"
+        }
+
     @staticmethod
     def parse_text(text):
         """Extracts coordinate floats (signed) and potential location names from OCR text."""

@@ -5220,8 +5220,17 @@
  
                 const res = await response.json();
                 if (res.status === 'success') {
-                    document.getElementById('parse-location').innerText = res.parsed_location || "None";
-                    document.getElementById('parse-coords').innerText = res.parsed_coordinates || "None";
+                    let locHtml = res.parsed_location || "None";
+                    if (res.raw_location && selectedVal !== 'tesseract') {
+                        locHtml += " <span style='font-size: 0.8rem; opacity: 0.7; margin-left: 5px;'>[" + res.raw_location + "]</span>";
+                    }
+                    document.getElementById('parse-location').innerHTML = locHtml;
+
+                    let coordsHtml = res.parsed_coordinates || "None";
+                    if (res.raw_coordinates) {
+                        coordsHtml += "<br><span style='font-size: 0.8rem; opacity: 0.7;'>[" + res.raw_coordinates + "]</span>";
+                    }
+                    document.getElementById('parse-coords').innerHTML = coordsHtml;
                     document.getElementById('parse-bearing').innerText = res.parsed_bearing || "None";
  
                     activeVLMModel = friendlyName;

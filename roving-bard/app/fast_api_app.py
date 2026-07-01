@@ -1928,6 +1928,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "model": "Tesseract/OpenCV",
                 "parsed_location": loc_val,
                 "parsed_coordinates": coords_val,
+                "raw_location": None,
+                "raw_coordinates": None,
                 "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
                 "loc_time_ms": round(loc_time_ms, 1),
                 "coords_time_ms": round(coords_time_ms, 1),
@@ -1954,16 +1956,25 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             if not loc_str and not coords_str:
                 raise Exception("No response from Gemini API or configuration key invalid.")
             
-            coords_val = coords_str if coords_str else "None"
-            loc_val = loc_str if loc_str else "None"
+            # Use parse_text_rich to fuzzy-match and extract raw values consistently
+            combined_text = f"{loc_str or ''}\n{coords_str or ''}"
+            rich = tools.ocr_parser.parse_text_rich(combined_text)
+            
+            parsed_loc = rich["parsed_location"] if rich["parsed_location"] != "None" else (loc_str or "None")
+            parsed_coords = rich["parsed_coordinates"] if rich["parsed_coordinates"] != "None" else (coords_str or "None")
+            raw_loc = rich["raw_location"] if rich["raw_location"] != "None" else (loc_str or "None")
+            raw_coords = rich["raw_coordinates"] if rich["raw_coordinates"] != "None" else (coords_str or "None")
+            
             total_time_ms = (t1 - t0) * 1000.0
             
             act_ram, act_vram = get_peak_usage()
             return {
                 "status": "success",
                 "model": "Gemini 2.5 Flash Lite",
-                "parsed_location": loc_val,
-                "parsed_coordinates": coords_val,
+                "parsed_location": parsed_loc,
+                "parsed_coordinates": parsed_coords,
+                "raw_location": raw_loc,
+                "raw_coordinates": raw_coords,
                 "loc_time_ms": None,
                 "coords_time_ms": None,
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
@@ -1997,9 +2008,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             )["<OCR>"]
             t1 = time.time()
             
-            parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(raw_text)
-            coords_str = parsed_coords if parsed_coords else "None"
-            loc_str = parsed_loc if parsed_loc else "None"
+            rich = tools.ocr_parser.parse_text_rich(raw_text)
+            loc_str = rich["parsed_location"]
+            coords_str = rich["parsed_coordinates"]
+            raw_loc = rich["raw_location"]
+            raw_coords = rich["raw_coordinates"]
+            
             total_time_ms = (t1 - t0) * 1000.0
             loc_time_ms = total_time_ms * 0.55
             coords_time_ms = total_time_ms * 0.45
@@ -2010,6 +2024,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "model": "Florence-2 (Large)",
                 "parsed_location": loc_str,
                 "parsed_coordinates": coords_str,
+                "raw_location": raw_loc,
+                "raw_coordinates": raw_coords,
                 "loc_time_ms": round(loc_time_ms, 1),
                 "coords_time_ms": round(coords_time_ms, 1),
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
@@ -2065,9 +2081,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 resp_json = response.json()
                 print(f"[Ollama VLM Raw JSON] Model: {selected_model}, JSON: {resp_json!r}", flush=True)
                 response_text = resp_json.get("response", "")
-                parsed_loc, parsed_coords, ns, ew = tools.ocr_parser.parse_text(response_text)
-                coords_str = parsed_coords if parsed_coords else "None"
-                loc_str = parsed_loc if parsed_loc else "None"
+                
+                rich = tools.ocr_parser.parse_text_rich(response_text)
+                loc_str = rich["parsed_location"]
+                coords_str = rich["parsed_coordinates"]
+                raw_loc = rich["raw_location"]
+                raw_coords = rich["raw_coordinates"]
                 
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
@@ -2078,6 +2097,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "model": req.model,
                     "parsed_location": loc_str,
                     "parsed_coordinates": coords_str,
+                    "raw_location": raw_loc,
+                    "raw_coordinates": raw_coords,
                     "loc_time_ms": round(loc_time_ms, 1),
                     "coords_time_ms": round(coords_time_ms, 1),
                     "preprocess_time_ms": round(preprocess_time_ms, 1),
