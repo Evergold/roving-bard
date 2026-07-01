@@ -83,6 +83,14 @@ roving-bard/
 - **Python** ≥ 3.11, < 3.14
 - **uv** — Python package manager — [Install](https://docs.astral.sh/uv/getting-started/installation/)
 - **agents-cli** — `uv tool install google-agents-cli`
+- **Core Python Dependencies** (managed via `pyproject.toml`):
+  - `google-adk[gcp]` — Google Agent Development Kit & Cloud Trace/logging integrations
+  - `pygame` — Audio output & player controls
+  - `pytesseract` & `opencv-python` — Screen OCR and screenshot processing
+  - `scipy` & `soundfile` — 10-band parametric EQ processing
+  - `litellm` — Fallback vision-language model calls
+  - `torch` & `transformers` — Local VLM execution (Florence-2 / Hugging Face models)
+
 
 ### System dependencies
 
