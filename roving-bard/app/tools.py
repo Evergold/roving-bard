@@ -166,6 +166,7 @@ latest_cursor_bytes = None
 latest_character_bytes = None
 latest_cursor_processed_bytes = None
 latest_location_processed_bytes = None
+latest_location_raw_bytes = None
 latest_character_processed_bytes = None
 minimap_detected = False
 current_ocr_pass = 2
@@ -243,7 +244,7 @@ def check_screen_and_update_music() -> dict:
     Returns:
         dict containing the extraction result (location, coordinates) and action taken.
     """
-    global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_cursor_bytes, latest_character_bytes, latest_cursor_processed_bytes, latest_location_processed_bytes, latest_character_processed_bytes, latest_parse_result, current_ocr_pass
+    global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_cursor_bytes, latest_character_bytes, latest_cursor_processed_bytes, latest_location_processed_bytes, latest_location_raw_bytes, latest_character_processed_bytes, latest_parse_result, current_ocr_pass
     full_img = grabber.capture_full()
     if not full_img:
         return {"status": "error", "message": "Failed to capture screenshot."}
@@ -365,8 +366,13 @@ def check_screen_and_update_music() -> dict:
         buf_loc_proc = BytesIO()
         loc_proc_pil.save(buf_loc_proc, format="PNG")
         latest_location_processed_bytes = buf_loc_proc.getvalue()
+        
+        # Save raw unbinarized location crop
+        buf_loc_raw = BytesIO()
+        text_img_1x.save(buf_loc_raw, format="PNG")
+        latest_location_raw_bytes = buf_loc_raw.getvalue()
     except Exception as e_loc_proc:
-        print(f"Error caching processed location image: {e_loc_proc}")
+        print(f"Error caching location images: {e_loc_proc}")
 
     # Create the 2x enlarged preview for the GUI
     try:
