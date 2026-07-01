@@ -1648,7 +1648,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         if selected_model == "tesseract":
             try:
                 tp0 = time.time()
-                _ = tools.ocr_parser.preprocess_image(text_img, pass_num=2)
+                _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
                 tp1 = time.time()
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
 
