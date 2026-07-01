@@ -226,5 +226,6 @@
     "vlm_toast_failed_prefix": "El proceso VLM falló:",
     "vlm_toast_error": "Error al procesar con VLM.",
     "vlm_act_vram": "VRAM act.",
-    "vlm_act_ram": "RAM act. "
+    "vlm_act_ram": "RAM act. ",
+    "vlm_preprocess": "Preprocesamiento"
 }
