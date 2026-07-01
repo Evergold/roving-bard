@@ -1332,6 +1332,7 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
         active_downloads[model_id]["response"] = response
         
         if response.status_code == 200:
+            largest_total = 0
             for line in response.iter_lines():
                 if cancel_evt.is_set():
                     response.close()
@@ -1344,7 +1345,11 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
                     total = data.get("total", 0)
                     status_text = data.get("status", "")
                     
-                    if total > 0:
+                    if total > largest_total:
+                        largest_total = total
+                        state["progress"] = 0
+                        
+                    if total > 0 and total == largest_total:
                         progress = int((completed / total) * 100)
                         if progress > state["progress"]:
                             state["progress"] = progress
