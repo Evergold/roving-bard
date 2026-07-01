@@ -5060,6 +5060,7 @@
   
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
+            localStorage.setItem('selectedVLM', selectedVal);
 
             // Unload previously warmed local model if switching to a different one or non-local one
             if (currentlyWarmModel && currentlyWarmModel !== selectedVal) {
@@ -5427,6 +5428,7 @@
         function resetVLM() {
             activeVLMModel = null;
             document.getElementById('vlm-model-select').value = 'tesseract';
+            localStorage.setItem('selectedVLM', 'tesseract');
             const resetBtn = document.getElementById('btn-vlm-reset');
             if (resetBtn) resetBtn.disabled = true;
             updateVLMStatsUI('tesseract');
@@ -8681,6 +8683,20 @@
                 }
             });
             initPanelDrag();
+
+            // Restore VLM Benchmarking model preference
+            try {
+                const savedVLM = localStorage.getItem('selectedVLM');
+                if (savedVLM) {
+                    const modelSelect = document.getElementById('vlm-model-select');
+                    if (modelSelect) {
+                        modelSelect.value = savedVLM;
+                        await onVLMSelectChange();
+                    }
+                }
+            } catch (e_vlm) {
+                console.error("Error restoring VLM preference:", e_vlm);
+            }
         };
     
         // ── Localized Responsive Layout Engine ────────────────────────────────────
