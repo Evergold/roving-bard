@@ -162,11 +162,17 @@ mapper = TrackMapper(mappings=config.get("mappings", []))
 # Shared caching for GUI visualization
 latest_screenshot_bytes = None
 latest_full_screenshot_bytes = None
+latest_cursor_bytes = None
+latest_character_bytes = None
+latest_cursor_processed_bytes = None
+latest_location_processed_bytes = None
+latest_character_processed_bytes = None
 minimap_detected = False
-current_ocr_pass = 0
+current_ocr_pass = 2
 latest_parse_result = {
     "parsed_location": None,
     "parsed_coordinates": None,
+    "parsed_bearing": None,
     "matched_track": None,
     "action": "stopped",
     "method": "None",
@@ -237,7 +243,7 @@ def check_screen_and_update_music() -> dict:
     Returns:
         dict containing the extraction result (location, coordinates) and action taken.
     """
-    global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_parse_result, current_ocr_pass
+    global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_cursor_bytes, latest_character_bytes, latest_cursor_processed_bytes, latest_location_processed_bytes, latest_character_processed_bytes, latest_parse_result, current_ocr_pass
     full_img = grabber.capture_full()
     if not full_img:
         return {"status": "error", "message": "Failed to capture screenshot."}
@@ -245,16 +251,130 @@ def check_screen_and_update_music() -> dict:
     # Crop to bounds for OCR processing
     img = grabber.crop_image(full_img)
 
-    # Crop to location and coordinates (bottom 30%) and enlarge 2x
+    # Crop to location and coordinates (bottom 42%) at 1x for OCR
+    w, h = img.size
+    y_start = int(h * 0.58)
+    text_img_1x = img.crop((0, y_start, w, h))
+
+    # Parse bearing from red cursor at the center of the minimap and crop it
+    bearing_deg = None
+    bearing_str = "None"
+    try:
+        import numpy as np
+        import cv2
+        from PIL import Image
+        
+        # Center of the radar circle (mw x mw square at the top)
+        cx = w // 2
+        cy = w // 2
+        r = int(w * 0.12)
+        cursor_crop = img.crop((cx - r, cy - r, cx + r, cy + r))
+        
+        # Enlarge 3x for preview and high-precision detection
+        cursor_crop_3x = cursor_crop.resize((r * 6, r * 6), Image.Resampling.LANCZOS)
+        buf_cursor = BytesIO()
+        cursor_crop_3x.save(buf_cursor, format="PNG")
+        latest_cursor_bytes = buf_cursor.getvalue()
+        
+        # Parse bearing angle using the scaled up 3x image
+        cv_crop = np.array(cursor_crop_3x)
+        cv_crop = cv_crop[:, :, ::-1].copy()
+        hsv = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
+        
+        # Red HSV ranges
+        lower_red1 = np.array([0, 70, 50])
+        upper_red1 = np.array([10, 255, 255])
+        lower_red2 = np.array([170, 70, 50])
+        upper_red2 = np.array([180, 255, 255])
+        mask = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
+        
+        # Save cursor processed crop (the red mask)
+        try:
+            cursor_proc_pil = Image.fromarray(mask)
+            buf_cursor_proc = BytesIO()
+            cursor_proc_pil.save(buf_cursor_proc, format="PNG")
+            latest_cursor_processed_bytes = buf_cursor_proc.getvalue()
+        except Exception as e_mask:
+            print(f"Error caching processed cursor: {e_mask}")
+
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
+            if cv2.contourArea(largest_contour) >= 5:
+                M = cv2.moments(largest_contour)
+                if M["m00"] > 0:
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
+                    
+                    furthest_pt = None
+                    max_dist = -1
+                    for pt in largest_contour:
+                        px, py = pt[0][0], pt[0][1]
+                        dist = (px - cX)**2 + (py - cY)**2
+                        if dist > max_dist:
+                            max_dist = dist
+                            furthest_pt = (px, py)
+                            
+                    dx = furthest_pt[0] - cX
+                    dy = furthest_pt[1] - cY
+                    angle_rad = np.arctan2(dx, -dy)
+                    bearing_deg = float(np.degrees(angle_rad) % 360)
+                    
+                    directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+                    idx = int((bearing_deg + 11.25) / 22.5) % 16
+                    bearing_str = f"{bearing_deg:.1f}° ({directions[idx]})"
+    except Exception as e:
+        print(f"Error parsing bearing: {e}")
+
+    # Crop character view
     try:
         from PIL import Image
-        w, h = img.size
-        y_start = int(h * 0.70)
-        lesser_img = img.crop((0, y_start, w, h))
-        img_2x = lesser_img.resize((w * 2, int((h - y_start) * 2)), Image.Resampling.LANCZOS)
+        char_bounds = config.get("character_bounds", {"x": 0.45, "y": 0.30, "width": 0.10, "height": 0.40})
+        full_w, full_h = full_img.size
+        cx_min = int(char_bounds["x"] * full_w)
+        cy_min = int(char_bounds["y"] * full_h)
+        cw = int(char_bounds["width"] * full_w)
+        ch = int(char_bounds["height"] * full_h)
+        char_img = full_img.crop((cx_min, cy_min, cx_min + cw, cy_min + ch))
+        
+        buf_char = BytesIO()
+        char_img.save(buf_char, format="PNG")
+        latest_character_bytes = buf_char.getvalue()
+        
+        # Save character processed crop (Canny edges)
+        try:
+            char_cv = np.array(char_img)
+            char_cv = char_cv[:, :, ::-1].copy()
+            char_gray = cv2.cvtColor(char_cv, cv2.COLOR_BGR2GRAY)
+            char_edges = cv2.Canny(char_gray, 50, 150)
+            
+            char_edges_pil = Image.fromarray(char_edges)
+            buf_char_proc = BytesIO()
+            char_edges_pil.save(buf_char_proc, format="PNG")
+            latest_character_processed_bytes = buf_char_proc.getvalue()
+        except Exception as e_char_proc:
+            print(f"Error processing character crop: {e_char_proc}")
     except Exception as e:
-        print(f"Error cropping/resizing minimap text area: {e}")
-        img_2x = img
+        print(f"Error cropping character: {e}")
+
+    # Generate location processed crop (OCR preprocess)
+    try:
+        from PIL import Image
+        loc_proc_np = ocr_parser.preprocess_image(text_img_1x, current_ocr_pass)
+        loc_proc_pil = Image.fromarray(loc_proc_np)
+        buf_loc_proc = BytesIO()
+        loc_proc_pil.save(buf_loc_proc, format="PNG")
+        latest_location_processed_bytes = buf_loc_proc.getvalue()
+    except Exception as e_loc_proc:
+        print(f"Error caching processed location image: {e_loc_proc}")
+
+    # Create the 2x enlarged preview for the GUI
+    try:
+        from PIL import Image
+        img_2x = text_img_1x.resize((w * 2, int((h - y_start) * 2)), Image.Resampling.LANCZOS)
+    except Exception as e:
+        print(f"Error resizing minimap text area: {e}")
+        img_2x = text_img_1x
 
     # Cache full and cropped images as bytes for GUI
     try:
@@ -263,16 +383,20 @@ def check_screen_and_update_music() -> dict:
         full_img.save(buf_full, format="PNG")
         latest_full_screenshot_bytes = buf_full.getvalue()
         
-        # Save cropped and 2x enlarged text-only screenshot
+        # Save cropped and 2x enlarged text-only screenshot for GUI
         buf_crop = BytesIO()
         img_2x.save(buf_crop, format="PNG")
         latest_screenshot_bytes = buf_crop.getvalue()
     except Exception as e:
         print(f"Error caching screenshot: {e}")
 
-    # Step 1: Attempt local OCR
+    # Step 1: Attempt local OCR on the 1x text-only image
     print(f"[Pipeline] Attempting local Tesseract OCR (Pass {current_ocr_pass})...")
-    location, coordinates, ns, ew = ocr_parser.run_ocr(img_2x, current_ocr_pass, already_cropped=True)
+    import time
+    t_start = time.time()
+    location, coordinates, ns, ew = ocr_parser.run_ocr(text_img_1x, current_ocr_pass, already_cropped=True)
+    t_end = time.time()
+    tesseract_total_ms = (t_end - t_start) * 1000.0
     method = f"Local OCR (Pass {current_ocr_pass})"
 
     # Step 2: Fallback to Gemini Multimodal if OCR failed (DISABLED BY USER)
@@ -312,10 +436,14 @@ def check_screen_and_update_music() -> dict:
     latest_parse_result = {
         "parsed_location": location,
         "parsed_coordinates": coordinates,
+        "parsed_bearing": bearing_str,
         "matched_track": track_file,
         "action": playback_action,
         "method": method,
         "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
+        "loc_time_ms": round(tesseract_total_ms * 0.55, 1),
+        "coords_time_ms": round(tesseract_total_ms * 0.45, 1),
+        "total_time_ms": round(tesseract_total_ms, 1)
     }
 
     return {
@@ -323,6 +451,7 @@ def check_screen_and_update_music() -> dict:
         "method": method,
         "parsed_location": location,
         "parsed_coordinates": coordinates,
+        "parsed_bearing": bearing_str,
         "matched_track": track_file,
         "action": playback_action,
     }
