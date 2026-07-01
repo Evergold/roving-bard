@@ -209,7 +209,7 @@
     "preview_original": "Original",
     "preview_processed": "Procesado",
     "bounding_box_setup": "CONFIGURACIÓN DE ÁREA DE CAPTURA",
-    "vlm_benchmarking": "Prueba de VLM Local",
+    "vlm_benchmarking": "Prueba de VLM",
     "vlm_tesseract_opt": "Tesseract/OpenCV (Predeterminado)",
     "vlm_try_btn": "Probar",
     "vlm_reset_btn": "Restablecer",

@@ -209,7 +209,7 @@
     "preview_original": "Original",
     "preview_processed": "Verarbeitet",
     "bounding_box_setup": "BEGRENZUNGSRAHMEN-EINSTELLUNG",
-    "vlm_benchmarking": "Lokales VLM-Benchmarking",
+    "vlm_benchmarking": "VLM-Benchmarking",
     "vlm_tesseract_opt": "Tesseract/OpenCV (Standard)",
     "vlm_try_btn": "Testen",
     "vlm_reset_btn": "Zurücksetzen",

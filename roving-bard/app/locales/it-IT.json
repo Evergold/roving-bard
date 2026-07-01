@@ -209,7 +209,7 @@
     "preview_original": "Originale",
     "preview_processed": "Elaborato",
     "bounding_box_setup": "CONFIGURAZIONE RETTANGOLO SELEZIONE",
-    "vlm_benchmarking": "Benchmark VLM Locale",
+    "vlm_benchmarking": "Benchmark VLM",
     "vlm_tesseract_opt": "Tesseract/OpenCV (Predefinito)",
     "vlm_try_btn": "Prova",
     "vlm_reset_btn": "Ripristina",

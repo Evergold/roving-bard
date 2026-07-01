@@ -209,7 +209,7 @@
     "preview_original": "Оригинал",
     "preview_processed": "Обработан",
     "bounding_box_setup": "НАСТРОЙКА ОБЛАСТИ ОГРАНИЧЕНИЯ",
-    "vlm_benchmarking": "Локальное тестирование VLM",
+    "vlm_benchmarking": "Тестирование VLM",
     "vlm_tesseract_opt": "Tesseract/OpenCV (По умолчанию)",
     "vlm_try_btn": "Тест",
     "vlm_reset_btn": "Сброс",

@@ -209,7 +209,7 @@
     "preview_original": "Original",
     "preview_processed": "Traité",
     "bounding_box_setup": "CONFIGURATION DE ZONE DE CAPTURE",
-    "vlm_benchmarking": "Analyse Comparative VLM Locale",
+    "vlm_benchmarking": "Analyse Comparative VLM",
     "vlm_tesseract_opt": "Tesseract/OpenCV (Par défaut)",
     "vlm_try_btn": "Essayer",
     "vlm_reset_btn": "Réinitialiser",
