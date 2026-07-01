@@ -3581,45 +3581,47 @@
                                 <div class="label" data-loc="extraction_route">Extraction Route</div>
                                 <div id="parse-route" class="value" style="font-size: 0.9rem;" data-loc="waiting_for_scan">Waiting for scan...</div>
                             </div>
+
                             <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between;">
                                 <span>Active Track: <b id="matched-track-file" style="color:white;">None</b></span>
                                 <span id="parse-timestamp">--:--:--</span>
                             </div>
                             
-                            <!-- Local VLM Benchmarking Section -->
                             <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.75rem; margin-top: 0.75rem; width: 100%;">
-                                <div style="font-weight: bold; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Local VLM Benchmarking</div>
+                                <div style="font-weight: bold; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;" data-loc="vlm_benchmarking">Local VLM Benchmarking</div>
                                 <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; width: 100%; align-items: center;">
                                     <select id="vlm-model-select" style="flex: 1; height: 32px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 4px; padding: 0 0.5rem;" onchange="onVLMSelectChange()">
-                                        <option value="tesseract">Tesseract/OpenCV (Default)</option>
+                                        <option value="tesseract" data-loc="vlm_tesseract_opt">Tesseract/OpenCV (Default)</option>
                                         <option value="moondream">Moondream2</option>
                                         <option value="qwen2-vl">Qwen2-VL</option>
                                         <option value="florence-2">Florence-2</option>
                                         <option value="paligemma">PaliGemma</option>
                                         <option value="minicpm-v">MiniCPM-V 2.6</option>
                                     </select>
-                                    <button class="btn btn-secondary" id="btn-vlm-try" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
-                                    <button class="btn btn-secondary" id="btn-vlm-reset" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px;" onclick="resetVLM()" disabled>Reset</button>
+                                    <button class="btn btn-secondary" id="btn-vlm-try" data-loc="vlm_try_btn" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
+                                    <button class="btn btn-secondary" id="btn-vlm-reset" data-loc="vlm_reset_btn" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px;" onclick="resetVLM()" disabled>Reset</button>
                                 </div>
                                 
                                 <!-- VLM Download / Setup Progress Indicator -->
                                 <div id="vlm-download-container" style="display: none; background: rgba(255, 255, 255, 0.05); padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-family: 'Space Mono', monospace; font-size: 0.7rem; width: 100%;">
                                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                                        <span id="vlm-download-status">Setting up model...</span>
+                                        <span id="vlm-download-status" data-loc="vlm_downloading_status">Setting up model...</span>
                                         <span id="vlm-download-percent">0%</span>
                                     </div>
                                     <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; width: 100%; overflow: hidden;">
                                         <div id="vlm-download-bar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.2s ease;"></div>
                                     </div>
                                 </div>
-
+ 
                                 <div id="vlm-stats" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between; gap: 0.5rem; width: 100%;">
-                                    <div>Total Parse: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
-                                    <div>Loc Parse: <span id="stat-loc-time">0.0 ms</span></div>
-                                    <div>Coords Parse: <span id="stat-coords-time">0.0 ms</span></div>
+                                    <div><span data-loc="vlm_total_parse">Total Parse</span>: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
+                                    <div><span data-loc="vlm_loc_parse">Loc Parse</span>: <span id="stat-loc-time">0.0 ms</span></div>
+                                    <div><span data-loc="vlm_coords_parse">Coords Parse</span>: <span id="stat-coords-time">0.0 ms</span></div>
                                 </div>
                                 <div id="vlm-resources" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.35rem; width: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.35rem;">
-                                    <div>Est VRAM: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
+                                    <div><span data-loc="vlm_est_vram">Est VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">0 MB</span></div>
+                                    <div><span data-loc="vlm_est_ram">Est RAM </span>: <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
+                                </div> font-weight: bold;">0 MB</span></div>
                                     <div>Est RAM : <span id="stat-ram" style="color: #00d9ff; font-weight: bold;">~30 MB</span></div>
                                 </div>
                             </div>
@@ -4892,7 +4894,8 @@
                 const modelState = data.states[modelName];
 
                 if (modelState) {
-                    document.getElementById('vlm-download-status').innerText = `Setting up ${modelName}: ${modelState.status}`;
+                    const settingUpText = t("vlm_setting_up", "Setting up");
+                    document.getElementById('vlm-download-status').innerText = `${settingUpText} ${modelName}: ${modelState.status}`;
                     document.getElementById('vlm-download-percent').innerText = `${modelState.progress}%`;
                     document.getElementById('vlm-download-bar').style.width = `${modelState.progress}%`;
 
@@ -4901,7 +4904,8 @@
                         vlmStatusPollInterval = null;
                         document.getElementById('vlm-download-container').style.display = 'none';
                         document.getElementById('btn-vlm-try').disabled = false;
-                        showToast(`${modelName} is ready to try!`, "success");
+                        const readySuffix = t("vlm_toast_ready_suffix", "is ready to try!");
+                        showToast(`${modelName} ${readySuffix}`, "success");
                     }
                 }
             } catch (err) {
@@ -4932,10 +4936,11 @@
             const friendlyName = friendlyNames[selectedVal] || selectedVal;
 
             const statMethod = document.getElementById('stat-method');
-            if (statMethod) statMethod.innerText = `Running ${friendlyName}...`;
-            document.getElementById('stat-loc-time').innerText = "Running...";
-            document.getElementById('stat-coords-time').innerText = "Running...";
-            document.getElementById('stat-total-time').innerText = "Running...";
+            const runningText = t("vlm_running_status", "Running...");
+            if (statMethod) statMethod.innerText = `${runningText} (${friendlyName})`;
+            document.getElementById('stat-loc-time').innerText = runningText;
+            document.getElementById('stat-coords-time').innerText = runningText;
+            document.getElementById('stat-total-time').innerText = runningText;
 
             try {
                 const response = await apiFetch('/api/ocr/try_vlm', {
@@ -4969,14 +4974,16 @@
                     if (vramEl) vramEl.innerText = resources.vram;
                     if (ramEl) ramEl.innerText = resources.ram;
 
-                    showToast(`Successfully processed with ${friendlyName}!`, "success");
+                    const successPrefix = t("vlm_toast_success_prefix", "Successfully processed with");
+                    showToast(`${successPrefix} ${friendlyName}!`, "success");
                 } else {
-                    showToast(`VLM process failed: ${res.message}`, "error");
+                    const failedPrefix = t("vlm_toast_failed_prefix", "VLM process failed:");
+                    showToast(`${failedPrefix} ${res.message}`, "error");
                     resetVLM();
                 }
             } catch (err) {
                 console.error("VLM processing error:", err);
-                showToast("Error processing with VLM.", "error");
+                showToast(t("vlm_toast_error", "Error processing with VLM."), "error");
                 resetVLM();
             } finally {
                 document.getElementById('btn-vlm-try').disabled = false;
