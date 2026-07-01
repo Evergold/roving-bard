@@ -2956,6 +2956,12 @@
 <body>
     <script>
         (function() {
+            // First-run simulation mode: Bypasses localStorage to show clean default layout/settings
+            if (new URLSearchParams(window.location.search).has('first_run')) {
+                Storage.prototype.getItem = function(key) { return null; };
+                Storage.prototype.setItem = function(key, val) {};
+                Storage.prototype.removeItem = function(key) {};
+            }
             const savedTheme = localStorage.getItem('theme');
             const savedFontSize = localStorage.getItem('font-size');
             const savedCVD = localStorage.getItem('cvd-accessible');
