@@ -4822,6 +4822,12 @@
                 const modelSelect = document.getElementById('vlm-model-select');
                 const selectedVal = modelSelect ? modelSelect.value : 'tesseract';
 
+                const hasActual = (parse.actual_ram !== null && parse.actual_ram !== undefined);
+                const finalRam = hasActual ? parse.actual_ram : "~30 MB";
+                const finalVram = (parse.actual_vram !== null && parse.actual_vram !== undefined) ? parse.actual_vram : "0 MB";
+                const vramLabelText = (parse.actual_vram !== null && parse.actual_vram !== undefined) ? t("vlm_act_vram", "Act VRAM") : t("vlm_est_vram", "Est VRAM");
+                const ramLabelText = hasActual ? t("vlm_act_ram", "Act RAM ") : t("vlm_est_ram", "Est RAM ");
+
                 if (selectedVal === 'tesseract') {
                     // Update default Tesseract stats
                     const statMethod = document.getElementById('stat-method');
@@ -4839,8 +4845,13 @@
 
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
-                    if (vramEl) vramEl.innerText = "0 MB";
-                    if (ramEl) ramEl.innerText = "~30 MB";
+                    if (vramEl) vramEl.innerText = finalVram;
+                    if (ramEl) ramEl.innerText = finalRam;
+
+                    const vramLabel = document.getElementById('label-vram');
+                    const ramLabel = document.getElementById('label-ram');
+                    if (vramLabel) vramLabel.innerText = vramLabelText;
+                    if (ramLabel) ramLabel.innerText = ramLabelText;
                 }
 
                 // Cache Tesseract stats in memory
@@ -4849,10 +4860,10 @@
                     coords_time_ms: parse.coords_time_ms !== undefined ? parse.coords_time_ms : null,
                     total_time_ms: parse.total_time_ms !== undefined ? parse.total_time_ms : null,
                     preprocess_time_ms: parse.preprocess_time_ms !== undefined ? parse.preprocess_time_ms : null,
-                    vram: "0 MB",
-                    ram: "~30 MB",
-                    vramLabel: t("vlm_est_vram", "Est VRAM"),
-                    ramLabel: t("vlm_est_ram", "Est RAM "),
+                    vram: finalVram,
+                    ram: finalRam,
+                    vramLabel: vramLabelText,
+                    ramLabel: ramLabelText,
                     methodLabel: "Tesseract/OpenCV"
                 };
             }
