@@ -2114,11 +2114,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 pass
             return format_memory_size(ram), format_memory_size(vram)
 
-        # Load the PIL image that is fed to the models
-        # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
-        text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
-        text_img_4x = text_img.resize((text_img.width * 4, text_img.height * 4), Image.Resampling.LANCZOS)
-        
         # Model performance parameters
         # Real-world benchmark times for local VLMs running on moderate GPUs:
         model_perf = {
@@ -2153,6 +2148,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "tesseract"
             else:
                 selected_model = "moondream"
+
+        # Load the PIL image that is fed to the models
+        # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
+        text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
+        # Qwen models fail/overflow on 4x scaling but work optimally at 2x. Other models default to 4x.
+        scale_factor = 2 if "qwen" in selected_model else 4
+        text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
  
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
