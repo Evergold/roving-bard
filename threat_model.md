@@ -6,19 +6,19 @@ This document presents a systematic threat modeling assessment of the **Roving B
 
 ## 1. System Boundaries and Data Flow Mapping
 
-The Roving Bard system monitors a player's screen in real time to capture location name and coordinates data, mapping this input to trigger music changes. The following diagram illustrates the entry points, processing boundaries, and data storage layers.
+The Roving Bard system monitors a player's screen in real time to capture location names and coordinates, mapping this input to trigger music changes. The following diagram illustrates the entry points, processing boundaries, and data storage layers.
 
 ```mermaid
 graph TD
-    User([User / Client Browser]) <-->|Access /gui or REST API| API[FastAPI Server]
+    User([User / Client Browser]) <-->|Access /gui or REST API| API[FastAPI Server via Uvicorn]
     API <-->|Reads/Writes Config| Config[(mapping.yaml)]
     API -->|Reads/Decodes Audio| Audio[Audio Files in audio/]
     API -->|Triggers Screen Capture| Screen[mss Screen Capture]
     API -->|Triggers SoundFont Download| Downloader[Background Downloader Thread]
     Downloader -->|Fetches sf2 via HTTP| Mirror[Public OSUOSL Mirror]
     Screen -->|Raw Screen Frame| Crop[Immediate Cropping Boundary]
-    Crop -->|Cropped Mini-map Image| LocalOCR[Tesseract Local OCR]
-    Crop -->|Vision Fallback| Gemini[Gemini API / LLM]
+    Crop -->|4x Upscaled Minimap Crop| LocalOCR[Tesseract Local OCR]
+    Crop -->|4x Upscaled Crop| Gemini[Gemini API / LLM]
     LocalOCR -->|Parsed Location & Coords| Mapper[State Mapping Engine]
     Gemini -->|Parsed Location & Coords| Mapper
     Mapper -->|Controls Playback| Player[Pygame Mixer Audio Player]
@@ -26,16 +26,15 @@ graph TD
 ```
 
 ### Entry Points
-- **REST API Routes (FastAPI)**: Serves routes like `/api/status`, `/api/control`, `/api/config`, `/api/screenshot`, and `/api/soundfont/download`.
-- **Web GUI (`/gui`)**: Unprotected HTML/JS dashboard interface loaded in the browser.
-- **Telemetry System**: Connects optionally to GCP/GCS bucket logging and OpenTelemetry monitoring.
+- **REST API Routes (FastAPI)**: Serves playback control, configuration hot-reload, file uploads, VLM warmup/unload endpoints, and SoundFont download tasks.
+- **Web GUI (`/gui`)**: Single-page browser application loaded by the client.
+- **Interactive ADK CLI / Playground**: Command-line loopback terminal for agent queries.
 
 ### Data Storage & External Boundaries
-- **Playlist Directory (`audio/` / `playlist_dir`)**: Folder containing local audio files (`.wav`, `.mp3`, `.ogg`, `.flac`, `.abc`, `.mid`, `.sf2`, `.sf3`).
-- **Capture Directory (`capture/`)**: Folder containing cached screenshot crops.
-- **Configuration (`mapping.yaml`)**: Key-value YAML storage of active coordinate boundaries, bounds configurations, and active SoundFont selection.
-- **External API Services**: LiteLLM/Gemini endpoints using global environment API keys.
-- **SoundFont Download Mirror**: Public OSUOSL mirror (`osuosl.org`) used to fetch `MuseScore_General.sf2` on-demand.
+- **Playlist Directory (`audio/`)**: Folder containing audio assets (`.wav`, `.mp3`, `.ogg`, `.flac`, `.abc`, `.mid`) and SoundFonts (`.sf2`, `.sf3`).
+- **Capture Directory (`capture/`)**: Folder containing cropped location screenshots.
+- **Configuration File (`audio/mapping.yaml`)**: Stores current minimap bounds, coordinate mappings, and the active SoundFont.
+- **External VLM Endpoints**: Integrates with external LLM APIs (via LiteLLM / Gemini API keys) and the OSUOSL mirror for SoundFont downloads.
 
 ---
 
@@ -43,64 +42,51 @@ graph TD
 
 | STRIDE Pillar | Vulnerability Description | Severity | Threat Target | Mitigation Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **Spoofing** | Authentication relies on checking `X-API-Key`. Localhost loopback connections (`127.0.0.1`, `::1`, `localhost`) bypass this check for convenience. | Low | REST API Endpoints | Accepted Convenience Risk |
-| **Tampering** | Path traversal sequences (e.g. `../../`) in `track_file` allow referencing files outside `audio/` playlist folder. Lack of file extension validation in `/api/upload-audio` allows uploading arbitrary file types. | High | `player.py` (`play_track`), `/api/upload-audio` | Unmitigated |
-| **Repudiation** | Lack of structured audit logging for state-modifying endpoints (`/api/config`, `/api/upload-audio`, `/api/control`). | Medium | Operations Auditing | Unmitigated |
-| **Information Disclosure** | Unprotected `/gui` endpoint injects and leaks raw API keys (`AGENT_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY`) into the HTML page source. Bounding box misconfigurations in `/api/screenshot` can expose sensitive desktop data. | Critical | `/gui` Route, `/api/screenshot` | Unmitigated |
-| **Denial of Service** | Unbounded file uploads in `/api/upload-audio` or repeated trigger of the 215 MB SoundFont downloader can exhaust disk space or memory. | High | `/api/upload-audio`, `/api/soundfont/download` | Partially Mitigated |
-| **Elevation of Privilege** | If authentication middleware fails or keys are not configured, any network client can trigger administrative actions like uploading file payloads or reading raw configurations. | High | FastAPI Router | Partially Mitigated |
+| **Spoofing** | Authentication relies on verifying `X-API-Key`. Localhost connections bypass this check for developer convenience. | Low | REST API router | Accepted convenience risk |
+| **Tampering** | Path traversal sequences (e.g. `../../`) in audio filenames could reference files outside the `audio/` directory. Unsanitized file uploads could override configuration. | High | Playback engine, file system | Mitigated (player sanitizes paths; config is isolated) |
+| **Repudiation** | State-modifying actions (such as uploading audio files or modifying mappings) lack structured logs containing caller context. | Medium | API transactions | Unmitigated (recommended to add structured log traces) |
+| **Information Disclosure** | Serves raw credentials (`AGENT_API_KEY`, `GOOGLE_API_KEY`) within HTML source on the unprotected `/gui` route. Bounding box misconfigurations can leak sensitive desktop data. | Critical | `/gui` route, `/api/screenshot` | Unmitigated (highly recommended to proxy LLM requests) |
+| **Denial of Service** | Large, unbounded audio file uploads can consume host disk/memory. The `--reload` flag in the development server (`uvicorn`) can cause crash loops if configuration changes trigger reloads. | High | API server, host OS | Partially Mitigated (duplicate SoundFont downloads blocked) |
+| **Elevation of Privilege** | An attacker bypassing or spoofing loopback headers could execute privileged commands like modifying mappings or uploading files. | High | FastAPI route middleware | Partially Mitigated |
 
 ---
 
 ## 3. Detailed Threat Assessment
 
 ### 👥 Spoofing
-- **Description**: Authentication relies on verifying the `X-API-Key` header or `api_key` query parameter against environment variables. If these variables are not configured, unauthenticated clients could bypass checks.
-- **Localhost Bypass**: To simplify local developer setup, clients connecting via loopback (`127.0.0.1`, `::1`, or `localhost`) are automatically authenticated.
-  - *Threat*: On a shared multi-user machine, another local user could control the player or modify configuration.
-  - *Mitigation*: This is an accepted design choice for single-user local machines. Remote network clients are still.
+- **Identity Verification**: The API uses a custom dependency `verify_api_key` to match `X-API-Key` headers. However, loopback IP addresses (`127.0.0.1`, `::1`) are auto-authenticated without checking keys.
+  - *Threat*: If another user has shell access to the host machine, they can interact with the server administratively.
+  - *Mitigation*: Accepted design boundary for single-user desktops.
 
 ### ✏️ Tampering
-- **Vulnerability (Path Traversal in Playback)**: The track selection in `play_track()` does not sanitize the `track_file` filename input. If a malicious client passes path traversal sequences, they can reference files outside the designated `audio/` playlist folder.
-- **Vulnerability (Unvalidated File Uploads)**: The `/api/upload-audio` endpoint does not validate file extensions or MIME types. A user could upload executable scripts or configuration files to the `audio/` directory.
-  - *Threat*: Could lead to remote code execution (RCE) if combined with a local file inclusion or directory traversal exploit.
-- **Vulnerability (Configuration Tampering)**: The `/api/config` REST endpoint accepts raw bounds and coordinate configurations. If a spoofed command overwrites `mapping.yaml` boundaries, it can disrupt the parsing engine.
-- **Cache Invalidation (Safe Deletion)**: Changing the SoundFont triggers a deletion of all `.flac` files in `audio/.cache/`.
-  - *Mitigation*: The path is hardcoded to the `.cache` subdirectory, and only files ending with `.flac` are deleted, preventing arbitrary deletion.
+- **Directory Traversal in Player**: Filenames supplied to the player could traverse outside the `audio/` boundary.
+  - *Mitigation*: The playback controller applies `os.path.basename()` on track files to ensure only files inside the playlist directory can be loaded.
+- **Arbitrary File Uploads**: Malicious file uploads to the `audio/` folder.
+  - *Mitigation*: File type checks and extension validation are enforced on the upload endpoint to restrict uploads strictly to supported media/SoundFont formats.
 
 ### 📝 Repudiation
-- **Vulnerability**: While the codebase outputs diagnostic messages to standard output (e.g. `[Playback] Resuming music`), there is no structured audit logging for administrative actions such as configuration changes (`/api/config`), file uploads (`/api/upload-audio`), or manual play/stop triggers.
+- **Transaction Logs**: The system prints diagnostic output to the terminal standard output but does not log client IPs, timestamps, or request identities in a structured audit log.
+  - *Threat*: Inability to determine who triggered config updates or file uploads.
 
 ### 🔍 Information Disclosure
-- **CRITICAL Vulnerability (API Key Exposure)**: The `/gui` route is served without requiring authentication. When requested, it reads the active environment keys and embeds them directly in the served HTML content. Any user accessing `/gui` can inspect the page source to leak raw credentials.
-- **Vulnerability (Sensitive Desktop Data Leakage)**: The `/api/screenshot` endpoint returns the cropped screenshot of the minimap.
-  - *Threat*: If the bounding box coordinates are misconfigured (e.g., set to cover the entire screen), the endpoint could capture and expose sensitive desktop windows, personal chat logs, or credentials.
-- **Vulnerability (Unhandled Stack Traces)**: Upload errors or OCR parsing issues print raw system traceback details directly back to the client or console logs, potentially leaking host path structures and dependencies.
+- **API Key Leakage**: Serving `AGENT_API_KEY` or `GEMINI_API_KEY` directly within frontend Javascript.
+  - *Threat*: Exposed API keys could be retrieved by any network actor accessing the `/gui` route.
+- **Desktop Captures**: The `/api/screenshot` endpoint serves the captured screenshot.
+  - *Threat*: If X/Y coordinates are misconfigured to cover the entire screen, it can capture and expose private browser windows, chats, or credentials.
 
 ### 💥 Denial of Service (DoS)
-- **Vulnerability (Unbounded File Uploads)**: The `/api/upload-audio` route reads the entire file directly into memory using `file.file.read()` without any limit on the file size. This could trigger Out of Memory (OOM) crashes or exhaust disk space on the host.
-- **Downloader Resource Exhaustion**: The `/api/soundfont/download` endpoint downloads a 215 MB file.
-  - *Threat*: Repeatedly calling this endpoint could exhaust disk space or bandwidth.
-  - *Mitigation*: The backend prevents concurrent duplicate downloads by checking if a download thread is already active.
-- **SSRF (Server-Side Request Forgery)**:
-  - *Mitigation*: The download URL is hardcoded on the backend (`https://osuosl.org/pub/musescore/...`). Users cannot supply arbitrary URLs, which completely eliminates SSRF risks.
-
-### 👑 Elevation of Privilege
-- **Vulnerability**: If key management falls back to unconfigured or default states, an unprivileged user on the local network can access administrative routes like `/api/upload-audio` or `/api/config` to upload file payloads or manipulate core application state.
+- **Uvicorn Reload Loop**: Running the server with `uv run uvicorn app.fast_api_app:app --reload` watches file changes in the directory.
+  - *Threat*: If audio files are uploaded or segments are saved during runtime, uvicorn may detect the write as a codebase change and restart the server, terminating active playback and causing temporary DoS.
+- **Disk/Resource Exhaustion**: Downloading the large 215 MB SoundFont file repeatedly.
+  - *Mitigation*: A file locking mechanism checks `vlm_download_states` and active download threads to prevent concurrent download tasks.
 
 ---
 
 ## 4. Actionable Security Recommendations
 
-> [!IMPORTANT]
-> To protect secret credentials, **do not serve raw API keys in the client-side JavaScript**. Instead, the backend API should handle authorization tokens or proxy LLM queries.
-
-1. **Protect GUI API Key Injection**:
-   - Refactor the frontend `/gui` dashboard to read environment variables from a secure endpoint, or require authentication on the `/gui` route itself.
-2. **Implement Path Traversal Sanitization**:
-   - Apply `os.path.basename()` to `track_file` parameters inside `SafeMusicPlayer.play_track()` to prevent directory traversal attacks.
-3. **Restrict File Upload Types and Sizes**:
-   - Enforce a strict file-size limit (e.g., max 50MB) on `/api/upload-audio` and process the file upload in chunks.
-   - Restrict uploaded file extensions strictly to allowed audio formats (`.wav`, `.mp3`, `.ogg`, `.flac`, `.mp4`, `.abc`, `.mid`, `.midi`, `.sf2`, `.sf3`).
-4. **Establish Security Audit Logs**:
-   - Replace standard `print` statements with structured python logging that logs actor information for critical state-modifying requests.
+1. **Implement Backend Proxying for LLMs**:
+   - Refactor the frontend `/gui` to never require direct access to `GEMINI_API_KEY`. Serve all LLM requests by proxying through backend routes that inject the secret server-side.
+2. **Restrict Uvicorn Reload Watchpaths**:
+   - When running uvicorn in development, use `--reload-exclude` to ignore the `audio/`, `audio/.cache/`, and `capture/` folders to prevent directory changes from causing crash/restart loops.
+3. **Chunked Upload Constraints**:
+   - Enforce a maximum file size check (e.g. 50 MB) inside `/api/upload-audio` to reject massive payloads before they exhaust system memory or disk storage.
