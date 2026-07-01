@@ -294,11 +294,11 @@ def check_screen_and_update_music() -> dict:
     # Crop to bounds for OCR processing
     img = grabber.crop_image(full_img)
 
-    # Crop to location and coordinates (bottom 30%, middle 76% horizontally) at 1x for OCR
+    # Crop to location and coordinates (bottom 24%, middle 70% horizontally) at 1x for OCR
     w, h = img.size
-    y_start = int(h * 0.70)
-    x_min = int(w * 0.12)
-    x_max = int(w * 0.88)
+    y_start = int(h * 0.76)
+    x_min = int(w * 0.15)
+    x_max = int(w * 0.85)
     text_img_1x = img.crop((x_min, y_start, x_max, h))
 
     # Parse bearing from red cursor at the center of the minimap and crop it
