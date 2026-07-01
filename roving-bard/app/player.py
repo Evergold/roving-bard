@@ -1962,7 +1962,9 @@ class LocalOCRParser:
                 if lon_dir in ('8', '4', '7', 'V'):
                     lon_dir = 'W'
                     
-                cleaned_line = f"{lat_val}{lat_dir}, {lon_val}{lon_dir}"
+                corrected_coords = f"{lat_val}{lat_dir}, {lon_val}{lon_dir}"
+                coord_start, coord_end = match.span()
+                cleaned_line = line[:coord_start] + corrected_coords + line[coord_end:]
                 
             lines.append(cleaned_line)
 
@@ -2015,8 +2017,12 @@ class LocalOCRParser:
                 pass
                 
         for line in lines:
-            if coord_pattern.search(line):
-                continue
+            match = coord_pattern.search(line)
+            if match:
+                # Strip coordinate substring to allow parsing same-line locations
+                coord_start, coord_end = match.span()
+                line = line[:coord_start] + " " + line[coord_end:]
+
             # Remove symbols/noise, check if it looks like a location name
             cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
             if len(cleaned) > 2:  # At least 3 chars

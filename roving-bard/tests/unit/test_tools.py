@@ -56,3 +56,23 @@ def test_json_boundary_extraction_robustness():
             assert coords == "11.9S, 67.8W"
             assert ns == -11.9
             assert ew == -67.8
+
+
+def test_parse_text_same_line():
+    """Verify parse_text extracts both coordinates and location even if on the same line."""
+    from app.player import LocalOCRParser
+    
+    raw_texts = [
+        "Tinnudir 11.9S, 67.8W",
+        "11.9S, 67.8W Tinnudir",
+        "Tinnudir\n11.9S, 67.8W",
+        "11.9S, 67.8W\nTinnudir"
+    ]
+    
+    for text in raw_texts:
+        loc, coords, ns, ew = LocalOCRParser.parse_text(text)
+        assert loc == "Tinnudir"
+        assert coords == "11.9S, 67.8W"
+        assert ns == -11.9
+        assert ew == -67.8
+
