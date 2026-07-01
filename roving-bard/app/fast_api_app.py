@@ -2157,8 +2157,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
         text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
-        # Qwen models fail/overflow on 4x scaling but work optimally at 2x. Other models default to 4x.
-        scale_factor = 2 if "qwen" in selected_model else 4
+        # Qwen2-VL is most stable at 1x to avoid token context overflow. Qwen2.5-VL works optimally at 2x. Other models default to 4x.
+        if selected_model == "qwen2-vl":
+            scale_factor = 1
+        elif "qwen" in selected_model:
+            scale_factor = 2
+        else:
+            scale_factor = 4
         text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
  
         # Check if we should execute actual local Tesseract OCR!
