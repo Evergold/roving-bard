@@ -2374,10 +2374,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             
             if response and response.status_code == 200:
-                # Only mark as warmed if it actually returned a valid parse to avoid getting stuck in cold state
-                if (loc_str and loc_str != "None") or (coords_str and coords_str != "None"):
-                    if selected_model in ("moondream", "qwen2-vl"):
-                        warmed_models.add(selected_model)
+                if selected_model in ("moondream", "qwen2-vl"):
+                    warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
                 coords_time_ms = total_time_ms * 0.45
