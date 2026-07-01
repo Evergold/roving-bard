@@ -59,3 +59,7 @@ Ask the user: Option A (simple single-project) or Option B (full CI/CD pipeline 
 - **Run Python with `uv`**: `uv run python script.py`. Run `agents-cli install` first.
 - **Stop on repeated errors**: If the same error appears 3+ times, fix the root cause instead of retrying.
 - **Terraform conflicts** (Error 409): Use `terraform import` instead of retrying creation.
+- **Server restart notification**: Always explicitly tell the user whether restarting the server is required or if a simple client-side refresh is sufficient after completing the changes.
+- **README dependency updates**: Always note/update the README when project dependencies change (though full/extensive README updates can wait until explicitly requested).
+- **Threat model synchronization**: When performing a full update of the project README, comprehensively update the `threat_model.md` file located in the project root to keep threat modeling and security posture aligned with the new structure/features.
+- **Granular commits**: Always maintain separate, atomic commits with meaningful, descriptive commit messages. Avoid combining unrelated code changes into a single commit.
