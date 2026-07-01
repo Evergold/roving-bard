@@ -5053,6 +5053,11 @@
             document.getElementById('btn-vlm-reset').disabled = true;
             modelSelect.disabled = true;
  
+            // Clear existing dashboard values to ensure parsed values are visible
+            document.getElementById('parse-location').innerText = "";
+            document.getElementById('parse-coords').innerText = "";
+            document.getElementById('parse-bearing').innerText = "";
+ 
             const friendlyNames = {
                 'tesseract': 'Tesseract/OpenCV',
                 'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
