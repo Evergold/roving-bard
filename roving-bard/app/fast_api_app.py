@@ -1962,11 +1962,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
         text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
-        text_img_2x = Image.open(io.BytesIO(tools.latest_screenshot_bytes))
-        
-        # Get the current active coordinates and location from tools.latest_parse_result 
-        cur_loc = tools.latest_parse_result.get("parsed_location") or "Unknown"
-        cur_coords = tools.latest_parse_result.get("parsed_coordinates") or "None"
+        text_img_4x = text_img.resize((text_img.width * 4, text_img.height * 4), Image.Resampling.LANCZOS)
         
         # Model performance parameters
         # Real-world benchmark times for local VLMs running on moderate GPUs:
@@ -2042,14 +2038,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         elif selected_model == "gemini-2.5-flash-lite":
             tp0 = time.time()
             buffered = io.BytesIO()
-            text_img_2x.save(buffered, format="PNG")
+            text_img_4x.save(buffered, format="PNG")
             import base64
             _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
             t0 = time.time()
-            loc_str, coords_str, ns, ew = tools.call_gemini_vision(text_img_2x, "gemini/gemini-2.5-flash-lite")
+            loc_str, coords_str, _, _ = tools.call_gemini_vision(text_img_4x, "gemini/gemini-2.5-flash-lite")
             t1 = time.time()
             
             if not loc_str and not coords_str:
@@ -2089,7 +2085,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 
             tp0 = time.time()
             device = florence_model.device
-            inputs = florence_processor(text="<OCR>", images=text_img_2x, return_tensors="pt").to(device)
+            inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
@@ -2103,7 +2099,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             raw_text = florence_processor.post_process_generation(
                 generated_ids, 
                 task="<OCR>", 
-                image_size=text_img_2x.size
+                image_size=text_img_4x.size
             )["<OCR>"]
             t1 = time.time()
             
@@ -2149,7 +2145,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 return {"status": "error", "message": f"{selected_model.capitalize()} model is not downloaded/ready yet."}
                 
             tp0 = time.time()
-            text_img_4x = text_img.resize((text_img.width * 4, text_img.height * 4), Image.Resampling.LANCZOS)
             buffered = io.BytesIO()
             text_img_4x.save(buffered, format="PNG")
             import base64
