@@ -101,6 +101,11 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 2. **Offline Ollama/GGUF Models (e.g., Moondream, Qwen2-VL, Qwen2.5-VL)**:
    Executed by the local Ollama server. Because Roving Bard communicates with Ollama via loopback HTTP REST API calls, Ollama acts as a middle-tier hardware manager, dynamically offloading GGUF model layers to CUDA (Nvidia), Metal (Apple), ROCm/DirectML (AMD), or oneAPI/SYCL (Intel) depending on what accelerator hardware it discovers on the host system.
 
+3. **OpenCV + Tesseract GPU Acceleration (Optional)**:
+   By default, the OpenCV + Tesseract pipeline operates on the host CPU. However, both components support optional hardware acceleration:
+   * **OpenCV Preprocessing (OpenCL)**: OpenCV's Transparent API allows offloading core image manipulation filters (like grayscaling, thresholding, resizing, and morphology) to the GPU using OpenCL. This is enabled natively by ensuring OpenCL runtime drivers are installed and running `cv2.ocl.setUseOpenCL(True)` (or compiling OpenCV with CUDA support for Nvidia cards).
+   * **Tesseract Engine (OpenCL)**: Tesseract (v4.0+) can run morphological operations and character recognition on the GPU if compiled with OpenCL support. To activate it, set the environment variable `TESSERACT_OPENCL=1` before booting Roving Bard.
+
 ### 🧠 Built-in VLMs: Specifications & Briefs
 
 | Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
