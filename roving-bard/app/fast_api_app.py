@@ -1296,7 +1296,7 @@ def sync_ollama_ready_states():
                 if model_id == "moondream":
                     ollama_names = ["moondream", "moondream:latest"]
                 elif model_id == "qwen2-vl":
-                    ollama_names = ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b"]
+                    ollama_names = ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b", "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M"]
                 elif model_id == "qwen2.5-vl":
                     ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"]
                 elif model_id == "paligemma":
@@ -1448,17 +1448,28 @@ def pull_qwen2_vl_huggingface_task():
         with open(modelfile_path, "w") as mf:
             mf.write(f"FROM {gguf_path}\n")
             mf.write(f"ADAPTER {proj_path}\n\n")
-            mf.write('TEMPLATE """{{ if .System }}<|im_start|>system\n')
+            mf.write('TEMPLATE """{{- if .System -}}\n')
+            mf.write('<|im_start|>system\n')
             mf.write('{{ .System }}<|im_end|>\n')
-            mf.write('{{ end }}{{ range .Messages }}{{ if eq .Role "user" }}<|im_start|>user\n')
+            mf.write('{{- end -}}\n')
+            mf.write('{{- range $i, $_ := .Messages }}\n')
+            mf.write('{{- $last := eq (len (slice $.Messages $i)) 1 -}}\n')
+            mf.write('{{- if eq .Role "user" }}\n')
+            mf.write('<|im_start|>user\n')
             mf.write('{{ .Content }}<|im_end|>\n')
-            mf.write('{{ else if eq .Role "assistant" }}<|im_start|>assistant\n')
-            mf.write('{{ .Content }}<|im_end|>\n')
-            mf.write('{{ end }}{{ end }}<|im_start|>assistant\n')
-            mf.write('"""\n\n')
+            mf.write('{{- else if eq .Role "assistant" }}\n')
+            mf.write('<|im_start|>assistant\n')
+            mf.write('{{ if .Content }}{{ .Content }}{{ if not $last }}<|im_end|>\n')
+            mf.write('{{- else -}}<|im_end|>{{- end -}}\n')
+            mf.write('{{- end -}}\n')
+            mf.write('{{- end -}}\n')
+            mf.write('{{- if and (ne .Role "assistant") $last }}\n')
+            mf.write('<|im_start|>assistant\n')
+            mf.write('{{ end -}}\n')
+            mf.write('{{- end }}"""\n\n')
             mf.write('PARAMETER stop "<|im_start|>"\n')
             mf.write('PARAMETER stop "<|im_end|>"\n')
-            mf.write('PARAMETER temperature 0.0\n')
+            mf.write('PARAMETER temperature 0.0001\n')
             mf.write('PARAMETER num_predict 80\n')
             
         import subprocess
@@ -1687,7 +1698,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
 
     model_map = {
         "moondream": "moondream",
-        "qwen2-vl": "qwen2-vl:2b",
+        "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
@@ -1736,7 +1747,7 @@ def api_vlm_unload(req: VlmUnloadRequest):
 
     model_map = {
         "moondream": "moondream",
-        "qwen2-vl": "qwen2-vl",
+        "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
         "minicpm-v": "minicpm-v"
@@ -2268,7 +2279,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         else:
             model_map = {
                 "moondream": "moondream",
-                "qwen2-vl": "qwen2-vl",
+                "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
                 "qwen2.5-vl": "qwen2.5vl:3b",
                 "paligemma": "paligemma",
                 "minicpm-v": "minicpm-v"
