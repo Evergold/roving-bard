@@ -2334,15 +2334,20 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             else:
                 prompt = "What does the text at the bottom of the image say?"
 
+            options = {
+                "temperature": 0.0
+            }
+            if "qwen" in selected_model:
+                options["num_predict"] = 80
+                options["stop"] = ["<|im_start|>", "<|im_end|>"]
+
             json_payload = {
                 "model": model_map[selected_model],
                 "prompt": prompt,
                 "images": [img_b64],
                 "stream": False,
                 "keep_alive": "5m",
-                "options": {
-                    "temperature": 0.0
-                }
+                "options": options
             }
 
             for try_idx in range(max_tries):
