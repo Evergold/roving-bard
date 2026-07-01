@@ -1706,7 +1706,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
         return {"status": "success", "message": f"Model {req.model} is not ready yet."}
 
     model_map = {
-        "moondream": "moondream",
+        "moondream": "moondream:latest",
         "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
@@ -1755,7 +1755,7 @@ def api_vlm_unload(req: VlmUnloadRequest):
         return {"status": "error", "message": f"Unknown model: {req.model}"}
 
     model_map = {
-        "moondream": "moondream",
+        "moondream": "moondream:latest",
         "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",
@@ -2292,7 +2292,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, Qwen2.5-VL, PaliGemma, MiniCPM-V)!
         else:
             model_map = {
-                "moondream": "moondream",
+                "moondream": "moondream:latest",
                 "qwen2-vl": "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M",
                 "qwen2.5-vl": "qwen2.5vl:3b",
                 "paligemma": "paligemma",
