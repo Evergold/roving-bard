@@ -1458,7 +1458,7 @@ def pull_qwen2_vl_huggingface_task():
             mf.write('"""\n\n')
             mf.write('PARAMETER stop "<|im_start|>"\n')
             mf.write('PARAMETER stop "<|im_end|>"\n')
-            mf.write('PARAMETER temperature 0.2\n')
+            mf.write('PARAMETER temperature 0.0\n')
             mf.write('PARAMETER num_predict 80\n')
             
         import subprocess
@@ -2299,13 +2299,16 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             for try_idx in range(max_tries):
                 t0 = time.time()
                 response = requests.post(
-                    url, 
+                    url,
                     json={
                         "model": model_map[selected_model],
                         "prompt": prompt,
                         "images": [img_b64],
                         "stream": False,
-                        "keep_alive": "5m"
+                        "keep_alive": "5m",
+                        "options": {
+                            "temperature": 0.0
+                        }
                     },
                     timeout=180
                 )
