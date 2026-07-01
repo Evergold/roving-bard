@@ -3592,12 +3592,12 @@
                                 <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; width: 100%; align-items: center;">
                                     <select id="vlm-model-select" style="flex: 1; height: 32px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white; border-radius: 4px; padding: 0 0.5rem;" onchange="onVLMSelectChange()">
                                         <option value="tesseract" data-loc="vlm_tesseract_opt">Tesseract/OpenCV (Default)</option>
-                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                                         <option value="moondream">Moondream2</option>
                                         <option value="qwen2-vl">Qwen2-VL</option>
                                         <option value="florence-2">Florence-2</option>
                                         <option value="paligemma">PaliGemma</option>
                                         <option value="minicpm-v">MiniCPM-V 2.6</option>
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Cloud)</option>
                                     </select>
                                     <button class="btn btn-secondary" id="btn-vlm-try" data-loc="vlm_try_btn" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
                                     <button class="btn btn-secondary" id="btn-vlm-reset" data-loc="vlm_reset_btn" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px;" onclick="resetVLM()" disabled>Reset</button>
@@ -5015,9 +5015,9 @@
 
                     activeVLMModel = friendlyName;
                     if (statMethod) statMethod.innerText = friendlyName;
-                    document.getElementById('stat-loc-time').innerText = `${res.loc_time_ms.toFixed(1)} ms`;
-                    document.getElementById('stat-coords-time').innerText = `${res.coords_time_ms.toFixed(1)} ms`;
-                    document.getElementById('stat-total-time').innerText = `${res.total_time_ms.toFixed(1)} ms`;
+                    document.getElementById('stat-loc-time').innerText = (res.loc_time_ms !== null && res.loc_time_ms !== undefined) ? `${res.loc_time_ms.toFixed(1)} ms` : "--- ms";
+                    document.getElementById('stat-coords-time').innerText = (res.coords_time_ms !== null && res.coords_time_ms !== undefined) ? `${res.coords_time_ms.toFixed(1)} ms` : "--- ms";
+                    document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
 
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
