@@ -1950,6 +1950,15 @@ class GcRequest(BaseModel):
 @app.post("/api/gc", dependencies=[Depends(verify_api_key)])
 def api_gc(req: GcRequest):
     """Force unloads Ollama and HuggingFace, empties VRAM/RAM cache, resets baseline, and reloads selected model if warm-up."""
+    global active_http_response
+    vlm_inference_cancel_event.set()
+    if active_http_response is not None:
+        try:
+            active_http_response.close()
+        except Exception as e:
+            print(f"[GC] Error closing active HTTP response: {e}", flush=True)
+        active_http_response = None
+
     # 1. Unload all Ollama models
     try:
         import requests
@@ -2048,6 +2057,9 @@ class VlmTryRequest(BaseModel):
 florence_model = None
 florence_processor = None
 
+vlm_inference_cancel_event = threading.Event()
+active_http_response = None
+
 
 def make_image_square(image):
     """Pads a PIL image with a white background to make it square, preventing Florence-2 vision tower crashes."""
@@ -2081,6 +2093,7 @@ def load_florence_model():
         device = "mps"
     else:
         device = "cpu"
+    check_memory_safety("Florence-2", device)
     print(f"[Florence-2] Loading microsoft/Florence-2-large on {device}...")
     florence_model = AutoModelForCausalLM.from_pretrained(
         "microsoft/Florence-2-large", 
@@ -2186,6 +2199,52 @@ def get_ollama_pids():
             pass
             
     return pids
+
+
+def get_available_system_ram_bytes():
+    """Gets the available system RAM in bytes, supporting Linux and falling back to a safe default on failure."""
+    import platform
+    if platform.system() == "Linux":
+        try:
+            with open("/proc/meminfo", "r") as f:
+                for line in f:
+                    if line.startswith("MemAvailable:"):
+                        parts = line.split()
+                        return int(parts[1]) * 1024
+        except Exception:
+            pass
+    # Default fallback: 8GB
+    return 8 * 1024 * 1024 * 1024
+
+
+def check_memory_safety(model_name: str, device: str = "cpu"):
+    """Checks system RAM and GPU VRAM to ensure we have enough free memory to run the model safely."""
+    # 1. System RAM guard
+    available_ram = get_available_system_ram_bytes()
+    min_ram_required = 800 * 1024 * 1024  # 800 MB free RAM
+    if available_ram < min_ram_required:
+        raise RuntimeError(
+            f"Insufficient system RAM ({available_ram / (1024*1024):.1f} MB available). "
+            f"Minimum required is {min_ram_required / (1024*1024):.1f} MB. "
+            f"Aborting {model_name} execution to prevent host system crash."
+        )
+
+    # 2. GPU VRAM guard (if running on CUDA)
+    if "cuda" in device:
+        try:
+            import torch
+            if torch.cuda.is_available():
+                free_vram, total_vram = torch.cuda.mem_get_info()
+                min_vram_required = 1000 * 1024 * 1024  # 1.0 GB free VRAM
+                if free_vram < min_vram_required:
+                    raise RuntimeError(
+                        f"Insufficient GPU memory ({free_vram / (1024*1024):.1f} MB free VRAM). "
+                        f"Minimum required is {min_vram_required / (1024*1024):.1f} MB. "
+                        f"Aborting {model_name} execution to prevent GPU/system crash."
+                    )
+        except Exception as e:
+            if isinstance(e, RuntimeError):
+                raise e
 
 
 def get_process_ram_usage_bytes(pid=None):
@@ -2386,7 +2445,9 @@ def format_memory_size(bytes_val):
 @app.post("/api/ocr/try_vlm", dependencies=[Depends(verify_api_key)])
 def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
-    global currently_loaded_vlm, florence_model, florence_processor
+    global currently_loaded_vlm, florence_model, florence_processor, active_http_response
+    vlm_inference_cancel_event.clear()
+    active_http_response = None
     import io
     import time
     from PIL import Image
@@ -2396,6 +2457,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         scan_res = tools.check_screen_and_update_music()
         if scan_res.get("status") == "error":
             return {"status": "error", "message": f"Failed to perform auto screen scan: {scan_res.get('message')}"}
+        
+    if vlm_inference_cancel_event.is_set():
+        return {"status": "error", "message": "Inference cancelled by user."}
         
     try:
         try:
@@ -2548,6 +2612,29 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Load the PIL image that is fed to the models
         # (This keeps the comparison fair since we feed them the exact same raw cropped binary data!)
         text_img = Image.open(io.BytesIO(tools.latest_location_raw_bytes))
+        
+        # Guard: Check image size to prevent OOM on massive crops
+        max_width = 1000
+        max_height = 400
+        max_area = 200000
+        w, h = text_img.size
+        if w > max_width or h > max_height or (w * h) > max_area:
+            return {
+                "status": "error",
+                "message": f"Cropped location region is too large ({w}x{h}). Please resize the crop bounds in preferences to a smaller text region (max {max_width}x{max_height}) to prevent system memory overload."
+            }
+
+        # Guard: Check system memory safety for local CPU/GPU models
+        local_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "florence-2"]
+        if selected_model in local_models:
+            device_type = "cpu"
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    device_type = "cuda"
+            except Exception:
+                pass
+            check_memory_safety(selected_model, device_type)
         # Select scale factor: Qwen2-VL needs 6x to resolve small characters. Qwen2.5-VL works optimally at 2x. Others default to 4x.
         if selected_model == "qwen2-vl":
             scale_factor = 6
@@ -2580,11 +2667,15 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             monitor_thread.start()
             
             try:
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
                 tp0 = time.time()
                 _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
                 tp1 = time.time()
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
      
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
                 t0 = time.time()
                 pass_num = getattr(tools, "current_ocr_pass", 2)
                 loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
@@ -2592,6 +2683,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             finally:
                 stop_monitor = True
                 monitor_thread.join(timeout=1.0)
+            
+            if vlm_inference_cancel_event.is_set():
+                raise Exception("Inference cancelled by user.")
             
             raw_text = getattr(tools.ocr_parser, "latest_raw_text", "")
             rich = tools.ocr_parser.parse_text_rich(raw_text)
@@ -2632,9 +2726,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
+            if vlm_inference_cancel_event.is_set():
+                raise Exception("Inference cancelled by user.")
             t0 = time.time()
             loc_str, coords_str, _, _ = tools.call_gemini_vision(text_img_4x, "gemini/gemini-2.5-flash-lite")
             t1 = time.time()
+            if vlm_inference_cancel_event.is_set():
+                raise Exception("Inference cancelled by user.")
             
             if not loc_str and not coords_str:
                 raise Exception("No response from Gemini API or configuration key invalid.")
@@ -2682,11 +2780,26 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             t0 = time.time()
             fallback_warning = None
             try:
+                from transformers import StoppingCriteria, StoppingCriteriaList
+
+                class CancelStoppingCriteria(StoppingCriteria):
+                    def __init__(self, cancel_evt):
+                        super().__init__()
+                        self.cancel_evt = cancel_evt
+                    def __call__(self, input_ids, scores, **kwargs):
+                        return self.cancel_evt.is_set()
+
+                stopping_criteria = StoppingCriteriaList([CancelStoppingCriteria(vlm_inference_cancel_event)])
+
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
+
                 generated_ids = florence_model.generate(
                     input_ids=inputs["input_ids"],
                     pixel_values=inputs["pixel_values"],
                     max_new_tokens=1024,
-                    num_beams=3
+                    num_beams=3,
+                    stopping_criteria=stopping_criteria
                 )
             except RuntimeError as e:
                 if "no kernel image is available" in str(e) and device.type == "cuda":
@@ -2695,14 +2808,23 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     florence_model = florence_model.to("cpu").float()
                     device = florence_model.device
                     inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                    
+                    if vlm_inference_cancel_event.is_set():
+                        raise Exception("Inference cancelled by user.")
+
                     generated_ids = florence_model.generate(
                         input_ids=inputs["input_ids"],
                         pixel_values=inputs["pixel_values"],
                         max_new_tokens=1024,
-                        num_beams=3
+                        num_beams=3,
+                        stopping_criteria=stopping_criteria
                     )
                 else:
                     raise e
+
+            if vlm_inference_cancel_event.is_set():
+                raise Exception("Inference cancelled by user.")
+
             if not isinstance(generated_ids, str):
                 decoded_text = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
             else:
@@ -2792,30 +2914,46 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "options": options
             }
 
+            json_payload["stream"] = True
             for try_idx in range(max_tries):
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
                 t0 = time.time()
-                response = requests.post(
-                    url,
-                    json=json_payload,
-                    timeout=180
-                )
-                t1 = time.time()
-                
-                if response.status_code == 200:
-                    resp_json = response.json()
-                    print(f"[Ollama VLM Raw JSON] Model: {selected_model} (Try {try_idx + 1}), JSON: {resp_json!r}", flush=True)
-                    response_text = resp_json.get("response", "")
+                try:
+                    response = requests.post(
+                        url,
+                        json=json_payload,
+                        stream=True,
+                        timeout=180
+                    )
+                    active_http_response = response
                     
-                    rich = tools.ocr_parser.parse_text_rich(response_text)
-                    loc_str = rich["parsed_location"]
-                    coords_str = rich["parsed_coordinates"]
-                    raw_loc = rich["raw_location"]
-                    raw_coords = rich["raw_coordinates"]
-                    
-                    break
-                else:
-                    if try_idx == max_tries - 1:
-                        raise Exception(f"Ollama returned status {response.status_code}: {response.text}")
+                    if response.status_code == 200:
+                        response_text = ""
+                        for line in response.iter_lines():
+                            if vlm_inference_cancel_event.is_set():
+                                response.close()
+                                raise Exception("Inference cancelled by user.")
+                            if line:
+                                chunk = json.loads(line.decode('utf-8'))
+                                response_text += chunk.get("response", "")
+                                if chunk.get("done", False):
+                                    break
+                        t1 = time.time()
+                        resp_json = {"response": response_text}
+                        print(f"[Ollama VLM Raw JSON] Model: {selected_model} (Try {try_idx + 1}), JSON: {resp_json!r}", flush=True)
+                        
+                        rich = tools.ocr_parser.parse_text_rich(response_text)
+                        loc_str = rich["parsed_location"]
+                        coords_str = rich["parsed_coordinates"]
+                        raw_loc = rich["raw_location"]
+                        raw_coords = rich["raw_coordinates"]
+                        break
+                    else:
+                        if try_idx == max_tries - 1:
+                            raise Exception(f"Ollama returned status {response.status_code}: {response.text}")
+                finally:
+                    active_http_response = None
                         
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             

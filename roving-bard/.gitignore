@@ -217,3 +217,8 @@ audio/segments.yaml
 
 # Exclude local file tags definitions
 audio/files.yaml
+
+# Exclude local VLM model artifacts
+app/models/
+*.gguf
+

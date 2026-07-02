@@ -8857,7 +8857,8 @@
             gcBtn.disabled = true;
             gcBtn.innerHTML = "...";
             
-            const selectedVal = document.getElementById('ocr-select').value;
+            const ocrSelect = document.getElementById('vlm-model-select') || document.getElementById('ocr-select');
+            const selectedVal = ocrSelect ? ocrSelect.value : 'tesseract';
             
             try {
                 const response = await apiFetch('/api/gc', {
