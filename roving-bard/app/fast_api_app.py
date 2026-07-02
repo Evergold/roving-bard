@@ -1885,12 +1885,27 @@ def run_florence_ocr(image):
     device = florence_model.device
     inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
     
-    generated_ids = florence_model.generate(
-        input_ids=inputs["input_ids"],
-        pixel_values=inputs["pixel_values"],
-        max_new_tokens=1024,
-        num_beams=3
-    )
+    try:
+        generated_ids = florence_model.generate(
+            input_ids=inputs["input_ids"],
+            pixel_values=inputs["pixel_values"],
+            max_new_tokens=1024,
+            num_beams=3
+        )
+    except RuntimeError as e:
+        if "no kernel image is available" in str(e) and device.type == "cuda":
+            print("[Florence-2] CUDA kernel compatibility error detected. Falling back to CPU...")
+            florence_model = florence_model.to("cpu")
+            device = florence_model.device
+            inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
+            generated_ids = florence_model.generate(
+                input_ids=inputs["input_ids"],
+                pixel_values=inputs["pixel_values"],
+                max_new_tokens=1024,
+                num_beams=3
+            )
+        else:
+            raise e
     
     generated_text = florence_processor.post_process_generation(
         generated_ids, 
@@ -2391,12 +2406,27 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
             t0 = time.time()
-            generated_ids = florence_model.generate(
-                input_ids=inputs["input_ids"],
-                pixel_values=inputs["pixel_values"],
-                max_new_tokens=1024,
-                num_beams=3
-            )
+            try:
+                generated_ids = florence_model.generate(
+                    input_ids=inputs["input_ids"],
+                    pixel_values=inputs["pixel_values"],
+                    max_new_tokens=1024,
+                    num_beams=3
+                )
+            except RuntimeError as e:
+                if "no kernel image is available" in str(e) and device.type == "cuda":
+                    print("[Florence-2] CUDA kernel compatibility error detected in trial. Falling back to CPU...")
+                    florence_model = florence_model.to("cpu")
+                    device = florence_model.device
+                    inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                    generated_ids = florence_model.generate(
+                        input_ids=inputs["input_ids"],
+                        pixel_values=inputs["pixel_values"],
+                        max_new_tokens=1024,
+                        num_beams=3
+                    )
+                else:
+                    raise e
             raw_text = florence_processor.post_process_generation(
                 generated_ids, 
                 task="<OCR>", 
