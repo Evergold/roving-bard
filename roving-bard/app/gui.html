@@ -3072,12 +3072,20 @@
             transform-origin: top left;
         }
         body.light-theme .log-popover {
-            background: rgba(210, 213, 216, 0.95) !important;
-            border: 1px solid #b4b8c0 !important;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+            background: rgba(190, 195, 200, 0.95) !important;
+            border: 1px solid #7c828d !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
         }
         body.light-theme .log-popover.active {
-            background: rgb(210, 213, 216) !important;
+            background: rgb(190, 195, 200) !important;
+        }
+        body.light-theme .log-header-container {
+            color: #0f172a !important;
+            border-bottom-color: #7c828d !important;
+        }
+        body.light-theme .log-clear-btn {
+            color: #1e293b !important;
+            border-color: #7c828d !important;
         }
         .log-filter-btn {
             background: rgba(0, 0, 0, 0.2);
@@ -3098,7 +3106,19 @@
             border-color: var(--accent) !important;
         }
         body.light-theme .log-filter-btn {
-            background: rgba(0, 0, 0, 0.04);
+            background: rgba(0, 0, 0, 0.08) !important;
+            border: 1px solid #7c828d !important;
+            color: #1e293b !important;
+        }
+        body.light-theme .log-filter-btn:hover {
+            background: rgba(0, 0, 0, 0.15) !important;
+            color: #0f172a !important;
+            border-color: #475569 !important;
+        }
+        body.light-theme .log-filter-btn.active {
+            background: var(--accent) !important;
+            color: white !important;
+            border-color: var(--accent) !important;
         }
         .log-item {
             border-left: 3px solid transparent;
@@ -3297,9 +3317,9 @@
             <!-- Session Log Pop-over -->
             <div id="log-popover" class="menu-popover log-popover">
                 <div id="log-popover-inner" style="display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 1.2rem;">
-                    <div style="font-size: 0.95rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
+                    <div class="log-header-container" style="font-size: 0.95rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-family: 'Space Mono', monospace; border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
                         <span data-loc="session_log">Session Log</span>
-                        <button onclick="clearSessionLogs(event)" data-loc="clear_log" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
+                        <button class="log-clear-btn" onclick="clearSessionLogs(event)" data-loc="clear_log" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">
                             Clear
                         </button>
                     </div>
