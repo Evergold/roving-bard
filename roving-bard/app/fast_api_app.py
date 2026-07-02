@@ -2089,15 +2089,19 @@ def load_florence_model():
     from transformers import AutoProcessor, AutoModelForCausalLM
     if torch.cuda.is_available():
         device = "cuda"
+        dtype = torch.float16
     elif torch.backends.mps.is_available():
         device = "mps"
+        dtype = torch.float32
     else:
         device = "cpu"
+        dtype = torch.float32
     check_memory_safety("Florence-2", device)
-    print(f"[Florence-2] Loading microsoft/Florence-2-large on {device}...")
+    print(f"[Florence-2] Loading microsoft/Florence-2-large on {device} ({dtype})...")
     florence_model = AutoModelForCausalLM.from_pretrained(
         "microsoft/Florence-2-large", 
-        trust_remote_code=True
+        trust_remote_code=True,
+        torch_dtype=dtype
     ).to(device)
     if device == "cpu":
         florence_model = florence_model.float()
@@ -2113,14 +2117,20 @@ def run_florence_ocr(image):
     image = make_image_square(image)
         
     device = florence_model.device
+    import torch
     inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
+    # Ensure input tensors match the model's dtype
+    inputs = {
+        k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+        for k, v in inputs.items()
+    }
     
     try:
         generated_ids = florence_model.generate(
             input_ids=inputs["input_ids"],
             pixel_values=inputs["pixel_values"],
-            max_new_tokens=1024,
-            num_beams=3
+            max_new_tokens=128,
+            num_beams=1
         )
     except RuntimeError as e:
         if "no kernel image is available" in str(e) and device.type == "cuda":
@@ -2128,11 +2138,15 @@ def run_florence_ocr(image):
             florence_model = florence_model.to("cpu").float()
             device = florence_model.device
             inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
+            inputs = {
+                k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                for k, v in inputs.items()
+            }
             generated_ids = florence_model.generate(
                 input_ids=inputs["input_ids"],
                 pixel_values=inputs["pixel_values"],
-                max_new_tokens=1024,
-                num_beams=3
+                max_new_tokens=128,
+                num_beams=1
             )
         else:
             raise e
@@ -2148,6 +2162,17 @@ def run_florence_ocr(image):
         image_size=image.size
     )["<OCR>"]
     
+    # Clear PyTorch/MPS cache to prevent memory creep/leaks
+    try:
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        elif hasattr(torch, "mps") and torch.mps.is_available():
+            torch.mps.empty_cache()
+    except Exception:
+        pass
+        
     return generated_text
 
 
@@ -2773,7 +2798,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp0 = time.time()
             text_img_4x = make_image_square(text_img_4x)
             device = florence_model.device
+            import torch
             inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+            # Ensure input tensors match the model's dtype
+            inputs = {
+                k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                for k, v in inputs.items()
+            }
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
@@ -2781,19 +2812,19 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             fallback_warning = None
             try:
                 from transformers import StoppingCriteria, StoppingCriteriaList
-
+ 
                 class CancelStoppingCriteria(StoppingCriteria):
                     def __init__(self, cancel_evt):
                         super().__init__()
                         self.cancel_evt = cancel_evt
                     def __call__(self, input_ids, scores, **kwargs):
                         return self.cancel_evt.is_set()
-
+ 
                 stopping_criteria = StoppingCriteriaList([CancelStoppingCriteria(vlm_inference_cancel_event)])
-
+ 
                 if vlm_inference_cancel_event.is_set():
                     raise Exception("Inference cancelled by user.")
-
+ 
                 generated_ids = florence_model.generate(
                     input_ids=inputs["input_ids"],
                     pixel_values=inputs["pixel_values"],
@@ -2808,10 +2839,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     florence_model = florence_model.to("cpu").float()
                     device = florence_model.device
                     inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                    inputs = {
+                        k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                        for k, v in inputs.items()
+                    }
                     
                     if vlm_inference_cancel_event.is_set():
                         raise Exception("Inference cancelled by user.")
-
+ 
                     generated_ids = florence_model.generate(
                         input_ids=inputs["input_ids"],
                         pixel_values=inputs["pixel_values"],
