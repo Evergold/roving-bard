@@ -3294,9 +3294,12 @@
                     <!-- Server Baseline option -->
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem;">
                         <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;">Server Baseline</span>
-                        <div style="font-size: 0.85rem; font-family: 'Space Mono', monospace; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; width: fit-content; min-width: 160px; box-sizing: border-box; display: flex; flex-direction: column; gap: 0.25rem;">
-                            <div>VRAM: <span id="server-baseline-vram-display" style="color: #ff9d00; font-weight: bold;">Loading...</span></div>
-                            <div>RAM : <span id="server-baseline-ram-display" style="color: #00d9ff; font-weight: bold;">Loading...</span></div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="font-size: 0.85rem; font-family: 'Space Mono', monospace; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; width: fit-content; min-width: 160px; box-sizing: border-box; display: flex; flex-direction: column; gap: 0.25rem;">
+                                <div>VRAM: <span id="server-baseline-vram-display" style="color: #ff9d00; font-weight: bold;">Loading...</span></div>
+                                <div>RAM : <span id="server-baseline-ram-display" style="color: #00d9ff; font-weight: bold;">Loading...</span></div>
+                            </div>
+                            <button id="gc-btn" class="font-size-btn" onclick="triggerServerGC(event)" style="height: 48px; min-width: 50px; font-size: 0.95rem; border-radius: 24px; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 0 16px; transition: all 0.2s ease; font-family: 'Space Mono', monospace; cursor: pointer;" title="Force Garbage Collection (Free memory/VRAM)">GC</button>
                         </div>
                     </div>
                 </div>
@@ -8817,6 +8820,55 @@
                     btn.disabled = false;
                     btn.classList.add('active');
                 }
+            }
+        }
+
+        async function triggerServerGC(event) {
+            if (event && event.stopPropagation) {
+                event.stopPropagation();
+            }
+            const gcBtn = document.getElementById('gc-btn');
+            if (!gcBtn || gcBtn.disabled) return;
+            
+            gcBtn.disabled = true;
+            gcBtn.innerText = "...";
+            
+            const selectedVal = document.getElementById('ocr-select').value;
+            
+            try {
+                const response = await apiFetch('/api/gc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: selectedVal })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    if (data.baseline_vram) {
+                        const vramDisplay = document.getElementById('server-baseline-vram-display');
+                        if (vramDisplay) vramDisplay.innerText = data.baseline_vram;
+                    }
+                    if (data.baseline_ram) {
+                        const ramDisplay = document.getElementById('server-baseline-ram-display');
+                        if (ramDisplay) ramDisplay.innerText = data.baseline_ram;
+                    }
+                    
+                    runModelsThisSession.clear();
+                    
+                    const warmupModels = ['qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v', 'florence-2'];
+                    if (warmupModels.includes(selectedVal)) {
+                        runModelsThisSession.add(selectedVal);
+                    }
+                    
+                    showToast(t("gc_success_message", "Garbage collection completed. Baselines updated."), 'success');
+                } else {
+                    showToast("Error: " + data.message, 'error');
+                }
+            } catch (err) {
+                console.error("GC failed:", err);
+                showToast("GC request failed: " + err.message, 'error');
+            } finally {
+                gcBtn.disabled = false;
+                gcBtn.innerText = "GC";
             }
         }
 

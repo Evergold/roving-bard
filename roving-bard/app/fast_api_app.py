@@ -1943,6 +1943,102 @@ def api_vlm_unload(req: VlmUnloadRequest):
     return {"status": "success", "message": f"Triggered unload for {req.model}."}
 
 
+class GcRequest(BaseModel):
+    model: str
+
+
+@app.post("/api/gc", dependencies=[Depends(verify_api_key)])
+def api_gc(req: GcRequest):
+    """Force unloads Ollama and HuggingFace, empties VRAM/RAM cache, resets baseline, and reloads selected model if warm-up."""
+    # 1. Unload all Ollama models
+    try:
+        import requests
+        ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
+        if ps_res.status_code == 200:
+            for m in ps_res.json().get("models", []):
+                requests.post(
+                    "http://127.0.0.1:11434/api/generate",
+                    json={"model": m["name"], "keep_alive": 0},
+                    timeout=5
+                )
+    except Exception as e:
+        print(f"[GC] Error unloading Ollama: {e}", flush=True)
+
+    # 2. Unload Hugging Face Florence-2 model from python process
+    global florence_model, florence_processor
+    florence_model = None
+    florence_processor = None
+
+    # 3. Call PyTorch garbage collection & CUDA empty cache
+    try:
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+    except Exception as e:
+        print(f"[GC] Error clearing PyTorch cache: {e}", flush=True)
+
+    # 4. Sleep to let things settle, then measure the clean baseline VRAM
+    import time
+    time.sleep(0.5)
+    
+    global server_baseline_vram
+    try:
+        server_baseline_vram = get_gpu_vram_usage_bytes(include_ollama=False)
+        tools.server_baseline_vram = server_baseline_vram
+    except Exception as e:
+        print(f"[GC] Error measuring baseline VRAM: {e}", flush=True)
+
+    # 5. If the currently selected method is on the warm-up list, trigger reload/warmup
+    selected_model = req.model.lower()
+    
+    # Warm-up list models
+    warmup_models = ["qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v"]
+    model_map = {
+        "qwen2-vl": "qwen2-vl",
+        "qwen2.5-vl": "qwen2.5vl:3b",
+        "paligemma": "paligemma",
+        "minicpm-v": "minicpm-v"
+    }
+    
+    if selected_model in warmup_models:
+        try:
+            url = "http://127.0.0.1:11434/api/generate"
+            dummy_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+            requests.post(
+                url,
+                json={
+                    "model": model_map[selected_model],
+                    "prompt": "warmup",
+                    "images": [dummy_img],
+                    "stream": False,
+                    "keep_alive": -1,
+                    "options": {
+                        "num_ctx": 1024
+                    }
+                },
+                timeout=180
+            )
+            print(f"[GC] Successfully reloaded/warmed up model: {selected_model}", flush=True)
+        except Exception as e:
+            print(f"[GC] Error reloading model {selected_model}: {e}", flush=True)
+            
+    elif selected_model == "florence-2":
+        try:
+            load_florence_model()
+            print("[GC] Successfully reloaded Florence-2", flush=True)
+        except Exception as e:
+            print(f"[GC] Error reloading Florence-2: {e}", flush=True)
+
+    return {
+        "status": "success",
+        "baseline_ram": format_memory_size(server_baseline_ram),
+        "baseline_vram": format_memory_size(server_baseline_vram)
+    }
+
+
 class VlmTryRequest(BaseModel):
     model: str
 
