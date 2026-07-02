@@ -124,7 +124,7 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 
 | Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
 |---|---|---|---|
-| **OpenCV + Tesseract** | `0 MB` | `800 MB` | Classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
+| **OpenCV + Tesseract** | `0 MB` | `1.1 GB` | Classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
 | **Florence-2 (Large)** | `1.8 GB` | `1.45 GB` | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
 | **Moondream2** | `2.2 GB` | `1.65 GB` | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
 | **Qwen2-VL (2B)** | `4.5 GB` | `2.0 GB` | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
@@ -136,8 +136,8 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 
 | Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
 |---|---|---|---|
-| **Gemini 2.5 Series Models** *(Default)* | `0 MB` | `800 MB` | Google's 2.5 generation cloud multimodal models. `Gemini 2.5 Flash Lite` is used as the default cloud VLM. Zero local GPU/VRAM footprint, high accuracy, but requires API key and internet. |
-| **Gemini 3.5 / 3.1 Series Models** | `0 MB` | `800 MB` | Google's latest generation cloud multimodal models (including `Gemini 3.5 Flash`, `Gemini 3.1 Flash Lite`, and `Gemini 3.1 Pro`). Offers superior reasoning speed and visual parsing capabilities. |
+| **Gemini 2.5 Series Models** *(Default)* | `0 MB` | `1.1 GB` | Google's 2.5 generation cloud multimodal models. `Gemini 2.5 Flash Lite` is used as the default cloud VLM. Zero local GPU/VRAM footprint, high accuracy, but requires API key and internet. |
+| **Gemini 3.5 / 3.1 Series Models** | `0 MB` | `1.1 GB` | Google's latest generation cloud multimodal models (including `Gemini 3.5 Flash`, `Gemini 3.1 Flash Lite`, and `Gemini 3.1 Pro`). Offers superior reasoning speed and visual parsing capabilities. |
 
 *Note: Gemini 2.5 Flash Lite is configured as the default cloud VLM in Roving Bard. Alternate cloud models (including Claude / Haiku and GPT-4o) are supported as drop-in fallbacks via custom environment configuration.*
 
