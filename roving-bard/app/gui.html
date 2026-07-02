@@ -5238,8 +5238,22 @@
             const selectedVal = modelSelect.value;
             localStorage.setItem('selectedVLM', selectedVal);
 
-            // Unload previously warmed local model if switching to a different one or non-local one
-            if (currentlyWarmModel && currentlyWarmModel !== selectedVal) {
+            // If switching to a non-warmup model (tesseract, gemini), clean up all local models
+            if (selectedVal === 'tesseract' || selectedVal === 'gemini-2.5-flash-lite') {
+                if (currentlyWarmModel) {
+                    apiFetch('/api/ocr/vlm_unload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: currentlyWarmModel })
+                    });
+                    currentlyWarmModel = null;
+                }
+                apiFetch('/api/ocr/vlm_unload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: 'florence-2' })
+                });
+            } else if (currentlyWarmModel && currentlyWarmModel !== selectedVal) {
                 apiFetch('/api/ocr/vlm_unload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -5315,12 +5329,15 @@
                         document.getElementById('btn-vlm-try').disabled = false;
                         document.getElementById('vlm-download-container').style.display = 'none';
                         modelSelect.disabled = false;
-                        apiFetch('/api/ocr/vlm_warmup', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ model: selectedVal })
-                        });
-                        currentlyWarmModel = selectedVal;
+                        const warmupModels = ['moondream', 'qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v'];
+                        if (warmupModels.includes(selectedVal)) {
+                            apiFetch('/api/ocr/vlm_warmup', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ model: selectedVal })
+                            });
+                            currentlyWarmModel = selectedVal;
+                        }
                     } else if (modelState.status.startsWith('downloading')) {
                         document.getElementById('btn-vlm-try').disabled = true;
                         document.getElementById('vlm-download-container').style.display = 'block';
@@ -5425,12 +5442,15 @@
                         showToast(`${modelName} ${readySuffix}`, "success");
                         
                         if (modelName === modelSelect.value) {
-                            apiFetch('/api/ocr/vlm_warmup', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ model: modelName })
-                            });
-                            currentlyWarmModel = modelName;
+                            const warmupModels = ['moondream', 'qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v'];
+                            if (warmupModels.includes(modelName)) {
+                                apiFetch('/api/ocr/vlm_warmup', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ model: modelName })
+                                });
+                                currentlyWarmModel = modelName;
+                            }
                         }
                         
                         if (runBenchmarkAfterDownload) {
@@ -5619,10 +5639,7 @@
         function resetVLM() {
             activeVLMModel = null;
             document.getElementById('vlm-model-select').value = 'tesseract';
-            localStorage.setItem('selectedVLM', 'tesseract');
-            const resetBtn = document.getElementById('btn-vlm-reset');
-            if (resetBtn) resetBtn.disabled = true;
-            updateVLMStatsUI('tesseract');
+            onVLMSelectChange();
             loadDashboard();
         }
 
