@@ -2159,10 +2159,12 @@ def measure_baseline():
     time.sleep(0.5)
     try:
         server_baseline_ram = get_process_ram_usage_bytes()
+        tools.server_baseline_ram = server_baseline_ram
     except Exception:
         pass
     try:
         server_baseline_vram = get_gpu_vram_usage_bytes(include_ollama=False)
+        tools.server_baseline_vram = server_baseline_vram
     except Exception:
         pass
  
@@ -2171,18 +2173,9 @@ def get_gpu_vram_usage_bytes(include_ollama=False):
     """Gets the GPU memory usage of current process and optionally ollama processes in bytes."""
     import subprocess
     import platform
-    total_vram = 0
-    try:
-        import sys
-        if "torch" in sys.modules:
-            import torch
-            if torch.cuda.is_available():
-                total_vram += torch.cuda.memory_allocated()
-            elif torch.backends.mps.is_available():
-                total_vram += torch.mps.driver_allocated_memory()
-    except Exception:
-        pass
-
+    import os
+    
+    # Try nvidia-smi first (Linux/Windows Nvidia)
     try:
         res = subprocess.run(
             ["nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
@@ -2197,6 +2190,8 @@ def get_gpu_vram_usage_bytes(include_ollama=False):
                 for pid in get_ollama_pids():
                     pids_of_interest.add(pid)
             
+            total_vram = 0
+            has_found_any = False
             for line in res.stdout.strip().split("\n"):
                 if not line:
                     continue
@@ -2206,10 +2201,25 @@ def get_gpu_vram_usage_bytes(include_ollama=False):
                     vram_mb = int(parts[1].strip())
                     if pid in pids_of_interest:
                         total_vram += vram_mb * 1024 * 1024
+                        has_found_any = True
+            if has_found_any:
+                return total_vram
+    except Exception:
+        pass
+
+    # Fallback to PyTorch (e.g. for MPS on macOS, or if nvidia-smi is not available)
+    try:
+        import sys
+        if "torch" in sys.modules:
+            import torch
+            if torch.cuda.is_available():
+                return torch.cuda.memory_allocated()
+            elif torch.backends.mps.is_available():
+                return torch.mps.driver_allocated_memory()
     except Exception:
         pass
         
-    return total_vram
+    return 0
 
 
 def format_memory_size(bytes_val):
@@ -2248,9 +2258,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         def get_peak_usage(is_ollama=False):
             if is_ollama:
                 # Ollama is run in a separate process, so its memory is entirely model/method memory.
-                # The python client memory might have a tiny overhead, so we subtract baseline.
+                # Subtract uvicorn's current VRAM to isolate Ollama's incremental VRAM.
                 ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram) + get_ollama_peak_ram_usage_bytes()
-                vram = max(0, get_gpu_vram_usage_bytes(include_ollama=True) - server_baseline_vram)
+                vram = max(0, get_gpu_vram_usage_bytes(include_ollama=True) - get_gpu_vram_usage_bytes(include_ollama=False))
             else:
                 ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram)
                 vram = max(0, get_gpu_vram_usage_bytes(include_ollama=False) - server_baseline_vram)
@@ -2259,9 +2269,11 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 if "torch" in sys.modules:
                     import torch
                     if torch.cuda.is_available():
-                        vram = max(vram, torch.cuda.max_memory_allocated())
+                        if vram <= 0:
+                            vram = torch.cuda.max_memory_allocated()
                     elif torch.backends.mps.is_available():
-                        vram = max(vram, torch.mps.driver_allocated_memory())
+                        if vram <= 0:
+                            vram = torch.mps.driver_allocated_memory()
             except Exception:
                 pass
             return format_memory_size(ram), format_memory_size(vram)

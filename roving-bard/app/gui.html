@@ -5089,6 +5089,7 @@
         let activeVLMModel = null;
         let currentlyWarmModel = null;
         const vlmStatsCache = {};
+        const runModelsThisSession = new Set();
 
         function updateParseUI(parse) {
             if (!parse || (parse.action === "stopped" && !parse.parsed_location)) {
@@ -5395,6 +5396,14 @@
                 }
             }
   
+            // Clear cached memory stats if we haven't run the model this session
+            if (!runModelsThisSession.has(selectedVal)) {
+                if (vlmStatsCache[selectedVal]) {
+                    vlmStatsCache[selectedVal].ram = "---";
+                    vlmStatsCache[selectedVal].vram = "---";
+                }
+            }
+
             // Re-render cached stats or blank placeholders for selected VLM benchmarking method
             updateVLMStatsUI(selectedVal);
   
@@ -5688,6 +5697,7 @@
                     // Cache the trial result stats in memory
                     const finalVram = (res.actual_vram && selectedVal !== 'gemini-2.5-flash-lite') ? res.actual_vram : "---";
                     const finalRam = res.actual_ram || "---";
+                    runModelsThisSession.add(selectedVal);
                     vlmStatsCache[selectedVal] = {
                         loc_time_ms: res.loc_time_ms,
                         coords_time_ms: res.coords_time_ms,

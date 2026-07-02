@@ -170,6 +170,8 @@ latest_location_processed_bytes = None
 latest_location_raw_bytes = None
 latest_character_processed_bytes = None
 minimap_detected = False
+server_baseline_ram = 1100 * 1024 * 1024  # Default fallback 1.1 GB
+server_baseline_vram = 0
 current_ocr_pass = 2
 latest_parse_result = {
     "parsed_location": None,
@@ -246,31 +248,42 @@ def call_gemini_vision(img, model_name):
 
 
 def get_actual_usage():
-    """Get actual RAM and VRAM usage on Linux systems."""
+    """Get actual RAM and VRAM usage on Linux systems, omitting the baseline footprint."""
     try:
         import os
         pid = os.getpid()
-        ram_mb = 0
+        ram_bytes = 0
         with open(f"/proc/{pid}/status", "r") as f:
             for line in f:
                 if line.startswith("VmRSS:"):
                     parts = line.split()
                     if len(parts) >= 2:
-                        ram_mb = int(parts[1]) // 1024
+                        ram_bytes = int(parts[1]) * 1024
                     break
         
-        vram_mb = 0
+        vram_bytes = 0
         import subprocess
         try:
             res = subprocess.run(
                 ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
                 capture_output=True, text=True, check=True, timeout=1.0
             )
-            vram_mb = int(res.stdout.strip())
+            vram_bytes = int(res.stdout.strip()) * 1024 * 1024
         except Exception:
             pass
             
-        return f"{ram_mb} MB", f"{vram_mb} MB"
+        incremental_ram = max(0, ram_bytes - server_baseline_ram)
+        incremental_vram = max(0, vram_bytes - server_baseline_vram)
+        
+        def fmt_mem(bytes_val):
+            if bytes_val <= 0:
+                return "0 MB"
+            mb_val = bytes_val / (1024 * 1024)
+            if mb_val >= 1000:
+                return f"{mb_val / 1024:.2f} GB"
+            return f"{int(mb_val)} MB"
+            
+        return fmt_mem(incremental_ram), fmt_mem(incremental_vram)
     except Exception as e:
         print(f"Error getting actual memory usage: {e}")
         return None, None
