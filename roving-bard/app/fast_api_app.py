@@ -2797,8 +2797,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 generated_ids = florence_model.generate(
                     input_ids=inputs["input_ids"],
                     pixel_values=inputs["pixel_values"],
-                    max_new_tokens=1024,
-                    num_beams=3,
+                    max_new_tokens=128,
+                    num_beams=1,
                     stopping_criteria=stopping_criteria
                 )
             except RuntimeError as e:
@@ -2815,8 +2815,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     generated_ids = florence_model.generate(
                         input_ids=inputs["input_ids"],
                         pixel_values=inputs["pixel_values"],
-                        max_new_tokens=1024,
-                        num_beams=3,
+                        max_new_tokens=128,
+                        num_beams=1,
                         stopping_criteria=stopping_criteria
                     )
                 else:
@@ -2848,6 +2848,19 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             coords_time_ms = total_time_ms * 0.45
             
             act_ram, act_vram = get_peak_usage()
+
+            # Clear PyTorch/MPS cache to prevent memory creep/leaks
+            try:
+                import gc
+                import torch
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                elif hasattr(torch, "mps") and torch.mps.is_available():
+                    torch.mps.empty_cache()
+            except Exception:
+                pass
+
             return {
                 "status": "success",
                 "model": "Florence-2 (Large)",
