@@ -3912,6 +3912,7 @@
                                     </select>
                                     <button class="btn btn-secondary" id="btn-vlm-try" data-loc="vlm_try_btn" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
                                     <button class="btn btn-secondary" id="btn-vlm-reset" data-loc="vlm_reset_btn" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px;" onclick="resetVLM()" disabled>Reset</button>
+                                    <button class="btn btn-secondary" id="btn-vlm-cancel" data-loc="vlm_cancel_btn" style="padding: 0 0.5rem; font-size: 0.75rem; height: 32px; min-width: 50px; display: none; background-color: var(--error, #e06c75);" onclick="cancelRunningVLM()">Cancel</button>
                                 </div>
                                 
                                 <!-- VLM Download / Setup Progress Indicator -->
@@ -5646,7 +5647,7 @@
         async function executeVLMRealTrial(selectedVal) {
             const modelSelect = document.getElementById('vlm-model-select');
             document.getElementById('btn-vlm-try').disabled = true;
-            document.getElementById('btn-vlm-reset').disabled = true;
+            showCancelVlmButton();
             modelSelect.disabled = true;
  
             // Clear existing dashboard values to ensure parsed values are visible
@@ -5767,8 +5768,7 @@
                 document.getElementById('btn-vlm-try').disabled = false;
                 modelSelect.disabled = false;
                 
-                const resetBtn = document.getElementById('btn-vlm-reset');
-                if (resetBtn) resetBtn.disabled = !activeVLMModel;
+                showResetVlmButton();
             }
         }
 
@@ -5777,6 +5777,57 @@
             document.getElementById('vlm-model-select').value = 'tesseract';
             onVLMSelectChange();
             loadDashboard();
+        }
+
+        function showCancelVlmButton() {
+            const resetBtn = document.getElementById('btn-vlm-reset');
+            const cancelBtn = document.getElementById('btn-vlm-cancel');
+            if (resetBtn) resetBtn.style.display = 'none';
+            if (cancelBtn) {
+                cancelBtn.style.display = 'inline-block';
+                cancelBtn.disabled = false;
+                cancelBtn.innerText = "Cancel";
+            }
+        }
+
+        function showResetVlmButton() {
+            const resetBtn = document.getElementById('btn-vlm-reset');
+            const cancelBtn = document.getElementById('btn-vlm-cancel');
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            if (resetBtn) {
+                resetBtn.style.display = 'inline-block';
+                const selectedVal = document.getElementById('vlm-model-select').value;
+                resetBtn.disabled = !activeVLMModel || (selectedVal === 'tesseract');
+            }
+        }
+
+        async function cancelRunningVLM() {
+            const cancelBtn = document.getElementById('btn-vlm-cancel');
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.innerText = "...";
+            }
+            
+            const selectedVal = document.getElementById('vlm-model-select').value;
+            
+            try {
+                // Call /api/gc to trigger server-side cancellation of the running model
+                await apiFetch('/api/gc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: selectedVal })
+                });
+                showToast("VLM execution cancelled.", "info");
+            } catch (err) {
+                console.error("Cancel failed:", err);
+            } finally {
+                // Restore button states
+                if (cancelBtn) {
+                    cancelBtn.disabled = false;
+                    cancelBtn.innerText = "Cancel";
+                }
+                showResetVlmButton();
+            }
         }
 
         function showScreenshot() {
