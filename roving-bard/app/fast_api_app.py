@@ -2134,8 +2134,14 @@ def run_florence_ocr(image):
         )
     except RuntimeError as e:
         if "no kernel image is available" in str(e) and device.type == "cuda":
-            print("[Florence-2] CUDA kernel compatibility error detected. Falling back to CPU...")
-            florence_model = florence_model.to("cpu").float()
+            print("[Florence-2] CUDA kernel compatibility error detected. Re-loading model on CPU...")
+            from transformers import AutoModelForCausalLM
+            florence_model = None
+            florence_model = AutoModelForCausalLM.from_pretrained(
+                "microsoft/Florence-2-large", 
+                trust_remote_code=True,
+                torch_dtype=torch.float32
+            ).to("cpu")
             device = florence_model.device
             inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
             inputs = {
@@ -2877,9 +2883,15 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 )
             except RuntimeError as e:
                 if "no kernel image is available" in str(e) and device.type == "cuda":
-                    print("[Florence-2] CUDA kernel compatibility error detected in trial. Falling back to CPU...")
+                    print("[Florence-2] CUDA kernel compatibility error detected in trial. Re-loading model on CPU...")
                     fallback_warning = "florence_cpu_fallback"
-                    florence_model = florence_model.to("cpu").float()
+                    from transformers import AutoModelForCausalLM
+                    florence_model = None
+                    florence_model = AutoModelForCausalLM.from_pretrained(
+                        "microsoft/Florence-2-large", 
+                        trust_remote_code=True,
+                        torch_dtype=torch.float32
+                    ).to("cpu")
                     device = florence_model.device
                     inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
                     inputs = {
