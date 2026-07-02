@@ -1590,12 +1590,29 @@ def pull_florence_model_task():
     stop_event = threading.Event()
     def increment_progress():
         import time
-        p = 5
-        while not stop_event.is_set() and not cancel_evt.is_set() and p < 95:
-            time.sleep(1.0)
-            p += 2
-            if p > 95:
-                p = 95
+        cache_dir = os.path.expanduser("~/.cache/huggingface/hub/models--microsoft--Florence-2-large")
+        total_expected_bytes = 1556213789
+        
+        while not stop_event.is_set() and not cancel_evt.is_set():
+            time.sleep(0.5)
+            if not os.path.exists(cache_dir):
+                state["progress"] = 5
+                state["status"] = "downloading (5%)"
+                continue
+                
+            current_bytes = 0
+            for root, dirs, files in os.walk(cache_dir):
+                for f in files:
+                    filepath = os.path.join(root, f)
+                    try:
+                        if not os.path.islink(filepath):
+                            current_bytes += os.path.getsize(filepath)
+                    except OSError:
+                        pass
+            
+            p = int((current_bytes / total_expected_bytes) * 94) + 5
+            if p > 99:
+                p = 99
             state["progress"] = p
             state["status"] = f"downloading ({p}%)"
             
