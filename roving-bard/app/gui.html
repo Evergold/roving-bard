@@ -3271,6 +3271,14 @@
                         <div id="log-empty-msg" style="color: var(--text-muted); text-align: center; margin-top: auto; margin-bottom: auto;" data-loc="log_empty">No log messages yet.</div>
                     </div>
                 </div>
+                <!-- Hot corner resize handle -->
+                <div id="log-resize-handle" style="position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; cursor: se-resize; background: transparent; display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; box-sizing: border-box; z-index: 10;" onmouseover="this.querySelector('svg').style.opacity = '1'; this.querySelector('svg').style.color = 'var(--accent)'" onmouseout="this.querySelector('svg').style.opacity = '0.75'; this.querySelector('svg').style.color = 'var(--text-muted)'">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.75; color: var(--text-muted); transition: all 0.2s ease;">
+                        <line x1="15" y1="20" x2="20" y2="15" stroke="currentColor" stroke-width="2.5"/>
+                        <line x1="10" y1="20" x2="20" y2="10" stroke="currentColor" stroke-width="2.5"/>
+                        <line x1="5" y1="20" x2="20" y2="5" stroke="currentColor" stroke-width="2.5"/>
+                    </svg>
+                </div>
             </div>
 
             <div class="header-main-content" style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; flex: 1;">
@@ -8832,6 +8840,52 @@
                 toggleMenuPopOver();
             }
         });
+
+        // Resizable Log Pop-over Logic
+        (function() {
+            let isResizing = false;
+            let startWidth, startHeight, startX, startY;
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const handle = document.getElementById('log-resize-handle');
+                const popover = document.getElementById('log-popover');
+                if (!handle || !popover) return;
+
+                handle.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isResizing = true;
+                    // Disable CSS transitions on width/height during resize to prevent lag
+                    popover.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                    startWidth = popover.offsetWidth;
+                    startHeight = popover.offsetHeight;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                });
+
+                function handleMouseMove(e) {
+                    if (!isResizing) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    const newWidth = Math.max(380, Math.min(600, startWidth + dx));
+                    const newHeight = Math.max(250, Math.min(600, startHeight + dy));
+                    
+                    popover.style.width = `${newWidth}px`;
+                    popover.style.height = `${newHeight}px`;
+                }
+
+                function handleMouseUp() {
+                    isResizing = false;
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                    // Restore transitions
+                    popover.style.transition = '';
+                }
+            });
+        })();
 
         function restoreCardCollapses() {
             document.querySelectorAll('.card[id]').forEach(card => {
