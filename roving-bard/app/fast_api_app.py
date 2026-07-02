@@ -1871,6 +1871,26 @@ florence_model = None
 florence_processor = None
 
 
+def make_image_square(image):
+    """Pads a PIL image with a white background to make it square, preventing Florence-2 vision tower crashes."""
+    from PIL import Image
+    w, h = image.size
+    if w == h:
+        return image
+    max_side = max(w, h)
+    if image.mode in ("L", "1"):
+        fill_color = 255
+    elif image.mode == "RGBA":
+        fill_color = (255, 255, 255, 255)
+    else:
+        fill_color = (255, 255, 255)
+    new_img = Image.new(image.mode, (max_side, max_side), fill_color)
+    offset_x = (max_side - w) // 2
+    offset_y = (max_side - h) // 2
+    new_img.paste(image, (offset_x, offset_y))
+    return new_img
+ 
+ 
 def load_florence_model():
     global florence_model, florence_processor
     if florence_model is not None and florence_processor is not None:
@@ -1897,6 +1917,7 @@ def load_florence_model():
 def run_florence_ocr(image):
     global florence_model, florence_processor
     load_florence_model()
+    image = make_image_square(image)
         
     device = florence_model.device
     inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
@@ -2423,6 +2444,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 
             load_florence_model()
             tp0 = time.time()
+            text_img_4x = make_image_square(text_img_4x)
             device = florence_model.device
             inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
             tp1 = time.time()
