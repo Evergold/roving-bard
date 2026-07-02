@@ -1416,7 +1416,7 @@ def sync_ollama_ready_states():
                 elif model_id == "qwen2.5-vl":
                     ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"]
                 elif model_id == "paligemma":
-                    ollama_names = ["paligemma", "paligemma:latest"]
+                    ollama_names = ["paligemma", "paligemma:latest", "pdevine/paligemma", "pdevine/paligemma:latest"]
                 elif model_id == "minicpm-v":
                     ollama_names = ["minicpm-v", "minicpm-v:latest"]
                 
@@ -1760,7 +1760,7 @@ def api_vlm_pull(req: VlmPullRequest):
     model_map = {
         "moondream": "moondream:latest",
         "qwen2.5-vl": "qwen2.5vl:3b",
-        "paligemma": "paligemma",
+        "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v"
     }
 
@@ -1842,7 +1842,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
     model_map = {
         "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
-        "paligemma": "paligemma",
+        "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v"
     }
     if model_id not in model_map:
@@ -1913,7 +1913,7 @@ def api_vlm_unload(req: VlmUnloadRequest):
         "moondream": "moondream:latest",
         "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
-        "paligemma": "paligemma",
+        "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v"
     }
     if model_id not in model_map:
@@ -2010,7 +2010,7 @@ def api_gc(req: GcRequest):
     model_map = {
         "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
-        "paligemma": "paligemma",
+        "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v"
     }
     
@@ -2635,7 +2635,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "moondream": "moondream:latest",
             "qwen2-vl": "qwen2-vl",
             "qwen2.5-vl": "qwen2.5vl:3b",
-            "paligemma": "paligemma",
+            "paligemma": "pdevine/paligemma",
             "minicpm-v": "minicpm-v"
         }
 
@@ -2985,7 +2985,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "moondream": "moondream:latest",
                 "qwen2-vl": "qwen2-vl",
                 "qwen2.5-vl": "qwen2.5vl:3b",
-                "paligemma": "paligemma",
+                "paligemma": "pdevine/paligemma",
                 "minicpm-v": "minicpm-v"
             }
             if selected_model not in model_map:
