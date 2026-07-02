@@ -2026,8 +2026,13 @@ def run_florence_ocr(image):
         else:
             raise e
     
+    if not isinstance(generated_ids, str):
+        decoded_text = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    else:
+        decoded_text = generated_ids
+
     generated_text = florence_processor.post_process_generation(
-        generated_ids, 
+        decoded_text, 
         task="<OCR>", 
         image_size=image.size
     )["<OCR>"]
@@ -2629,8 +2634,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     )
                 else:
                     raise e
+            if not isinstance(generated_ids, str):
+                decoded_text = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            else:
+                decoded_text = generated_ids
+
             raw_text = florence_processor.post_process_generation(
-                generated_ids, 
+                decoded_text, 
                 task="<OCR>", 
                 image_size=text_img_4x.size
             )["<OCR>"]
