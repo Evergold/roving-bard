@@ -19,6 +19,11 @@ import threading
 import subprocess
 
 import cv2
+try:
+    if cv2.ocl.haveOpenCL():
+        cv2.ocl.setUseOpenCL(True)
+except Exception:
+    pass
 import mss
 import numpy as np
 import pytesseract

@@ -103,14 +103,28 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 
 3. **OpenCV + Tesseract GPU Acceleration (Optional)**:
    By default, the OpenCV + Tesseract pipeline operates on the host CPU. However, both components support optional hardware acceleration:
-   * **OpenCV Preprocessing (OpenCL)**: OpenCV's Transparent API allows offloading core image manipulation filters (like grayscaling, thresholding, resizing, and morphology) to the GPU using OpenCL. This is enabled natively by ensuring OpenCL runtime drivers are installed and running `cv2.ocl.setUseOpenCL(True)` (or compiling OpenCV with CUDA support for Nvidia cards).
-   * **Tesseract Engine (OpenCL)**: Tesseract (v4.0+) can run morphological operations and character recognition on the GPU if compiled with OpenCL support. To activate it, set the environment variable `TESSERACT_OPENCL=1` before booting Roving Bard.
+   * **OpenCV Preprocessing (OpenCL)**: OpenCV's Transparent API allows offloading core image manipulation filters (like grayscaling, thresholding, resizing, and morphology) to the GPU using OpenCL. In Roving Bard, this is initialized automatically on startup using `cv2.ocl.setUseOpenCL(True)` if compatible OpenCL runtime drivers are detected on the host system.
+   * **Tesseract Engine (OpenCL)**: Tesseract (v4.0+) can run morphological operations and character recognition on the GPU if compiled with OpenCL support. To activate it, you must export the environment variable beforehand in your terminal or pass it inline when starting the server:
+     ```bash
+     TESSERACT_OPENCL=1 uv run uvicorn app.fast_api_app:app --reload
+     ```
+   * **Verification & Diagnostics**: You can test whether OpenCL hardware acceleration is properly configured on your host environment beforehand:
+     * **OpenCV check**: Verify OpenCL detection and enablement status (run from the `roving-bard` subdirectory):
+       ```bash
+       uv run python -c "import cv2; print('OpenCL Available:', cv2.ocl.haveOpenCL()); print('OpenCL Enabled:', cv2.ocl.useOpenCL())"
+       ```
+     * **Tesseract check**: Run a test query to verify OpenCL drivers bind correctly:
+       ```bash
+       TESSERACT_OPENCL=1 tesseract --version
+       ```
+       If supported, Tesseract logs its OpenCL device binding, platform diagnostics, or fallback messages.
+
 
 ### 🧠 Built-in VLMs: Specifications & Briefs
 
 | Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
 |---|---|---|---|
-| **OpenCV + Tesseract** | `0 MB` | `800 MB` | CPU-only classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
+| **OpenCV + Tesseract** | `0 MB` | `800 MB` | Classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
 | **Florence-2 (Large)** | `1.8 GB` | `1.45 GB` | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
 | **Moondream2** | `2.2 GB` | `1.65 GB` | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
 | **Qwen2-VL (2B)** | `4.5 GB` | `2.0 GB` | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
