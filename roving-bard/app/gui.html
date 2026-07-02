@@ -5395,6 +5395,8 @@
                         modelSelect.disabled = false;
                         document.getElementById('btn-vlm-try').disabled = false;
                         
+                        showToast(`${modelName}: ${modelState.status}`, "error");
+                        
                         if (vlmStatusPollInterval) {
                             clearInterval(vlmStatusPollInterval);
                             vlmStatusPollInterval = null;

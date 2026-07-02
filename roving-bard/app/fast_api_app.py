@@ -19,6 +19,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Patch transformers library compatibility issues for Florence-2 large model loading
+try:
+    from transformers import PretrainedConfig, PreTrainedModel
+    import torch.nn as nn
+    PretrainedConfig.forced_bos_token_id = None
+    original_getattr = getattr(PreTrainedModel, "__getattr__", None)
+    def patched_getattr(self, item):
+        if item == "_supports_sdpa":
+            return False
+        if original_getattr is not None:
+            return original_getattr(self, item)
+        return nn.Module.__getattr__(self, item)
+    PreTrainedModel.__getattr__ = patched_getattr
+except ImportError:
+    pass
+
 import google.auth
 import yaml
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, status, Request
