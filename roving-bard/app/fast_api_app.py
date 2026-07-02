@@ -2186,7 +2186,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 vram = get_gpu_vram_usage_bytes()
             else:
                 ram = get_process_peak_ram_bytes()
-                vram = 0
+                vram = get_gpu_vram_usage_bytes()
             try:
                 import torch
                 if torch.cuda.is_available():

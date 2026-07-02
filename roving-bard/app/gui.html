@@ -5563,7 +5563,7 @@
                     const vramLabel = document.getElementById('label-vram');
                     const ramLabel = document.getElementById('label-ram');
  
-                    if (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-2.5-flash-lite') {
+                    if (res.actual_vram && selectedVal !== 'gemini-2.5-flash-lite') {
                         if (vramEl) vramEl.innerText = res.actual_vram;
                     } else {
                         if (vramEl) vramEl.innerText = "---";
@@ -5578,7 +5578,7 @@
                     if (ramLabel) ramLabel.innerText = t("vlm_est_ram", "RAM ");
  
                     // Cache the trial result stats in memory
-                    const finalVram = (res.actual_vram && selectedVal !== 'tesseract' && selectedVal !== 'gemini-2.5-flash-lite') ? res.actual_vram : "---";
+                    const finalVram = (res.actual_vram && selectedVal !== 'gemini-2.5-flash-lite') ? res.actual_vram : "---";
                     const finalRam = res.actual_ram || "---";
                     vlmStatsCache[selectedVal] = {
                         loc_time_ms: res.loc_time_ms,
