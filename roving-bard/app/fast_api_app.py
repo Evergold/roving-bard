@@ -1830,27 +1830,32 @@ florence_model = None
 florence_processor = None
 
 
-def run_florence_ocr(image):
+def load_florence_model():
     global florence_model, florence_processor
+    if florence_model is not None and florence_processor is not None:
+        return
     import torch
     from transformers import AutoProcessor, AutoModelForCausalLM
-    
-    if florence_model is None:
-        if torch.cuda.is_available():
-            device = "cuda"
-        elif torch.backends.mps.is_available():
-            device = "mps"
-        else:
-            device = "cpu"
-        print(f"[Florence-2] Loading microsoft/Florence-2-large on {device}...")
-        florence_model = AutoModelForCausalLM.from_pretrained(
-            "microsoft/Florence-2-large", 
-            trust_remote_code=True
-        ).to(device)
-        florence_processor = AutoProcessor.from_pretrained(
-            "microsoft/Florence-2-large", 
-            trust_remote_code=True
-        )
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
+    print(f"[Florence-2] Loading microsoft/Florence-2-large on {device}...")
+    florence_model = AutoModelForCausalLM.from_pretrained(
+        "microsoft/Florence-2-large", 
+        trust_remote_code=True
+    ).to(device)
+    florence_processor = AutoProcessor.from_pretrained(
+        "microsoft/Florence-2-large", 
+        trust_remote_code=True
+    )
+
+
+def run_florence_ocr(image):
+    global florence_model, florence_processor
+    load_florence_model()
         
     device = florence_model.device
     inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
@@ -2353,6 +2358,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             if not vlm_download_states["florence-2"]["ready"]:
                 return {"status": "error", "message": "Florence-2 model is not downloaded/ready yet."}
                 
+            load_florence_model()
             tp0 = time.time()
             device = florence_model.device
             inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
