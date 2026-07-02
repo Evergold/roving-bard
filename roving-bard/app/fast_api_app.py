@@ -2259,26 +2259,41 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             pass
 
         def get_peak_usage(is_ollama=False):
+            # Compute process-level memory usage (as a fallback)
             if is_ollama:
-                # Ollama is run in a separate process, so its memory is entirely model/method memory.
-                # Subtract uvicorn's current VRAM to isolate Ollama's incremental VRAM.
                 ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram) + get_ollama_peak_ram_usage_bytes()
                 vram = max(0, get_gpu_vram_usage_bytes(include_ollama=True) - get_gpu_vram_usage_bytes(include_ollama=False))
             else:
                 ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram)
                 vram = max(0, get_gpu_vram_usage_bytes(include_ollama=False) - server_baseline_vram)
-            try:
-                import sys
-                if "torch" in sys.modules:
-                    import torch
-                    if torch.cuda.is_available():
-                        if vram <= 0:
+
+            # Discover exact model VRAM directly to treat runtime contexts as baseline
+            if is_ollama:
+                try:
+                    # Query Ollama's active model API for the exact VRAM weights size
+                    ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
+                    if ps_res.status_code == 200:
+                        ps_data = ps_res.json()
+                        target_tag = old_model_map.get(selected_model, "")
+                        for m in ps_data.get("models", []):
+                            loaded_name = m.get("name", "")
+                            if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
+                                vram = m.get("size_vram", 0)
+                                break
+                except Exception:
+                    pass
+            else:
+                try:
+                    import sys
+                    if "torch" in sys.modules:
+                        import torch
+                        if torch.cuda.is_available():
                             vram = torch.cuda.max_memory_allocated()
-                    elif torch.backends.mps.is_available():
-                        if vram <= 0:
+                        elif torch.backends.mps.is_available():
                             vram = torch.mps.driver_allocated_memory()
-            except Exception:
-                pass
+                except Exception:
+                    pass
+
             return format_memory_size(ram), format_memory_size(vram)
 
         # Model performance parameters
