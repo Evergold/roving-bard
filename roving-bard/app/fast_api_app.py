@@ -1813,6 +1813,22 @@ def api_vlm_unload(req: VlmUnloadRequest):
     if model_id not in vlm_download_states:
         return {"status": "error", "message": f"Unknown model: {req.model}"}
 
+    if model_id == "florence-2":
+        global florence_model, florence_processor
+        print("[Florence-2] Unloading model from memory...", flush=True)
+        florence_model = None
+        florence_processor = None
+        import gc
+        gc.collect()
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
+        except Exception:
+            pass
+        return {"status": "success", "message": "Florence-2 has been unloaded."}
+ 
     model_map = {
         "moondream": "moondream:latest",
         "qwen2-vl": "qwen2-vl",

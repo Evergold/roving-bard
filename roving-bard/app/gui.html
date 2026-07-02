@@ -5551,6 +5551,7 @@
                         activeVLMModel = null;
                     } else {
                         activeVLMModel = friendlyName;
+                        currentlyWarmModel = selectedVal;
                     }
                     if (statMethod) statMethod.innerText = friendlyName;
                     document.getElementById('stat-loc-time').innerText = (res.loc_time_ms !== null && res.loc_time_ms !== undefined) ? `${res.loc_time_ms.toFixed(1)} ms` : "--- ms";
