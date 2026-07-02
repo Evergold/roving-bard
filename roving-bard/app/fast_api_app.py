@@ -2129,11 +2129,13 @@ def get_gpu_vram_usage_bytes(include_ollama=False):
     import platform
     total_vram = 0
     try:
-        import torch
-        if torch.cuda.is_available():
-            total_vram += torch.cuda.memory_allocated()
-        elif torch.backends.mps.is_available():
-            total_vram += torch.mps.driver_allocated_memory()
+        import sys
+        if "torch" in sys.modules:
+            import torch
+            if torch.cuda.is_available():
+                total_vram += torch.cuda.memory_allocated()
+            elif torch.backends.mps.is_available():
+                total_vram += torch.mps.driver_allocated_memory()
     except Exception:
         pass
 
@@ -2191,9 +2193,11 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         
     try:
         try:
-            import torch
-            if torch.cuda.is_available():
-                torch.cuda.reset_peak_memory_stats()
+            import sys
+            if "torch" in sys.modules:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.reset_peak_memory_stats()
         except Exception:
             pass
 
@@ -2205,11 +2209,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 ram = get_process_peak_ram_bytes()
                 vram = get_gpu_vram_usage_bytes(include_ollama=False)
             try:
-                import torch
-                if torch.cuda.is_available():
-                    vram = max(vram, torch.cuda.max_memory_allocated())
-                elif torch.backends.mps.is_available():
-                    vram = max(vram, torch.mps.driver_allocated_memory())
+                import sys
+                if "torch" in sys.modules:
+                    import torch
+                    if torch.cuda.is_available():
+                        vram = max(vram, torch.cuda.max_memory_allocated())
+                    elif torch.backends.mps.is_available():
+                        vram = max(vram, torch.mps.driver_allocated_memory())
             except Exception:
                 pass
             return format_memory_size(ram), format_memory_size(vram)
