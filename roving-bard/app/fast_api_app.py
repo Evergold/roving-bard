@@ -2223,7 +2223,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Model performance parameters
         # Real-world benchmark times for local VLMs running on moderate GPUs:
         model_perf = {
-            "tesseract": {"loc": 15.0, "coords": 10.0, "ram": "120 MB", "vram": "0 MB"},
+            "tesseract": {"loc": 15.0, "coords": 10.0, "ram": "120 MB", "vram": "85 MB"},
             "moondream": {"loc": 65.0, "coords": 55.0, "ram": "850 MB", "vram": "2.2 GB"},
             "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "4.5 GB"},
             "qwen2.5-vl": {"loc": 85.0, "coords": 75.0, "ram": "1.4 GB", "vram": "5.0 GB"},
