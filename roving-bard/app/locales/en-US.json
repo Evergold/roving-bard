@@ -237,5 +237,9 @@
     "filter_info": "INFO",
     "filter_success": "SUCCESS",
     "no_severity_messages": "No messages of this severity.",
-    "log_tooltip": "Session Log"
+    "log_tooltip": "Session Log",
+    "opencv_acceleration_success": "OpenCV: OpenCL acceleration is ENABLED",
+    "opencv_acceleration_info": "OpenCV: Running in CPU-only mode",
+    "tesseract_acceleration_success": "Tesseract: OpenCL acceleration is ENABLED",
+    "tesseract_acceleration_info": "Tesseract: Running in CPU-only mode"
 }

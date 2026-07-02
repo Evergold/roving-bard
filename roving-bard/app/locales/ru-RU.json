@@ -237,5 +237,9 @@
     "filter_info": "ИНФО",
     "filter_success": "УСПЕХ",
     "no_severity_messages": "Нет сообщений этой степени важности.",
-    "log_tooltip": "Журнал сессии"
+    "log_tooltip": "Журнал сессии",
+    "opencv_acceleration_success": "OpenCV: ускорение OpenCL ВКЛЮЧЕНО",
+    "opencv_acceleration_info": "OpenCV: выполнение в режиме только ЦП",
+    "tesseract_acceleration_success": "Tesseract: ускорение OpenCL ВКЛЮЧЕНО",
+    "tesseract_acceleration_info": "Tesseract: выполнение в режиме только ЦП"
 }

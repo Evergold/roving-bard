@@ -347,11 +347,20 @@ def get_available_soundfonts(playlist_dir: str) -> list[str]:
 
 @app.get("/api/env-status")
 def get_env_status():
-    """Returns the presence of API key environment variables (without returning their values)."""
+    """Returns the presence of API key environment variables and GPU/OpenCL acceleration status."""
+    import cv2
+    opencv_acceleration = False
+    try:
+        opencv_acceleration = cv2.ocl.useOpenCL()
+    except Exception:
+        pass
+
     return {
         "AGENT_API_KEY": os.getenv("AGENT_API_KEY") is not None,
         "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY") is not None,
         "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY") is not None,
+        "opencv_acceleration": opencv_acceleration,
+        "tesseract_acceleration": os.getenv("TESSERACT_OPENCL") == "1",
     }
 
 

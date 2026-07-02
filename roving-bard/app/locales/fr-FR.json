@@ -237,5 +237,9 @@
     "filter_info": "INFO",
     "filter_success": "SUCCÈS",
     "no_severity_messages": "Aucun message de cette gravité.",
-    "log_tooltip": "Journal de session"
+    "log_tooltip": "Journal de session",
+    "opencv_acceleration_success": "OpenCV : L'accélération OpenCL est ACTIVÉE",
+    "opencv_acceleration_info": "OpenCV : Exécution en mode CPU uniquement",
+    "tesseract_acceleration_success": "Tesseract : L'accélération OpenCL est ACTIVÉE",
+    "tesseract_acceleration_info": "Tesseract : Exécution en mode CPU uniquement"
 }

@@ -4168,6 +4168,7 @@
         }
 
         let cachedEnvStatus = null;
+        let startupToastsShown = false;
 
         async function checkApiKeyEnvStatus() {
             try {
@@ -4178,6 +4179,20 @@
                     const response = await fetch('/api/env-status');
                     res = await response.json();
                     cachedEnvStatus = res;
+                }
+                
+                if (!startupToastsShown) {
+                    startupToastsShown = true;
+                    if (res.opencv_acceleration) {
+                        showToast(t('opencv_acceleration_success', 'OpenCV: OpenCL acceleration is ENABLED'), 'success');
+                    } else {
+                        showToast(t('opencv_acceleration_info', 'OpenCV: Running in CPU-only mode'), 'info');
+                    }
+                    if (res.tesseract_acceleration) {
+                        showToast(t('tesseract_acceleration_success', 'Tesseract: OpenCL acceleration is ENABLED'), 'success');
+                    } else {
+                        showToast(t('tesseract_acceleration_info', 'Tesseract: Running in CPU-only mode'), 'info');
+                    }
                 }
                 
                 const container = document.getElementById('api-key-detection-status');
