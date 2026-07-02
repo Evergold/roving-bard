@@ -40,6 +40,79 @@ try:
         def additional_special_tokens(self):
             return self.special_tokens_map.get("additional_special_tokens", [])
         PreTrainedTokenizerBase.additional_special_tokens = additional_special_tokens
+
+    # Patch EncoderDecoderCache to be subscriptable for legacy models like Florence-2
+    try:
+        from transformers.cache_utils import EncoderDecoderCache
+        import torch
+
+        class DummyTensor:
+            def __init__(self):
+                self.shape = (0, 0, 0, 0)
+                self.device = torch.device("cpu")
+            def index_select(self, *args, **kwargs):
+                return self
+
+        dummy_tensor = DummyTensor()
+
+        class LegacyCacheTuple(tuple):
+            def __new__(cls, self_key, self_val, cross_key, cross_val):
+                return super().__new__(cls, (self_key, self_val, cross_key, cross_val))
+                
+            def __getitem__(self, key):
+                if isinstance(key, slice):
+                    items = super().__getitem__(key)
+                    if all(item is None or isinstance(item, DummyTensor) for item in items):
+                        return None
+                    return items
+                return super().__getitem__(key)
+
+        def get_key_val(cache_obj, index):
+            if hasattr(cache_obj, "layers"):
+                if index < len(cache_obj.layers):
+                    layer = cache_obj.layers[index]
+                    if hasattr(layer, "keys") and hasattr(layer, "values"):
+                        k = layer.keys if layer.keys is not None else dummy_tensor
+                        v = layer.values if layer.values is not None else dummy_tensor
+                        return k, v
+            if hasattr(cache_obj, "key_cache") and hasattr(cache_obj, "value_cache"):
+                if index < len(cache_obj.key_cache) and index < len(cache_obj.value_cache):
+                    k = cache_obj.key_cache[index] if cache_obj.key_cache[index] is not None else dummy_tensor
+                    v = cache_obj.value_cache[index] if cache_obj.value_cache[index] is not None else dummy_tensor
+                    return k, v
+            return dummy_tensor, dummy_tensor
+
+        if not hasattr(EncoderDecoderCache, "__getitem__"):
+            def encoder_decoder_cache_getitem(self, index):
+                self_len = 0
+                if hasattr(self.self_attention_cache, "layers"):
+                    self_len = len(self.self_attention_cache.layers)
+                elif hasattr(self.self_attention_cache, "key_cache"):
+                    self_len = len(self.self_attention_cache.key_cache)
+                else:
+                    self_len = len(self.self_attention_cache)
+                
+                self_len = max(1, self_len)
+                
+                if index < 0 or index >= self_len:
+                    raise IndexError("EncoderDecoderCache index out of range")
+                    
+                self_key, self_val = get_key_val(self.self_attention_cache, index)
+                cross_key, cross_val = get_key_val(self.cross_attention_cache, index)
+                return LegacyCacheTuple(self_key, self_val, cross_key, cross_val)
+                
+            EncoderDecoderCache.__getitem__ = encoder_decoder_cache_getitem
+
+        if not hasattr(EncoderDecoderCache, "__len__"):
+            def encoder_decoder_cache_len(self):
+                if hasattr(self.self_attention_cache, "layers"):
+                    return max(1, len(self.self_attention_cache.layers))
+                elif hasattr(self.self_attention_cache, "key_cache"):
+                    return max(1, len(self.self_attention_cache.key_cache))
+                return max(1, len(self.self_attention_cache))
+            EncoderDecoderCache.__len__ = encoder_decoder_cache_len
+    except ImportError:
+        pass
 except ImportError:
     pass
 
@@ -1915,6 +1988,8 @@ def load_florence_model():
         "microsoft/Florence-2-large", 
         trust_remote_code=True
     ).to(device)
+    if device == "cpu":
+        florence_model = florence_model.float()
     florence_processor = AutoProcessor.from_pretrained(
         "microsoft/Florence-2-large", 
         trust_remote_code=True
