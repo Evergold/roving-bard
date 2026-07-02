@@ -3005,38 +3005,65 @@
         }
 
         /* Session Log UI Styles */
+        /* Session Log UI Styles */
         .log-trigger-btn {
-            background: transparent;
-            border: none;
-            padding: 8px;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border);
+            padding: 0;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            width: 38px;
-            height: 38px;
+            transition: all 0.2s ease, transform 0.1s ease;
+            width: 40px;
+            height: 40px;
+            outline: none;
+            flex-shrink: 0;
         }
         .log-trigger-btn:hover {
-            background-color: rgba(255, 255, 255, 0.08);
-        }
-        body.light-theme .log-trigger-btn:hover {
-            background-color: rgba(0, 0, 0, 0.06);
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px solid rgba(0, 242, 254, 0.3) !important;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2) !important;
         }
         .log-trigger-btn:active {
             transform: scale(0.95);
         }
-        .log-trigger-btn.active svg {
-            stroke: var(--accent) !important;
-        }
         .log-trigger-btn svg {
             stroke: var(--text-muted);
-            transition: stroke 0.2s ease;
+            transition: all 0.2s ease;
         }
         .log-trigger-btn:hover svg {
-            stroke: var(--text-main);
+            stroke: var(--neon-blue) !important;
+            filter: drop-shadow(0 0 2px var(--neon-blue));
+        }
+        .log-trigger-btn.active {
+            background: rgba(0, 242, 254, 0.15) !important;
+            border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        }
+        .log-trigger-btn.active svg {
+            stroke: var(--neon-blue) !important;
+        }
+
+        body.light-theme .log-trigger-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid #b4b8c0;
+        }
+        body.light-theme .log-trigger-btn:hover {
+            background: var(--accent-glow) !important;
+            border: 1px solid rgba(46, 93, 168, 0.3) !important;
+            box-shadow: 0 0 8px rgba(46, 93, 168, 0.15) !important;
+        }
+        body.light-theme .log-trigger-btn:hover svg {
+            stroke: var(--accent) !important;
+        }
+        body.light-theme .log-trigger-btn.active {
+            background: var(--accent-glow) !important;
+            border: 1px solid rgba(46, 93, 168, 0.3) !important;
+        }
+        body.light-theme .log-trigger-btn.active svg {
+            stroke: var(--accent) !important;
         }
         .log-popover {
             left: 6rem !important;
@@ -3232,6 +3259,15 @@
                         <span id="cache-section-title" style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;">Synthesis Cache</span>
                         <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
                             <button id="clear-cache-btn" class="font-size-btn" onclick="clearAudioCache(event)" style="height: 48px; min-width: 80px; font-size: 0.95rem; border-radius: 24px; border: none; padding: 0 20px; transition: all 0.2s ease;" data-loc="clear_btn_label" disabled>Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Server Baseline option -->
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem;">
+                        <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;">Server Baseline</span>
+                        <div style="font-size: 0.85rem; font-family: 'Space Mono', monospace; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; width: fit-content; min-width: 160px; box-sizing: border-box; display: flex; flex-direction: column; gap: 0.25rem;">
+                            <div>VRAM: <span id="server-baseline-vram-display" style="color: #ff9d00; font-weight: bold;">Loading...</span></div>
+                            <div>RAM : <span id="server-baseline-ram-display" style="color: #00d9ff; font-weight: bold;">Loading...</span></div>
                         </div>
                     </div>
                 </div>
@@ -5228,6 +5264,25 @@
             }
         }
 
+        async function updateServerBaselineUI() {
+            try {
+                const response = await apiFetch('/api/ocr/vlm_status');
+                const data = await response.json();
+                const baselineRamDisplay = document.getElementById('server-baseline-ram-display');
+                const baselineVramDisplay = document.getElementById('server-baseline-vram-display');
+                if (baselineRamDisplay && data.baseline_ram) {
+                    baselineRamDisplay.innerText = data.baseline_ram;
+                }
+                if (baselineVramDisplay && data.baseline_vram) {
+                    baselineVramDisplay.innerText = data.baseline_vram;
+                }
+                return data;
+            } catch (err) {
+                console.error("Error updating baseline memory display:", err);
+                return null;
+            }
+        }
+
         async function onVLMSelectChange() {
             if (vlmStatusPollInterval) {
                 clearInterval(vlmStatusPollInterval);
@@ -5237,6 +5292,9 @@
             const modelSelect = document.getElementById('vlm-model-select');
             const selectedVal = modelSelect.value;
             localStorage.setItem('selectedVLM', selectedVal);
+
+            // Fetch VLM status and baseline memory stats unconditionally
+            const vlmData = await updateServerBaselineUI();
 
             // If switching to a non-warmup model (tesseract, gemini), clean up all local models
             if (selectedVal === 'tesseract' || selectedVal === 'gemini-2.5-flash-lite') {
@@ -5319,10 +5377,9 @@
             }
  
             try {
-                const response = await apiFetch('/api/ocr/vlm_status');
-                const data = await response.json();
-                const modelState = data.states[selectedVal];
-                const actionBtn = document.getElementById('btn-vlm-download-action');
+                if (vlmData && vlmData.states) {
+                    const modelState = vlmData.states[selectedVal];
+                    const actionBtn = document.getElementById('btn-vlm-download-action');
 
                 if (modelState) {
                     if (modelState.ready) {
@@ -5377,8 +5434,9 @@
                     document.getElementById('vlm-download-container').style.display = 'none';
                     modelSelect.disabled = false;
                 }
-            } catch (err) {
-                console.error("Error checking VLM status:", err);
+            }
+        } catch (err) {
+            console.error("Error checking VLM status:", err);
                 modelSelect.disabled = false;
             }
         }
@@ -8843,6 +8901,7 @@
             } else {
                 // Open it
                 updateCacheStatusUI();
+                updateServerBaselineUI();
                 if (popoverInner) {
                     // Set initial untransformed size instantly before animation starts
                     popover.style.width = `${popoverInner.offsetWidth}px`;

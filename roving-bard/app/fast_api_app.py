@@ -1659,7 +1659,12 @@ def api_vlm_status():
     """Returns the ready/download status of all available local VLM methods."""
     sync_ollama_ready_states()
     sync_florence_ready_state()
-    return {"status": "success", "states": vlm_download_states}
+    return {
+        "status": "success", 
+        "states": vlm_download_states,
+        "baseline_ram": format_memory_size(server_baseline_ram),
+        "baseline_vram": format_memory_size(server_baseline_vram)
+    }
 
 
 class VlmPullRequest(BaseModel):
