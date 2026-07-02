@@ -7737,6 +7737,9 @@
             const logPopover = document.getElementById('log-popover');
             const logBtn = document.getElementById('log-trigger-btn');
             if (logPopoverOpen && logPopover && !logPopover.contains(event.target) && (!logBtn || !logBtn.contains(event.target))) {
+                if (window.wasResizingLogPopover) {
+                    return;
+                }
                 toggleLogPopover();
             }
         });
@@ -9046,6 +9049,7 @@
         (function() {
             let isResizing = false;
             let startWidth, startHeight, startX, startY;
+            window.wasResizingLogPopover = false;
 
             document.addEventListener('DOMContentLoaded', () => {
                 const handle = document.getElementById('log-resize-handle');
@@ -9056,6 +9060,7 @@
                     e.preventDefault();
                     e.stopPropagation();
                     isResizing = true;
+                    window.wasResizingLogPopover = true;
                     // Disable CSS transitions on width/height during resize to prevent lag
                     popover.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
                     startWidth = popover.offsetWidth;
@@ -9084,6 +9089,9 @@
                     document.removeEventListener('mouseup', handleMouseUp);
                     // Restore transitions
                     popover.style.transition = '';
+                    setTimeout(() => {
+                        window.wasResizingLogPopover = false;
+                    }, 100);
                 }
             });
         })();
