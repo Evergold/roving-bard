@@ -5144,7 +5144,8 @@
 
                 const hasActual = (parse.actual_ram !== null && parse.actual_ram !== undefined);
                 const finalRam = hasActual ? parse.actual_ram : "---";
-                const finalVram = "---";
+                const hasActualVram = (parse.actual_vram !== null && parse.actual_vram !== undefined);
+                const finalVram = hasActualVram ? parse.actual_vram : "---";
                 const vramLabelText = t("vlm_est_vram", "VRAM");
                 const ramLabelText = t("vlm_est_ram", "RAM ");
 
@@ -5165,8 +5166,12 @@
 
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
-                    if (vramEl) vramEl.innerText = finalVram;
-                    if (ramEl) ramEl.innerText = finalRam;
+                    if (vramEl) {
+                        vramEl.innerText = runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.vram || "---") : finalVram;
+                    }
+                    if (ramEl) {
+                        ramEl.innerText = runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.ram || "---") : finalRam;
+                    }
 
                     const vramLabel = document.getElementById('label-vram');
                     const ramLabel = document.getElementById('label-ram');
@@ -5180,8 +5185,8 @@
                     coords_time_ms: parse.coords_time_ms !== undefined ? parse.coords_time_ms : null,
                     total_time_ms: parse.total_time_ms !== undefined ? parse.total_time_ms : null,
                     preprocess_time_ms: parse.preprocess_time_ms !== undefined ? parse.preprocess_time_ms : null,
-                    vram: finalVram,
-                    ram: finalRam,
+                    vram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.vram || finalVram) : finalVram,
+                    ram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.ram || finalRam) : finalRam,
                     vramLabel: vramLabelText,
                     ramLabel: ramLabelText,
                     methodLabel: "OpenCV+Tesseract"

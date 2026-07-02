@@ -2485,15 +2485,39 @@ def api_ocr_try_vlm(req: VlmTryRequest):
  
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
-            tp0 = time.time()
-            _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
-            tp1 = time.time()
-            preprocess_time_ms = (tp1 - tp0) * 1000.0
- 
-            t0 = time.time()
-            pass_num = getattr(tools, "current_ocr_pass", 2)
-            loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
-            t1 = time.time()
+            import threading
+            peak_vram = 0
+            stop_monitor = False
+            
+            def monitor_vram_loop():
+                nonlocal peak_vram
+                import time
+                while not stop_monitor:
+                    try:
+                        v = get_gpu_vram_usage_bytes(include_ollama=False)
+                        if v > peak_vram:
+                            peak_vram = v
+                    except Exception:
+                        pass
+                    time.sleep(0.005)
+                    
+            monitor_thread = threading.Thread(target=monitor_vram_loop)
+            monitor_thread.daemon = True
+            monitor_thread.start()
+            
+            try:
+                tp0 = time.time()
+                _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
+     
+                t0 = time.time()
+                pass_num = getattr(tools, "current_ocr_pass", 2)
+                loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
+                t1 = time.time()
+            finally:
+                stop_monitor = True
+                monitor_thread.join(timeout=1.0)
             
             raw_text = getattr(tools.ocr_parser, "latest_raw_text", "")
             rich = tools.ocr_parser.parse_text_rich(raw_text)
@@ -2506,7 +2530,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             loc_time_ms = total_time_ms * 0.55
             coords_time_ms = total_time_ms * 0.45
             
-            act_ram, act_vram = get_peak_usage()
+            act_ram = format_memory_size(max(0, get_process_peak_ram_bytes() - server_baseline_ram))
+            act_vram = format_memory_size(max(0, peak_vram - server_baseline_vram))
             return {
                 "status": "success",
                 "model": "OpenCV+Tesseract",
