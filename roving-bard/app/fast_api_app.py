@@ -2161,7 +2161,7 @@ def format_memory_size(bytes_val):
 @app.post("/api/ocr/try_vlm", dependencies=[Depends(verify_api_key)])
 def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
-    global currently_loaded_vlm
+    global currently_loaded_vlm, florence_model, florence_processor
     import io
     import time
     from PIL import Image
