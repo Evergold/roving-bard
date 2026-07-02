@@ -1762,7 +1762,6 @@ def api_vlm_warmup(req: VlmWarmupRequest):
         return {"status": "success", "message": f"Model {req.model} is not ready yet."}
 
     model_map = {
-        "moondream": "moondream:latest",
         "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "paligemma",

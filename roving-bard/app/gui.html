@@ -5329,7 +5329,7 @@
                         document.getElementById('btn-vlm-try').disabled = false;
                         document.getElementById('vlm-download-container').style.display = 'none';
                         modelSelect.disabled = false;
-                        const warmupModels = ['moondream', 'qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v'];
+                        const warmupModels = ['qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v'];
                         if (warmupModels.includes(selectedVal)) {
                             apiFetch('/api/ocr/vlm_warmup', {
                                 method: 'POST',
@@ -5442,7 +5442,7 @@
                         showToast(`${modelName} ${readySuffix}`, "success");
                         
                         if (modelName === modelSelect.value) {
-                            const warmupModels = ['moondream', 'qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v'];
+                            const warmupModels = ['qwen2-vl', 'qwen2.5-vl', 'paligemma', 'minicpm-v'];
                             if (warmupModels.includes(modelName)) {
                                 apiFetch('/api/ocr/vlm_warmup', {
                                     method: 'POST',
