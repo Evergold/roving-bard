@@ -168,7 +168,7 @@
     "export_segment_name_title": "Nome del segmento:",
     "ok": "OK",
     "cache_section_label": "Cache di sintesi",
-    "clear_cache_label": "Cancella cache audio",
+    "clear_cache_label": "Ripristina cache di sintesi",
     "clear_cache_success": "Cache audio cancellata con successo!",
     "clear_cache_failed": "Impossibile cancellare la cache audio: ",
     "clear_btn_label": "Cancella",

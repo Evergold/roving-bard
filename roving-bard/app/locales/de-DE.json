@@ -168,7 +168,7 @@
     "export_segment_name_title": "Segmentname:",
     "ok": "OK",
     "cache_section_label": "Synthese-Cache",
-    "clear_cache_label": "Audiocache leeren",
+    "clear_cache_label": "Synthese-Cache zurücksetzen",
     "clear_cache_success": "Audiocache erfolgreich geleert!",
     "clear_cache_failed": "Audiocache konnte nicht geleert werden: ",
     "clear_btn_label": "Leeren",

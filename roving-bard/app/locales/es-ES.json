@@ -168,7 +168,7 @@
     "export_segment_name_title": "Nombre del segmento:",
     "ok": "Aceptar",
     "cache_section_label": "Caché de síntesis",
-    "clear_cache_label": "Borrar caché de audio",
+    "clear_cache_label": "Restablecer caché de síntesis",
     "clear_cache_success": "¡Caché de audio borrada con éxito!",
     "clear_cache_failed": "Error al borrar la caché de audio: ",
     "clear_btn_label": "Borrar",

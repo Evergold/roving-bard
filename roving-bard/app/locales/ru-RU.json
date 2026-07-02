@@ -168,7 +168,7 @@
     "export_segment_name_title": "Имя сегмента:",
     "ok": "ОК",
     "cache_section_label": "Кэш синтеза",
-    "clear_cache_label": "Очистить аудио-кэш",
+    "clear_cache_label": "Сбросить кэш синтеза",
     "clear_cache_success": "Аудио-кэш успешно очищен!",
     "clear_cache_failed": "Не удалось очистить аудио-кэш: ",
     "clear_btn_label": "Очистить",
