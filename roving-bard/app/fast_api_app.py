@@ -2123,8 +2123,8 @@ def get_ollama_peak_ram_usage_bytes():
     return total_ram
 
 
-def get_gpu_vram_usage_bytes():
-    """Gets the GPU memory usage of current process and any ollama processes in bytes."""
+def get_gpu_vram_usage_bytes(include_ollama=False):
+    """Gets the GPU memory usage of current process and optionally ollama processes in bytes."""
     import subprocess
     import platform
     total_vram = 0
@@ -2147,8 +2147,9 @@ def get_gpu_vram_usage_bytes():
         )
         if res.returncode == 0:
             pids_of_interest = {os.getpid()}
-            for pid in get_ollama_pids():
-                pids_of_interest.add(pid)
+            if include_ollama:
+                for pid in get_ollama_pids():
+                    pids_of_interest.add(pid)
             
             for line in res.stdout.strip().split("\n"):
                 if not line:
@@ -2199,10 +2200,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         def get_peak_usage(is_ollama=False):
             if is_ollama:
                 ram = get_process_peak_ram_bytes() + get_ollama_peak_ram_usage_bytes()
-                vram = get_gpu_vram_usage_bytes()
+                vram = get_gpu_vram_usage_bytes(include_ollama=True)
             else:
                 ram = get_process_peak_ram_bytes()
-                vram = get_gpu_vram_usage_bytes()
+                vram = get_gpu_vram_usage_bytes(include_ollama=False)
             try:
                 import torch
                 if torch.cuda.is_available():
