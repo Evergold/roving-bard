@@ -1977,6 +1977,8 @@ def api_gc(req: GcRequest):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
+        elif hasattr(torch, "mps") and torch.mps.is_available():
+            torch.mps.empty_cache()
     except Exception as e:
         print(f"[GC] Error clearing PyTorch cache: {e}", flush=True)
 
@@ -2349,42 +2351,10 @@ def measure_baseline():
  
  
 def get_gpu_vram_usage_bytes(include_ollama=False):
-    """Gets the GPU memory usage of current process and optionally ollama processes in bytes."""
-    import subprocess
-    import platform
-    import os
-    
-    # Try nvidia-smi first (Linux/Windows Nvidia)
-    try:
-        res = subprocess.run(
-            ["nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=1
-        )
-        if res.returncode == 0:
-            pids_of_interest = {os.getpid()}
-            if include_ollama:
-                for pid in get_ollama_pids():
-                    pids_of_interest.add(pid)
-            
-            total_vram = 0
-            has_found_any = False
-            for line in res.stdout.strip().split("\n"):
-                if not line:
-                    continue
-                parts = line.split(",")
-                if len(parts) == 2:
-                    pid = int(parts[0].strip())
-                    vram_mb = int(parts[1].strip())
-                    if pid in pids_of_interest:
-                        total_vram += vram_mb * 1024 * 1024
-                        has_found_any = True
-            if has_found_any:
-                return total_vram
-    except Exception:
-        pass
+    """Gets the GPU memory usage in bytes (system-wide when nvidia-smi/rocm-smi is available)."""
+    v = tools.get_system_vram_bytes()
+    if v is not None:
+        return v
 
     # Fallback to PyTorch (e.g. for MPS on macOS, or if nvidia-smi is not available)
     try:
@@ -2393,8 +2363,11 @@ def get_gpu_vram_usage_bytes(include_ollama=False):
             import torch
             if torch.cuda.is_available():
                 return torch.cuda.memory_allocated()
-            elif torch.backends.mps.is_available():
-                return torch.mps.driver_allocated_memory()
+            elif hasattr(torch, "mps") and torch.mps.is_available():
+                if hasattr(torch.mps, "driver_allocated_memory"):
+                    return torch.mps.driver_allocated_memory()
+                elif hasattr(torch.mps, "current_allocated_memory"):
+                    return torch.mps.current_allocated_memory()
     except Exception:
         pass
         

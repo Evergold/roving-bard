@@ -247,6 +247,47 @@ def call_gemini_vision(img, model_name):
         return None, None, None, None
 
 
+def get_system_vram_bytes():
+    import subprocess
+    import os
+    
+    # 1. Try Nvidia
+    try:
+        res = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, check=True, timeout=1.0
+        )
+        return int(res.stdout.strip()) * 1024 * 1024
+    except Exception:
+        pass
+        
+    # 2. Try AMD ROCm
+    try:
+        res = subprocess.run(
+            ["rocm-smi", "--showmeminfo", "vram"],
+            capture_output=True, text=True, check=True, timeout=1.0
+        )
+        for line in res.stdout.splitlines():
+            if "Used Memory" in line and "(B)" in line:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    return int(parts[1].strip())
+    except Exception:
+        pass
+        
+    # 3. Try Intel Linux sysfs
+    try:
+        for card in ["card0", "card1"]:
+            path = f"/sys/class/drm/{card}/device/mem_info_vram_used"
+            if os.path.exists(path):
+                with open(path, "r") as f:
+                    return int(f.read().strip())
+    except Exception:
+        pass
+        
+    return None
+
+
 def get_actual_usage():
     """Get actual RAM and VRAM usage on Linux systems, omitting the baseline footprint."""
     try:
@@ -261,16 +302,7 @@ def get_actual_usage():
                         ram_bytes = int(parts[1]) * 1024
                     break
         
-        vram_bytes = 0
-        import subprocess
-        try:
-            res = subprocess.run(
-                ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, check=True, timeout=1.0
-            )
-            vram_bytes = int(res.stdout.strip()) * 1024 * 1024
-        except Exception:
-            pass
+        vram_bytes = get_system_vram_bytes() or 0
             
         incremental_ram = max(0, ram_bytes - server_baseline_ram)
         incremental_vram = max(0, vram_bytes - server_baseline_vram)
