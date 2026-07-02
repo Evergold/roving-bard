@@ -1787,7 +1787,10 @@ def api_vlm_warmup(req: VlmWarmupRequest):
                     "prompt": "warmup",
                     "images": [dummy_img],
                     "stream": False,
-                    "keep_alive": -1
+                    "keep_alive": -1,
+                    "options": {
+                        "num_ctx": 1024
+                    }
                 },
                 timeout=180
             )
@@ -2579,7 +2582,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 prompt = "What does the text at the bottom of the image say?"
 
             options = {
-                "temperature": 0.0
+                "temperature": 0.0,
+                "num_ctx": 1024
             }
             if "qwen" in selected_model:
                 options["num_predict"] = 80
