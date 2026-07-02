@@ -2406,6 +2406,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
             t0 = time.time()
+            fallback_warning = None
             try:
                 generated_ids = florence_model.generate(
                     input_ids=inputs["input_ids"],
@@ -2416,6 +2417,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             except RuntimeError as e:
                 if "no kernel image is available" in str(e) and device.type == "cuda":
                     print("[Florence-2] CUDA kernel compatibility error detected in trial. Falling back to CPU...")
+                    fallback_warning = "florence_cpu_fallback"
                     florence_model = florence_model.to("cpu")
                     device = florence_model.device
                     inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
@@ -2457,7 +2459,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
                 "total_time_ms": round(total_time_ms, 1),
                 "actual_ram": act_ram,
-                "actual_vram": act_vram
+                "actual_vram": act_vram,
+                "warning": fallback_warning
             }
  
         # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, Qwen2.5-VL, PaliGemma, MiniCPM-V)!

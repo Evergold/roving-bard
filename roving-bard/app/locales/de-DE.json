@@ -241,5 +241,6 @@
     "opencv_acceleration_success": "OpenCV: OpenCL-Beschleunigung ist AKTIVIERT",
     "opencv_acceleration_info": "OpenCV: Ausführung im reinen CPU-Modus",
     "tesseract_acceleration_success": "Tesseract: OpenCL-Beschleunigung ist AKTIVIERT",
-    "tesseract_acceleration_info": "Tesseract: Ausführung im reinen CPU-Modus"
+    "tesseract_acceleration_info": "Tesseract: Ausführung im reinen CPU-Modus",
+    "florence_cpu_fallback": "Florence-2: CUDA-Kompatibilitätsfehler. Ausführung im reinen CPU-Modus."
 }

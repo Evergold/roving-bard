@@ -241,5 +241,6 @@
     "opencv_acceleration_success": "OpenCV: L'accelerazione OpenCL è ABILITATA",
     "opencv_acceleration_info": "OpenCV: Esecuzione in modalità solo CPU",
     "tesseract_acceleration_success": "Tesseract: L'accelerazione OpenCL è ABILITATA",
-    "tesseract_acceleration_info": "Tesseract: Esecuzione in modalità solo CPU"
+    "tesseract_acceleration_info": "Tesseract: Esecuzione in modalità solo CPU",
+    "florence_cpu_fallback": "Florence-2: Errore di compatibilità CUDA. Esecuzione in modalità solo CPU."
 }

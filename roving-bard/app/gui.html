@@ -5594,6 +5594,9 @@
  
                     const successPrefix = t("vlm_toast_success_prefix", "Successfully processed with");
                     showToast(`${successPrefix} ${friendlyName}!`, "success");
+                    if (res.warning) {
+                        showToast(t(res.warning, "Florence-2: CUDA compatibility error. Falling back to CPU-only execution."), "info");
+                    }
                 } else {
                     const failedPrefix = t("vlm_toast_failed_prefix", "VLM process failed:");
                     showToast(`${failedPrefix} ${res.message}`, "error");
