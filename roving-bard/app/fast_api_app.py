@@ -2087,9 +2087,21 @@ def load_florence_model():
         return
     import torch
     from transformers import AutoProcessor, AutoModelForCausalLM
+    device = "cpu"
+    dtype = torch.float32
     if torch.cuda.is_available():
-        device = "cuda"
-        dtype = torch.float16
+        try:
+            cc = torch.cuda.get_device_capability(0)
+            if cc[0] < 7 or (cc[0] == 7 and cc[1] < 5):
+                print(f"[Florence-2] GPU compute capability {cc[0]}.{cc[1]} < 7.5 is incompatible with PyTorch installation. Forcing CPU...")
+                device = "cpu"
+                dtype = torch.float32
+            else:
+                device = "cuda"
+                dtype = torch.float16
+        except Exception:
+            device = "cuda"
+            dtype = torch.float16
     elif torch.backends.mps.is_available():
         device = "mps"
         dtype = torch.float32
