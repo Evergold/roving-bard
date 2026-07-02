@@ -2226,6 +2226,27 @@ def get_ollama_pids():
     return pids
 
 
+def lower_ollama_priority():
+    """Finds all running Ollama processes and sets their priority to below normal/nice 10."""
+    try:
+        import psutil
+        import sys
+        pids = get_ollama_pids()
+        for pid in pids:
+            try:
+                proc = psutil.Process(pid)
+                if sys.platform == "win32":
+                    if proc.nice() != psutil.BELOW_NORMAL_PRIORITY_CLASS:
+                        proc.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+                else:
+                    if proc.nice() < 10:
+                        proc.nice(10)
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"[Priority] Could not lower Ollama processes priority: {e}")
+
+
 def get_available_system_ram_bytes():
     """Gets the available system RAM in bytes, supporting Linux and falling back to a safe default on failure."""
     import platform
@@ -2420,6 +2441,21 @@ server_baseline_vram = 0  # Default fallback 0 MB
 @app.on_event("startup")
 def measure_baseline():
     global server_baseline_ram, server_baseline_vram
+    
+    # Lower process priority to BELOW_NORMAL (Windows) or nice 10 (Unix)
+    try:
+        import psutil
+        import sys
+        p = psutil.Process()
+        if sys.platform == "win32":
+            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+            print("[Priority] Startup: Set Windows process priority class to BELOW_NORMAL.")
+        else:
+            p.nice(10)
+            print("[Priority] Startup: Set Unix process niceness to 10.")
+    except Exception as e:
+        print(f"[Priority] Startup: Could not set process priority: {e}")
+
     import time
     time.sleep(0.5)
     try:
@@ -2471,6 +2507,13 @@ def format_memory_size(bytes_val):
 def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
     global currently_loaded_vlm, florence_model, florence_processor, active_http_response
+    
+    # Ensure Ollama and Python processes run at lower priority
+    try:
+        lower_ollama_priority()
+    except Exception:
+        pass
+
     vlm_inference_cancel_event.clear()
     active_http_response = None
     import io
