@@ -32,6 +32,14 @@ try:
             return original_getattr(self, item)
         return nn.Module.__getattr__(self, item)
     PreTrainedModel.__getattr__ = patched_getattr
+
+    # Patch tokenizer base class to prevent RobertaTokenizer AttributeErrors
+    from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+    if not hasattr(PreTrainedTokenizerBase, "additional_special_tokens"):
+        @property
+        def additional_special_tokens(self):
+            return self.special_tokens_map.get("additional_special_tokens", [])
+        PreTrainedTokenizerBase.additional_special_tokens = additional_special_tokens
 except ImportError:
     pass
 
