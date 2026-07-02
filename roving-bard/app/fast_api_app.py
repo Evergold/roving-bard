@@ -2144,6 +2144,25 @@ def get_ollama_peak_ram_usage_bytes():
     return total_ram
 
 
+server_baseline_ram = 1100 * 1024 * 1024  # Default fallback 1.1 GB
+server_baseline_vram = 0  # Default fallback 0 MB
+ 
+ 
+@app.on_event("startup")
+def measure_baseline():
+    global server_baseline_ram, server_baseline_vram
+    import time
+    time.sleep(0.5)
+    try:
+        server_baseline_ram = get_process_ram_usage_bytes()
+    except Exception:
+        pass
+    try:
+        server_baseline_vram = get_gpu_vram_usage_bytes(include_ollama=False)
+    except Exception:
+        pass
+ 
+ 
 def get_gpu_vram_usage_bytes(include_ollama=False):
     """Gets the GPU memory usage of current process and optionally ollama processes in bytes."""
     import subprocess
@@ -2224,11 +2243,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
 
         def get_peak_usage(is_ollama=False):
             if is_ollama:
-                ram = get_process_peak_ram_bytes() + get_ollama_peak_ram_usage_bytes()
-                vram = get_gpu_vram_usage_bytes(include_ollama=True)
+                # Ollama is run in a separate process, so its memory is entirely model/method memory.
+                # The python client memory might have a tiny overhead, so we subtract baseline.
+                ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram) + get_ollama_peak_ram_usage_bytes()
+                vram = max(0, get_gpu_vram_usage_bytes(include_ollama=True) - server_baseline_vram)
             else:
-                ram = get_process_peak_ram_bytes()
-                vram = get_gpu_vram_usage_bytes(include_ollama=False)
+                ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram)
+                vram = max(0, get_gpu_vram_usage_bytes(include_ollama=False) - server_baseline_vram)
             try:
                 import sys
                 if "torch" in sys.modules:
