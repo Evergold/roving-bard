@@ -242,5 +242,9 @@
     "opencv_acceleration_info": "OpenCV: Ejecutándose en modo de solo CPU",
     "tesseract_acceleration_success": "Tesseract: La aceleración OpenCL está ACTIVADA",
     "tesseract_acceleration_info": "Tesseract: Ejecutándose en modo de solo CPU",
-    "florence_cpu_fallback": "Florence-2: Error de compatibilidad CUDA. Ejecutándose en modo de solo CPU."
+    "florence_cpu_fallback": "Florence-2: Error de compatibilidad CUDA. Ejecutándose en modo de solo CPU.",
+    "lotro_locale_label": "Configuración regional de LOTRO",
+    "lotro_locale_en": "Inglés",
+    "lotro_locale_fr": "Francés",
+    "lotro_locale_de": "Alemán"
 }

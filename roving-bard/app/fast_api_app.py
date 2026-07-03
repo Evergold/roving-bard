@@ -313,6 +313,8 @@ class ConfigUpdateRequest(BaseModel):
     mappings: list
     api_key: str | None = None
     active_soundfont: str | None = None
+    ui_lang: str | None = None
+    lotro_locale: str | None = None
 
 
 class EQRequest(BaseModel):
@@ -3087,10 +3089,25 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             t0, t1 = 0.0, 0.0
             # Setup JSON payload and dynamic prompt
             url = "http://127.0.0.1:11434/api/generate"
+            # Constrain to expected LOTRO locale based on UI lang or preference
+            ui_lang = tools.config.get("ui_lang", "en-US")
+            supported_mapping = {
+                "en-US": "en",
+                "en-GB": "en",
+                "fr-FR": "fr",
+                "de-DE": "de"
+            }
+            lotro_lang = supported_mapping.get(ui_lang, tools.config.get("lotro_locale", "en"))
+            lotro_lang_name = "English"
+            if lotro_lang == "fr":
+                lotro_lang_name = "French"
+            elif lotro_lang == "de":
+                lotro_lang_name = "German"
+
             if "qwen" in selected_model:
-                prompt = "The image shows a location name and coordinates. Read them exactly."
+                prompt = f"The image shows a location name and coordinates. Read them exactly in {lotro_lang_name}."
             else:
-                prompt = "What does the text at the bottom of the image say?"
+                prompt = f"What does the text at the bottom of the image say? Read it exactly in {lotro_lang_name}."
 
             options = {
                 "temperature": 0.0,

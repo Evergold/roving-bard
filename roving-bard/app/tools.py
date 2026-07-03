@@ -138,10 +138,15 @@ def save_tags_registry(tags: list):
 
 
 def load_config():
+    cfg = {}
     if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH) as f:
-            return yaml.safe_load(f)
-    return {
+        try:
+            with open(CONFIG_PATH) as f:
+                cfg = yaml.safe_load(f) or {}
+        except Exception:
+            pass
+    
+    defaults = {
         "minimap_bounds": {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15},
         "transitions": {"fade_out_ms": 1500, "fade_in_ms": 1500},
         "playlist_directory": "audio",
@@ -149,7 +154,13 @@ def load_config():
         "polling_interval": 2.0,
         "mappings": [],
         "api_key": None,
+        "ui_lang": "en-US",
+        "lotro_locale": "en"
     }
+    for k, v in defaults.items():
+        if k not in cfg:
+            cfg[k] = v
+    return cfg
 
 
 config = load_config()
@@ -200,13 +211,29 @@ def call_gemini_vision(img, model_name):
     img.save(buffered, format="PNG")
     img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
+    # Constrain to expected LOTRO locale based on UI lang or preference
+    ui_lang = config.get("ui_lang", "en-US")
+    supported_mapping = {
+        "en-US": "en",
+        "en-GB": "en",
+        "fr-FR": "fr",
+        "de-DE": "de"
+    }
+    lotro_lang = supported_mapping.get(ui_lang, config.get("lotro_locale", "en"))
+    lotro_lang_name = "English"
+    if lotro_lang == "fr":
+        lotro_lang_name = "French"
+    elif lotro_lang == "de":
+        lotro_lang_name = "German"
+
     prompt = (
-        "Analyze this screenshot cropped from a video game's mini-map widget. "
-        "Extract the location name (if visible) and the coordinate string (e.g. '19.3N, 70.9W' or '14.9S, 103.1E'). "
-        "Return a JSON object with keys:\n"
-        "- 'location': string containing the name of the place, or null if not found\n"
-        "- 'coordinates': string of coordinates (e.g. '19.3N, 70.9W'), or null if not found\n"
-        "Do not include any markdown formatting or extra text outside the JSON object."
+        f"Analyze this screenshot cropped from a video game's mini-map widget. "
+        f"Extract the location name (if visible) and the coordinate string (e.g. '19.3N, 70.9W' or '14.9S, 103.1E') in {lotro_lang_name}. "
+        f"Return the text exactly as written in {lotro_lang_name} without translating it to any other language (such as Korean). "
+        f"Return a JSON object with keys:\n"
+        f"- 'location': string containing the name of the place, or null if not found\n"
+        f"- 'coordinates': string of coordinates (e.g. '19.3N, 70.9W'), or null if not found\n"
+        f"Do not include any markdown formatting or extra text outside the JSON object."
     )
 
     try:

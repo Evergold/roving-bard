@@ -3320,6 +3320,21 @@
                         </div>
                     </div>
 
+                    <!-- LOTRO Locale Selector -->
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="lotro_locale_label">LOTRO Locale</span>
+                        <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            <select id="lotro-locale-select" onchange="changeLOTROLocale(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
+                                <option value="en" data-loc="lotro_locale_en">English</option>
+                                <option value="fr" data-loc="lotro_locale_fr">French</option>
+                                <option value="de" data-loc="lotro_locale_de">German</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- SoundFont Option -->
                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                         <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="soundfont_label">SoundFont</span>
@@ -4432,6 +4447,14 @@
                 if (sfSelect && configData) {
                     sfSelect.value = configData.active_soundfont || "MuseScore_General.sf3";
                 }
+
+                // Populate LOTRO Locale select
+                const lotroSelect = document.getElementById('lotro-locale-select');
+                if (lotroSelect && configData) {
+                    lotroSelect.value = configData.lotro_locale || "en";
+                }
+                
+                checkLOTROLocaleSupport();
                 
                 // Populate bounds forms
                 const bounds = configData.minimap_bounds;
@@ -8899,6 +8922,85 @@
             localStorage.setItem('lang', lang);
             await loadLocalization(lang);
             applyLocalization();
+
+            // Sync UI language to the backend config and update LOTRO locale accordingly
+            if (configData) {
+                configData.ui_lang = lang;
+                const supportedMapping = {
+                    'en-US': 'en',
+                    'en-GB': 'en',
+                    'fr-FR': 'fr',
+                    'de-DE': 'de'
+                };
+                if (supportedMapping[lang]) {
+                    configData.lotro_locale = supportedMapping[lang];
+                    const lotroSelect = document.getElementById('lotro-locale-select');
+                    if (lotroSelect) {
+                        lotroSelect.value = supportedMapping[lang];
+                    }
+                }
+                
+                try {
+                    await apiFetch('/api/config', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(configData)
+                    });
+                } catch (e) {
+                    console.error("Error syncing language config to backend:", e);
+                }
+            }
+            
+            checkLOTROLocaleSupport();
+        }
+
+        async function changeLOTROLocale(value) {
+            if (configData) {
+                configData.lotro_locale = value;
+                try {
+                    const response = await apiFetch('/api/config', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(configData)
+                    });
+                    const res = await response.json();
+                    if (res.status === "success") {
+                        showToast(t("lotro_locale_updated", "LOTRO Locale preference updated successfully!"), "success");
+                        loadDashboard();
+                    } else {
+                        showToast("Failed to update LOTRO Locale: " + res.message, "error");
+                    }
+                } catch (err) {
+                    console.error("Error updating LOTRO Locale:", err);
+                }
+            }
+            checkLOTROLocaleSupport();
+        }
+
+        function checkLOTROLocaleSupport() {
+            if (!configData) return;
+            const currentLang = localStorage.getItem('lang') || 'en-US';
+            const lotroLocale = configData.lotro_locale || 'en';
+            
+            const lotroLocaleNames = {
+                'en': 'English',
+                'fr': 'French',
+                'de': 'German'
+            };
+            const expectedName = lotroLocaleNames[lotroLocale] || 'English';
+            
+            const supportedUILangs = ['en-US', 'en-GB', 'fr-FR', 'de-DE'];
+            if (!supportedUILangs.includes(currentLang)) {
+                const uiLangNames = {
+                    'es-ES': 'Spanish',
+                    'it-IT': 'Italian',
+                    'ru-RU': 'Russian'
+                };
+                const uiName = uiLangNames[currentLang] || currentLang;
+                const msg = `The selected localization (${uiName}) isn't natively supported in LOTRO. Expecting LOTRO to be in ${expectedName}.`;
+                showToast(msg, "info");
+                console.log("[LOTRO Locale Info] " + msg);
+            }
         }
 
         let cacheSizeMb = 0.0;

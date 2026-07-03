@@ -242,5 +242,9 @@
     "opencv_acceleration_info": "OpenCV: выполнение в режиме только ЦП",
     "tesseract_acceleration_success": "Tesseract: ускорение OpenCL ВКЛЮЧЕНО",
     "tesseract_acceleration_info": "Tesseract: выполнение в режиме только ЦП",
-    "florence_cpu_fallback": "Florence-2: ошибка совместимости CUDA. Переключение в режим только ЦП."
+    "florence_cpu_fallback": "Florence-2: ошибка совместимости CUDA. Переключение в режим только ЦП.",
+    "lotro_locale_label": "Локаль LOTRO",
+    "lotro_locale_en": "Английский",
+    "lotro_locale_fr": "Французский",
+    "lotro_locale_de": "Немецкий"
 }
