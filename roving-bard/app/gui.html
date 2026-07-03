@@ -2841,6 +2841,32 @@
             background: rgb(18, 24, 38);
         }
 
+        #menu-popover {
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(100vh - 95px);
+        }
+        /* Custom scrollbar styling for the preferences panel popover */
+        #menu-popover::-webkit-scrollbar {
+            width: 6px;
+        }
+        #menu-popover::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #menu-popover::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+        #menu-popover::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        body.light-theme #menu-popover::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+        }
+        body.light-theme #menu-popover::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
         header.scrolled {
             cursor: pointer;
         }
@@ -3096,6 +3122,7 @@
             left: 6rem !important;
             width: 380px;
             height: 350px;
+            max-height: calc(100vh - 95px);
             transform-origin: top left;
         }
         body.light-theme .log-popover {
@@ -9135,8 +9162,11 @@
                     const dx = e.clientX - startX;
                     const dy = e.clientY - startY;
                     
-                    const newWidth = Math.max(380, Math.min(600, startWidth + dx));
-                    const newHeight = Math.max(250, Math.min(600, startHeight + dy));
+                    const maxAllowedWidth = window.innerWidth - (6 * 16) - 32; // 6rem left offset + margin
+                    const maxAllowedHeight = window.innerHeight - 95; // 75px top offset + margin
+                    
+                    const newWidth = Math.max(380, Math.min(maxAllowedWidth, startWidth + dx));
+                    const newHeight = Math.max(250, Math.min(maxAllowedHeight, startHeight + dy));
                     
                     popover.style.width = `${newWidth}px`;
                     popover.style.height = `${newHeight}px`;
