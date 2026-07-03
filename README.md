@@ -1,6 +1,6 @@
-# Roving Bard: Adaptive, Location-Aware Audio for LOTRO
+# Roving Bard: Adaptive, Location-Aware Audio in LOTRO
 
-Roving Bard is a game-aware music player agent that captures the screen, recognises the in-game location via OCR (with local VLM and Gemini Vision fallback), and seamlessly transitions background music to match the active region. It is built on the Google Agent Development Kit (ADK) and includes a single-page browser GUI.
+Roving Bard is a LOTRO-aware music player agent that captures the screen, recognises the in-game location via OCR (with local VLM and Gemini Vision fallback), and seamlessly transitions background music to match the active region. It is built on the Google Agent Development Kit (ADK) and includes a single-page browser GUI.
 
 ---
 
@@ -165,12 +165,20 @@ Run dependency sync from the repository root:
 agents-cli install
 ```
 
+Configure PyTorch optimized for your local hardware (CUDA 12.4, ROCm, Apple Silicon, or CPU):
+```bash
+cd roving-bard
+python setup_venv.py
+cd ..
+```
+
 ### 3. Start the FastAPI Web Server
 To start the development server with auto-reloading enabled, navigate into the project subdirectory and run:
 ```bash
 cd roving-bard
-uv run uvicorn app.fast_api_app:app --reload
+.venv/bin/python -m uvicorn app.fast_api_app:app --reload
 ```
+*(On Windows, use `.venv\Scripts\python -m uvicorn app.fast_api_app:app --reload` instead)*
 The server will boot on `http://127.0.0.1:8000`.
 
 ### 4. Open the GUI Dashboard
