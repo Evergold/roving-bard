@@ -1897,18 +1897,19 @@ def api_vlm_unload(req: VlmUnloadRequest):
 
     if model_id == "florence-2":
         global florence_model, florence_processor
-        print("[Florence-2] Unloading model from memory...", flush=True)
-        florence_model = None
-        florence_processor = None
-        import gc
-        gc.collect()
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
-        except Exception:
-            pass
+        if florence_model is not None or florence_processor is not None:
+            print("[Florence-2] Unloading model from memory...", flush=True)
+            florence_model = None
+            florence_processor = None
+            import gc
+            gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.ipc_collect()
+            except Exception:
+                pass
         return {"status": "success", "message": "Florence-2 has been unloaded."}
  
     model_map = {
@@ -1920,6 +1921,24 @@ def api_vlm_unload(req: VlmUnloadRequest):
     }
     if model_id not in model_map:
         return {"status": "success", "message": "Unload not required/supported for this model."}
+
+    # Check if the Ollama model is actually loaded in memory
+    is_loaded = False
+    try:
+        ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=3)
+        if ps_res.status_code == 200:
+            loaded_models = ps_res.json().get("models", [])
+            target_tag = model_map[model_id]
+            for m in loaded_models:
+                loaded_name = m.get("name", "")
+                if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
+                    is_loaded = True
+                    break
+    except Exception:
+        pass
+
+    if not is_loaded:
+        return {"status": "success", "message": f"Triggered unload not required ({req.model} was not loaded)."}
 
     def run_unload():
         try:
