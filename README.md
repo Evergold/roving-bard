@@ -165,7 +165,7 @@ Run dependency sync from the repository root:
 agents-cli install
 ```
 
-Configure PyTorch optimized for your local hardware (CUDA 12.4, ROCm, Apple Silicon, or CPU):
+Configure PyTorch optimized for your local hardware (CUDA, ROCm, Apple Silicon, or CPU):
 ```bash
 cd roving-bard
 python setup_venv.py
