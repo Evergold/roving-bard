@@ -2166,7 +2166,8 @@ class LocalOCRParser:
                 # Use a strict cutoff threshold of 0.80 to prevent trash fuzzy matches (e.g. Saye -> Scary)
                 matches = difflib.get_close_matches(location, words, n=1, cutoff=0.80)
                 if matches:
-                    print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
+                    if location != matches[0]:
+                        print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
                     location = matches[0]
                         
             return location, coordinates, ns, ew
