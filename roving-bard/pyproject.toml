@@ -28,6 +28,8 @@ dependencies = [
     "transformers",
     "timm",
     "einops",
+    "psutil",
+    "botocore",
 ]
 requires-python = ">=3.11,<3.14"
 
