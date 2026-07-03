@@ -222,3 +222,6 @@ audio/files.yaml
 app/models/
 *.gguf
 
+# Exclude package manager lockfiles
+uv.lock
+
