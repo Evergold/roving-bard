@@ -2258,7 +2258,8 @@
         }
 
         body.light-theme #lang-select,
-        body.light-theme #soundfont-select {
+        body.light-theme #soundfont-select,
+        body.light-theme #lotro-locale-select {
             background: transparent !important;
             color: var(--text-muted) !important;
             color-scheme: light;
@@ -2657,7 +2658,7 @@
         body.light-theme .theme-btn:hover, body.light-theme .font-size-btn:hover {
             background: rgba(0, 0, 0, 0.05);
         }
-        #lang-select {
+        #lang-select, #soundfont-select, #lotro-locale-select {
             background: transparent;
             border: none;
             color: var(--text-muted);
@@ -2675,23 +2676,12 @@
             box-sizing: border-box;
             color-scheme: dark;
         }
-        #lang-select:hover {
+        #lang-select:hover, #soundfont-select:hover, #lotro-locale-select:hover {
             color: var(--text-main) !important;
             background: rgba(255, 255, 255, 0.05) !important;
         }
-        body.light-theme #lang-select:hover {
+        body.light-theme #lang-select:hover, body.light-theme #soundfont-select:hover, body.light-theme #lotro-locale-select:hover {
             background: rgba(0, 0, 0, 0.05) !important;
-        }
-        #soundfont-select {
-            color: var(--text-muted) !important;
-            transition: color 0.2s ease;
-            color-scheme: dark;
-        }
-        body.light-theme #soundfont-select {
-            color-scheme: light;
-        }
-        #soundfont-select:hover {
-            color: var(--text-main) !important;
         }
         select option {
             background-color: var(--bg-base);
@@ -3281,7 +3271,7 @@
                         <!-- Accessibility Option -->
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="accessible_mode_title">Accessible Mode</span>
-                            <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; height: 54px; box-sizing: border-box; justify-content: center; min-width: 54px;">
+                            <div style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; padding: 2px; height: 54px; box-sizing: border-box; justify-content: center; min-width: 54px;">
                                 <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible(event)" data-loc-title="accessible_mode_title" title="Accessible Mode" style="border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
