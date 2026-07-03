@@ -246,5 +246,7 @@
     "lotro_locale_label": "LOTRO Gebietsschema",
     "lotro_locale_en": "Englisch",
     "lotro_locale_fr": "Französisch",
-    "lotro_locale_de": "Deutsch"
+    "lotro_locale_de": "Deutsch",
+    "lotro_locale_updated": "LOTRO-Gebietsschema-Einstellung erfolgreich aktualisiert!",
+    "lotro_locale_warning": "Die ausgewählte Lokalisierung ({uiName}) wird in LOTRO nicht nativ unterstützt. Erwartetes LOTRO-Gebietsschema ist {expectedName}."
 }

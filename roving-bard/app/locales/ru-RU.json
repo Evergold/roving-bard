@@ -246,5 +246,7 @@
     "lotro_locale_label": "Локаль LOTRO",
     "lotro_locale_en": "Английский",
     "lotro_locale_fr": "Французский",
-    "lotro_locale_de": "Немецкий"
+    "lotro_locale_de": "Немецкий",
+    "lotro_locale_updated": "Настройки локали LOTRO успешно обновлены!",
+    "lotro_locale_warning": "Выбранная локализация ({uiName}) изначально не поддерживается в LOTRO. Ожидается, что LOTRO будет на {expectedName}."
 }

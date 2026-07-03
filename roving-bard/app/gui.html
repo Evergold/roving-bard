@@ -9017,21 +9017,29 @@
             const lotroLocale = configData.lotro_locale || 'en';
             
             const lotroLocaleNames = {
-                'en': 'English',
-                'fr': 'French',
-                'de': 'German'
+                'en': t('lotro_locale_en', 'English'),
+                'fr': t('lotro_locale_fr', 'French'),
+                'de': t('lotro_locale_de', 'German')
             };
             const expectedName = lotroLocaleNames[lotroLocale] || 'English';
             
             const supportedUILangs = ['en-US', 'en-GB', 'fr-FR', 'de-DE'];
             if (!supportedUILangs.includes(currentLang)) {
-                const uiLangNames = {
-                    'es-ES': 'Spanish',
-                    'it-IT': 'Italian',
-                    'ru-RU': 'Russian'
-                };
-                const uiName = uiLangNames[currentLang] || currentLang;
-                const msg = `The selected localization (${uiName}) isn't natively supported in LOTRO. Expecting LOTRO to be in ${expectedName}.`;
+                let uiName = currentLang;
+                if (availableLocales) {
+                    const found = availableLocales.find(loc => loc.code === currentLang);
+                    if (found) uiName = found.name;
+                } else {
+                    const uiLangNames = {
+                        'es-ES': 'Spanish',
+                        'it-IT': 'Italian',
+                        'ru-RU': 'Russian'
+                    };
+                    uiName = uiLangNames[currentLang] || currentLang;
+                }
+                
+                const rawMsg = t("lotro_locale_warning", "The selected localization ({uiName}) isn't natively supported in LOTRO. Expecting LOTRO to be in {expectedName}.");
+                const msg = rawMsg.replace('{uiName}', uiName).replace('{expectedName}', expectedName);
                 
                 if (triggerToast && lastShownLOTROWarning !== msg) {
                     showToast(msg, "info");

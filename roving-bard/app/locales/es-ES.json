@@ -246,5 +246,7 @@
     "lotro_locale_label": "Configuración regional de LOTRO",
     "lotro_locale_en": "Inglés",
     "lotro_locale_fr": "Francés",
-    "lotro_locale_de": "Alemán"
+    "lotro_locale_de": "Alemán",
+    "lotro_locale_updated": "¡La preferencia de configuración regional de LOTRO se actualizó correctamente!",
+    "lotro_locale_warning": "La localización seleccionada ({uiName}) no es compatible de forma nativa con LOTRO. Se espera que LOTRO esté en {expectedName}."
 }
