@@ -211,15 +211,11 @@ def call_gemini_vision(img, model_name):
     img.save(buffered, format="PNG")
     img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-    # Constrain to expected LOTRO locale based on UI lang or preference
-    ui_lang = config.get("ui_lang", "en-US")
-    supported_mapping = {
-        "en-US": "en",
-        "en-GB": "en",
-        "fr-FR": "fr",
-        "de-DE": "de"
-    }
-    lotro_lang = supported_mapping.get(ui_lang, config.get("lotro_locale", "en"))
+    # Constrain to expected LOTRO locale based on user selection
+    lotro_lang = config.get("lotro_locale", "en")
+    if lotro_lang not in ("en", "fr", "de"):
+        lotro_lang = "en"
+    
     lotro_lang_name = "English"
     if lotro_lang == "fr":
         lotro_lang_name = "French"
@@ -229,7 +225,7 @@ def call_gemini_vision(img, model_name):
     prompt = (
         f"Analyze this screenshot cropped from a video game's mini-map widget. "
         f"Extract the location name (if visible) and the coordinate string (e.g. '19.3N, 70.9W' or '14.9S, 103.1E') in {lotro_lang_name}. "
-        f"Return the text exactly as written in {lotro_lang_name} without translating it to any other language (such as Korean). "
+        f"Return the text exactly as written in {lotro_lang_name} without translating it to any other language. "
         f"Return a JSON object with keys:\n"
         f"- 'location': string containing the name of the place, or null if not found\n"
         f"- 'coordinates': string of coordinates (e.g. '19.3N, 70.9W'), or null if not found\n"

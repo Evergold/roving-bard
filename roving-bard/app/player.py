@@ -2001,6 +2001,34 @@ class LocalOCRParser:
                     raw_loc = cleaned
                     break
                 
+        # Determine the maximum allowed location length
+        max_location_len = 50
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+        if os.path.exists(wordlist_path):
+            try:
+                with open(wordlist_path, 'r', encoding='utf-8') as f:
+                    w_lines = [l.strip() for l in f if l.strip()]
+                    if w_lines:
+                        max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
+            except:
+                pass
+
+        # Enforce characters only belong to English/French/German alphabet
+        allowed_pattern = re.compile(
+            r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
+        )
+
+        if raw_loc and raw_loc != "None":
+            if not allowed_pattern.match(raw_loc):
+                raw_loc = "None"
+            elif len(raw_loc) > max_location_len:
+                raw_loc = raw_loc[:max_location_len].strip()
+
+        if location and location != "None":
+            if len(location) > max_location_len:
+                location = location[:max_location_len].strip()
+
         return {
             "parsed_location": location if location else "None",
             "parsed_coordinates": coordinates if coordinates else "None",
@@ -2019,11 +2047,6 @@ class LocalOCRParser:
             line = line.strip()
             if not line:
                 continue
-            # If the line looks like coordinates but has numbers instead of cardinal directions, fix them
-            # E.g., "11.92, 67.207" or "22.44, 14.94"
-            # We replace trailing digits with cardinal directions:
-            # - First number (latitude): trailing 8 or 2 -> S, trailing 4 -> N
-            # - Second number (longitude): trailing 8, 4, or 7 -> W
             cleaned_line = line
             # Match coordinate patterns with either letters or digits at the end:
             # - Latitudes can have 8, 2, 5 (common misreads for S) or 4 (common misread for N)
@@ -2109,7 +2132,7 @@ class LocalOCRParser:
                 line = line[:coord_start] + " " + line[coord_end:]
 
             # Remove symbols/noise, check if it looks like a location name
-            cleaned = re.sub(r"[^a-zA-Z\s'’\-]", "", line).strip()
+            cleaned = re.sub(r"[^a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]", "", line).strip()
             
             # Clean leading 'xt' or 'xtr' visual noise from VLM border misreads
             cleaned_lower = cleaned.lower()
@@ -2152,10 +2175,25 @@ class LocalOCRParser:
                                         w_ratio = 1.0
                                     if w_ratio > best_loc_score:
                                         best_loc_score = w_ratio
+                                        best_loc = w_matches[0]
+                                        
         location = best_loc if (best_loc and best_loc_score > 0.80) else first_candidate
+
+        # Enforce characters only belong to English/French/German alphabet
         if location:
-            if len(location) > 30:
-                location = location[:30].strip()
+            allowed_pattern = re.compile(
+                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
+            )
+            if not allowed_pattern.match(location):
+                location = None
+
+        # Enforce maximum location length: max word length in lotro_words.txt or 50, whichever is bigger
+        max_location_len = 50
+        if words:
+            max_location_len = max(max_location_len, max(len(w) for w in words))
+        
+        if location and len(location) > max_location_len:
+            location = location[:max_location_len].strip()
 
         return location, coordinates, ns_val, ew_val
 
