@@ -241,6 +241,46 @@ artifact_service_uri = f"gs://{logs_bucket_name}" if logs_bucket_name else None
 # Disable OpenTelemetry Cloud Export in integration tests to avoid GCP metadata server hangs
 otel_to_cloud = os.getenv("INTEGRATION_TEST") != "TRUE"
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def app_lifespan(app_instance: FastAPI):
+    global server_baseline_ram, server_baseline_vram
+    
+    try:
+        tools.player.initialize_backend(verbose=True)
+    except Exception as e:
+        print(f"[Player] Failed to initialize audio backend: {e}")
+        
+    # Lower process priority to BELOW_NORMAL (Windows) or nice 10 (Unix)
+    try:
+        import psutil
+        import sys
+        p = psutil.Process()
+        if sys.platform == "win32":
+            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+            print("[Priority] Lifespan: Set Windows process priority class to BELOW_NORMAL.")
+        else:
+            p.nice(10)
+            print("[Priority] Lifespan: Set Unix process niceness to 10.")
+    except Exception as e:
+        print(f"[Priority] Lifespan: Could not set process priority: {e}")
+
+    import asyncio
+    await asyncio.sleep(0.5)
+    try:
+        server_baseline_ram = get_process_ram_usage_bytes()
+        tools.server_baseline_ram = server_baseline_ram
+    except Exception:
+        pass
+    try:
+        server_baseline_vram = get_gpu_vram_usage_bytes(include_ollama=False)
+        tools.server_baseline_vram = server_baseline_vram
+    except Exception:
+        pass
+
+    yield
+
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     web=True,
@@ -248,6 +288,7 @@ app: FastAPI = get_fast_api_app(
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
     otel_to_cloud=otel_to_cloud,
+    lifespan=app_lifespan,
 )
 app.title = "roving-bard"
 app.description = "API for interacting with the Agent roving-bard"
@@ -2484,36 +2525,7 @@ server_baseline_ram = 1100 * 1024 * 1024  # Default fallback 1.1 GB
 server_baseline_vram = 0  # Default fallback 0 MB
  
  
-@app.on_event("startup")
-def measure_baseline():
-    global server_baseline_ram, server_baseline_vram
-    
-    # Lower process priority to BELOW_NORMAL (Windows) or nice 10 (Unix)
-    try:
-        import psutil
-        import sys
-        p = psutil.Process()
-        if sys.platform == "win32":
-            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
-            print("[Priority] Startup: Set Windows process priority class to BELOW_NORMAL.")
-        else:
-            p.nice(10)
-            print("[Priority] Startup: Set Unix process niceness to 10.")
-    except Exception as e:
-        print(f"[Priority] Startup: Could not set process priority: {e}")
 
-    import time
-    time.sleep(0.5)
-    try:
-        server_baseline_ram = get_process_ram_usage_bytes()
-        tools.server_baseline_ram = server_baseline_ram
-    except Exception:
-        pass
-    try:
-        server_baseline_vram = get_gpu_vram_usage_bytes(include_ollama=False)
-        tools.server_baseline_vram = server_baseline_vram
-    except Exception:
-        pass
  
  
 def get_ollama_vram_usage_bytes():

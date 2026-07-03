@@ -675,29 +675,10 @@ class SafeMusicPlayer:
         self._playhead = 0
         self._eq_zi = {}  # band -> zi array for filter state
         self.soundfont_path = None
-        self._init_soundfont()
-
-        # Check if fluidsynth is available on the system for WAV synthesis
+        self.backend_initialized = False
         self.fluidsynth_available = False
-        try:
-            import shutil
-            if shutil.which("fluidsynth") and self.soundfont_path and os.path.exists(self.soundfont_path):
-                self.fluidsynth_available = True
-                print("Fluidsynth detected. MIDI/ABC files will be played via sounddevice backend with full seeking/EQ support!")
-        except Exception:
-            pass
-
-        # Detect best sounddevice output device (prefer 'pulse' on Linux to avoid ALSA exclusive locks)
         self.sd_device = None
-        try:
-            import sounddevice as sd
-            for i, dev in enumerate(sd.query_devices()):
-                if dev['max_output_channels'] > 0 and 'pulse' in dev['name'].lower():
-                    self.sd_device = i
-                    print(f"Detected PulseAudio device at index {i}. Routing sounddevice output through it.")
-                    break
-        except Exception:
-            pass
+        self._init_soundfont(silent=True)
 
     def __del__(self):
         # Stop sounddevice playback thread if active
@@ -723,11 +704,12 @@ class SafeMusicPlayer:
                 self._sf = None
                 self._ffmpeg_proc = None
 
-    def _init_soundfont(self):
+    def _init_soundfont(self, silent=True):
         """Initializes the soundfont path using environment variables or fallback directories."""
         env_soundfont = os.environ.get("SDL_SOUNDFONTS")
         if env_soundfont and os.path.exists(env_soundfont):
-            print(f"Using pre-configured SDL_SOUNDFONTS: {env_soundfont}")
+            if not silent:
+                print(f"Using pre-configured SDL_SOUNDFONTS: {env_soundfont}")
             self.soundfont_path = env_soundfont
         else:
             soundfont_paths = []
@@ -737,7 +719,8 @@ class SafeMusicPlayer:
                         if filename.lower().endswith((".sf2", ".sf3")):
                             soundfont_paths.append(os.path.join(self.playlist_dir, filename))
                 except Exception as e:
-                    print(f"Error scanning playlist_dir for soundfonts: {e}")
+                    if not silent:
+                        print(f"Error scanning playlist_dir for soundfonts: {e}")
 
             soundfont_paths.extend([
                 "/usr/share/sounds/sf2/FluidR3_GM.sf2",
@@ -752,54 +735,94 @@ class SafeMusicPlayer:
                 if os.path.exists(path):
                     os.environ["SDL_SOUNDFONTS"] = path
                     self.soundfont_path = path
-                    print(f"Set SDL_SOUNDFONTS environment variable to {path}")
+                    if not silent:
+                        print(f"Set SDL_SOUNDFONTS environment variable to {path}")
                     break
 
-    def update_soundfont(self, soundfont_name: str | None):
+    def update_soundfont(self, soundfont_name: str | None, silent=True):
         """Updates the active soundfont to the one specified in the configuration."""
         old_soundfont_path = self.soundfont_path
 
         if not soundfont_name:
-            self._init_soundfont()
+            self._init_soundfont(silent=silent)
         else:
             # Check if the soundfont exists in playlist_dir
             path_in_playlist = os.path.join(self.playlist_dir, soundfont_name)
             if os.path.exists(path_in_playlist):
                 self.soundfont_path = path_in_playlist
                 os.environ["SDL_SOUNDFONTS"] = path_in_playlist
-                print(f"[SafeMusicPlayer] Set active SoundFont to {path_in_playlist}")
+                if not silent:
+                    print(f"[SafeMusicPlayer] Set active SoundFont to {path_in_playlist}")
             # Check if the soundfont is a system path
             elif os.path.exists(soundfont_name):
                 self.soundfont_path = soundfont_name
                 os.environ["SDL_SOUNDFONTS"] = soundfont_name
-                print(f"[SafeMusicPlayer] Set active SoundFont to {soundfont_name}")
+                if not silent:
+                    print(f"[SafeMusicPlayer] Set active SoundFont to {soundfont_name}")
             else:
                 # Otherwise, fall back to default search
-                print(f"[SafeMusicPlayer] SoundFont not found: {soundfont_name}. Falling back to default search.")
-                self._init_soundfont()
+                if not silent:
+                    print(f"[SafeMusicPlayer] SoundFont not found: {soundfont_name}. Falling back to default search.")
+                self._init_soundfont(silent=silent)
 
         # If the soundfont changed, invalidate the synthesis cache and restart playback if active
         if old_soundfont_path != self.soundfont_path:
             # 1. Clear FLAC synthesis cache
             cache_dir = os.path.join(self.playlist_dir, ".cache")
             if os.path.exists(cache_dir):
-                print(f"[SafeMusicPlayer] SoundFont changed. Clearing synthesis cache in {cache_dir}...")
+                if not silent:
+                    print(f"[SafeMusicPlayer] SoundFont changed. Clearing synthesis cache in {cache_dir}...")
                 try:
                     for filename in os.listdir(cache_dir):
                         if filename.lower().endswith(".flac"):
                             os.remove(os.path.join(cache_dir, filename))
                 except Exception as e:
-                    print(f"Error clearing synthesis cache: {e}")
+                    if not silent:
+                        print(f"Error clearing synthesis cache: {e}")
             
             # 2. Restart playback if playing an ABC/MIDI track
             if self.current_track and self.current_track.lower().endswith((".abc", ".mid", ".midi")):
                 if not getattr(self, "paused", False) and not getattr(self, "was_stopped", False):
-                    print(f"[SafeMusicPlayer] SoundFont changed while playing {self.current_track}. Restarting from start_time ({self.start_time}s) to apply new SoundFont.")
+                    if not silent:
+                        print(f"[SafeMusicPlayer] SoundFont changed while playing {self.current_track}. Restarting from start_time ({self.start_time}s) to apply new SoundFont.")
                     self.play_track(
                         self.current_track,
                         start_time=self.start_time,
                         end_time=self.end_time
                     )
+
+    def initialize_backend(self, verbose=False):
+        """Initializes Fluidsynth and sounddevice on-demand, printing diagnostics once."""
+        if getattr(self, "backend_initialized", False):
+            return
+        self.backend_initialized = True
+
+        # Check if fluidsynth is available on the system for WAV synthesis
+        self.fluidsynth_available = False
+        try:
+            import shutil
+            if shutil.which("fluidsynth") and self.soundfont_path and os.path.exists(self.soundfont_path):
+                self.fluidsynth_available = True
+                if verbose:
+                    print("Fluidsynth detected. MIDI/ABC files will be played via sounddevice backend with full seeking/EQ support!")
+        except Exception:
+            pass
+
+        # Detect best sounddevice output device (prefer 'pulse' on Linux to avoid ALSA exclusive locks)
+        self.sd_device = None
+        try:
+            import sounddevice as sd
+            for i, dev in enumerate(sd.query_devices()):
+                if dev['max_output_channels'] > 0 and 'pulse' in dev['name'].lower():
+                    self.sd_device = i
+                    if verbose:
+                        print(f"Detected PulseAudio device at index {i}. Routing sounddevice output through it.")
+                    break
+        except Exception:
+            pass
+
+        if verbose and self.soundfont_path:
+            print(f"[SafeMusicPlayer] Set active SoundFont to {self.soundfont_path}")
 
     def _prepare_abc_midi(self, track_path, start_pos):
         try:
@@ -1142,6 +1165,7 @@ class SafeMusicPlayer:
         if not track_file:
             return False
 
+        self.initialize_backend(verbose=False)
         track_path = os.path.join(self.playlist_dir, track_file)
         if not os.path.exists(track_path):
             print(f"Error: Track file not found: {track_path}")
@@ -1285,6 +1309,7 @@ class SafeMusicPlayer:
         if not track_file:
             return False
 
+        self.initialize_backend(verbose=False)
         track_path = os.path.join(self.playlist_dir, track_file)
         if not os.path.exists(track_path):
             print(f"Warning: Track file not found: {track_path}")

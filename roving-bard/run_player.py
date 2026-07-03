@@ -67,7 +67,8 @@ def main():
     print("=" * 60)
 
     # Import tools (this will parse mapping.yaml)
-    from app.tools import check_screen_and_update_music, config, stop_music
+    from app.tools import check_screen_and_update_music, config, stop_music, player
+    player.initialize_backend(verbose=True)
 
     # Generate mock tracks if they don't exist
     playlist_dir = config.get("playlist_directory", "audio")
