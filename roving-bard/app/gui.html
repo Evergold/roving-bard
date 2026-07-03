@@ -3263,16 +3263,32 @@
                         <span data-loc="preferences_label">PREFERENCES</span>
                     </div>
                     
-                    <!-- Theme option -->
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                        <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="theme_label">Theme</span>
-                        <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
-                            <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme(event, 'dark')" data-loc-title="dark_theme_title" title="Dark Theme">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                            </button>
-                            <button id="theme-light-btn" class="theme-btn" onclick="setTheme(event, 'light')" data-loc-title="light_theme_title" title="Light Theme">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                            </button>
+                    <!-- Theme & Accessible Mode Option Row -->
+                    <div style="display: flex; flex-direction: row; gap: 1.5rem; align-items: flex-start;">
+                        <!-- Theme option -->
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="theme_label">Theme</span>
+                            <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; width: fit-content;">
+                                <button id="theme-dark-btn" class="theme-btn active" onclick="setTheme(event, 'dark')" data-loc-title="dark_theme_title" title="Dark Theme">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                </button>
+                                <button id="theme-light-btn" class="theme-btn" onclick="setTheme(event, 'light')" data-loc-title="light_theme_title" title="Light Theme">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Accessibility Option -->
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="accessible_mode_title">Accessible Mode</span>
+                            <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; height: 54px; box-sizing: border-box; justify-content: center; min-width: 54px;">
+                                <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible(event)" data-loc-title="accessible_mode_title" title="Accessible Mode" style="border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -3286,52 +3302,43 @@
                         </div>
                     </div>
 
-                    <!-- Accessibility Option -->
-                    <div style="display: flex; align-items: center; justify-content: flex-start; gap: 1.5rem; margin-top: 0.2rem; width: 100%; white-space: nowrap;">
-                        <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="accessible_mode_title">Accessible Mode</span>
-                        <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px;">
-                            <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible(event)" data-loc-title="accessible_mode_title" title="Accessible Mode">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
+                    <!-- Language & LOTRO Locale Row -->
+                    <div style="display: flex; flex-direction: row; gap: 1.5rem; align-items: flex-start;">
+                        <!-- Language Selector -->
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="language_label">Language</span>
+                            <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                                 </svg>
-                            </button>
+                                <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
+                                    <option value="en-US">EN (US)</option>
+                                    <option value="en-GB">EN (UK)</option>
+                                    <option value="fr-FR">FR (FR)</option>
+                                    <option value="de-DE">DE (DE)</option>
+                                    <option value="es-ES">ES (ES)</option>
+                                    <option value="it-IT">IT (IT)</option>
+                                    <option value="ru-RU">RU (RU)</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Language Selector -->
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                        <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="language_label">Language</span>
-                        <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="2" y1="12" x2="22" y2="12"></line>
-                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                            </svg>
-                            <select id="lang-select" onchange="changeLanguage(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
-                                <option value="en-US">EN (US)</option>
-                                <option value="en-GB">EN (UK)</option>
-                                <option value="fr-FR">FR (FR)</option>
-                                <option value="de-DE">DE (DE)</option>
-                                <option value="es-ES">ES (ES)</option>
-                                <option value="it-IT">IT (IT)</option>
-                                <option value="ru-RU">RU (RU)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- LOTRO Locale Selector -->
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                        <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="lotro_locale_label">LOTRO Locale</span>
-                        <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                            </svg>
-                            <select id="lotro-locale-select" onchange="changeLOTROLocale(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
-                                <option value="en" data-loc="lotro_locale_en">English</option>
-                                <option value="fr" data-loc="lotro_locale_fr">French</option>
-                                <option value="de" data-loc="lotro_locale_de">German</option>
-                            </select>
+                        <!-- LOTRO Locale Selector -->
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="lotro_locale_label">LOTRO Locale</span>
+                            <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e5a93b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; flex-shrink: 0; filter: drop-shadow(0 0 3px rgba(229, 169, 59, 0.4));">
+                                    <circle cx="12" cy="12" r="7"></circle>
+                                    <circle cx="12" cy="12" r="9" stroke="#ffc04d" stroke-width="0.75" stroke-dasharray="8 4"></circle>
+                                </svg>
+                                <select id="lotro-locale-select" onchange="changeLOTROLocale(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
+                                    <option value="en" data-loc="lotro_locale_en">English</option>
+                                    <option value="fr" data-loc="lotro_locale_fr">French</option>
+                                    <option value="de" data-loc="lotro_locale_de">German</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
