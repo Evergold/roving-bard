@@ -8983,7 +8983,7 @@
                 }
             }
             
-            checkLOTROLocaleSupport();
+            checkLOTROLocaleSupport(true);
         }
 
         async function changeLOTROLocale(value) {
@@ -9006,10 +9006,12 @@
                     console.error("Error updating LOTRO Locale:", err);
                 }
             }
-            checkLOTROLocaleSupport();
+            checkLOTROLocaleSupport(false);
         }
 
-        function checkLOTROLocaleSupport() {
+        let lastShownLOTROWarning = null;
+
+        function checkLOTROLocaleSupport(triggerToast = false) {
             if (!configData) return;
             const currentLang = localStorage.getItem('lang') || 'en-US';
             const lotroLocale = configData.lotro_locale || 'en';
@@ -9030,8 +9032,14 @@
                 };
                 const uiName = uiLangNames[currentLang] || currentLang;
                 const msg = `The selected localization (${uiName}) isn't natively supported in LOTRO. Expecting LOTRO to be in ${expectedName}.`;
-                showToast(msg, "info");
+                
+                if (triggerToast && lastShownLOTROWarning !== msg) {
+                    showToast(msg, "info");
+                    lastShownLOTROWarning = msg;
+                }
                 console.log("[LOTRO Locale Info] " + msg);
+            } else {
+                lastShownLOTROWarning = null;
             }
         }
 
