@@ -2239,6 +2239,7 @@ class LocalOCRParser:
             return None, None, None, None
 
     def run_ocr(self, pil_img, ocr_pass="auto", already_cropped=False):
+        self.tesseract_vram_initialized = True
         try:
             # 1. Crop only the bottom 42% of the bounding box if not already cropped
             if already_cropped:

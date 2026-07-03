@@ -9251,6 +9251,7 @@
         }
 
         let menuPopoverOpen = false;
+        let menuMemoryPollInterval = null;
         
         function toggleMenuPopOver(event) {
             if (event) event.stopPropagation();
@@ -9267,10 +9268,16 @@
                 popover.classList.remove('active');
                 if (menuBtn) menuBtn.classList.remove('active');
                 menuPopoverOpen = false;
+                if (menuMemoryPollInterval) {
+                    clearInterval(menuMemoryPollInterval);
+                    menuMemoryPollInterval = null;
+                }
             } else {
                 // Open it
                 updateCacheStatusUI();
                 updateServerBaselineUI();
+                if (menuMemoryPollInterval) clearInterval(menuMemoryPollInterval);
+                menuMemoryPollInterval = setInterval(updateServerBaselineUI, 5000);
                 if (popoverInner) {
                     // Set initial untransformed size instantly before animation starts
                     popover.style.width = `${popoverInner.offsetWidth + 2}px`;

@@ -1782,18 +1782,102 @@ def pull_florence_model_task():
             state["progress"] = 0
 
 
+def get_app_vram_usage_bytes():
+    vram = get_ollama_vram_usage_bytes()
+    
+    # Add PyTorch VRAM
+    try:
+        import sys
+        if "torch" in sys.modules:
+            import torch
+            if torch.cuda.is_available():
+                vram += torch.cuda.memory_allocated()
+            elif hasattr(torch, "mps") and torch.mps.is_available():
+                if hasattr(torch.mps, "driver_allocated_memory"):
+                    vram += torch.mps.driver_allocated_memory()
+                elif hasattr(torch.mps, "current_allocated_memory"):
+                    vram += torch.mps.current_allocated_memory()
+    except Exception:
+        pass
+        
+    # Add OpenCV OpenCL VRAM if active
+    if getattr(tools.ocr_parser, "tesseract_vram_initialized", False):
+        try:
+            import cv2
+            if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
+                vram += 85 * 1024 * 1024
+        except Exception:
+            pass
+            
+    return vram
+
+
+class PeakMemoryMonitor:
+    def __init__(self, include_ollama=True):
+        self.include_ollama = include_ollama
+        self.peak_vram = 0
+        self.peak_ram = 0
+        self.base_vram = 0
+        self.base_ram = 0
+        self.stop_evt = threading.Event()
+        self.thread = None
+
+    def start(self):
+        # Measure initial memory before execution starts
+        self.base_vram = get_app_vram_usage_bytes()
+        self.base_ram = get_process_ram_usage_bytes()
+        if self.include_ollama:
+            self.base_ram += get_ollama_ram_usage_bytes()
+            
+        self.peak_vram = self.base_vram
+        self.peak_ram = self.base_ram
+        
+        self.thread = threading.Thread(target=self._monitor)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _monitor(self):
+        import time
+        while not self.stop_evt.is_set():
+            try:
+                # Query Roving Bard + model's VRAM directly
+                vram = get_app_vram_usage_bytes()
+                
+                # Query Roving Bard + model's RAM directly
+                ram = get_process_ram_usage_bytes()
+                if self.include_ollama:
+                    ram += get_ollama_ram_usage_bytes()
+                
+                if vram > self.peak_vram:
+                    self.peak_vram = vram
+                if ram > self.peak_ram:
+                    self.peak_ram = ram
+            except Exception:
+                pass
+            time.sleep(0.005)
+
+    def stop(self):
+        self.stop_evt.set()
+        if self.thread:
+            self.thread.join(timeout=1.0)
+            
+        return format_memory_size(self.peak_ram), format_memory_size(self.peak_vram)
+
+
 @app.get("/api/ocr/vlm_status", dependencies=[Depends(verify_api_key)])
 def api_vlm_status():
     """Returns the ready/download status of all available local VLM methods."""
     sync_ollama_ready_states()
     sync_florence_ready_state()
-    live_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
-    live_vram = get_gpu_vram_usage_bytes(include_ollama=True)
+    
+    total_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
+    total_vram = get_app_vram_usage_bytes()
+    
     return {
         "status": "success", 
         "states": vlm_download_states,
-        "baseline_ram": format_memory_size(live_ram),
-        "baseline_vram": format_memory_size(live_vram)
+        "baseline_ram": format_memory_size(total_ram),
+        "baseline_vram": format_memory_size(total_vram)
     }
 
 
@@ -2073,7 +2157,16 @@ def api_gc(req: GcRequest):
     
     global server_baseline_vram
     try:
-        server_baseline_vram = get_gpu_vram_usage_bytes(include_ollama=False)
+        new_vram = get_gpu_vram_usage_bytes(include_ollama=False)
+        # OpenCV OpenCL context memory (approx 85 MB) is persistent and should not bloat the baseline.
+        if getattr(tools.ocr_parser, "tesseract_vram_initialized", False):
+            try:
+                import cv2
+                if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
+                    new_vram = max(0, new_vram - 85 * 1024 * 1024)
+            except Exception:
+                pass
+        server_baseline_vram = new_vram
         tools.server_baseline_vram = server_baseline_vram
     except Exception as e:
         print(f"[GC] Error measuring baseline VRAM: {e}", flush=True)
@@ -2119,12 +2212,13 @@ def api_gc(req: GcRequest):
         except Exception as e:
             print(f"[GC] Error reloading Florence-2: {e}", flush=True)
 
-    live_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
-    live_vram = get_gpu_vram_usage_bytes(include_ollama=True)
+    total_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
+    total_vram = get_app_vram_usage_bytes()
+    
     return {
         "status": "success",
-        "baseline_ram": format_memory_size(live_ram),
-        "baseline_vram": format_memory_size(live_vram)
+        "baseline_ram": format_memory_size(total_ram),
+        "baseline_vram": format_memory_size(total_vram)
     }
 
 
@@ -2656,49 +2750,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             else:
                 selected_model = "moondream"
 
-        def get_peak_usage(is_ollama=False):
-            # Resolve peak VRAM and RAM from performance metrics (the baseline peak memory usage for each method)
-            perf = model_perf.get(selected_model, {"ram": "0 MB", "vram": "0 MB"})
-            peak_ram = perf["ram"]
-            peak_vram = perf["vram"]
-
-            # Dynamically adjust for device/execution contexts
-            if selected_model == "tesseract":
-                try:
-                    import cv2
-                    has_ocl = cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL()
-                except Exception:
-                    has_ocl = True
-                peak_vram = "85 MB" if has_ocl else "0 MB"
-                peak_ram = "31 MB"
-            elif selected_model == "florence-2":
-                if florence_model is not None:
-                    dev_type = florence_model.device.type
-                    if dev_type != "cuda" and dev_type != "mps":
-                        peak_vram = "0 MB"
-                        peak_ram = "2.4 GB"  # Offloaded weights in system RAM
-            elif selected_model == "gemini-2.5-flash-lite":
-                peak_vram = "0 MB"
-                peak_ram = "150 MB"
-            elif is_ollama:
-                try:
-                    ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
-                    if ps_res.status_code == 200:
-                        ps_data = ps_res.json()
-                        models = ps_data.get("models", [])
-                        target_tag = old_model_map.get(selected_model, "")
-                        for m in models:
-                            loaded_name = m.get("name", "")
-                            if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
-                                vram_val = m.get("size_vram", 0)
-                                if vram_val > 0:
-                                    peak_vram = format_memory_size(vram_val)
-                                break
-                except Exception:
-                    pass
-
-            return peak_ram, peak_vram
-
         # Map clean key names to Ollama tags
         old_model_map = {
             "moondream": "moondream:latest",
@@ -2799,45 +2850,26 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             scale_factor = 4
         text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
  
+        # Start PeakMemoryMonitor
+        include_ollama_mon = selected_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v"]
+        mem_monitor = PeakMemoryMonitor(include_ollama=include_ollama_mon)
+        mem_monitor.start()
+
         # Check if we should execute actual local Tesseract OCR!
         if selected_model == "tesseract":
-            import threading
-            peak_vram = 0
-            stop_monitor = False
-            
-            def monitor_vram_loop():
-                nonlocal peak_vram
-                import time
-                while not stop_monitor:
-                    try:
-                        v = get_gpu_vram_usage_bytes(include_ollama=False)
-                        if v > peak_vram:
-                            peak_vram = v
-                    except Exception:
-                        pass
-                    time.sleep(0.005)
-                    
-            monitor_thread = threading.Thread(target=monitor_vram_loop)
-            monitor_thread.daemon = True
-            monitor_thread.start()
-            
-            try:
-                if vlm_inference_cancel_event.is_set():
-                    raise Exception("Inference cancelled by user.")
-                tp0 = time.time()
-                _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
-                tp1 = time.time()
-                preprocess_time_ms = (tp1 - tp0) * 1000.0
-     
-                if vlm_inference_cancel_event.is_set():
-                    raise Exception("Inference cancelled by user.")
-                t0 = time.time()
-                pass_num = getattr(tools, "current_ocr_pass", 2)
-                loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
-                t1 = time.time()
-            finally:
-                stop_monitor = True
-                monitor_thread.join(timeout=1.0)
+            if vlm_inference_cancel_event.is_set():
+                raise Exception("Inference cancelled by user.")
+            tp0 = time.time()
+            _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
+            tp1 = time.time()
+            preprocess_time_ms = (tp1 - tp0) * 1000.0
+ 
+            if vlm_inference_cancel_event.is_set():
+                raise Exception("Inference cancelled by user.")
+            t0 = time.time()
+            pass_num = getattr(tools, "current_ocr_pass", 2)
+            loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
+            t1 = time.time()
             
             if vlm_inference_cancel_event.is_set():
                 raise Exception("Inference cancelled by user.")
@@ -2853,7 +2885,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             loc_time_ms = total_time_ms * 0.55
             coords_time_ms = total_time_ms * 0.45
             
-            act_ram, act_vram = get_peak_usage()
+            act_ram, act_vram = mem_monitor.stop()
             
             # Check if running in CPU-mode (OpenCL disabled)
             tesseract_cpu = True
@@ -2916,7 +2948,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             
             total_time_ms = (t1 - t0) * 1000.0
             
-            act_ram, act_vram = get_peak_usage()
+            act_ram, act_vram = mem_monitor.stop()
             return {
                 "status": "success",
                 "model": "Gemini 2.5 Flash Lite",
@@ -3031,7 +3063,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             loc_time_ms = total_time_ms * 0.55
             coords_time_ms = total_time_ms * 0.45
             
-            act_ram, act_vram = get_peak_usage()
+            act_ram, act_vram = mem_monitor.stop()
 
             # Clear PyTorch/MPS cache to prevent memory creep/leaks
             try:
@@ -3163,7 +3195,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 finally:
                     active_http_response = None
                         
-            act_ram, act_vram = get_peak_usage(is_ollama=True)
+            act_ram, act_vram = mem_monitor.stop()
             
             # Check if Ollama is executing on CPU (size_vram == 0 or less than half of total size is loaded in VRAM)
             ollama_cpu = False
@@ -3219,6 +3251,11 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             else:
                 raise Exception(f"Ollama returned status {response.status_code}")
     except Exception as e:
+        if 'mem_monitor' in locals() and mem_monitor:
+            try:
+                mem_monitor.stop()
+            except:
+                pass
         return {"status": "error", "message": str(e)}
 
 
