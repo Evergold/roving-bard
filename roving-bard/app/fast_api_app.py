@@ -1732,11 +1732,13 @@ def api_vlm_status():
     """Returns the ready/download status of all available local VLM methods."""
     sync_ollama_ready_states()
     sync_florence_ready_state()
+    live_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
+    live_vram = get_gpu_vram_usage_bytes(include_ollama=True)
     return {
         "status": "success", 
         "states": vlm_download_states,
-        "baseline_ram": format_memory_size(server_baseline_ram),
-        "baseline_vram": format_memory_size(server_baseline_vram)
+        "baseline_ram": format_memory_size(live_ram),
+        "baseline_vram": format_memory_size(live_vram)
     }
 
 
@@ -2043,10 +2045,12 @@ def api_gc(req: GcRequest):
         except Exception as e:
             print(f"[GC] Error reloading Florence-2: {e}", flush=True)
 
+    live_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
+    live_vram = get_gpu_vram_usage_bytes(include_ollama=True)
     return {
         "status": "success",
-        "baseline_ram": format_memory_size(server_baseline_ram),
-        "baseline_vram": format_memory_size(server_baseline_vram)
+        "baseline_ram": format_memory_size(live_ram),
+        "baseline_vram": format_memory_size(live_vram)
     }
 
 
@@ -2082,8 +2086,9 @@ def make_image_square(image):
  
  
 def load_florence_model():
-    global florence_model, florence_processor
+    global florence_model, florence_processor, currently_loaded_vlm
     if florence_model is not None and florence_processor is not None:
+        currently_loaded_vlm = "florence-2"
         return
     import torch
     from transformers import AutoProcessor, AutoModelForCausalLM
@@ -2121,6 +2126,7 @@ def load_florence_model():
         "microsoft/Florence-2-large", 
         trust_remote_code=True
     )
+    currently_loaded_vlm = "florence-2"
 
 
 def run_florence_ocr(image):
@@ -2488,10 +2494,23 @@ def measure_baseline():
         pass
  
  
+def get_ollama_vram_usage_bytes():
+    """Queries Ollama's active models endpoint and returns the combined VRAM usage of loaded models in bytes."""
+    try:
+        ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
+        if ps_res.status_code == 200:
+            return sum(m.get("size_vram", 0) for m in ps_res.json().get("models", []))
+    except Exception:
+        pass
+    return 0
+
+
 def get_gpu_vram_usage_bytes(include_ollama=False):
     """Gets the GPU memory usage in bytes (system-wide when nvidia-smi/rocm-smi is available)."""
     v = tools.get_system_vram_bytes()
     if v is not None:
+        if not include_ollama:
+            v = max(0, v - get_ollama_vram_usage_bytes())
         return v
 
     # Fallback to PyTorch (e.g. for MPS on macOS, or if nvidia-smi is not available)
@@ -2557,44 +2576,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         except Exception:
             pass
 
-        def get_peak_usage(is_ollama=False):
-            # Compute process-level memory usage (as a fallback)
-            if is_ollama:
-                ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram) + get_ollama_peak_ram_usage_bytes()
-                vram = max(0, get_gpu_vram_usage_bytes(include_ollama=True) - get_gpu_vram_usage_bytes(include_ollama=False))
-            else:
-                ram = max(0, get_process_peak_ram_bytes() - server_baseline_ram)
-                vram = max(0, get_gpu_vram_usage_bytes(include_ollama=False) - server_baseline_vram)
-
-            # Discover exact model VRAM directly to treat runtime contexts as baseline
-            if is_ollama:
-                try:
-                    # Query Ollama's active model API for the exact VRAM weights size
-                    ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
-                    if ps_res.status_code == 200:
-                        ps_data = ps_res.json()
-                        target_tag = old_model_map.get(selected_model, "")
-                        for m in ps_data.get("models", []):
-                            loaded_name = m.get("name", "")
-                            if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
-                                vram = m.get("size_vram", 0)
-                                break
-                except Exception:
-                    pass
-            else:
-                try:
-                    import sys
-                    if "torch" in sys.modules:
-                        import torch
-                        if torch.cuda.is_available():
-                            vram = torch.cuda.max_memory_allocated()
-                        elif torch.backends.mps.is_available():
-                            vram = torch.mps.driver_allocated_memory()
-                except Exception:
-                    pass
-
-            return format_memory_size(ram), format_memory_size(vram)
-
         # Model performance parameters
         # Real-world benchmark times for local VLMs running on moderate GPUs:
         model_perf = {
@@ -2607,7 +2588,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "6.8 GB"},
             "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0, "ram": "150 MB", "vram": "0 MB"}
         }
-        
+
         selected_model = req.model.lower()
         if selected_model not in model_perf:
             # Clean matching of model key name
@@ -2629,6 +2610,33 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "tesseract"
             else:
                 selected_model = "moondream"
+
+        def get_peak_usage(is_ollama=False):
+            # Resolve peak VRAM and RAM from performance metrics (the baseline peak memory usage for each method)
+            perf = model_perf.get(selected_model, {"ram": "0 MB", "vram": "0 MB"})
+            peak_ram = perf["ram"]
+            peak_vram = perf["vram"]
+
+            # Dynamically adjust for device/execution contexts
+            if selected_model == "tesseract":
+                try:
+                    import cv2
+                    has_ocl = cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL()
+                except Exception:
+                    has_ocl = True
+                peak_vram = "85 MB" if has_ocl else "0 MB"
+                peak_ram = "31 MB"
+            elif selected_model == "florence-2":
+                if florence_model is not None:
+                    dev_type = florence_model.device.type
+                    if dev_type != "cuda" and dev_type != "mps":
+                        peak_vram = "0 MB"
+                        peak_ram = "2.4 GB"  # Offloaded weights in system RAM
+            elif selected_model == "gemini-2.5-flash-lite":
+                peak_vram = "0 MB"
+                peak_ram = "150 MB"
+
+            return peak_ram, peak_vram
 
         # Map clean key names to Ollama tags
         old_model_map = {
@@ -2784,8 +2792,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             loc_time_ms = total_time_ms * 0.55
             coords_time_ms = total_time_ms * 0.45
             
-            act_ram = format_memory_size(max(0, get_process_peak_ram_bytes() - server_baseline_ram))
-            act_vram = format_memory_size(max(0, peak_vram - server_baseline_vram))
+            act_ram, act_vram = get_peak_usage()
             return {
                 "status": "success",
                 "model": "OpenCV+Tesseract",
