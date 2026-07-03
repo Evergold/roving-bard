@@ -489,12 +489,12 @@ def check_screen_and_update_music() -> dict:
         print(f"Error caching screenshot: {e}")
 
     # Step 1: Attempt local OCR on the 1x text-only image
-    print(f"[Pipeline] Attempting local Tesseract OCR (Pass {current_ocr_pass})...")
     t_start = time.time()
     location, coordinates, ns, ew = ocr_parser.run_ocr(text_img_1x, current_ocr_pass, already_cropped=True)
     t_end = time.time()
     tesseract_total_ms = (t_end - t_start) * 1000.0
-    method = f"Local OCR (Pass {current_ocr_pass})"
+    actual_pass = getattr(ocr_parser, "latest_successful_pass", 2)
+    method = f"Local OCR (Pass {actual_pass})"
 
     # Extract raw unfuzzy location/coordinates from Tesseract output
     raw_text = getattr(ocr_parser, "latest_raw_text", "")

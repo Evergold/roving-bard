@@ -2225,9 +2225,11 @@ class LocalOCRParser:
             best_outcome = (None, None, None, None)
             best_rank = 0  # 0: none, 1: loc only, 2: coords only, 3: loc+coords, 4: verified loc+coords
             best_raw_text = ""
+            best_pass = 2
             
             # Always run in [2, 1, 0] order to prioritize mathematically optimal Otsu binarization
             for pass_idx in [2, 1, 0]:
+                print(f"[Pipeline] Attempting local Tesseract OCR (Pass {pass_idx})...")
                 loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words)
                 raw_text = getattr(self, "latest_raw_text", "")
                 
@@ -2247,10 +2249,16 @@ class LocalOCRParser:
                     
                 if rank > best_rank:
                     best_rank = rank
+                    best_pass = pass_idx
                     best_outcome = (loc, coords, ns, ew)
                     best_raw_text = raw_text
+                
+                # If we get a perfect match (verified location and coordinates), stop early
+                if rank == 4:
+                    break
                     
             self.latest_raw_text = best_raw_text
+            self.latest_successful_pass = best_pass
             return best_outcome
         except Exception as e:
             print(f"Local OCR engine execution error: {e}")
