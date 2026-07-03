@@ -165,24 +165,21 @@ Run dependency sync from the repository root:
 agents-cli install
 ```
 
-Configure PyTorch optimized for your local hardware (CUDA, ROCm, Apple Silicon, or CPU):
+Change to the agent sub-directory and configure PyTorch for your local hardware (CUDA, ROCm, Apple Silicon, or CPU):
 ```bash
 cd roving-bard
 python setup_venv.py
-cd ..
 ```
+
 
 ### 3. Start the FastAPI Web Server
-To start the development server with auto-reloading enabled, navigate into the project subdirectory and run:
+To start the development server with auto-reloading enabled, run:
 ```bash
-cd roving-bard
 TESSERACT_OPENCL=1 uv run --no-sync uvicorn app.fast_api_app:app --reload
 ```
-*(Note: The `--no-sync` flag is required to prevent `uv` from auto-syncing dependencies against the lockfile and overwriting your custom hardware-optimized PyTorch build.)*
-The server will boot on `http://127.0.0.1:8000`.
-
+*(Note: The `--no-sync` flag is required to prevent `uv` from auto-syncing dependencies against the lockfile and overwriting your custom hardware-optimized PyTorch build. If you ever accidentally execute `uv run` without the `--no-sync` flag, `uv` will auto-revert PyTorch back to the default PyPI package; simply re-run `python setup_venv.py` to restore your GPU-optimized build.)*
 ### 4. Open the GUI Dashboard
-Once the server is running, navigate to:
+The server will boot on `http://127.0.0.1:8000`. Once the server is running, navigate to:
 ```
 http://localhost:8000/gui
 ```
@@ -190,9 +187,8 @@ http://localhost:8000/gui
 * **Localhost Access**: Loopback connections from localhost bypass API key authentication and display a green checkmark next to the status badge.
 
 ### 5. Alternative: Standalone CLI Player Loop
-If you prefer running a command-line polling loop without the GUI, navigate into the project subdirectory and run:
+If you prefer running a command-line polling loop without the GUI, run:
 ```bash
-cd roving-bard
 TESSERACT_OPENCL=1 uv run --no-sync python run_player.py
 ```
 This loop runs independently, scanning the screen and playing music directly in the terminal.
