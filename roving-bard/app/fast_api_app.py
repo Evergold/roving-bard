@@ -2166,7 +2166,7 @@ def run_florence_ocr(image):
         generated_ids = florence_model.generate(
             input_ids=inputs["input_ids"],
             pixel_values=inputs["pixel_values"],
-            max_new_tokens=128,
+            max_new_tokens=32,
             num_beams=1
         )
     except RuntimeError as e:
@@ -2188,7 +2188,7 @@ def run_florence_ocr(image):
             generated_ids = florence_model.generate(
                 input_ids=inputs["input_ids"],
                 pixel_values=inputs["pixel_values"],
-                max_new_tokens=128,
+                max_new_tokens=32,
                 num_beams=1
             )
         else:
@@ -2943,7 +2943,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 generated_ids = florence_model.generate(
                     input_ids=inputs["input_ids"],
                     pixel_values=inputs["pixel_values"],
-                    max_new_tokens=128,
+                    max_new_tokens=32,
                     num_beams=1,
                     stopping_criteria=stopping_criteria
                 )
@@ -2971,7 +2971,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     generated_ids = florence_model.generate(
                         input_ids=inputs["input_ids"],
                         pixel_values=inputs["pixel_values"],
-                        max_new_tokens=128,
+                        max_new_tokens=32,
                         num_beams=1,
                         stopping_criteria=stopping_criteria
                     )

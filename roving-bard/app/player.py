@@ -2127,9 +2127,10 @@ class LocalOCRParser:
                                         w_ratio = 1.0
                                     if w_ratio > best_loc_score:
                                         best_loc_score = w_ratio
-                                        best_loc = w_matches[0]
-                            
         location = best_loc if (best_loc and best_loc_score > 0.80) else first_candidate
+        if location:
+            if len(location) > 30:
+                location = location[:30].strip()
 
         return location, coordinates, ns_val, ew_val
 
