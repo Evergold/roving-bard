@@ -5154,7 +5154,7 @@
         const runModelsThisSession = new Set();
 
         function updateParseUI(parse) {
-            if (!parse || (parse.action === "stopped" && !parse.parsed_location)) {
+            if (!parse) {
                 return;
             }
 
@@ -5184,7 +5184,7 @@
                     if (methodText === "Local OCR") {
                         methodText = "OpenCV+Tesseract";
                     } else if (methodText.startsWith("Local OCR (Pass")) {
-                        const modeSuffix = parse.current_ocr_pass === "auto" ? " - Auto" : " - Locked";
+                        const modeSuffix = parse.current_ocr_pass === "auto" ? " - Auto" : " - Manual";
                         methodText = methodText.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
                     }
                 } else {
@@ -5201,7 +5201,7 @@
                 }
                 
                 if (selectedVal === 'tesseract' && (parse.parsed_location || parse.parsed_coordinates)) {
-                    document.getElementById('parse-route').innerHTML = `${methodText} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                    document.getElementById('parse-route').innerHTML = `<div>${methodText}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
                 } else {
                     document.getElementById('parse-route').innerText = methodText;
                 }
@@ -5455,7 +5455,7 @@
             if (selectedVal === 'tesseract' && currentPlaybackStatus && currentPlaybackStatus.latest_parse) {
                 const methodText = currentPlaybackStatus.latest_parse.method || "None";
                 if (methodText.startsWith("Local OCR (Pass")) {
-                    const modeSuffix = currentPlaybackStatus.current_ocr_pass === "auto" ? " - Auto" : " - Locked";
+                    const modeSuffix = currentPlaybackStatus.current_ocr_pass === "auto" ? " - Auto" : " - Manual";
                     routeName = methodText.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
                 }
             }
@@ -5466,7 +5466,7 @@
                 const hasLocation = parseLoc && parseLoc !== "Unknown" && parseLoc !== "";
                 const hasCoords = parseCoords && parseCoords !== "None" && parseCoords !== "";
                 if (selectedVal === 'tesseract' && (hasLocation || hasCoords)) {
-                    routeEl.innerHTML = `${routeName} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                    routeEl.innerHTML = `<div>${routeName}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
                 } else {
                     routeEl.innerText = routeName;
                 }
@@ -5741,11 +5741,11 @@
                         activeVLMModel = null;
                         let displayMethod = friendlyName;
                         if (res.method && res.method.startsWith("Local OCR (Pass")) {
-                            const modeSuffix = res.current_ocr_pass === "auto" ? " - Auto" : " - Locked";
+                            const modeSuffix = res.current_ocr_pass === "auto" ? " - Auto" : " - Manual";
                             displayMethod = res.method.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
                         }
                         if (res.parsed_location || res.parsed_coordinates) {
-                            document.getElementById('parse-route').innerHTML = `${displayMethod} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                            document.getElementById('parse-route').innerHTML = `<div>${displayMethod}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
                         } else {
                             document.getElementById('parse-route').innerText = displayMethod;
                         }
