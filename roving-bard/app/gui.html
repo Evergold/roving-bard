@@ -5181,9 +5181,11 @@
                 } else if (methodText === "None") {
                     methodText = t("none");
                 } else if (selectedVal === 'tesseract') {
-                    if (methodText === "Local OCR") methodText = "OpenCV+Tesseract";
-                    else if (methodText.startsWith("Local OCR (Pass")) {
-                        methodText = methodText.replace("Local OCR", "OpenCV+Tesseract");
+                    if (methodText === "Local OCR") {
+                        methodText = "OpenCV+Tesseract";
+                    } else if (methodText.startsWith("Local OCR (Pass")) {
+                        const modeSuffix = parse.current_ocr_pass === "auto" ? " - Auto" : " - Locked";
+                        methodText = methodText.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
                     }
                 } else {
                     const routeDisplayNames = {
@@ -5449,7 +5451,14 @@
                 'paligemma': 'OpenCV+PaliGemma',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6'
             };
-            const routeName = routeDisplayNames[selectedVal] || selectedVal;
+            let routeName = routeDisplayNames[selectedVal] || selectedVal;
+            if (selectedVal === 'tesseract' && currentPlaybackStatus && currentPlaybackStatus.latest_parse) {
+                const methodText = currentPlaybackStatus.latest_parse.method || "None";
+                if (methodText.startsWith("Local OCR (Pass")) {
+                    const modeSuffix = currentPlaybackStatus.current_ocr_pass === "auto" ? " - Auto" : " - Locked";
+                    routeName = methodText.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
+                }
+            }
             const parseLoc = document.getElementById('parse-location').innerText;
             const parseCoords = document.getElementById('parse-coords').innerText;
             const routeEl = document.getElementById('parse-route');
@@ -5730,10 +5739,15 @@
                     document.getElementById('parse-bearing').innerText = res.parsed_bearing || "None";
                     if (selectedVal === 'tesseract') {
                         activeVLMModel = null;
+                        let displayMethod = friendlyName;
+                        if (res.method && res.method.startsWith("Local OCR (Pass")) {
+                            const modeSuffix = res.current_ocr_pass === "auto" ? " - Auto" : " - Locked";
+                            displayMethod = res.method.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
+                        }
                         if (res.parsed_location || res.parsed_coordinates) {
-                            document.getElementById('parse-route').innerHTML = `${friendlyName} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                            document.getElementById('parse-route').innerHTML = `${displayMethod} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
                         } else {
-                            document.getElementById('parse-route').innerText = friendlyName;
+                            document.getElementById('parse-route').innerText = displayMethod;
                         }
                     } else {
                         document.getElementById('parse-route').innerText = friendlyName;

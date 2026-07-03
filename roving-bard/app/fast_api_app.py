@@ -528,6 +528,7 @@ def api_status():
         "is_abc": tools.player.current_track.lower().endswith(".abc") if tools.player.current_track else False,
         "minimap_detected": getattr(tools, "minimap_detected", False),
         "available_soundfonts": get_available_soundfonts(tools.player.playlist_dir),
+        "current_ocr_pass": tools.current_ocr_pass,
     }
 
 
@@ -1033,8 +1034,16 @@ def api_screenshot_refresh():
 @app.post("/api/ocr/wrong", dependencies=[Depends(verify_api_key)])
 def api_ocr_wrong():
     """Tells the backend that the OCR was wrong, cycling to the next preprocessing pass."""
-    # Cycle ocr_pass between 0, 1, 2
-    tools.current_ocr_pass = (tools.current_ocr_pass + 1) % 3
+    # Cycle ocr_pass: "auto" -> 2 -> 1 -> 0 -> "auto"
+    if tools.current_ocr_pass == "auto":
+        tools.current_ocr_pass = 2
+    elif tools.current_ocr_pass == 2:
+        tools.current_ocr_pass = 1
+    elif tools.current_ocr_pass == 1:
+        tools.current_ocr_pass = 0
+    else:
+        tools.current_ocr_pass = "auto"
+        
     print(f"[OCR] User clicked 'Wrong?'. Cycling to OCR Pass {tools.current_ocr_pass}")
     
     # Rerun the scan pipeline
@@ -2868,7 +2877,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "total_time_ms": round(total_time_ms, 1),
                 "actual_ram": act_ram,
                 "actual_vram": act_vram,
-                "warning": fallback_warning
+                "warning": fallback_warning,
+                "method": f"Local OCR (Pass {getattr(tools.ocr_parser, 'latest_successful_pass', 2)})",
+                "current_ocr_pass": tools.current_ocr_pass
             }
  
         # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!

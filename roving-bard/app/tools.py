@@ -172,7 +172,7 @@ latest_character_processed_bytes = None
 minimap_detected = False
 server_baseline_ram = 1100 * 1024 * 1024  # Default fallback 1.1 GB
 server_baseline_vram = 0
-current_ocr_pass = 2
+current_ocr_pass = "auto"
 latest_parse_result = {
     "parsed_location": None,
     "parsed_coordinates": None,
@@ -451,7 +451,8 @@ def check_screen_and_update_music() -> dict:
     t_prep_start = time.time()
     try:
         from PIL import Image
-        loc_proc_np = ocr_parser.preprocess_image(text_img_1x, current_ocr_pass)
+        preview_pass = 2 if current_ocr_pass == "auto" else current_ocr_pass
+        loc_proc_np = ocr_parser.preprocess_image(text_img_1x, preview_pass)
         loc_proc_pil = Image.fromarray(loc_proc_np)
         buf_loc_proc = BytesIO()
         loc_proc_pil.save(buf_loc_proc, format="PNG")
@@ -495,6 +496,17 @@ def check_screen_and_update_music() -> dict:
     tesseract_total_ms = (t_end - t_start) * 1000.0
     actual_pass = getattr(ocr_parser, "latest_successful_pass", 2)
     method = f"Local OCR (Pass {actual_pass})"
+    
+    # Regenerate preview image using the actual successful pass if we were in auto mode
+    if current_ocr_pass == "auto":
+        try:
+            loc_proc_np = ocr_parser.preprocess_image(text_img_1x, actual_pass)
+            loc_proc_pil = Image.fromarray(loc_proc_np)
+            buf_loc_proc = BytesIO()
+            loc_proc_pil.save(buf_loc_proc, format="PNG")
+            latest_location_processed_bytes = buf_loc_proc.getvalue()
+        except Exception:
+            pass
 
     # Extract raw unfuzzy location/coordinates from Tesseract output
     raw_text = getattr(ocr_parser, "latest_raw_text", "")
@@ -552,7 +564,8 @@ def check_screen_and_update_music() -> dict:
         "preprocess_time_ms": round(preprocess_time_ms, 1),
         "total_time_ms": round(tesseract_total_ms, 1),
         "actual_ram": act_ram,
-        "actual_vram": act_vram
+        "actual_vram": act_vram,
+        "current_ocr_pass": current_ocr_pass
     }
 
     return {
