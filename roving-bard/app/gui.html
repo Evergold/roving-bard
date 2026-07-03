@@ -5728,11 +5728,15 @@
                     }
                     document.getElementById('parse-coords').innerHTML = coordsHtml;
                     document.getElementById('parse-bearing').innerText = res.parsed_bearing || "None";
-                    document.getElementById('parse-route').innerText = friendlyName;
- 
                     if (selectedVal === 'tesseract') {
                         activeVLMModel = null;
+                        if (res.parsed_location || res.parsed_coordinates) {
+                            document.getElementById('parse-route').innerHTML = `${friendlyName} <button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button>`;
+                        } else {
+                            document.getElementById('parse-route').innerText = friendlyName;
+                        }
                     } else {
+                        document.getElementById('parse-route').innerText = friendlyName;
                         activeVLMModel = friendlyName;
                         currentlyWarmModel = selectedVal;
                     }
