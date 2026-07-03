@@ -3323,21 +3323,32 @@
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="lotro_locale_label">LOTRO Locale</span>
                             <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin-right: 8px; flex-shrink: 0;">
+                                    <defs>
+                                        <linearGradient id="gold-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#6b541e" />
+                                            <stop offset="25%" stop-color="#d4af37" />
+                                            <stop offset="50%" stop-color="#fff5cc" />
+                                            <stop offset="75%" stop-color="#c59b27" />
+                                            <stop offset="100%" stop-color="#4a3910" />
+                                        </linearGradient>
+                                        <linearGradient id="gold-dark" x1="100%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stop-color="#2b2005" />
+                                            <stop offset="50%" stop-color="#7a5d1a" />
+                                            <stop offset="100%" stop-color="#b89332" />
+                                        </linearGradient>
+                                    </defs>
                                     <g transform="rotate(-28 12 12)">
-                                        <!-- Outer ring edge (concentric) -->
-                                        <ellipse cx="12" cy="12" rx="6" ry="9.5" stroke="currentColor" stroke-width="1.8" fill="none" />
+                                        <!-- Back wall of the ring with cutout -->
+                                        <path d="M 11.2,1.5 A 8 10.5 0 1 0 11.2,22.5 A 8 10.5 0 1 0 11.2,1.5 M 11.4,3.2 A 6.2 9 0 1 0 11.4,20.8 A 6.2 9 0 1 0 11.4,3.2" fill="url(#gold-dark)" fill-rule="evenodd" />
                                         
-                                        <!-- Inner ring edge (concentric) -->
-                                        <ellipse cx="12" cy="12" rx="4.2" ry="7.7" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.6" />
+                                        <!-- Front wall of the ring (crescent shape) -->
+                                        <path d="M 12,1.5 A 9.5 10.5 0 0 1 12,22.5 A 7.5 10 0 0 0 12,1.5 Z" fill="url(#gold-metal)" />
                                         
-                                        <!-- Shading of the front-facing outer half of the band -->
-                                        <path d="M 12,2.5 A 6 9.5 0 0 1 12,21.5 A 4.2 7.7 0 0 0 12,2.5 Z" fill="currentColor" opacity="0.15" stroke="none" />
-                                        
-                                        <!-- Fiery glowing runic inscription details (multi-layered neon glow stack on the outside face) -->
-                                        <path d="M 12.0,3.3 A 5.6 8.8 0 0 1 12.0,20.7" stroke="#ff1a00" stroke-width="3.2" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" opacity="0.6" style="filter: blur(0.8px);" />
-                                        <path d="M 12.0,3.3 A 5.6 8.8 0 0 1 12.0,20.7" stroke="#ff6200" stroke-width="2.0" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" opacity="0.85" />
-                                        <path d="M 12.0,3.3 A 5.6 8.8 0 0 1 12.0,20.7" stroke="#ffeb80" stroke-width="0.8" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" />
+                                        <!-- Fiery glowing runic inscription details (multi-layered neon glow stack on the outside) -->
+                                        <path d="M 12.0,2.5 A 8.6 10.0 0 0 1 12.0,21.5" stroke="#ff1a00" stroke-width="3.2" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" opacity="0.6" style="filter: blur(0.8px);" />
+                                        <path d="M 12.0,2.5 A 8.6 10.0 0 0 1 12.0,21.5" stroke="#ff6200" stroke-width="2.0" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" opacity="0.85" />
+                                        <path d="M 12.0,2.5 A 8.6 10.0 0 0 1 12.0,21.5" stroke="#ffeb80" stroke-width="0.8" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" />
                                     </g>
                                 </svg>
                                 <select id="lotro-locale-select" onchange="changeLOTROLocale(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
