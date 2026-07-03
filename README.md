@@ -106,12 +106,12 @@ Roving Bard resolves and coordinates the hardware execution target across two di
    * **OpenCV Preprocessing (OpenCL)**: OpenCV's Transparent API allows offloading core image manipulation filters (like grayscaling, thresholding, resizing, and morphology) to the GPU using OpenCL. In Roving Bard, this is initialized automatically on startup using `cv2.ocl.setUseOpenCL(True)` if compatible OpenCL runtime drivers are detected on the host system.
    * **Tesseract Engine (OpenCL)**: Tesseract (v4.0+) can run morphological operations and character recognition on the GPU if compiled with OpenCL support. To activate it, you must export the environment variable beforehand in your terminal or pass it inline when starting the server:
      ```bash
-     TESSERACT_OPENCL=1 uv run uvicorn app.fast_api_app:app --reload
+     TESSERACT_OPENCL=1 uv run --no-sync uvicorn app.fast_api_app:app --reload
      ```
    * **Verification & Diagnostics**: You can test whether OpenCL hardware acceleration is properly configured on your host environment beforehand:
      * **OpenCV check**: Verify OpenCL detection and enablement status (run from the `roving-bard` subdirectory):
        ```bash
-       uv run python -c "import cv2; print('OpenCL Available:', cv2.ocl.haveOpenCL()); print('OpenCL Enabled:', cv2.ocl.useOpenCL())"
+       uv run --no-sync python -c "import cv2; print('OpenCL Available:', cv2.ocl.haveOpenCL()); print('OpenCL Enabled:', cv2.ocl.useOpenCL())"
        ```
      * **Tesseract check**: Run a test query to verify OpenCL drivers bind correctly:
        ```bash
@@ -176,9 +176,9 @@ cd ..
 To start the development server with auto-reloading enabled, navigate into the project subdirectory and run:
 ```bash
 cd roving-bard
-.venv/bin/python -m uvicorn app.fast_api_app:app --reload
+TESSERACT_OPENCL=1 uv run --no-sync uvicorn app.fast_api_app:app --reload
 ```
-*(On Windows, use `.venv\Scripts\python -m uvicorn app.fast_api_app:app --reload` instead)*
+*(Note: The `--no-sync` flag is required to prevent `uv` from auto-syncing dependencies against the lockfile and overwriting your custom hardware-optimized PyTorch build.)*
 The server will boot on `http://127.0.0.1:8000`.
 
 ### 4. Open the GUI Dashboard
@@ -193,7 +193,7 @@ http://localhost:8000/gui
 If you prefer running a command-line polling loop without the GUI, navigate into the project subdirectory and run:
 ```bash
 cd roving-bard
-uv run python run_player.py
+TESSERACT_OPENCL=1 uv run --no-sync python run_player.py
 ```
 This loop runs independently, scanning the screen and playing music directly in the terminal.
 
@@ -267,9 +267,9 @@ When playing ABC notation files, you can choose and hot-swap the active instrume
 
 | Command | Purpose |
 |---|---|
-| `uv run uvicorn app.fast_api_app:app --reload` | Run the development API and GUI server |
+| `TESSERACT_OPENCL=1 uv run --no-sync uvicorn app.fast_api_app:app --reload` | Run the development API and GUI server |
 | `agents-cli playground` | Launch interactive ADK development loop |
-| `uv run pytest` | Run unit and integration tests |
+| `TESSERACT_OPENCL=1 uv run --no-sync pytest` | Run unit and integration tests |
 | `agents-cli lint` | Run code quality checks (ruff, ty, codespell) |
 | `agents-cli deploy` | Deploy the server to Cloud dev environment |
 
