@@ -31,6 +31,7 @@ project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "mock-project-id")
 os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
 os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
+os.environ["ADK_SUPPRESS_GEMINI_LITELLM_WARNINGS"] = "true"
 
 # Resolve model from configuration (mapping.yaml)
 # LiteLLM format: e.g. "gemini/gemini-2.5-flash-lite", "openai/gpt-4o", etc.
