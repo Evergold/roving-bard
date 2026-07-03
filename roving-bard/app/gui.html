@@ -3329,9 +3329,24 @@
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="lotro_locale_label">LOTRO Locale</span>
                             <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e5a93b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; flex-shrink: 0; filter: drop-shadow(0 0 3px rgba(229, 169, 59, 0.4));">
-                                    <circle cx="12" cy="12" r="7"></circle>
-                                    <circle cx="12" cy="12" r="9" stroke="#ffc04d" stroke-width="0.75" stroke-dasharray="8 4"></circle>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin-right: 8px; flex-shrink: 0;">
+                                    <defs>
+                                        <filter id="ring-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                            <feGaussianBlur stdDeviation="0.8" result="blur" />
+                                            <feMerge>
+                                                <feMergeNode in="blur" />
+                                                <feMergeNode in="SourceGraphic" />
+                                            </feMerge>
+                                        </filter>
+                                    </defs>
+                                    <!-- Golden ring body (thick band) -->
+                                    <circle cx="12" cy="12" r="8" stroke="#d4af37" stroke-width="3" />
+                                    <!-- Inner highlight for 3D look -->
+                                    <circle cx="12" cy="12" r="6.8" stroke="#ffebad" stroke-width="0.5" opacity="0.8" />
+                                    <!-- Outer shadow highlight for 3D look -->
+                                    <circle cx="12" cy="12" r="9.2" stroke="#9e7815" stroke-width="0.5" opacity="0.8" />
+                                    <!-- Fiery glowing Elvish inscription -->
+                                    <circle cx="12" cy="12" r="8" stroke="#ff3c00" stroke-width="1.0" stroke-dasharray="2 1 4 1 1 1 3 1" filter="url(#ring-glow)" style="transform: rotate(45deg); transform-origin: 12px 12px;" />
                                 </svg>
                                 <select id="lotro-locale-select" onchange="changeLOTROLocale(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
                                     <option value="en" data-loc="lotro_locale_en">English</option>
