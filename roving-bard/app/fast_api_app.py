@@ -2599,12 +2599,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Real-world benchmark times for local VLMs running on moderate GPUs:
         model_perf = {
             "tesseract": {"loc": 15.0, "coords": 10.0, "ram": "120 MB", "vram": "85 MB"},
-            "moondream": {"loc": 65.0, "coords": 55.0, "ram": "850 MB", "vram": "2.2 GB"},
-            "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "4.5 GB"},
-            "qwen2.5-vl": {"loc": 85.0, "coords": 75.0, "ram": "1.4 GB", "vram": "5.0 GB"},
+            "moondream": {"loc": 65.0, "coords": 55.0, "ram": "850 MB", "vram": "1.0 GB"},
+            "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "1.65 GB"},
+            "qwen2.5-vl": {"loc": 85.0, "coords": 75.0, "ram": "1.4 GB", "vram": "2.0 GB"},
             "florence-2": {"loc": 45.0, "coords": 35.0, "ram": "650 MB", "vram": "1.8 GB"},
-            "paligemma": {"loc": 135.0, "coords": 115.0, "ram": "1.5 GB", "vram": "5.6 GB"},
-            "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "6.8 GB"},
+            "paligemma": {"loc": 135.0, "coords": 115.0, "ram": "1.5 GB", "vram": "2.3 GB"},
+            "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "5.6 GB"},
             "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0, "ram": "150 MB", "vram": "0 MB"}
         }
 
@@ -2654,6 +2654,22 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             elif selected_model == "gemini-2.5-flash-lite":
                 peak_vram = "0 MB"
                 peak_ram = "150 MB"
+            elif is_ollama:
+                try:
+                    ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
+                    if ps_res.status_code == 200:
+                        ps_data = ps_res.json()
+                        models = ps_data.get("models", [])
+                        target_tag = old_model_map.get(selected_model, "")
+                        for m in models:
+                            loaded_name = m.get("name", "")
+                            if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
+                                vram_val = m.get("size_vram", 0)
+                                if vram_val > 0:
+                                    peak_vram = format_memory_size(vram_val)
+                                break
+                except Exception:
+                    pass
 
             return peak_ram, peak_vram
 
