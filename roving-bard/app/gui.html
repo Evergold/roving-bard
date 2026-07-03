@@ -3323,33 +3323,40 @@
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="lotro_locale_label">LOTRO Locale</span>
                             <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin-right: 8px; flex-shrink: 0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 24 32" fill="none" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
                                     <defs>
-                                        <linearGradient id="gold-metal" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#6b541e" />
-                                            <stop offset="25%" stop-color="#d4af37" />
-                                            <stop offset="50%" stop-color="#fff5cc" />
-                                            <stop offset="75%" stop-color="#c59b27" />
-                                            <stop offset="100%" stop-color="#4a3910" />
-                                        </linearGradient>
-                                        <linearGradient id="gold-dark" x1="100%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" stop-color="#2b2005" />
-                                            <stop offset="50%" stop-color="#7a5d1a" />
-                                            <stop offset="100%" stop-color="#b89332" />
-                                        </linearGradient>
+                                        <!-- Smoky obsidian/charcoal glass gradient -->
+                                        <radialGradient id="palantir-body" cx="35%" cy="35%" r="65%">
+                                            <stop offset="0%" stop-color="#4b5563" />
+                                            <stop offset="40%" stop-color="#1f2937" />
+                                            <stop offset="85%" stop-color="#111827" />
+                                            <stop offset="100%" stop-color="#030712" />
+                                        </radialGradient>
+                                        <!-- Molten fiery energy core gradient -->
+                                        <radialGradient id="palantir-fire" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stop-color="#ffffff" />
+                                            <stop offset="15%" stop-color="#ffea00" />
+                                            <stop offset="45%" stop-color="#ff5500" />
+                                            <stop offset="75%" stop-color="#e11d48" />
+                                            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+                                        </radialGradient>
                                     </defs>
-                                    <g transform="rotate(-28 12 12)">
-                                        <!-- Back wall of the ring with cutout (3D perspective) -->
-                                        <path d="M 11.2,1.5 A 8 10.5 0 1 0 11.2,22.5 A 8 10.5 0 1 0 11.2,1.5 M 11.4,3.2 A 6.2 10.5 0 1 0 11.4,20.8 A 6.2 10.5 0 1 0 11.4,3.2" fill="url(#gold-dark)" fill-rule="evenodd" />
-                                        
-                                        <!-- Front wall of the ring (crescent shape, 3D perspective) -->
-                                        <path d="M 12,1.5 A 9.5 10.5 0 0 1 12,22.5 A 7.5 10.5 0 0 0 12,1.5 Z" fill="url(#gold-metal)" />
-                                        
-                                        <!-- Fiery glowing runic inscription details (multi-layered neon glow stack on the outside side-face) -->
-                                        <path d="M 12,1.5 A 8.8 10.5 0 0 1 12,22.5" stroke="#ff1a00" stroke-width="3.2" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" opacity="0.6" style="filter: blur(0.8px);" />
-                                        <path d="M 12,1.5 A 8.8 10.5 0 0 1 12,22.5" stroke="#ff6200" stroke-width="2.0" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" opacity="0.85" />
-                                        <path d="M 12,1.5 A 8.8 10.5 0 0 1 12,22.5" stroke="#ffeb80" stroke-width="0.8" stroke-dasharray="1.5 2 1 2 2.5 1.5" fill="none" />
-                                    </g>
+                                    
+                                    <!-- Outer sphere container with theme-coherent boundary -->
+                                    <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.8" fill="url(#palantir-body)" />
+                                    
+                                    <!-- Fiery internal core -->
+                                    <circle cx="12" cy="12" r="5.5" fill="url(#palantir-fire)" style="mix-blend-mode: screen; filter: drop-shadow(0 0 3px #ff3c00);" />
+                                    
+                                    <!-- Swirling elvish seeing-stone energies inside -->
+                                    <path d="M 8.5,12 A 3.5 3.5 0 0 1 15.5,12 A 2.5 2.5 0 0 0 10.5,12" stroke="#ffa500" stroke-width="0.8" fill="none" opacity="0.7" />
+                                    <path d="M 7.5,12 A 4.5 3.5 0 0 0 16.5,12" stroke="#ff3c00" stroke-width="0.6" fill="none" opacity="0.5" />
+                                    
+                                    <!-- Glass highlight reflection (crescent shine on top-left) -->
+                                    <path d="M 6.5,7 A 7.5 7.5 0 0 1 17.5,7" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" fill="none" opacity="0.3" />
+                                    
+                                    <!-- Pedestal Stand (obsidian/bronze claw wrapping base of orb, extending to bottom) -->
+                                    <path d="M 6.0,32 L 9.5,24.0 Q 8.5,19.5 7.5,17.0 Q 9.8,19.0 12,19.5 Q 14.2,19.0 16.5,17.0 Q 15.5,19.5 14.5,24.0 L 18.0,32 Z" fill="currentColor" fill-opacity="0.85" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
                                 </svg>
                                 <select id="lotro-locale-select" onchange="changeLOTROLocale(this.value)" style="background: transparent; border: none; color: var(--text-main); font-family: 'Space Mono', monospace; font-size: 1rem; outline: none; cursor: pointer; width: auto; height: 100%; padding-right: 4px;">
                                     <option value="en" data-loc="lotro_locale_en">English</option>
