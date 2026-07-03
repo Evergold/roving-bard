@@ -2705,6 +2705,10 @@
             color: var(--accent) !important;
             text-shadow: 0 0 8px rgba(46, 93, 168, 0.2);
         }
+        #clear-cache-btn, #gc-btn, #cvd-toggle-btn {
+            border: 1px solid transparent !important;
+            box-sizing: border-box !important;
+        }
         #clear-cache-btn:hover:not(:disabled), #gc-btn:hover:not(:disabled), #cvd-toggle-btn:hover {
             color: var(--neon-blue) !important;
             background: rgba(0, 242, 254, 0.15) !important;
@@ -9245,8 +9249,8 @@
                 updateServerBaselineUI();
                 if (popoverInner) {
                     // Set initial untransformed size instantly before animation starts
-                    popover.style.width = `${popoverInner.offsetWidth}px`;
-                    popover.style.height = `${popoverInner.offsetHeight}px`;
+                    popover.style.width = `${popoverInner.offsetWidth + 2}px`;
+                    popover.style.height = `${popoverInner.offsetHeight + 2}px`;
                 }
                 popover.classList.add('active');
                 if (menuBtn) menuBtn.classList.add('active');
@@ -9406,8 +9410,8 @@
                     for (let entry of entries) {
                         const width = popoverInner.offsetWidth;
                         const height = popoverInner.offsetHeight;
-                        popover.style.width = `${width}px`;
-                        popover.style.height = `${height}px`;
+                        popover.style.width = `${width + 2}px`;
+                        popover.style.height = `${height + 2}px`;
                     }
                 });
                 resizeObserver.observe(popoverInner);
