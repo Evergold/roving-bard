@@ -2200,7 +2200,7 @@ class LocalOCRParser:
             print(f"Error in single OCR pass {ocr_pass}: {e}")
             return None, None, None, None
 
-    def run_ocr(self, pil_img, ocr_pass=2, already_cropped=False):
+    def run_ocr(self, pil_img, ocr_pass="auto", already_cropped=False):
         try:
             # 1. Crop only the bottom 42% of the bounding box if not already cropped
             if already_cropped:
@@ -2223,12 +2223,19 @@ class LocalOCRParser:
             
             # 2. Run passes in ranked priority (Best: verified location and coordinates; Worst: neither)
             best_outcome = (None, None, None, None)
-            best_rank = 0  # 0: none, 1: loc only, 2: coords only, 3: loc+coords, 4: verified loc+coords
-            best_raw_text = ""
+            best_rank = -1  # Initialize to -1 so rank 0 outcomes still set best_pass
             best_pass = 2
             
-            # Always run in [2, 1, 0] order to prioritize mathematically optimal Otsu binarization
-            for pass_idx in [2, 1, 0]:
+            # Determine which passes to run
+            if ocr_pass == "auto":
+                passes_to_run = [2, 1, 0]
+            else:
+                try:
+                    passes_to_run = [int(ocr_pass)]
+                except Exception:
+                    passes_to_run = [2]
+            
+            for pass_idx in passes_to_run:
                 print(f"[Pipeline] Attempting local Tesseract OCR (Pass {pass_idx})...")
                 loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words)
                 raw_text = getattr(self, "latest_raw_text", "")
@@ -2253,8 +2260,8 @@ class LocalOCRParser:
                     best_outcome = (loc, coords, ns, ew)
                     best_raw_text = raw_text
                 
-                # If we get a perfect match (verified location and coordinates), stop early
-                if rank == 4:
+                # If we get a perfect match (verified location and coordinates) in auto mode, stop early
+                if ocr_pass == "auto" and rank == 4:
                     break
                     
             self.latest_raw_text = best_raw_text
