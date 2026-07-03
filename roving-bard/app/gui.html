@@ -4299,7 +4299,7 @@
                     if (res.tesseract_acceleration) {
                         showToast(t('tesseract_acceleration_success', 'Tesseract: OpenCL acceleration is ENABLED'), 'success');
                     } else {
-                        showToast(t('tesseract_acceleration_info', 'Tesseract: Running in CPU-only mode'), 'info');
+                        showToast(t('tesseract_acceleration_info', 'Tesseract: Running in CPU-only mode (GPU OpenCL acceleration disabled or unsupported)'), 'warn');
                     }
                 }
                 
@@ -5753,7 +5753,15 @@
                     const successPrefix = t("vlm_toast_success_prefix", "Successfully processed with");
                     showToast(`${successPrefix} ${friendlyName}!`, "success");
                     if (res.warning) {
-                        showToast(t(res.warning, "Florence-2: CUDA compatibility error. Falling back to CPU-only execution."), "info");
+                        let warningMsg = "VLM model is running in CPU-only mode (which is extremely slow).";
+                        if (res.warning === "florence_cpu_fallback") {
+                            warningMsg = "Florence-2: CUDA compatibility error or disabled. Running on CPU.";
+                        } else if (res.warning === "ollama_cpu_fallback") {
+                            warningMsg = `Ollama: model is running in CPU-only mode (GPU acceleration disabled or insufficient VRAM).`;
+                        } else if (res.warning === "tesseract_cpu_fallback") {
+                            warningMsg = "Tesseract: GPU OpenCL acceleration is disabled or unsupported. Running on CPU.";
+                        }
+                        showToast(t(res.warning, warningMsg), "warn");
                     }
                 } else {
                     const failedPrefix = t("vlm_toast_failed_prefix", "VLM process failed:");

@@ -2828,6 +2828,17 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             coords_time_ms = total_time_ms * 0.45
             
             act_ram, act_vram = get_peak_usage()
+            
+            # Check if running in CPU-mode (OpenCL disabled)
+            tesseract_cpu = True
+            try:
+                import cv2
+                if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
+                    tesseract_cpu = False
+            except Exception:
+                pass
+            fallback_warning = "tesseract_cpu_fallback" if tesseract_cpu else None
+
             return {
                 "status": "success",
                 "model": "OpenCV+Tesseract",
@@ -2841,7 +2852,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
                 "total_time_ms": round(total_time_ms, 1),
                 "actual_ram": act_ram,
-                "actual_vram": act_vram
+                "actual_vram": act_vram,
+                "warning": fallback_warning
             }
  
         # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!
@@ -2912,7 +2924,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             preprocess_time_ms = (tp1 - tp0) * 1000.0
  
             t0 = time.time()
-            fallback_warning = None
+            fallback_warning = "florence_cpu_fallback" if device.type == "cpu" else None
             try:
                 from transformers import StoppingCriteria, StoppingCriteriaList
  
@@ -3114,6 +3126,34 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         
             act_ram, act_vram = get_peak_usage(is_ollama=True)
             
+            # Check if Ollama is executing on CPU (size_vram == 0 or less than half of total size is loaded in VRAM)
+            ollama_cpu = False
+            try:
+                ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
+                if ps_res.status_code == 200:
+                    ps_data = ps_res.json()
+                    models = ps_data.get("models", [])
+                    target_tag = model_map.get(selected_model, "")
+                    for m in models:
+                        loaded_name = m.get("name", "")
+                        if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
+                            size = m.get("size", 0)
+                            vram = m.get("size_vram", 0)
+                            if vram == 0 or (size > 0 and vram / size < 0.5):
+                                ollama_cpu = True
+                            break
+            except Exception:
+                pass
+            
+            try:
+                import torch
+                if not torch.cuda.is_available():
+                    ollama_cpu = True
+            except Exception:
+                pass
+
+            fallback_warning = "ollama_cpu_fallback" if ollama_cpu else None
+            
             if response and response.status_code == 200:
                 currently_loaded_vlm = selected_model
                 if selected_model in ("moondream", "qwen2-vl"):
@@ -3134,7 +3174,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "preprocess_time_ms": round(preprocess_time_ms, 1),
                     "total_time_ms": round(total_time_ms, 1),
                     "actual_ram": act_ram,
-                    "actual_vram": act_vram
+                    "actual_vram": act_vram,
+                    "warning": fallback_warning
                 }
             else:
                 raise Exception(f"Ollama returned status {response.status_code}")
