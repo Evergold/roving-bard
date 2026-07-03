@@ -9201,6 +9201,11 @@
                         toggleMenuPopOver();
                         dismissed = true;
                     }
+                    // Log popover
+                    if (logPopoverOpen) {
+                        toggleLogPopover();
+                        dismissed = true;
+                    }
                     // Status badge dropdown
                     const dropdown = document.getElementById('api-key-dropdown');
                     if (dropdown && dropdown.classList.contains('active')) {
