@@ -83,7 +83,8 @@ def test_vlm_cancel_via_gc() -> None:
             try_vlm_result["error"] = str(e)
             
     with patch("requests.get", return_value=get_mock) as mock_get, \
-         patch("requests.post", return_value=response_mock) as mock_post:
+         patch("requests.post", return_value=response_mock) as mock_post, \
+         patch("app.fast_api_app.check_memory_safety") as mock_memory_safety:
         t = threading.Thread(target=run_try_vlm)
         t.start()
         

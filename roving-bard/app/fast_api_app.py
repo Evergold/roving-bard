@@ -1468,7 +1468,6 @@ vlm_download_states = {
     "qwen2-vl": {"ready": False, "status": "idle", "progress": 0},
     "qwen2.5-vl": {"ready": False, "status": "idle", "progress": 0},
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
-    "paligemma": {"ready": False, "status": "idle", "progress": 0},
     "minicpm-v": {"ready": False, "status": "idle", "progress": 0},
     "gemma-3": {"ready": False, "status": "idle", "progress": 0},
     "mock-vlm": {"ready": False, "status": "idle", "progress": 0},
@@ -1494,8 +1493,6 @@ def sync_ollama_ready_states():
                     ollama_names = ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b", "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M"]
                 elif model_id == "qwen2.5-vl":
                     ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"]
-                elif model_id == "paligemma":
-                    ollama_names = ["paligemma", "paligemma:latest", "pdevine/paligemma", "pdevine/paligemma:latest"]
                 elif model_id == "minicpm-v":
                     ollama_names = ["minicpm-v", "minicpm-v:latest"]
                 elif model_id == "gemma-3":
@@ -1514,7 +1511,6 @@ def resolve_active_ollama_tag(model_id: str) -> str:
         "moondream": "moondream:latest",
         "qwen2-vl": "qwen2-vl",
         "qwen2.5-vl": "qwen2.5vl:3b",
-        "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v",
         "gemma-3": "gemma3:4b-it-qat"
     }
@@ -1522,7 +1518,6 @@ def resolve_active_ollama_tag(model_id: str) -> str:
         "moondream": ["moondream", "moondream:latest"],
         "qwen2-vl": ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b", "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M"],
         "qwen2.5-vl": ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"],
-        "paligemma": ["paligemma", "paligemma:latest", "pdevine/paligemma", "pdevine/paligemma:latest"],
         "minicpm-v": ["minicpm-v", "minicpm-v:latest"],
         "gemma-3": ["gemma3:4b-it-qat", "gemma3:4b"]
     }
@@ -1884,7 +1879,7 @@ def get_app_vram_usage_bytes(active_model: str | None = None):
         return 0
 
     # Local VLM models:
-    is_ollama = active_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3"]
+    is_ollama = active_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
     if is_ollama:
         return get_ollama_vram_usage_bytes()
         
@@ -1977,7 +1972,6 @@ def api_vlm_pull(req: VlmPullRequest):
     model_map = {
         "moondream": "moondream:latest",
         "qwen2.5-vl": "qwen2.5vl:3b",
-        "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v",
         "gemma-3": "gemma3:4b-it-qat"
     }
@@ -2058,7 +2052,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
         return {"status": "success", "message": f"Model {req.model} is not ready yet."}
 
     model_tag = resolve_active_ollama_tag(model_id)
-    warmup_models = ["qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3", "moondream"]
+    warmup_models = ["qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3", "moondream"]
     if model_id not in warmup_models:
         return {"status": "success", "message": "Warmup not required for this model."}
 
@@ -2253,7 +2247,7 @@ def api_gc(req: GcRequest):
     selected_model = req.model.lower()
     
     # Warm-up list models
-    warmup_models = ["qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3", "moondream"]
+    warmup_models = ["qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3", "moondream"]
     
     if selected_model in warmup_models:
         try:
@@ -2825,7 +2819,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "1.65 GB"},
             "qwen2.5-vl": {"loc": 85.0, "coords": 75.0, "ram": "1.4 GB", "vram": "2.0 GB"},
             "florence-2": {"loc": 45.0, "coords": 35.0, "ram": "650 MB", "vram": "1.8 GB"},
-            "paligemma": {"loc": 135.0, "coords": 115.0, "ram": "1.5 GB", "vram": "2.3 GB"},
             "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "5.6 GB"},
             "gemma-3": {"loc": 110.0, "coords": 95.0, "ram": "2.2 GB", "vram": "4.5 GB"},
             "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0, "ram": "150 MB", "vram": "0 MB"}
@@ -2842,8 +2835,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "qwen2-vl"
             elif "florence" in selected_model:
                 selected_model = "florence-2"
-            elif "paligemma" in selected_model:
-                selected_model = "paligemma"
             elif "minicpm" in selected_model:
                 selected_model = "minicpm-v"
             elif "gemma" in selected_model:
@@ -2858,7 +2849,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Map clean key names to Ollama tags using dynamic resolver
         model_tag = resolve_active_ollama_tag(selected_model)
 
-        local_gpu_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3"]
+        local_gpu_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
         if selected_model in local_gpu_models:
             try:
                 ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
@@ -2929,7 +2920,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             }
 
         # Guard: Check system memory safety for local CPU/GPU models
-        local_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3", "florence-2"]
+        local_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3", "florence-2"]
         if selected_model in local_models:
             device_type = "cpu"
             try:
@@ -2949,7 +2940,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
  
         # Start PeakMemoryMonitor
-        include_ollama_mon = selected_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3"]
+        include_ollama_mon = selected_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
         mem_monitor = PeakMemoryMonitor(model_name=selected_model, include_ollama=include_ollama_mon)
         mem_monitor.start()
 
@@ -3221,10 +3212,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "warning": fallback_warning
             }
  
-        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, Qwen2.5-VL, PaliGemma, MiniCPM-V)!
+        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, Qwen2.5-VL, MiniCPM-V, Gemma-3)!
         else:
             model_tag = resolve_active_ollama_tag(selected_model)
-            ollama_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3"]
+            ollama_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
             if selected_model not in ollama_models:
                 return {"status": "error", "message": f"Unsupported VLM model: {selected_model}"}
                 
@@ -3356,7 +3347,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             
             if response and response.status_code == 200:
                 currently_loaded_vlm = selected_model
-                if selected_model in ("moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v", "gemma-3"):
+                if selected_model in ("moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"):
                     warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
