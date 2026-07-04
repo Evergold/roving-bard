@@ -1470,6 +1470,7 @@ vlm_download_states = {
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
     "paligemma": {"ready": False, "status": "idle", "progress": 0},
     "minicpm-v": {"ready": False, "status": "idle", "progress": 0},
+    "mock-vlm": {"ready": False, "status": "idle", "progress": 0},
 }
 
 active_downloads = {}
@@ -1481,7 +1482,7 @@ def sync_ollama_ready_states():
         if response.status_code == 200:
             models_list = [m["name"] for m in response.json().get("models", [])]
             for model_id, state in vlm_download_states.items():
-                if model_id in ("tesseract", "gemini-2.5-flash-lite", "florence-2"):
+                if model_id in ("tesseract", "gemini-2.5-flash-lite", "florence-2", "mock-vlm"):
                     continue
                 if state["status"].startswith("downloading") or state["status"] == "paused" or state["status"].startswith("failed"):
                     continue
