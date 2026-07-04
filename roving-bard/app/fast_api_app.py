@@ -2036,7 +2036,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
             url = "http://127.0.0.1:11434/api/generate"
             dummy_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
             print(f"[VLM Warmup] Starting background warmup for {model_id}...", flush=True)
-            requests.post(
+            resp = requests.post(
                 url,
                 json={
                     "model": model_map[model_id],
@@ -2050,6 +2050,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
                 },
                 timeout=180
             )
+            resp.raise_for_status()
             print(f"[VLM Warmup] Background warmup for {model_id} completed.", flush=True)
         except Exception as e:
             print(f"[VLM Warmup] Warmup failed for {model_id}: {e}", flush=True)
@@ -2229,7 +2230,7 @@ def api_gc(req: GcRequest):
         try:
             url = "http://127.0.0.1:11434/api/generate"
             dummy_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-            requests.post(
+            resp = requests.post(
                 url,
                 json={
                     "model": model_map[selected_model],
@@ -2243,6 +2244,7 @@ def api_gc(req: GcRequest):
                 },
                 timeout=180
             )
+            resp.raise_for_status()
             print(f"[GC] Successfully reloaded/warmed up model: {selected_model}", flush=True)
         except Exception as e:
             print(f"[GC] Error reloading model {selected_model}: {e}", flush=True)
@@ -3291,6 +3293,15 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                             if "unable to load model" in err_text or "sha256" in err_text or "blob" in err_text:
                                 # Trigger background pull/repair of the model using the standard progress task
                                 print(f"[Ollama] Corrupted model detected ({selected_model}). Triggering background repair pull...", flush=True)
+                                
+                                # First, delete the corrupted model from Ollama to ensure a clean re-download and prevent status sync issues
+                                try:
+                                    import requests as req
+                                    req.delete("http://localhost:11434/api/delete", json={"name": model_map[selected_model]}, timeout=10)
+                                    print(f"[Ollama] Successfully deleted corrupted model {selected_model} from tags.", flush=True)
+                                except Exception as ex:
+                                    print(f"[Ollama] Failed to delete corrupted model {selected_model}: {ex}", flush=True)
+
                                 vlm_download_states[selected_model]["ready"] = False
                                 vlm_download_states[selected_model]["status"] = "downloading"
                                 vlm_download_states[selected_model]["progress"] = 0
