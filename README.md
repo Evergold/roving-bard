@@ -130,7 +130,7 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 | **Qwen2-VL (2B)** | `2.75 GB` | `1.5 GB` | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
 | **Qwen2.5-VL (3B)** | `5.25 GB` | `1.5 GB` | Next-generation VLM with enhanced spatial understanding and character transcription. Runs via Ollama. |
 | **Gemma 3 (4B)** | `3.3 GB` | `2.4 GB` | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
-| **MiniCPM-V 2.6** | `6.8 GB` | `2.8 GB` | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
+| **MiniCPM-V 2.6 (8B)** | `6.8 GB` | `2.8 GB` | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
 
 ### ☁️ Built-in Cloud VLMs
 
