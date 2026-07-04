@@ -243,40 +243,40 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     assert res["model"] == "OpenCV+Tesseract"
     assert res["parsed_location"] != "Unknown"
     
-    # 4. Trigger download/pull for a local VLM (paligemma)
+    # 4. Trigger download/pull for a local VLM (minicpm-v)
     pull_url = BASE_URL + "/api/ocr/vlm_pull"
-    response = requests.post(pull_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    response = requests.post(pull_url, json={"model": "minicpm-v"}, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    status = response.json()["states"]["paligemma"]["status"]
+    status = response.json()["states"]["minicpm-v"]["status"]
     assert status.startswith("downloading") or "pulling" in status
     
     # 5. Pause the download
     pause_url = BASE_URL + "/api/ocr/vlm_pause"
-    response = requests.post(pause_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    response = requests.post(pause_url, json={"model": "minicpm-v"}, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
     # Check status changed to paused
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    assert response.json()["states"]["paligemma"]["status"] == "paused"
+    assert response.json()["states"]["minicpm-v"]["status"] == "paused"
     
     # 6. Resume/pull again
-    response = requests.post(pull_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    response = requests.post(pull_url, json={"model": "minicpm-v"}, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    status = response.json()["states"]["paligemma"]["status"]
+    status = response.json()["states"]["minicpm-v"]["status"]
     assert status.startswith("downloading") or "pulling" in status
     
     # Clean up by pausing
-    requests.post(pause_url, json={"model": "paligemma"}, headers=HEADERS, timeout=10)
+    requests.post(pause_url, json={"model": "minicpm-v"}, headers=HEADERS, timeout=10)
     
     # 7. Trigger pull for qwen2.5-vl
     response = requests.post(pull_url, json={"model": "qwen2.5-vl"}, headers=HEADERS, timeout=10)

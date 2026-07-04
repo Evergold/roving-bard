@@ -3286,7 +3286,27 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         break
                     else:
                         if try_idx == max_tries - 1:
-                            raise Exception(f"Ollama returned status {response.status_code}: {response.text}")
+                            err_text = response.text
+                            if "unable to load model" in err_text or "sha256" in err_text or "blob" in err_text:
+                                # Trigger background re-pull/repair of the model
+                                print(f"[Ollama] Corrupted model detected ({selected_model}). Triggering background repair...", flush=True)
+                                def do_repair(m_name, m_id):
+                                    try:
+                                        print(f"[Ollama] Starting repair pull for {m_name} ({m_id})...", flush=True)
+                                        import requests as req
+                                        req.post("http://127.0.0.1:11434/api/pull", json={"name": m_id, "stream": False}, timeout=600)
+                                        print(f"[Ollama] Repair pull completed for {m_name} ({m_id})!", flush=True)
+                                    except Exception as ex:
+                                        print(f"[Ollama] Failed to repair {m_name}: {ex}", flush=True)
+                                
+                                import threading
+                                repair_t = threading.Thread(target=do_repair, args=(selected_model, model_map[selected_model]))
+                                repair_t.daemon = True
+                                repair_t.start()
+                                
+                                raise Exception(f"Ollama model layers are corrupted. A repair download has been started in the background. Please wait a minute and try again!")
+                            
+                            raise Exception(f"Ollama returned status {response.status_code}: {err_text}")
                 finally:
                     active_http_response = None
                         
