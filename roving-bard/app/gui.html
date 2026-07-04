@@ -5889,7 +5889,11 @@
                     }
                 } else {
                     const failedPrefix = t("vlm_toast_failed_prefix", "VLM process failed:");
-                    showToast(`${failedPrefix} ${res.message}`, "error");
+                    let msg = res.message || "";
+                    if (msg.includes("outdated Ollama installation") || msg.includes("Ollama failed to load the model")) {
+                        msg = t("ollama_outdated_error", "Ollama failed to load the model. This is likely due to an outdated Ollama installation (e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version.");
+                    }
+                    showToast(`${failedPrefix} ${msg}`, "error");
                     resetVLM();
                 }
             } catch (err) {
@@ -6248,7 +6252,11 @@
                         showToast(t("scan_matched_prefix", "Successfully matched: ") + `${res.parsed_location} (${res.parsed_coordinates})`, "success");
                     }
                 } else {
-                    showToast(t("scan_failed", "Scan failed: ") + res.message, "error");
+                    let msg = res.message || "";
+                    if (msg.includes("outdated Ollama installation") || msg.includes("Ollama failed to load the model")) {
+                        msg = t("ollama_outdated_error", "Ollama failed to load the model. This is likely due to an outdated Ollama installation (e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version.");
+                    }
+                    showToast(t("scan_failed", "Scan failed: ") + msg, "error");
                 }
             } catch (err) {
                 console.error(t("err_scan_screen"), err);

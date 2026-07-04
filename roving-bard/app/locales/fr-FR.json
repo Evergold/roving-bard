@@ -257,5 +257,6 @@
     "lang_de_DE": "Allemand (DE)",
     "lang_es_ES": "Espagnol (ES)",
     "lang_it_IT": "Italien (IT)",
-    "lang_ru_RU": "Russe (RU)"
+    "lang_ru_RU": "Russe (RU)",
+    "ollama_outdated_error": "Ollama n'a pas pu charger le modèle. Cela est probablement dû à une installation d'Ollama obsolète (par exemple, architecture GGUF non supportée). Veuillez mettre à jour Ollama vers la dernière version."
 }
