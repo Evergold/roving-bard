@@ -13,10 +13,26 @@
 # limitations under the License.
 import warnings
 warnings.filterwarnings("ignore", message=".*EXPERIMENTAL.*")
+warnings.filterwarnings("ignore", message=".*CLIPImageProcessor.*")
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="transformers")
 
 import logging
 import os
 import json
+import re
+
+# Custom logging filter to suppress CLIPImageProcessor logs while keeping other warnings
+class ClipImageProcessorFilter(logging.Filter):
+    def filter(self, record):
+        return "CLIPImageProcessor" not in record.getMessage()
+
+# Add to key loggers and all active handlers to intercept child-logger propagation
+for logger_name in ["", "transformers", "uvicorn", "uvicorn.error"]:
+    logger = logging.getLogger(logger_name)
+    logger.addFilter(ClipImageProcessorFilter())
+    for handler in logger.handlers:
+        handler.addFilter(ClipImageProcessorFilter())
 
 from dotenv import load_dotenv
 
@@ -1833,24 +1849,11 @@ def get_app_vram_usage_bytes(active_model: str | None = None):
         return 0
 
     # Local VLM models:
-    vram = get_ollama_vram_usage_bytes()
-    
-    # Add PyTorch VRAM
-    try:
-        import sys
-        if "torch" in sys.modules:
-            import torch
-            if torch.cuda.is_available():
-                vram += torch.cuda.memory_allocated()
-            elif hasattr(torch, "mps") and torch.mps.is_available():
-                if hasattr(torch.mps, "driver_allocated_memory"):
-                    vram += torch.mps.driver_allocated_memory()
-                elif hasattr(torch.mps, "current_allocated_memory"):
-                    vram += torch.mps.current_allocated_memory()
-    except Exception:
-        pass
+    is_ollama = active_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v"]
+    if is_ollama:
+        return get_ollama_vram_usage_bytes()
         
-    return vram
+    return get_gpu_vram_usage_bytes(include_ollama=False)
 
 
 class PeakMemoryMonitor:
@@ -2296,6 +2299,13 @@ def load_florence_model():
     if florence_model is not None and florence_processor is not None:
         currently_loaded_vlm = "florence-2"
         return
+        
+    # Refresh logging filters for any late-initialized handlers
+    for logger_name in ["", "transformers", "uvicorn", "uvicorn.error"]:
+        logger = logging.getLogger(logger_name)
+        logger.addFilter(ClipImageProcessorFilter())
+        for handler in logger.handlers:
+            handler.addFilter(ClipImageProcessorFilter())
     import torch
     from transformers import AutoProcessor, AutoModelForCausalLM
     device = "cpu"
@@ -2303,8 +2313,8 @@ def load_florence_model():
     if torch.cuda.is_available():
         try:
             cc = torch.cuda.get_device_capability(0)
-            if cc[0] < 7 or (cc[0] == 7 and cc[1] < 5):
-                print(f"[Florence-2] GPU compute capability {cc[0]}.{cc[1]} < 7.5 is incompatible with PyTorch installation. Forcing CPU...")
+            if cc[0] < 6:
+                print(f"[Florence-2] GPU compute capability {cc[0]}.{cc[1]} < 6.0 is unsupported. Forcing CPU...")
                 device = "cpu"
                 dtype = torch.float32
             else:
@@ -2319,18 +2329,34 @@ def load_florence_model():
     else:
         device = "cpu"
         dtype = torch.float32
-    check_memory_safety("Florence-2", device)
-    print(f"[Florence-2] Loading microsoft/Florence-2-large on {device} ({dtype})...")
-    florence_model = AutoModelForCausalLM.from_pretrained(
-        "microsoft/Florence-2-large", 
-        trust_remote_code=True,
-        torch_dtype=dtype
-    ).to(device)
+
+    try:
+        check_memory_safety("Florence-2", device)
+        print(f"[Florence-2] Loading microsoft/Florence-2-large on {device} ({dtype})...")
+        florence_model = AutoModelForCausalLM.from_pretrained(
+            "microsoft/Florence-2-large", 
+            trust_remote_code=True,
+            dtype=dtype,
+            local_files_only=True
+        ).to(device)
+    except Exception as e:
+        print(f"[Florence-2] Failed to load on {device} ({dtype}): {e}. Falling back to CPU...")
+        device = "cpu"
+        dtype = torch.float32
+        check_memory_safety("Florence-2", device)
+        florence_model = AutoModelForCausalLM.from_pretrained(
+            "microsoft/Florence-2-large", 
+            trust_remote_code=True,
+            dtype=dtype,
+            local_files_only=True
+        ).to(device)
+
     if device == "cpu":
         florence_model = florence_model.float()
     florence_processor = AutoProcessor.from_pretrained(
         "microsoft/Florence-2-large", 
-        trust_remote_code=True
+        trust_remote_code=True,
+        local_files_only=True
     )
     currently_loaded_vlm = "florence-2"
 
@@ -2364,7 +2390,8 @@ def run_florence_ocr(image):
             florence_model = AutoModelForCausalLM.from_pretrained(
                 "microsoft/Florence-2-large", 
                 trust_remote_code=True,
-                torch_dtype=torch.float32
+                dtype=torch.float32,
+                local_files_only=True
             ).to("cpu")
             device = florence_model.device
             inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
@@ -3083,7 +3110,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     florence_model = AutoModelForCausalLM.from_pretrained(
                         "microsoft/Florence-2-large", 
                         trust_remote_code=True,
-                        torch_dtype=torch.float32
+                        dtype=torch.float32,
+                        local_files_only=True
                     ).to("cpu")
                     device = florence_model.device
                     inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
