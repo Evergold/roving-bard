@@ -8872,6 +8872,7 @@
                                 const opt = document.createElement('option');
                                 opt.value = loc.code;
                                 opt.textContent = loc.name;
+                                opt.setAttribute('data-loc', 'lang_' + loc.code.replace('-', '_'));
                                 langSelect.appendChild(opt);
                             });
                         }
@@ -8933,6 +8934,8 @@
                 if (val) {
                     if (el.tagName === 'INPUT') {
                         el.placeholder = val;
+                    } else if (el.tagName === 'OPTION') {
+                        el.textContent = val;
                     } else {
                         el.innerHTML = val;
                     }

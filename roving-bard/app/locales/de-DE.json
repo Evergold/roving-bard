@@ -250,5 +250,12 @@
     "lotro_locale_updated": "LOTRO-Gebietsschema-Einstellung erfolgreich aktualisiert!",
     "lotro_locale_warning": "Die ausgewählte Lokalisierung ({uiName}) wird in LOTRO nicht nativ unterstützt. Erwartetes LOTRO-Gebietsschema ist {expectedName}.",
     "tesseract_cpu_fallback": "Tesseract: GPU-OpenCL-Beschleunigung ist deaktiviert oder wird nicht unterstützt. Ausführung auf CPU.",
-    "ollama_cpu_fallback": "Ollama: Modell läuft im reinen CPU-Modus (GPU-Beschleunigung deaktiviert oder unzureichender VRAM)."
+    "ollama_cpu_fallback": "Ollama: Modell läuft im reinen CPU-Modus (GPU-Beschleunigung deaktiviert oder unzureichender VRAM).",
+    "lang_en_US": "Englisch (US)",
+    "lang_en_GB": "Englisch (UK)",
+    "lang_fr_FR": "Französisch (FR)",
+    "lang_de_DE": "Deutsch (DE)",
+    "lang_es_ES": "Spanisch (ES)",
+    "lang_it_IT": "Italienisch (IT)",
+    "lang_ru_RU": "Russisch (RU)"
 }

@@ -250,5 +250,12 @@
     "lotro_locale_updated": "Preferenza della localizzazione di LOTRO aggiornata con successo!",
     "lotro_locale_warning": "La localizzazione selezionata ({uiName}) non è supportata nativamente in LOTRO. Si presume che LOTRO sia in {expectedName}.",
     "tesseract_cpu_fallback": "Tesseract: l'accelerazione GPU OpenCL è disabilitata o non supportata. Esecuzione su CPU.",
-    "ollama_cpu_fallback": "Ollama: il modello è in esecuzione in modalità solo CPU (accelerazione GPU disabilitata o VRAM insufficiente)."
+    "ollama_cpu_fallback": "Ollama: il modello è in esecuzione in modalità solo CPU (accelerazione GPU disabilitata o VRAM insufficiente).",
+    "lang_en_US": "Inglese (USA)",
+    "lang_en_GB": "Inglese (UK)",
+    "lang_fr_FR": "Francese (FR)",
+    "lang_de_DE": "Tedesco (DE)",
+    "lang_es_ES": "Spagnolo (ES)",
+    "lang_it_IT": "Italiano (IT)",
+    "lang_ru_RU": "Russo (RU)"
 }
