@@ -4004,7 +4004,7 @@
                                         <option value="florence-2">Florence-2</option>
                                         <option value="paligemma">PaliGemma</option>
                                         <option value="minicpm-v">MiniCPM-V 2.6</option>
-                                        <option value="gemma-3">Gemma 3</option>
+                                        <option value="gemma-3">Gemma 3 (4B)</option>
                                         <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                                     </select>
                                     <button class="btn btn-secondary" id="btn-vlm-try" data-loc="vlm_try_btn" style="padding: 0 0.75rem; font-size: 0.75rem; height: 32px; min-width: 60px;" onclick="trySelectedVLM()">Try</button>
@@ -5274,7 +5274,7 @@
                         'florence-2': 'OpenCV+Florence-2',
                         'paligemma': 'OpenCV+PaliGemma',
                         'minicpm-v': 'OpenCV+MiniCPM-V 2.6',
-                        'gemma-3': 'OpenCV+Gemma 3'
+                        'gemma-3': 'OpenCV+Gemma 3 (4B)'
                     };
                     methodText = routeDisplayNames[selectedVal] || selectedVal;
                 }
@@ -5362,7 +5362,7 @@
                 'florence-2': 'OpenCV+Florence-2',
                 'paligemma': 'OpenCV+PaliGemma',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6',
-                'gemma-3': 'OpenCV+Gemma 3'
+                'gemma-3': 'OpenCV+Gemma 3 (4B)'
             };
             const friendlyName = friendlyNames[modelName] || modelName;
  
@@ -5513,7 +5513,7 @@
                     'florence-2': 'Florence-2',
                     'paligemma': 'PaliGemma',
                     'minicpm-v': 'MiniCPM-V 2.6',
-                    'gemma-3': 'Gemma 3'
+                    'gemma-3': 'Gemma 3 (4B)'
                 };
                 activeVLMModel = friendlyNames[selectedVal] || selectedVal;
             }
@@ -5533,7 +5533,7 @@
                 'florence-2': 'OpenCV+Florence-2',
                 'paligemma': 'OpenCV+PaliGemma',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6',
-                'gemma-3': 'OpenCV+Gemma 3'
+                'gemma-3': 'OpenCV+Gemma 3 (4B)'
             };
             let routeName = routeDisplayNames[selectedVal] || selectedVal;
             if (selectedVal === 'tesseract' && currentPlaybackStatus && currentPlaybackStatus.latest_parse) {
@@ -5784,7 +5784,7 @@
                 'florence-2': 'OpenCV+Florence-2',
                 'paligemma': 'OpenCV+PaliGemma',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6',
-                'gemma-3': 'OpenCV+Gemma 3'
+                'gemma-3': 'OpenCV+Gemma 3 (4B)'
             };
             const friendlyName = friendlyNames[selectedVal] || selectedVal;
  

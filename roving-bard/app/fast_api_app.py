@@ -1499,7 +1499,7 @@ def sync_ollama_ready_states():
                 elif model_id == "minicpm-v":
                     ollama_names = ["minicpm-v", "minicpm-v:latest"]
                 elif model_id == "gemma-3":
-                    ollama_names = ["gemma3", "gemma3:latest", "gemma3:4b", "gemma3:12b", "gemma3:12b-it-qat", "gemma3:27b"]
+                    ollama_names = ["gemma3:4b", "gemma3:4b-it-qat"]
                 
                 if any(name in models_list for name in ollama_names):
                     state["ready"] = True
@@ -1524,7 +1524,7 @@ def resolve_active_ollama_tag(model_id: str) -> str:
         "qwen2.5-vl": ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"],
         "paligemma": ["paligemma", "paligemma:latest", "pdevine/paligemma", "pdevine/paligemma:latest"],
         "minicpm-v": ["minicpm-v", "minicpm-v:latest"],
-        "gemma-3": ["gemma3:12b-it-qat", "gemma3:4b", "gemma3", "gemma3:latest", "gemma3:12b", "gemma3:27b"]
+        "gemma-3": ["gemma3:4b", "gemma3:4b-it-qat"]
     }
     if model_id not in candidate_map:
         return default_map.get(model_id, model_id)
