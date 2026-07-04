@@ -2055,7 +2055,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
         except Exception as e:
             err_msg = str(e).lower()
             if "unable to load model" in err_msg or "unknown model architecture" in err_msg or "500" in err_msg:
-                print(f"[VLM Warmup] Warmup failed for {model_id}. This is likely due to an outdated Ollama installation. Consider upgrading Ollama using: curl -fsSL https://ollama.com/install.sh | sh (Original error: {e})", flush=True)
+                print(f"[VLM Warmup] Warmup failed for {model_id}. This is likely due to an outdated Ollama installation. Consider upgrading Ollama to the latest version. (Original error: {e})", flush=True)
             else:
                 print(f"[VLM Warmup] Warmup failed for {model_id}: {e}", flush=True)
 
@@ -2253,7 +2253,7 @@ def api_gc(req: GcRequest):
         except Exception as e:
             err_msg = str(e).lower()
             if "unable to load model" in err_msg or "unknown model architecture" in err_msg or "500" in err_msg:
-                print(f"[GC] Error reloading model {selected_model}. This is likely due to an outdated Ollama installation. Consider upgrading Ollama using: curl -fsSL https://ollama.com/install.sh | sh (Original error: {e})", flush=True)
+                print(f"[GC] Error reloading model {selected_model}. This is likely due to an outdated Ollama installation. Consider upgrading Ollama to the latest version. (Original error: {e})", flush=True)
             else:
                 print(f"[GC] Error reloading model {selected_model}: {e}", flush=True)
             
@@ -3301,8 +3301,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                             if "unable to load model" in err_text or "unknown model architecture" in err_text:
                                 raise Exception(
                                     f"Ollama failed to load the model. This is likely due to an outdated Ollama installation "
-                                    f"(e.g., unsupported GGUF architecture). Please upgrade Ollama using: "
-                                    f"curl -fsSL https://ollama.com/install.sh | sh"
+                                    f"(e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version."
                                 )
                             raise Exception(f"Ollama returned status {response.status_code}: {err_text}")
                 finally:
