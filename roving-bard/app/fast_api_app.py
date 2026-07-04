@@ -1566,6 +1566,11 @@ def check_and_trigger_ollama_repair(model_id: str, error_text: str) -> bool:
     """Checks if the error represents a corrupted Ollama model layer and triggers repair."""
     err_lower = error_text.lower()
     if "unable to load model" in err_lower or "sha256" in err_lower or "blob" in err_lower:
+        # Check if a repair or download is already active to prevent needless download loops
+        if vlm_download_states.get(model_id, {}).get("status", "").startswith("downloading"):
+            print(f"[Ollama] Corrupted model detected ({model_id}), but repair is already in progress. Skipping restart.", flush=True)
+            return True
+
         print(f"[Ollama] Corrupted model detected ({model_id}). Triggering background repair pull...", flush=True)
         model_map = {
             "moondream": "moondream:latest",
