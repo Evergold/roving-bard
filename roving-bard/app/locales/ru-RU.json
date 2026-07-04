@@ -167,8 +167,8 @@
     "confirm_delete_segment": "Удалить сегмент?",
     "export_segment_name_title": "Имя сегмента:",
     "ok": "ОК",
-    "cache_section_label": "Кэш синтеза",
-    "clear_cache_label": "Сбросить кэш синтеза",
+    "cache_section_label": "Кэш синтеза ABC-MIDI",
+    "clear_cache_label": "Сбросить кэш синтеза ABC-MIDI",
     "clear_cache_success": "Аудио-кэш успешно очищен!",
     "clear_cache_failed": "Не удалось очистить аудио-кэш: ",
     "clear_btn_label": "Очистить",
@@ -248,5 +248,7 @@
     "lotro_locale_fr": "Французский",
     "lotro_locale_de": "Немецкий",
     "lotro_locale_updated": "Настройки локали LOTRO успешно обновлены!",
-    "lotro_locale_warning": "Выбранная локализация ({uiName}) изначально не поддерживается в LOTRO. Ожидается, что LOTRO будет на {expectedName}."
+    "lotro_locale_warning": "Выбранная локализация ({uiName}) изначально не поддерживается в LOTRO. Ожидается, что LOTRO будет на {expectedName}.",
+    "tesseract_cpu_fallback": "Tesseract: ускорение GPU OpenCL отключено или не поддерживается. Выполнение на ЦП.",
+    "ollama_cpu_fallback": "Ollama: модель работает в режиме только ЦП (ускорение GPU отключено или недостаточно VRAM)."
 }

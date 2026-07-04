@@ -429,7 +429,13 @@ def get_locale_json(locale_name: str):
     if os.path.exists(locale_file):
         with open(locale_file, encoding="utf-8") as f:
             import json
-            return json.load(f)
+            data = json.load(f)
+        from fastapi.responses import JSONResponse
+        headers = {
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache"
+        }
+        return JSONResponse(content=data, headers=headers)
     raise HTTPException(status_code=404, detail="Locale not found")
 
 
@@ -1782,7 +1788,51 @@ def pull_florence_model_task():
             state["progress"] = 0
 
 
-def get_app_vram_usage_bytes():
+def get_app_ram_usage_bytes(active_model: str | None = None):
+    ram = get_process_ram_usage_bytes()
+    
+    if active_model is None:
+        active_model = tools.config.get("model_name", "tesseract")
+        
+    active_model = active_model.lower() if active_model else "tesseract"
+    if active_model in ["tesseract", "gemini-2.5-flash-lite"]:
+        # Subtract PyTorch RAM overhead if loaded
+        try:
+            import sys
+            if "torch" in sys.modules:
+                # Typically, PyTorch takes at least ~400MB RSS when loaded.
+                # Let's ensure the reported RSS doesn't go below 120MB.
+                ram = max(120 * 1024 * 1024, ram - 400 * 1024 * 1024)
+        except Exception:
+            pass
+    else:
+        # Include Ollama RAM for local VLMs
+        ram += get_ollama_ram_usage_bytes()
+        
+    return ram
+
+
+def get_app_vram_usage_bytes(active_model: str | None = None):
+    if active_model is None:
+        active_model = tools.config.get("model_name", "tesseract")
+        
+    active_model = active_model.lower() if active_model else "tesseract"
+    
+    # Gemini uses 0 VRAM
+    if active_model == "gemini-2.5-flash-lite":
+        return 0
+        
+    # Tesseract uses 85 MB if OpenCL is active/enabled
+    if active_model == "tesseract":
+        try:
+            import cv2
+            if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
+                return 85 * 1024 * 1024
+        except Exception:
+            pass
+        return 0
+
+    # Local VLM models:
     vram = get_ollama_vram_usage_bytes()
     
     # Add PyTorch VRAM
@@ -1800,20 +1850,12 @@ def get_app_vram_usage_bytes():
     except Exception:
         pass
         
-    # Add OpenCV OpenCL VRAM if active
-    if getattr(tools.ocr_parser, "tesseract_vram_initialized", False):
-        try:
-            import cv2
-            if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
-                vram += 85 * 1024 * 1024
-        except Exception:
-            pass
-            
     return vram
 
 
 class PeakMemoryMonitor:
-    def __init__(self, include_ollama=True):
+    def __init__(self, model_name: str, include_ollama=True):
+        self.model_name = model_name
         self.include_ollama = include_ollama
         self.peak_vram = 0
         self.peak_ram = 0
@@ -1824,10 +1866,8 @@ class PeakMemoryMonitor:
 
     def start(self):
         # Measure initial memory before execution starts
-        self.base_vram = get_app_vram_usage_bytes()
-        self.base_ram = get_process_ram_usage_bytes()
-        if self.include_ollama:
-            self.base_ram += get_ollama_ram_usage_bytes()
+        self.base_vram = get_app_vram_usage_bytes(self.model_name)
+        self.base_ram = get_app_ram_usage_bytes(self.model_name)
             
         self.peak_vram = self.base_vram
         self.peak_ram = self.base_ram
@@ -1841,12 +1881,10 @@ class PeakMemoryMonitor:
         while not self.stop_evt.is_set():
             try:
                 # Query Roving Bard + model's VRAM directly
-                vram = get_app_vram_usage_bytes()
+                vram = get_app_vram_usage_bytes(self.model_name)
                 
                 # Query Roving Bard + model's RAM directly
-                ram = get_process_ram_usage_bytes()
-                if self.include_ollama:
-                    ram += get_ollama_ram_usage_bytes()
+                ram = get_app_ram_usage_bytes(self.model_name)
                 
                 if vram > self.peak_vram:
                     self.peak_vram = vram
@@ -1865,13 +1903,13 @@ class PeakMemoryMonitor:
 
 
 @app.get("/api/ocr/vlm_status", dependencies=[Depends(verify_api_key)])
-def api_vlm_status():
+def api_vlm_status(model: str | None = None):
     """Returns the ready/download status of all available local VLM methods."""
     sync_ollama_ready_states()
     sync_florence_ready_state()
     
-    total_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
-    total_vram = get_app_vram_usage_bytes()
+    total_ram = get_app_ram_usage_bytes(model)
+    total_vram = get_app_vram_usage_bytes(model)
     
     return {
         "status": "success", 
@@ -2212,8 +2250,8 @@ def api_gc(req: GcRequest):
         except Exception as e:
             print(f"[GC] Error reloading Florence-2: {e}", flush=True)
 
-    total_ram = get_process_ram_usage_bytes() + get_ollama_ram_usage_bytes()
-    total_vram = get_app_vram_usage_bytes()
+    total_ram = get_app_ram_usage_bytes(req.model)
+    total_vram = get_app_vram_usage_bytes(req.model)
     
     return {
         "status": "success",
@@ -2852,7 +2890,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
  
         # Start PeakMemoryMonitor
         include_ollama_mon = selected_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "paligemma", "minicpm-v"]
-        mem_monitor = PeakMemoryMonitor(include_ollama=include_ollama_mon)
+        mem_monitor = PeakMemoryMonitor(model_name=selected_model, include_ollama=include_ollama_mon)
         mem_monitor.start()
 
         # Check if we should execute actual local Tesseract OCR!
@@ -2945,6 +2983,35 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             parsed_coords = rich["parsed_coordinates"] if rich["parsed_coordinates"] != "None" else (coords_str or "None")
             raw_loc = rich["raw_location"] if rich["raw_location"] != "None" else (loc_str or "None")
             raw_coords = rich["raw_coordinates"] if rich["raw_coordinates"] != "None" else (coords_str or "None")
+            
+            # Enforce maximum location length and English/French/German alphabet on fallbacks
+            max_location_len = 50
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+            if os.path.exists(wordlist_path):
+                try:
+                    with open(wordlist_path, 'r', encoding='utf-8') as f:
+                        w_lines = [l.strip() for l in f if l.strip()]
+                        if w_lines:
+                            max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
+                except:
+                    pass
+
+            allowed_pattern = re.compile(
+                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
+            )
+
+            if parsed_loc and parsed_loc != "None":
+                if not allowed_pattern.match(parsed_loc):
+                    parsed_loc = "None"
+                elif len(parsed_loc) > max_location_len:
+                    parsed_loc = parsed_loc[:max_location_len].strip()
+
+            if raw_loc and raw_loc != "None":
+                if not allowed_pattern.match(raw_loc):
+                    raw_loc = "None"
+                elif len(raw_loc) > max_location_len:
+                    raw_loc = raw_loc[:max_location_len].strip()
             
             total_time_ms = (t1 - t0) * 1000.0
             
@@ -3133,9 +3200,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 lotro_lang_name = "German"
 
             if "qwen" in selected_model:
-                prompt = f"The image shows a location name and coordinates. Read them exactly in {lotro_lang_name}. Do not translate them to any other language."
+                prompt = f"The image shows a location name and coordinates. Read them exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
             else:
-                prompt = f"What does the text at the bottom of the image say? Read it exactly in {lotro_lang_name}. Do not translate them to any other language."
+                prompt = f"What does the text at the bottom of the image say? Read it exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
 
             options = {
                 "temperature": 0.0,

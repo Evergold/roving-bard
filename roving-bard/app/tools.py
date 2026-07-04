@@ -224,8 +224,8 @@ def call_gemini_vision(img, model_name):
 
     prompt = (
         f"Analyze this screenshot cropped from a video game's mini-map widget. "
-        f"Extract the location name (if visible) and the coordinate string (e.g. '19.3N, 70.9W' or '14.9S, 103.1E') in {lotro_lang_name}. "
-        f"Return the text exactly as written in {lotro_lang_name} without translating it to any other language. "
+        f"Extract the location name (if visible) and the coordinate string (e.g. '19.3N, 70.9W' or '14.9S, 103.1E') in the expected LOTRO game language: {lotro_lang_name}. "
+        f"Only provide answers that match a supported LOTRO language (English, German, or French) as written. Do not translate. "
         f"Return a JSON object with keys:\n"
         f"- 'location': string containing the name of the place, or null if not found\n"
         f"- 'coordinates': string of coordinates (e.g. '19.3N, 70.9W'), or null if not found\n"

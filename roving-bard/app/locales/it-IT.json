@@ -167,8 +167,8 @@
     "confirm_delete_segment": "Eliminare il segmento?",
     "export_segment_name_title": "Nome del segmento:",
     "ok": "OK",
-    "cache_section_label": "Cache di sintesi",
-    "clear_cache_label": "Ripristina cache di sintesi",
+    "cache_section_label": "Cache di sintesi ABC-MIDI",
+    "clear_cache_label": "Reimposta cache di sintesi ABC-MIDI",
     "clear_cache_success": "Cache audio cancellata con successo!",
     "clear_cache_failed": "Impossibile cancellare la cache audio: ",
     "clear_btn_label": "Cancella",
@@ -248,5 +248,7 @@
     "lotro_locale_fr": "Francese",
     "lotro_locale_de": "Tedesco",
     "lotro_locale_updated": "Preferenza della localizzazione di LOTRO aggiornata con successo!",
-    "lotro_locale_warning": "La localizzazione selezionata ({uiName}) non è supportata nativamente in LOTRO. Si presume che LOTRO sia in {expectedName}."
+    "lotro_locale_warning": "La localizzazione selezionata ({uiName}) non è supportata nativamente in LOTRO. Si presume che LOTRO sia in {expectedName}.",
+    "tesseract_cpu_fallback": "Tesseract: l'accelerazione GPU OpenCL è disabilitata o non supportata. Esecuzione su CPU.",
+    "ollama_cpu_fallback": "Ollama: il modello è in esecuzione in modalità solo CPU (accelerazione GPU disabilitata o VRAM insufficiente)."
 }

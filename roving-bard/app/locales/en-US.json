@@ -167,8 +167,8 @@
     "confirm_delete_segment": "Delete Segment?",
     "export_segment_name_title": "Segment Name:",
     "ok": "OK",
-    "cache_section_label": "Synthesis Cache",
-    "clear_cache_label": "Reset Synthesis Cache",
+    "cache_section_label": "ABC-MIDI Synthesis Cache",
+    "clear_cache_label": "Reset ABC-MIDI Synthesis Cache",
     "clear_cache_success": "Audio cache cleared successfully!",
     "clear_cache_failed": "Failed to clear audio cache: ",
     "clear_btn_label": "Clear",
@@ -248,5 +248,7 @@
     "lotro_locale_fr": "French",
     "lotro_locale_de": "German",
     "lotro_locale_updated": "LOTRO Locale preference updated successfully!",
-    "lotro_locale_warning": "The selected localization ({uiName}) isn't natively supported in LOTRO. Expecting LOTRO to be in {expectedName}."
+    "lotro_locale_warning": "The selected localization ({uiName}) isn't natively supported in LOTRO. Expecting LOTRO to be in {expectedName}.",
+    "tesseract_cpu_fallback": "Tesseract: GPU OpenCL acceleration is disabled or unsupported. Running on CPU.",
+    "ollama_cpu_fallback": "Ollama: model is running in CPU-only mode (GPU acceleration disabled or insufficient VRAM)."
 }

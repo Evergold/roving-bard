@@ -2650,6 +2650,7 @@
             font-size: 1.15rem;
             white-space: nowrap;
             flex-shrink: 0;
+            font-weight: bold;
         }
         .theme-btn:hover, .font-size-btn:hover {
             color: var(--text-main);
@@ -2708,6 +2709,30 @@
         #clear-cache-btn, #gc-btn, #cvd-toggle-btn {
             border: 1px solid transparent !important;
             box-sizing: border-box !important;
+        }
+        #clear-cache-btn:disabled {
+            opacity: 0.35 !important;
+            color: var(--text-muted) !important;
+            background: none !important;
+            border: 1px solid transparent !important;
+            cursor: not-allowed;
+            text-shadow: none !important;
+        }
+        #clear-cache-btn:not(:disabled) {
+            color: var(--neon-blue) !important;
+            border: 1px solid transparent !important;
+            background: none !important;
+            opacity: 1 !important;
+            font-weight: bold !important;
+            text-shadow: none !important;
+        }
+        body.light-theme #clear-cache-btn:not(:disabled) {
+            color: var(--accent) !important;
+            border: 1px solid transparent !important;
+            background: none !important;
+            opacity: 1 !important;
+            font-weight: bold !important;
+            text-shadow: none !important;
         }
         #clear-cache-btn:hover:not(:disabled), #gc-btn:hover:not(:disabled), #cvd-toggle-btn:hover {
             color: var(--neon-blue) !important;
@@ -3275,7 +3300,7 @@
                         <!-- Accessibility Option -->
                         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                             <span style="font-size: 0.85rem; color: var(--text-main); font-family: 'Space Mono', monospace; white-space: nowrap;" data-loc="accessible_mode_title">Accessible Mode</span>
-                            <div style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; padding: 2px; height: 54px; box-sizing: border-box; justify-content: center; min-width: 54px;">
+                            <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; height: 54px; box-sizing: border-box; justify-content: center; min-width: 54px; width: fit-content;">
                                 <button id="cvd-toggle-btn" class="theme-btn" onclick="toggleCVDAccessible(event)" data-loc-title="accessible_mode_title" title="Accessible Mode" style="border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -5417,7 +5442,9 @@
 
         async function updateServerBaselineUI() {
             try {
-                const response = await apiFetch('/api/ocr/vlm_status');
+                const modelSelect = document.getElementById('vlm-model-select');
+                const selectedVal = modelSelect ? modelSelect.value : (localStorage.getItem('selectedVLM') || 'tesseract');
+                const response = await apiFetch(`/api/ocr/vlm_status?model=${encodeURIComponent(selectedVal)}`);
                 const data = await response.json();
                 const baselineRamDisplay = document.getElementById('server-baseline-ram-display');
                 const baselineVramDisplay = document.getElementById('server-baseline-vram-display');
@@ -8859,7 +8886,7 @@
 
             if (!LOCALIZATION['en-US']) {
                 try {
-                    const res = await fetch('/locales/en-US.json');
+                    const res = await fetch('/locales/en-US.json?v=' + Date.now());
                     if (res.ok) {
                         LOCALIZATION['en-US'] = await res.json();
                     } else {
@@ -8871,7 +8898,7 @@
             }
             if (currentLang !== 'en-US' && !LOCALIZATION[currentLang]) {
                 try {
-                    const res = await fetch(`/locales/${currentLang}.json`);
+                    const res = await fetch(`/locales/${currentLang}.json?v=` + Date.now());
                     if (res.ok) {
                         LOCALIZATION[currentLang] = await res.json();
                     } else {
@@ -9141,6 +9168,15 @@
                     }
                     
                     showToast(t("gc_success_message", "Garbage collection completed. Memory stats updated."), 'success');
+                    
+                    // Poll baseline UI sequentially to account for OS-level RAM reclamation lag
+                    setTimeout(updateServerBaselineUI, 100);
+                    setTimeout(updateServerBaselineUI, 500);
+                    setTimeout(updateServerBaselineUI, 1000);
+                    setTimeout(updateServerBaselineUI, 1500);
+                    setTimeout(updateServerBaselineUI, 2000);
+                    setTimeout(updateServerBaselineUI, 2500);
+                    setTimeout(updateServerBaselineUI, 3000);
                 } else {
                     showToast("Error: " + data.message, 'error');
                 }
@@ -9285,7 +9321,7 @@
                 updateCacheStatusUI();
                 updateServerBaselineUI();
                 if (menuMemoryPollInterval) clearInterval(menuMemoryPollInterval);
-                menuMemoryPollInterval = setInterval(updateServerBaselineUI, 5000);
+                menuMemoryPollInterval = setInterval(updateServerBaselineUI, 2000);
                 if (popoverInner) {
                     // Set initial untransformed size instantly before animation starts
                     popover.style.width = `${popoverInner.offsetWidth + 2}px`;
