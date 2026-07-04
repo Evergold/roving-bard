@@ -125,8 +125,8 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 | Model Name | Est. VRAM | Est. RAM | Model Brief / Strengths |
 |---|---|---|---|
 | **OpenCV + Tesseract** | `85 MB` | `50 MB` | Classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
-| **Florence-2 (Large)** | `1.8 GB` | `1.45 GB` | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
-| **Moondream2** | `2.5 GB` | `1.0 GB` | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
+| **Florence-2 (Large - 770M)** | `1.8 GB` | `1.45 GB` | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
+| **Moondream2 (1.9B)** | `2.5 GB` | `1.0 GB` | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
 | **Qwen2-VL (2B)** | `2.75 GB` | `1.5 GB` | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
 | **Qwen2.5-VL (3B)** | `5.25 GB` | `1.5 GB` | Next-generation VLM with enhanced spatial understanding and character transcription. Runs via Ollama. |
 | **Gemma 3 (4B)** | `3.3 GB` | `2.4 GB` | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
