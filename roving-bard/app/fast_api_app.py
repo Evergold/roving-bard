@@ -3289,19 +3289,22 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         if try_idx == max_tries - 1:
                             err_text = response.text
                             if "unable to load model" in err_text or "sha256" in err_text or "blob" in err_text:
-                                # Trigger background re-pull/repair of the model
-                                print(f"[Ollama] Corrupted model detected ({selected_model}). Triggering background repair...", flush=True)
-                                def do_repair(m_name, m_id):
-                                    try:
-                                        print(f"[Ollama] Starting repair pull for {m_name} ({m_id})...", flush=True)
-                                        import requests as req
-                                        req.post("http://127.0.0.1:11434/api/pull", json={"name": m_id, "stream": False}, timeout=600)
-                                        print(f"[Ollama] Repair pull completed for {m_name} ({m_id})!", flush=True)
-                                    except Exception as ex:
-                                        print(f"[Ollama] Failed to repair {m_name}: {ex}", flush=True)
+                                # Trigger background pull/repair of the model using the standard progress task
+                                print(f"[Ollama] Corrupted model detected ({selected_model}). Triggering background repair pull...", flush=True)
+                                vlm_download_states[selected_model]["ready"] = False
+                                vlm_download_states[selected_model]["status"] = "downloading"
+                                vlm_download_states[selected_model]["progress"] = 0
                                 
-                                import threading
-                                repair_t = threading.Thread(target=do_repair, args=(selected_model, model_map[selected_model]))
+                                active_downloads[selected_model] = {
+                                    "cancel_event": threading.Event(),
+                                    "response": None,
+                                    "subprocess": None
+                                }
+                                
+                                repair_t = threading.Thread(
+                                    target=pull_ollama_model_task,
+                                    args=(selected_model, model_map[selected_model])
+                                )
                                 repair_t.daemon = True
                                 repair_t.start()
                                 
