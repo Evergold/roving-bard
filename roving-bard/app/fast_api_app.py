@@ -1516,7 +1516,7 @@ def resolve_active_ollama_tag(model_id: str) -> str:
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v",
-        "gemma-3": "gemma3:4b"
+        "gemma-3": "gemma3:4b-it-qat"
     }
     candidate_map = {
         "moondream": ["moondream", "moondream:latest"],
@@ -1524,7 +1524,7 @@ def resolve_active_ollama_tag(model_id: str) -> str:
         "qwen2.5-vl": ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"],
         "paligemma": ["paligemma", "paligemma:latest", "pdevine/paligemma", "pdevine/paligemma:latest"],
         "minicpm-v": ["minicpm-v", "minicpm-v:latest"],
-        "gemma-3": ["gemma3:4b", "gemma3:4b-it-qat"]
+        "gemma-3": ["gemma3:4b-it-qat", "gemma3:4b"]
     }
     if model_id not in candidate_map:
         return default_map.get(model_id, model_id)
@@ -1979,7 +1979,7 @@ def api_vlm_pull(req: VlmPullRequest):
         "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v",
-        "gemma-3": "gemma3:4b"
+        "gemma-3": "gemma3:4b-it-qat"
     }
 
     # Initialize active downloads entry
