@@ -125,12 +125,12 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 | Model Name | Est. VRAM | Est. RAM | Quantization | QAT | Model Brief / Strengths |
 |---|---|---|---|---|---|
 | **OpenCV + Tesseract** | `85 MB` | `50 MB` | N/A | No | Classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
-| **Florence-2 (Large - 770M)** | `1.8 GB` | `1.45 GB` | 16-bit (FP16) | No | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
-| **Moondream2 (1.9B)** | `2.5 GB` | `1.0 GB` | 4-bit (INT4) | No | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
-| **Qwen2-VL (2B)** | `2.75 GB` | `1.5 GB` | 4-bit (INT4) | No | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
-| **Qwen2.5-VL (3B)** | `5.25 GB` | `1.5 GB` | 4-bit (INT4) | No | Next-generation VLM with enhanced spatial understanding and character transcription. Runs via Ollama. |
-| **Gemma 3 (4B)** | `3.3 GB` | `2.4 GB` | 4-bit (INT4) | **Yes** | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
-| **MiniCPM-V 2.6 (8B)** | `6.8 GB` | `2.8 GB` | 4-bit (INT4) | No | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
+| **Florence-2 (770M-FP16)** | `1.8 GB` | `1.45 GB` | 16-bit (FP16) | No | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
+| **Moondream2 (1.9B-INT4)** | `2.5 GB` | `1.0 GB` | 4-bit (INT4) | No | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
+| **Qwen2-VL (2B-INT4)** | `2.75 GB` | `1.5 GB` | 4-bit (INT4) | No | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
+| **Qwen2.5-VL (3B-INT4)** | `5.25 GB` | `1.5 GB` | 4-bit (INT4) | No | Next-generation VLM with enhanced spatial understanding and character transcription. Runs via Ollama. |
+| **Gemma 3 (4B-INT4)** | `3.3 GB` | `2.4 GB` | 4-bit (INT4) | **Yes** | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
+| **MiniCPM-V 2.6 (8B-INT4)** | `6.8 GB` | `2.8 GB` | 4-bit (INT4) | No | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
 
 ### ☁️ Built-in Cloud VLMs
 
