@@ -1561,6 +1561,44 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
             state["status"] = f"failed: {str(e)}"
 
 
+
+def check_and_trigger_ollama_repair(model_id: str, error_text: str) -> bool:
+    """Checks if the error represents a corrupted Ollama model layer and triggers repair."""
+    err_lower = error_text.lower()
+    if "unable to load model" in err_lower or "sha256" in err_lower or "blob" in err_lower:
+        print(f"[Ollama] Corrupted model detected ({model_id}). Triggering background repair pull...", flush=True)
+        model_map = {
+            "moondream": "moondream:latest",
+            "qwen2.5-vl": "qwen2.5vl:3b",
+            "paligemma": "pdevine/paligemma",
+            "minicpm-v": "minicpm-v"
+        }
+        if model_id in model_map:
+            try:
+                requests.delete("http://localhost:11434/api/delete", json={"name": model_map[model_id]}, timeout=10)
+                print(f"[Ollama] Successfully deleted corrupted model {model_id} from tags.", flush=True)
+            except Exception as ex:
+                print(f"[Ollama] Failed to delete corrupted model {model_id}: {ex}", flush=True)
+
+            vlm_download_states[model_id]["ready"] = False
+            vlm_download_states[model_id]["status"] = "downloading"
+            vlm_download_states[model_id]["progress"] = 0
+            
+            active_downloads[model_id] = {
+                "cancel_event": threading.Event(),
+                "response": None,
+                "subprocess": None
+            }
+            
+            repair_t = threading.Thread(
+                target=pull_ollama_model_task,
+                args=(model_id, model_map[model_id])
+            )
+            repair_t.daemon = True
+            repair_t.start()
+            return True
+    return False
+
 def pull_qwen2_vl_huggingface_task():
     global vlm_download_states, active_downloads
     state = vlm_download_states["qwen2-vl"]
@@ -2054,6 +2092,8 @@ def api_vlm_warmup(req: VlmWarmupRequest):
             print(f"[VLM Warmup] Background warmup for {model_id} completed.", flush=True)
         except Exception as e:
             print(f"[VLM Warmup] Warmup failed for {model_id}: {e}", flush=True)
+            # Check for corruption and auto-repair
+            check_and_trigger_ollama_repair(model_id, str(e))
 
     t = threading.Thread(target=run_warmup)
     t.daemon = True
@@ -2248,6 +2288,8 @@ def api_gc(req: GcRequest):
             print(f"[GC] Successfully reloaded/warmed up model: {selected_model}", flush=True)
         except Exception as e:
             print(f"[GC] Error reloading model {selected_model}: {e}", flush=True)
+            # Check for corruption and auto-repair
+            check_and_trigger_ollama_repair(selected_model, str(e))
             
     elif selected_model == "florence-2":
         try:
@@ -2334,34 +2376,64 @@ def load_florence_model():
         dtype = torch.float32
 
     try:
-        check_memory_safety("Florence-2", device)
-        print(f"[Florence-2] Loading microsoft/Florence-2-large on {device} ({dtype})...")
-        florence_model = AutoModelForCausalLM.from_pretrained(
-            "microsoft/Florence-2-large", 
-            trust_remote_code=True,
-            dtype=dtype,
-            local_files_only=True
-        ).to(device)
-    except Exception as e:
-        print(f"[Florence-2] Failed to load on {device} ({dtype}): {e}. Falling back to CPU...")
-        device = "cpu"
-        dtype = torch.float32
-        check_memory_safety("Florence-2", device)
-        florence_model = AutoModelForCausalLM.from_pretrained(
-            "microsoft/Florence-2-large", 
-            trust_remote_code=True,
-            dtype=dtype,
-            local_files_only=True
-        ).to(device)
+        try:
+            check_memory_safety("Florence-2", device)
+            print(f"[Florence-2] Loading microsoft/Florence-2-large on {device} ({dtype})...")
+            florence_model = AutoModelForCausalLM.from_pretrained(
+                "microsoft/Florence-2-large", 
+                trust_remote_code=True,
+                dtype=dtype,
+                local_files_only=True
+            ).to(device)
+        except Exception as e:
+            print(f"[Florence-2] Failed to load on {device} ({dtype}): {e}. Falling back to CPU...")
+            device = "cpu"
+            dtype = torch.float32
+            check_memory_safety("Florence-2", device)
+            florence_model = AutoModelForCausalLM.from_pretrained(
+                "microsoft/Florence-2-large", 
+                trust_remote_code=True,
+                dtype=dtype,
+                local_files_only=True
+            ).to(device)
 
-    if device == "cpu":
-        florence_model = florence_model.float()
-    florence_processor = AutoProcessor.from_pretrained(
-        "microsoft/Florence-2-large", 
-        trust_remote_code=True,
-        local_files_only=True
-    )
-    currently_loaded_vlm = "florence-2"
+        if device == "cpu":
+            florence_model = florence_model.float()
+        florence_processor = AutoProcessor.from_pretrained(
+            "microsoft/Florence-2-large", 
+            trust_remote_code=True,
+            local_files_only=True
+        )
+        currently_loaded_vlm = "florence-2"
+    except Exception as outer_err:
+        print(f"[Florence-2] Crucial loading failure: {outer_err}. Assuming local files are corrupted. Triggering cleanup and redownload...", flush=True)
+        
+        # Delete cache directory to force redownload
+        cache_dir = os.path.expanduser("~/.cache/huggingface/hub/models--microsoft--Florence-2-large")
+        if os.path.exists(cache_dir):
+            import shutil
+            try:
+                shutil.rmtree(cache_dir)
+                print(f"[Florence-2] Deleted corrupted HuggingFace cache folder: {cache_dir}", flush=True)
+            except Exception as rm_ex:
+                print(f"[Florence-2] Failed to delete corrupted cache directory: {rm_ex}", flush=True)
+                
+        # Reset states
+        vlm_download_states["florence-2"]["ready"] = False
+        vlm_download_states["florence-2"]["status"] = "idle"
+        vlm_download_states["florence-2"]["progress"] = 0
+        
+        # Trigger background pull task
+        active_downloads["florence-2"] = {
+            "cancel_event": threading.Event(),
+            "response": None,
+            "subprocess": None
+        }
+        t = threading.Thread(target=pull_florence_model_task)
+        t.daemon = True
+        t.start()
+        
+        raise RuntimeError("Florence-2 local model files were corrupted. The local cache has been cleared and a repair download has been started in the background. Please wait a minute and try again!")
 
 
 def run_florence_ocr(image):
@@ -3290,35 +3362,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     else:
                         if try_idx == max_tries - 1:
                             err_text = response.text
-                            if "unable to load model" in err_text or "sha256" in err_text or "blob" in err_text:
-                                # Trigger background pull/repair of the model using the standard progress task
-                                print(f"[Ollama] Corrupted model detected ({selected_model}). Triggering background repair pull...", flush=True)
-                                
-                                # First, delete the corrupted model from Ollama to ensure a clean re-download and prevent status sync issues
-                                try:
-                                    import requests as req
-                                    req.delete("http://localhost:11434/api/delete", json={"name": model_map[selected_model]}, timeout=10)
-                                    print(f"[Ollama] Successfully deleted corrupted model {selected_model} from tags.", flush=True)
-                                except Exception as ex:
-                                    print(f"[Ollama] Failed to delete corrupted model {selected_model}: {ex}", flush=True)
-
-                                vlm_download_states[selected_model]["ready"] = False
-                                vlm_download_states[selected_model]["status"] = "downloading"
-                                vlm_download_states[selected_model]["progress"] = 0
-                                
-                                active_downloads[selected_model] = {
-                                    "cancel_event": threading.Event(),
-                                    "response": None,
-                                    "subprocess": None
-                                }
-                                
-                                repair_t = threading.Thread(
-                                    target=pull_ollama_model_task,
-                                    args=(selected_model, model_map[selected_model])
-                                )
-                                repair_t.daemon = True
-                                repair_t.start()
-                                
+                            if check_and_trigger_ollama_repair(selected_model, err_text):
                                 raise Exception(f"Ollama model layers are corrupted. A repair download has been started in the background. Please wait a minute and try again!")
                             
                             raise Exception(f"Ollama returned status {response.status_code}: {err_text}")
