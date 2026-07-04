@@ -2053,7 +2053,11 @@ def api_vlm_warmup(req: VlmWarmupRequest):
             resp.raise_for_status()
             print(f"[VLM Warmup] Background warmup for {model_id} completed.", flush=True)
         except Exception as e:
-            print(f"[VLM Warmup] Warmup failed for {model_id}: {e}", flush=True)
+            err_msg = str(e).lower()
+            if "unable to load model" in err_msg or "unknown model architecture" in err_msg or "500" in err_msg:
+                print(f"[VLM Warmup] Warmup failed for {model_id}. This is likely due to an outdated Ollama installation. Consider upgrading Ollama using: curl -fsSL https://ollama.com/install.sh | sh (Original error: {e})", flush=True)
+            else:
+                print(f"[VLM Warmup] Warmup failed for {model_id}: {e}", flush=True)
 
     t = threading.Thread(target=run_warmup)
     t.daemon = True
@@ -2247,7 +2251,11 @@ def api_gc(req: GcRequest):
             resp.raise_for_status()
             print(f"[GC] Successfully reloaded/warmed up model: {selected_model}", flush=True)
         except Exception as e:
-            print(f"[GC] Error reloading model {selected_model}: {e}", flush=True)
+            err_msg = str(e).lower()
+            if "unable to load model" in err_msg or "unknown model architecture" in err_msg or "500" in err_msg:
+                print(f"[GC] Error reloading model {selected_model}. This is likely due to an outdated Ollama installation. Consider upgrading Ollama using: curl -fsSL https://ollama.com/install.sh | sh (Original error: {e})", flush=True)
+            else:
+                print(f"[GC] Error reloading model {selected_model}: {e}", flush=True)
             
     elif selected_model == "florence-2":
         try:
@@ -3289,7 +3297,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         break
                     else:
                         if try_idx == max_tries - 1:
-                            raise Exception(f"Ollama returned status {response.status_code}: {response.text}")
+                            err_text = response.text
+                            if "unable to load model" in err_text or "unknown model architecture" in err_text:
+                                raise Exception(
+                                    f"Ollama failed to load the model. This is likely due to an outdated Ollama installation "
+                                    f"(e.g., unsupported GGUF architecture). Please upgrade Ollama using: "
+                                    f"curl -fsSL https://ollama.com/install.sh | sh"
+                                )
+                            raise Exception(f"Ollama returned status {response.status_code}: {err_text}")
                 finally:
                     active_http_response = None
                         
