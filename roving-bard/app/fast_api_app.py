@@ -1715,6 +1715,10 @@ def get_app_ram_usage_bytes(active_model: str | None = None):
                 ram = max(120 * 1024 * 1024, ram - 400 * 1024 * 1024)
         except Exception:
             pass
+    elif active_model == "florence-2":
+        # Subtract the server baseline RAM to report only the model's net memory footprint
+        base = server_baseline_ram if server_baseline_ram > 0 else 250 * 1024 * 1024
+        ram = max(120 * 1024 * 1024, ram - base)
     else:
         # Include Ollama RAM for local VLMs
         ram += get_ollama_ram_usage_bytes()
@@ -1748,9 +1752,8 @@ def get_app_vram_usage_bytes(active_model: str | None = None):
         return get_ollama_vram_usage_bytes()
         
     # PyTorch/Florence-2 model footprint and weights
-    try:
-        import sys
-        if "torch" in sys.modules:
+    if active_model == "florence-2":
+        try:
             import torch
             if torch.cuda.is_available():
                 return torch.cuda.memory_allocated()
@@ -1759,8 +1762,9 @@ def get_app_vram_usage_bytes(active_model: str | None = None):
                     return torch.mps.driver_allocated_memory()
                 elif hasattr(torch.mps, "current_allocated_memory"):
                     return torch.mps.current_allocated_memory()
-    except Exception:
-        pass
+        except Exception:
+            pass
+        return 0
         
     return get_gpu_vram_usage_bytes(include_ollama=False)
 
