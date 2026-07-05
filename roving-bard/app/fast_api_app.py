@@ -3386,10 +3386,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Calculate warmup time
         if num_runs == 2:
             warmup_time_ms = max(0.0, runs_data[0]["total_time_ms"] - runs_data[1]["total_time_ms"])
+            final_result["warmup_time_ms"] = round(warmup_time_ms, 1)
         else:
-            warmup_time_ms = 0.0
-            
-        final_result["warmup_time_ms"] = round(warmup_time_ms, 1)
+            final_result["warmup_time_ms"] = None
         warmed_models.add(selected_model)
         
         return final_result

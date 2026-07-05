@@ -5305,11 +5305,11 @@
                     const prepEl = document.getElementById('stat-preprocess-time');
                     if (prepEl) prepEl.innerText = preprocessTime;
 
-                    const warmupTime = parse.warmup_time_ms !== undefined ? parse.warmup_time_ms : 0;
+                    const warmupTime = parse.warmup_time_ms;
                     const warmupContainer = document.getElementById('stat-warmup-container');
                     const warmupValEl = document.getElementById('stat-warmup-time');
                     if (warmupContainer && warmupValEl) {
-                        if (warmupTime > 0) {
+                        if (warmupTime !== undefined && warmupTime !== null) {
                             warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
                             warmupContainer.style.display = "block";
                         } else {
@@ -5883,11 +5883,11 @@
                     document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
 
-                    const warmupTime = res.warmup_time_ms !== undefined ? res.warmup_time_ms : 0;
+                    const warmupTime = res.warmup_time_ms;
                     const warmupContainer = document.getElementById('stat-warmup-container');
                     const warmupValEl = document.getElementById('stat-warmup-time');
                     if (warmupContainer && warmupValEl) {
-                        if (warmupTime > 0) {
+                        if (warmupTime !== undefined && warmupTime !== null) {
                             warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
                             warmupContainer.style.display = "block";
                         } else {
