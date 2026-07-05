@@ -4001,8 +4001,8 @@
                                         <option value="florence-2">Florence-2 (770M-FP16)</option>
                                         <option value="moondream">Moondream2 (1.9B-INT4)</option>
                                         <option value="gemma-3">Gemma 3 (4B-INT4)</option>
-                                        <option value="gemma-4-e4b">Gemma 4 (4.5B-QAT)</option>
-                                        <option value="gemma-4-e2b">Gemma 4 (2.3B-QAT)</option>
+                                        <option value="gemma-4-e4b">Gemma 4 (4.5B-INT4)</option>
+                                        <option value="gemma-4-e2b">Gemma 4 (2.3B-INT4)</option>
                                         <option value="minicpm-v">MiniCPM-V 2.6 (8B-INT4)</option>
                                         <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                                     </select>
@@ -5272,8 +5272,8 @@
                         'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                         'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
                         'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
-                        'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
-                        'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
+                        'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-INT4)',
+                        'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-INT4)'
                     };
                     methodText = routeDisplayNames[selectedVal] || selectedVal;
                 }
@@ -5359,8 +5359,8 @@
                 'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
                 'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
-                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
-                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
+                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-INT4)',
+                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-INT4)'
             };
             const friendlyName = friendlyNames[modelName] || modelName;
  
@@ -5520,8 +5520,8 @@
                 'florence-2': 'Florence-2 (770M-FP16)',
                 'minicpm-v': 'MiniCPM-V 2.6 (8B-INT4)',
                 'gemma-3': 'Gemma 3 (4B-INT4)',
-                'gemma-4-e4b': 'Gemma 4 (4.5B-QAT)',
-                'gemma-4-e2b': 'Gemma 4 (2.3B-QAT)'
+                'gemma-4-e4b': 'Gemma 4 (4.5B-INT4)',
+                'gemma-4-e2b': 'Gemma 4 (2.3B-INT4)'
             };
             activeVLMModel = friendlyNames[selectedVal] || selectedVal;
             
@@ -5538,8 +5538,8 @@
                 'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
                 'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
-                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
-                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
+                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-INT4)',
+                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-INT4)'
             };
             let routeName = routeDisplayNames[selectedVal] || selectedVal;
             if (selectedVal === 'tesseract' && currentPlaybackStatus && currentPlaybackStatus.latest_parse) {
@@ -5788,8 +5788,8 @@
                 'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
                 'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
-                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
-                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
+                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-INT4)',
+                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-INT4)'
             };
             const friendlyName = friendlyNames[selectedVal] || selectedVal;
  
