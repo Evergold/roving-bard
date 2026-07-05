@@ -2150,6 +2150,38 @@ class LocalOCRParser:
                 ew_val = ew_raw if ew_dir == "E" else -ew_raw
                 coordinates = f"{ns_raw}{ns_dir}, {ew_raw}{ew_dir}"
                 break
+            else:
+                # Fallback: check if latitude and longitude are listed separately in the same line (common in descriptive prose)
+                # Latitude search (allowing digit substitutions)
+                lat_match = re.search(r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*[\d\.])", line, re.IGNORECASE)
+                # Longitude search (allowing digit substitutions)
+                lon_match = re.search(r"(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*[\d\.])", line, re.IGNORECASE)
+                if lat_match and lon_match:
+                    ns_str = lat_match.group(1)
+                    ns_dir = lat_match.group(2).upper()
+                    ew_str = lon_match.group(1)
+                    ew_dir = lon_match.group(2).upper()
+                    
+                    if ns_dir in ('8', '2', '5'):
+                        ns_dir = 'S'
+                    elif ns_dir == '4':
+                        ns_dir = 'N'
+                        
+                    if ew_dir in ('8', '4', '7', 'V'):
+                        ew_dir = 'W'
+                        
+                    if "." not in ns_str and len(ns_str) > 1:
+                        ns_str = ns_str[:-1] + "." + ns_str[-1]
+                    if "." not in ew_str and len(ew_str) > 1:
+                        ew_str = ew_str[:-1] + "." + ew_str[-1]
+                        
+                    ns_raw = float(ns_str)
+                    ew_raw = float(ew_str)
+                    
+                    ns_val = ns_raw if ns_dir == "N" else -ns_raw
+                    ew_val = ew_raw if ew_dir == "E" else -ew_raw
+                    coordinates = f"{ns_raw}{ns_dir}, {ew_raw}{ew_dir}"
+                    break
 
         # Extract location: find the line that best fuzzy matches a word in our dictionary!
         best_loc = None

@@ -60,6 +60,15 @@ def test_coordinate_parsing() -> None:
     assert loc == "Tinnudir"
     assert coords == "11.9S, 67.8W"
 
+    # Test separated coordinates (Run 14 case: '11.9S', and '67.8W')
+    loc, coords, ns, ew = LocalOCRParser.parse_text(
+        "In the top left corner of the image, there are some text elements, including 'Tinnudir', '11.9S', and '67.8W'."
+    )
+    assert loc == "Tinnudir"
+    assert coords == "11.9S, 67.8W"
+    assert ns == -11.9
+    assert ew == -67.8
+
 
 def test_track_mapping() -> None:
     mappings = [
