@@ -59,7 +59,7 @@ project/
 - **Tesseract OCR**: Local OCR for minimap text (`sudo apt install tesseract-ocr`).
 - **libsndfile**: For soundfile EQ processing (`sudo apt install libsndfile1`).
 - **FluidSynth** (Optional): `sudo apt install fluidsynth` on Linux. System-installed FluidSynth soundfonts, such as `FluidR3_GM.sf2` or `TimGM6mb.sf2`, are supported as legacy fallback options but are optional and not required due to our bundled SoundFont.
-- **Ollama** (Optional): Local VLM service manager required for running offline models like Moondream or Gemma 3 (`curl -fsSL https://ollama.com/install.sh | sh` on Linux). (Note: The `ollama` Python package is not required as the backend communicates with the local Ollama server via direct HTTP REST API calls).
+- **Ollama**: Local VLM service manager, mandatory for running local GGUF VLM models like Moondream or Gemma 3/4 (`curl -fsSL https://ollama.com/install.sh | sh` on Linux). (Note: The `ollama` Python package is not required as the backend communicates with the local Ollama server via direct HTTP REST API calls).
 
 ### Core Python Dependencies (managed via `pyproject.toml`)
 - `google-adk[gcp]` — Google Agent Development Kit & Cloud integrations
