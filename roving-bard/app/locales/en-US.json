@@ -228,6 +228,7 @@
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
     "vlm_preprocess": "Pre-processing",
+    "vlm_postprocess": "Post-processing",
     "log_empty": "No log messages yet.",
     "session_log": "Session Log",
     "clear_log": "Clear",

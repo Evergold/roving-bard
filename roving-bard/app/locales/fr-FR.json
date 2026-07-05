@@ -228,6 +228,7 @@
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
     "vlm_preprocess": "Prétraitement",
+    "vlm_postprocess": "Post-traitement",
     "log_empty": "Aucun message de journal pour le moment.",
     "session_log": "Journal de session",
     "clear_log": "Effacer",

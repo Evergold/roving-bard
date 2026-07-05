@@ -249,6 +249,26 @@ def call_gemini_vision(img, model_name):
             temperature=0.01,
         )
         content = response.choices[0].message.content.strip()
+        
+        # Check if response is JSON formatted (fallback check for robustness/testing)
+        start_idx = content.find("{")
+        end_idx = content.rfind("}")
+        if start_idx != -1 and end_idx != -1:
+            try:
+                json_str = content[start_idx:end_idx+1]
+                parsed = json.loads(json_str)
+                location_val = parsed.get("location")
+                coordinates_val = parsed.get("coordinates")
+                ns_val, ew_val = None, None
+                if coordinates_val:
+                    _, _, ns_val, ew_val = ocr_parser.parse_text(f"dummy\n{coordinates_val}")
+                if location_val:
+                    # Fuzzy match location using standard dictionary parser
+                    location_val, _, _, _ = ocr_parser.parse_text(location_val)
+                return location_val, coordinates_val, ns_val, ew_val
+            except Exception:
+                pass
+                
         location, coordinates, ns_val, ew_val = ocr_parser.parse_text(content)
         return location, coordinates, ns_val, ew_val
     except Exception as e:

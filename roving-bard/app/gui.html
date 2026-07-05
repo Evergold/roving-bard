@@ -4025,13 +4025,10 @@
                                     </div>
                                 </div>
  
-                                <div id="vlm-stats" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: space-between; gap: 0.5rem; width: 100%;">
+                                <div id="vlm-stats" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.25rem; width: 100%;">
                                     <div><span data-loc="vlm_total_parse">Total Parse</span>: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
-                                    <div><span data-loc="vlm_loc_parse">Loc Parse</span>: <span id="stat-loc-time">0.0 ms</span></div>
-                                    <div><span data-loc="vlm_coords_parse">Coords Parse</span>: <span id="stat-coords-time">0.0 ms</span></div>
-                                </div>
-                                <div id="vlm-preprocess" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; justify-content: flex-start; gap: 0.5rem; width: 100%; margin-top: 0.25rem;">
-                                     <div><span data-loc="vlm_preprocess">Pre-processing</span>: <span id="stat-preprocess-time" style="color: #a272ff; font-weight: bold;">0.0 ms</span></div>
+                                    <div><span data-loc="vlm_postprocess">Post-processing</span>: <span id="stat-postprocess-time" style="color: #00d9ff; font-weight: bold;">0.0 ms</span></div>
+                                    <div><span data-loc="vlm_preprocess">Pre-processing</span>: <span id="stat-preprocess-time" style="color: #a272ff; font-weight: bold;">0.0 ms</span></div>
                                 </div>
                                 <div id="vlm-resources" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.35rem; width: 100%; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.35rem;">
                                     <div><span id="label-vram" data-loc="vlm_est_vram">VRAM</span>: <span id="stat-vram" style="color: #ff9d00; font-weight: bold;">---</span></div>
@@ -5295,13 +5292,12 @@
                     // Update default Tesseract stats
                     const statMethod = document.getElementById('stat-method');
                     if (statMethod) statMethod.innerText = "OpenCV+Tesseract";
-                    const locTime = parse.loc_time_ms !== undefined ? `${parse.loc_time_ms.toFixed(1)} ms` : "0.0 ms";
-                    const coordsTime = parse.coords_time_ms !== undefined ? `${parse.coords_time_ms.toFixed(1)} ms` : "0.0 ms";
+                    const postprocessTime = parse.postprocess_time_ms !== undefined ? `${parse.postprocess_time_ms.toFixed(2)} ms` : "0.00 ms";
                     const totalTime = parse.total_time_ms !== undefined ? `${parse.total_time_ms.toFixed(1)} ms` : "0.0 ms";
                     const preprocessTime = parse.preprocess_time_ms !== undefined ? `${parse.preprocess_time_ms.toFixed(1)} ms` : "0.0 ms";
                     
-                    document.getElementById('stat-loc-time').innerText = locTime;
-                    document.getElementById('stat-coords-time').innerText = coordsTime;
+                    const postEl = document.getElementById('stat-postprocess-time');
+                    if (postEl) postEl.innerText = postprocessTime;
                     document.getElementById('stat-total-time').innerText = totalTime;
                     const prepEl = document.getElementById('stat-preprocess-time');
                     if (prepEl) prepEl.innerText = preprocessTime;
@@ -5323,8 +5319,7 @@
 
                 // Cache Tesseract stats in memory
                 vlmStatsCache['tesseract'] = {
-                    loc_time_ms: parse.loc_time_ms !== undefined ? parse.loc_time_ms : null,
-                    coords_time_ms: parse.coords_time_ms !== undefined ? parse.coords_time_ms : null,
+                    postprocess_time_ms: parse.postprocess_time_ms !== undefined ? parse.postprocess_time_ms : null,
                     total_time_ms: parse.total_time_ms !== undefined ? parse.total_time_ms : null,
                     preprocess_time_ms: parse.preprocess_time_ms !== undefined ? parse.preprocess_time_ms : null,
                     vram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.vram || finalVram) : finalVram,
@@ -5386,8 +5381,10 @@
 
             if (cached) {
                 if (statMethod) statMethod.innerText = cached.methodLabel || friendlyName;
-                document.getElementById('stat-loc-time').innerText = (cached.loc_time_ms !== null && cached.loc_time_ms !== undefined) ? `${cached.loc_time_ms.toFixed(1)} ms` : "--- ms";
-                document.getElementById('stat-coords-time').innerText = (cached.coords_time_ms !== null && cached.coords_time_ms !== undefined) ? `${cached.coords_time_ms.toFixed(1)} ms` : "--- ms";
+                const postEl = document.getElementById('stat-postprocess-time');
+                if (postEl) {
+                    postEl.innerText = (cached.postprocess_time_ms !== null && cached.postprocess_time_ms !== undefined) ? `${cached.postprocess_time_ms.toFixed(2)} ms` : "--- ms";
+                }
                 document.getElementById('stat-total-time').innerText = (cached.total_time_ms !== null && cached.total_time_ms !== undefined) ? `${cached.total_time_ms.toFixed(1)} ms` : "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = (cached.preprocess_time_ms !== null && cached.preprocess_time_ms !== undefined) ? `${cached.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
                 
@@ -5397,8 +5394,8 @@
                 if (ramLabel) ramLabel.innerText = cached.ramLabel || t("vlm_est_ram", "RAM ");
             } else {
                 if (statMethod) statMethod.innerText = friendlyName;
-                document.getElementById('stat-loc-time').innerText = "--- ms";
-                document.getElementById('stat-coords-time').innerText = "--- ms";
+                const postEl = document.getElementById('stat-postprocess-time');
+                if (postEl) postEl.innerText = "--- ms";
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
                 
@@ -5796,8 +5793,8 @@
             const statMethod = document.getElementById('stat-method');
             const runningText = t("vlm_running_status", "Running...");
             if (statMethod) statMethod.innerText = `${runningText} (${friendlyName})`;
-            document.getElementById('stat-loc-time').innerText = runningText;
-            document.getElementById('stat-coords-time').innerText = runningText;
+            const postEl = document.getElementById('stat-postprocess-time');
+            if (postEl) postEl.innerText = runningText;
             document.getElementById('stat-total-time').innerText = runningText;
             document.getElementById('stat-preprocess-time').innerText = runningText;
             
@@ -5845,8 +5842,10 @@
                         currentlyWarmModel = selectedVal;
                     }
                     if (statMethod) statMethod.innerText = friendlyName;
-                    document.getElementById('stat-loc-time').innerText = (res.loc_time_ms !== null && res.loc_time_ms !== undefined) ? `${res.loc_time_ms.toFixed(1)} ms` : "--- ms";
-                    document.getElementById('stat-coords-time').innerText = (res.coords_time_ms !== null && res.coords_time_ms !== undefined) ? `${res.coords_time_ms.toFixed(1)} ms` : "--- ms";
+                    const postEl = document.getElementById('stat-postprocess-time');
+                    if (postEl) {
+                        postEl.innerText = (res.postprocess_time_ms !== null && res.postprocess_time_ms !== undefined) ? `${res.postprocess_time_ms.toFixed(2)} ms` : "--- ms";
+                    }
                     document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
  
@@ -5874,8 +5873,7 @@
                     const finalRam = res.actual_ram || "---";
                     runModelsThisSession.add(selectedVal);
                     vlmStatsCache[selectedVal] = {
-                        loc_time_ms: res.loc_time_ms,
-                        coords_time_ms: res.coords_time_ms,
+                        postprocess_time_ms: res.postprocess_time_ms,
                         total_time_ms: res.total_time_ms,
                         preprocess_time_ms: res.preprocess_time_ms,
                         vram: finalVram,

@@ -228,6 +228,7 @@
     "vlm_act_vram": "VRAM",
     "vlm_act_ram": "RAM ",
     "vlm_preprocess": "Предобработка",
+    "vlm_postprocess": "Постобработка",
     "log_empty": "Сообщений пока нет.",
     "session_log": "Журнал сессии",
     "clear_log": "Очистить",

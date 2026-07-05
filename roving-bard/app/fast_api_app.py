@@ -2912,15 +2912,16 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 raise Exception("Inference cancelled by user.")
             
             raw_text = getattr(tools.ocr_parser, "latest_raw_text", "")
+            t_post0 = time.time()
             rich = tools.ocr_parser.parse_text_rich(raw_text)
+            t_post1 = time.time()
+            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
             raw_loc = rich["raw_location"]
             raw_coords = rich["raw_coordinates"]
             
             coords_val = coords_str if coords_str else "None"
             loc_val = loc_str if loc_str else "None"
             total_time_ms = (t1 - t0) * 1000.0
-            loc_time_ms = total_time_ms * 0.55
-            coords_time_ms = total_time_ms * 0.45
             
             act_ram, act_vram = mem_monitor.stop()
             
@@ -2942,8 +2943,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "raw_location": raw_loc if raw_loc != "None" else None,
                 "raw_coordinates": raw_coords if raw_coords != "None" else None,
                 "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
-                "loc_time_ms": round(loc_time_ms, 1),
-                "coords_time_ms": round(coords_time_ms, 1),
+                "postprocess_time_ms": round(postprocess_time_ms, 2),
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
                 "total_time_ms": round(total_time_ms, 1),
                 "actual_ram": act_ram,
@@ -2981,9 +2981,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             if not loc_str and not coords_str:
                 raise Exception("No response from Gemini API or configuration key invalid.")
             
+            t_post0 = time.time()
             # Use parse_text_rich to fuzzy-match and extract raw values consistently
             combined_text = f"{loc_str or ''}\n{coords_str or ''}"
             rich = tools.ocr_parser.parse_text_rich(combined_text)
+            t_post1 = time.time()
+            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
             
             parsed_loc = rich["parsed_location"] if rich["parsed_location"] != "None" else (loc_str or "None")
             parsed_coords = rich["parsed_coordinates"] if rich["parsed_coordinates"] != "None" else (coords_str or "None")
@@ -3029,8 +3032,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "parsed_coordinates": parsed_coords,
                 "raw_location": raw_loc,
                 "raw_coordinates": raw_coords,
-                "loc_time_ms": None,
-                "coords_time_ms": None,
+                "postprocess_time_ms": round(postprocess_time_ms, 2),
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
                 "total_time_ms": round(total_time_ms, 1),
                 "actual_ram": act_ram,
@@ -3135,7 +3137,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             loc_time_ms = total_time_ms * 0.55
             coords_time_ms = total_time_ms * 0.45
             
+            t_post0 = time.time()
             rich = tools.ocr_parser.parse_text_rich(raw_text)
+            t_post1 = time.time()
+            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
             loc_str = rich["parsed_location"]
             coords_str = rich["parsed_coordinates"]
             raw_loc = rich["raw_location"]
@@ -3163,8 +3168,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "parsed_coordinates": coords_str,
                 "raw_location": raw_loc,
                 "raw_coordinates": raw_coords,
-                "loc_time_ms": round(loc_time_ms, 1),
-                "coords_time_ms": round(coords_time_ms, 1),
+                "postprocess_time_ms": round(postprocess_time_ms, 2),
                 "preprocess_time_ms": round(preprocess_time_ms, 1),
                 "total_time_ms": round(total_time_ms, 1),
                 "actual_ram": act_ram,
@@ -3252,6 +3256,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 json_payload["think"] = False
 
             json_payload["stream"] = True
+            postprocess_time_ms = 0.0
             for try_idx in range(max_tries):
                 if vlm_inference_cancel_event.is_set():
                     raise Exception("Inference cancelled by user.")
@@ -3280,7 +3285,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         resp_json = {"response": response_text}
                         print(f"[Ollama VLM Raw JSON] Model: {selected_model} (Try {try_idx + 1}), JSON: {resp_json!r}", flush=True)
                         
+                        t_post0 = time.time()
                         rich = tools.ocr_parser.parse_text_rich(response_text)
+                        t_post1 = time.time()
+                        postprocess_time_ms = (t_post1 - t_post0) * 1000.0
                         loc_str = rich["parsed_location"]
                         coords_str = rich["parsed_coordinates"]
                         raw_loc = rich["raw_location"]
@@ -3348,8 +3356,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "parsed_coordinates": coords_str,
                     "raw_location": raw_loc,
                     "raw_coordinates": raw_coords,
-                    "loc_time_ms": round(loc_time_ms, 1),
-                    "coords_time_ms": round(coords_time_ms, 1),
+                    "postprocess_time_ms": round(postprocess_time_ms, 2),
                     "preprocess_time_ms": round(preprocess_time_ms, 1),
                     "total_time_ms": round(total_time_ms, 1),
                     "actual_ram": act_ram,
