@@ -130,7 +130,7 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 | **Gemma 4 (2.3B)** | `1.0 GB` | `1.2 GB` | INT4 | Google's fourth-generation lightweight edge model. Highly optimized via QAT, extremely fast with minimal VRAM/RAM footprint. Runs via Ollama. |
 | **Gemma 3 (4B)** | `4.30 GB` | `2.0 GB` | INT4 | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
 | **Gemma 4 (4.5B)** | `2.5 GB` | `2.0 GB` | INT4 | Google's fourth-generation multimodal model. Extreme accuracy with near-lossless 4-bit representation optimized via QAT. Runs via Ollama. |
-| **MiniCPM-V 2.6 (8B)** | `6.8 GB` | `2.8 GB` | INT4 | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
+| **MiniCPM-V 2.6 (8B)** | `2.5 GB` | `1.0 GB` | INT4 | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
 
 ### ☁️ Built-in Cloud VLMs
 
