@@ -1972,6 +1972,8 @@ class LocalOCRParser:
         match = coord_pattern.search(text)
         if match:
             raw_coords = match.group(0)
+        elif coordinates:
+            raw_coords = coordinates
             
         raw_loc = "None"
         if location:
