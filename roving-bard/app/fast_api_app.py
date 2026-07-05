@@ -2224,6 +2224,29 @@ def make_image_square(image):
     return new_img
  
  
+def _tie_florence_weights(model):
+    """Manually ties embedding weights for Florence-2 to bypass transformers >= 4.52 weight tying loading bug."""
+    if hasattr(model, "language_model"):
+        lm = model.language_model
+        if hasattr(lm, "model") and hasattr(lm.model, "shared"):
+            shared_weight = lm.model.shared.weight
+            
+            # Tie encoder embeddings
+            if hasattr(lm.model, "encoder") and hasattr(lm.model.encoder, "embed_tokens"):
+                lm.model.encoder.embed_tokens.weight = shared_weight
+                print("[Florence-2 Patch] Tied encoder embed_tokens weights.", flush=True)
+                
+            # Tie decoder embeddings
+            if hasattr(lm.model, "decoder") and hasattr(lm.model.decoder, "embed_tokens"):
+                lm.model.decoder.embed_tokens.weight = shared_weight
+                print("[Florence-2 Patch] Tied decoder embed_tokens weights.", flush=True)
+                
+            # Tie lm_head
+            if hasattr(lm, "lm_head"):
+                lm.lm_head.weight = shared_weight
+                print("[Florence-2 Patch] Tied lm_head weights.", flush=True)
+
+
 def load_florence_model():
     global florence_model, florence_processor, currently_loaded_vlm
     if florence_model is not None and florence_processor is not None:
@@ -2287,6 +2310,9 @@ def load_florence_model():
 
     if device == "cpu":
         florence_model = florence_model.float()
+    
+    _tie_florence_weights(florence_model)
+    
     florence_processor = AutoProcessor.from_pretrained(
         "microsoft/Florence-2-large", 
         trust_remote_code=True,
@@ -3070,6 +3096,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                             dtype=torch.float32,
                             local_files_only=True
                         ).to("cpu")
+                        _tie_florence_weights(florence_model)
                         device = florence_model.device
                         inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
                         inputs = {
