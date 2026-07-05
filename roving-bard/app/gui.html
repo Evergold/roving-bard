@@ -5305,7 +5305,8 @@
                     const prepEl = document.getElementById('stat-preprocess-time');
                     if (prepEl) prepEl.innerText = preprocessTime;
 
-                    const warmupTime = parse.warmup_time_ms;
+                    const existingTessWarmup = vlmStatsCache['tesseract']?.warmup_time_ms;
+                    const warmupTime = (parse.warmup_time_ms !== undefined && parse.warmup_time_ms !== null) ? parse.warmup_time_ms : existingTessWarmup;
                     const warmupValEl = document.getElementById('stat-warmup-time');
                     if (warmupValEl) {
                         if (warmupTime !== undefined && warmupTime !== null) {
@@ -5331,11 +5332,14 @@
                 }
 
                 // Cache Tesseract stats in memory
+                const existingTessWarmup = vlmStatsCache['tesseract']?.warmup_time_ms;
+                const newTessWarmup = (parse.warmup_time_ms !== undefined && parse.warmup_time_ms !== null) ? parse.warmup_time_ms : existingTessWarmup;
+
                 vlmStatsCache['tesseract'] = {
                     postprocess_time_ms: parse.postprocess_time_ms !== undefined ? parse.postprocess_time_ms : null,
                     total_time_ms: parse.total_time_ms !== undefined ? parse.total_time_ms : null,
                     preprocess_time_ms: parse.preprocess_time_ms !== undefined ? parse.preprocess_time_ms : null,
-                    warmup_time_ms: parse.warmup_time_ms !== undefined ? parse.warmup_time_ms : null,
+                    warmup_time_ms: newTessWarmup,
                     vram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.vram || finalVram) : finalVram,
                     ram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.ram || finalRam) : finalRam,
                     vramLabel: vramLabelText,
@@ -5826,7 +5830,14 @@
             document.getElementById('stat-preprocess-time').innerText = runningText;
 
             const warmupValEl = document.getElementById('stat-warmup-time');
-            if (warmupValEl) warmupValEl.innerText = runningText;
+            if (warmupValEl) {
+                const cachedWarmup = vlmStatsCache[selectedVal]?.warmup_time_ms;
+                if (cachedWarmup !== undefined && cachedWarmup !== null) {
+                    warmupValEl.innerText = `${cachedWarmup.toFixed(1)} ms`;
+                } else {
+                    warmupValEl.innerText = runningText;
+                }
+            }
             
             const vramEl = document.getElementById('stat-vram');
             const ramEl = document.getElementById('stat-ram');
@@ -5879,7 +5890,8 @@
                     document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
 
-                    const warmupTime = res.warmup_time_ms;
+                    const existingVlmWarmup = vlmStatsCache[selectedVal]?.warmup_time_ms;
+                    const warmupTime = (res.warmup_time_ms !== undefined && res.warmup_time_ms !== null) ? res.warmup_time_ms : existingVlmWarmup;
                     const warmupValEl = document.getElementById('stat-warmup-time');
                     if (warmupValEl) {
                         if (warmupTime !== undefined && warmupTime !== null) {
@@ -5912,11 +5924,14 @@
                     const finalVram = (res.actual_vram && selectedVal !== 'gemini-2.5-flash-lite') ? res.actual_vram : "---";
                     const finalRam = res.actual_ram || "---";
                     runModelsThisSession.add(selectedVal);
+                    const existingVlmWarmup = vlmStatsCache[selectedVal]?.warmup_time_ms;
+                    const newVlmWarmup = (res.warmup_time_ms !== undefined && res.warmup_time_ms !== null) ? res.warmup_time_ms : existingVlmWarmup;
+
                     vlmStatsCache[selectedVal] = {
                         postprocess_time_ms: res.postprocess_time_ms,
                         total_time_ms: res.total_time_ms,
                         preprocess_time_ms: res.preprocess_time_ms,
-                        warmup_time_ms: res.warmup_time_ms,
+                        warmup_time_ms: newVlmWarmup,
                         vram: finalVram,
                         ram: finalRam,
                         vramLabel: t("vlm_est_vram", "VRAM"),
