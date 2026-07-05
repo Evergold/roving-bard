@@ -3178,6 +3178,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "keep_alive": "5m",
                 "options": options
             }
+            if "gemma-4" in selected_model:
+                json_payload["think"] = False
 
             json_payload["stream"] = True
             for try_idx in range(max_tries):
