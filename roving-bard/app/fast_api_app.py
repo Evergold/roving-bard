@@ -331,6 +331,7 @@ class ConfigUpdateRequest(BaseModel):
     active_soundfont: str | None = None
     ui_lang: str | None = None
     lotro_locale: str | None = None
+    vlm_image_format: str | None = "JPEG"
 
 
 class EQRequest(BaseModel):
@@ -2833,9 +2834,28 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             except Exception:
                 pass
             check_memory_safety(selected_model, device_type)
-        # Select scale factor: Default to 4x.
-        scale_factor = 4
-        text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
+        # Calculate dynamic scaling matching the target model's resolution:
+        # - Florence-2: 384
+        # - Moondream2: 378
+        # - Gemma 3 / Gemma 4: 896 (cap at 550 to keep client-side CPU compression fast)
+        # - Gemini: 768 (cap at 550)
+        # - MiniCPM-V: 384
+        target_width = 384
+        if selected_model in ("gemma-3", "gemma-4-e4b", "gemma-4-e2b", "gemini-2.5-flash-lite"):
+            target_width = 550
+        elif selected_model == "moondream":
+            target_width = 378
+            
+        if text_img.width > 0:
+            scale_factor = target_width / text_img.width
+            # Restrict scale factor between 1.5x and 4.0x for safety
+            scale_factor = max(1.5, min(4.0, scale_factor))
+        else:
+            scale_factor = 3.0
+            
+        scaled_w = int(text_img.width * scale_factor)
+        scaled_h = int(text_img.height * scale_factor)
+        text_img_scaled = text_img.resize((scaled_w, scaled_h), Image.Resampling.LANCZOS)
  
         # Start PeakMemoryMonitor
         include_ollama_mon = selected_model in ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
@@ -2907,7 +2927,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         elif selected_model == "gemini-2.5-flash-lite":
             tp0 = time.time()
             buffered = io.BytesIO()
-            text_img_4x.save(buffered, format="PNG")
+            vlm_format = tools.config.get("vlm_image_format", "JPEG").upper()
+            if vlm_format == "PNG":
+                text_img_scaled.save(buffered, format="PNG", compress_level=1)
+            else:
+                if text_img_scaled.mode != "RGB":
+                    text_img_scaled.convert("RGB").save(buffered, format="JPEG", quality=95)
+                else:
+                    text_img_scaled.save(buffered, format="JPEG", quality=95)
             import base64
             _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
             tp1 = time.time()
@@ -2916,7 +2943,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             if vlm_inference_cancel_event.is_set():
                 raise Exception("Inference cancelled by user.")
             t0 = time.time()
-            loc_str, coords_str, _, _ = tools.call_gemini_vision(text_img_4x, "gemini/gemini-2.5-flash-lite")
+            loc_str, coords_str, _, _ = tools.call_gemini_vision(text_img_scaled, "gemini/gemini-2.5-flash-lite")
             t1 = time.time()
             if vlm_inference_cancel_event.is_set():
                 raise Exception("Inference cancelled by user.")
@@ -2987,12 +3014,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 
             load_florence_model()
             tp0 = time.time()
-            text_img_4x = make_image_square(text_img_4x)
+            text_img_scaled = make_image_square(text_img_scaled)
             device = florence_model.device
             import torch
             
             with torch.no_grad():
-                inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
                 # Ensure input tensors match the model's dtype
                 inputs = {
                     k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
@@ -3038,7 +3065,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                             local_files_only=True
                         ).to("cpu")
                         device = florence_model.device
-                        inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                        inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
                         inputs = {
                             k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
                             for k, v in inputs.items()
@@ -3068,7 +3095,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             raw_text = florence_processor.post_process_generation(
                 decoded_text, 
                 task="<OCR>", 
-                image_size=text_img_4x.size
+                image_size=text_img_scaled.size
             )["<OCR>"]
             t1 = time.time()
             total_time_ms = (t1 - t0) * 1000.0
@@ -3124,7 +3151,14 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 
             tp0 = time.time()
             buffered = io.BytesIO()
-            text_img_4x.save(buffered, format="PNG")
+            vlm_format = tools.config.get("vlm_image_format", "JPEG").upper()
+            if vlm_format == "PNG":
+                text_img_scaled.save(buffered, format="PNG", compress_level=1)
+            else:
+                if text_img_scaled.mode != "RGB":
+                    text_img_scaled.convert("RGB").save(buffered, format="JPEG", quality=95)
+                else:
+                    text_img_scaled.save(buffered, format="JPEG", quality=95)
             import base64
             img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
             tp1 = time.time()

@@ -208,7 +208,14 @@ def call_gemini_vision(img, model_name):
             model_name = "gemini/gemini-2.5-flash-lite"
         
     buffered = BytesIO()
-    img.save(buffered, format="PNG")
+    vlm_format = config.get("vlm_image_format", "JPEG").upper()
+    if vlm_format == "PNG":
+        img.save(buffered, format="PNG", compress_level=1)
+    else:
+        if img.mode != "RGB":
+            img.convert("RGB").save(buffered, format="JPEG", quality=95)
+        else:
+            img.save(buffered, format="JPEG", quality=95)
     img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     # Constrain to expected LOTRO locale based on user selection
