@@ -4001,6 +4001,8 @@
                                         <option value="florence-2">Florence-2 (770M-FP16)</option>
                                         <option value="moondream">Moondream2 (1.9B-INT4)</option>
                                         <option value="gemma-3">Gemma 3 (4B-INT4)</option>
+                                        <option value="gemma-4-e4b">Gemma 4 (4.5B-QAT)</option>
+                                        <option value="gemma-4-e2b">Gemma 4 (2.3B-QAT)</option>
                                         <option value="minicpm-v">MiniCPM-V 2.6 (8B-INT4)</option>
                                         <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                                     </select>
@@ -5269,7 +5271,9 @@
                         'moondream': 'OpenCV+Moondream2 (1.9B-INT4)',
                         'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                         'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
-                        'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)'
+                        'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
+                        'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
+                        'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
                     };
                     methodText = routeDisplayNames[selectedVal] || selectedVal;
                 }
@@ -5354,7 +5358,9 @@
                 'moondream': 'OpenCV+Moondream2 (1.9B-INT4)',
                 'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
-                'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)'
+                'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
+                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
+                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
             };
             const friendlyName = friendlyNames[modelName] || modelName;
  
@@ -5370,7 +5376,9 @@
                 'moondream': '4-bit (INT4 / PTQ)',
                 'florence-2': 'None (FP16 / Unquantized)',
                 'minicpm-v': '4-bit (INT4 / PTQ)',
-                'gemma-3': '4-bit (INT4 / QAT Optimized)'
+                'gemma-3': '4-bit (INT4 / QAT Optimized)',
+                'gemma-4-e4b': '4-bit (INT4 / QAT Optimized)',
+                'gemma-4-e2b': '4-bit (INT4 / QAT Optimized)'
             };
             if (quantEl) {
                 quantEl.innerText = quantMap[modelName] || "---";
@@ -5505,20 +5513,17 @@
                 });
                 currentlyWarmModel = null;
             }
-            
-            // Manage activeVLMModel locks dynamically
-            if (selectedVal === 'tesseract') {
-                activeVLMModel = null;
-            } else {
-                const friendlyNames = {
-                    'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
-                    'moondream': 'Moondream2 (1.9B-INT4)',
-                    'florence-2': 'Florence-2 (770M-FP16)',
-                    'minicpm-v': 'MiniCPM-V 2.6 (8B-INT4)',
-                    'gemma-3': 'Gemma 3 (4B-INT4)'
-                };
-                activeVLMModel = friendlyNames[selectedVal] || selectedVal;
-            }
+
+            const friendlyNames = {
+                'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                'moondream': 'Moondream2 (1.9B-INT4)',
+                'florence-2': 'Florence-2 (770M-FP16)',
+                'minicpm-v': 'MiniCPM-V 2.6 (8B-INT4)',
+                'gemma-3': 'Gemma 3 (4B-INT4)',
+                'gemma-4-e4b': 'Gemma 4 (4.5B-QAT)',
+                'gemma-4-e2b': 'Gemma 4 (2.3B-QAT)'
+            };
+            activeVLMModel = friendlyNames[selectedVal] || selectedVal;
             
             const resetBtn = document.getElementById('btn-vlm-reset');
             if (resetBtn) {
@@ -5532,7 +5537,9 @@
                 'moondream': 'OpenCV+Moondream2 (1.9B-INT4)',
                 'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
-                'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)'
+                'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
+                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
+                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
             };
             let routeName = routeDisplayNames[selectedVal] || selectedVal;
             if (selectedVal === 'tesseract' && currentPlaybackStatus && currentPlaybackStatus.latest_parse) {
@@ -5583,7 +5590,7 @@
                         document.getElementById('btn-vlm-try').disabled = false;
                         document.getElementById('vlm-download-container').style.display = 'none';
                         modelSelect.disabled = false;
-                        const warmupModels = ['minicpm-v', 'gemma-3', 'moondream'];
+                        const warmupModels = ['minicpm-v', 'gemma-3', 'gemma-4-e4b', 'gemma-4-e2b', 'moondream', 'florence-2'];
                         if (warmupModels.includes(selectedVal)) {
                             apiFetch('/api/ocr/vlm_warmup', {
                                 method: 'POST',
@@ -5697,7 +5704,7 @@
                         showToast(`${modelName} ${readySuffix}`, "success");
                         
                         if (modelName === modelSelect.value) {
-                            const warmupModels = ['minicpm-v', 'gemma-3', 'moondream'];
+                            const warmupModels = ['minicpm-v', 'gemma-3', 'gemma-4-e4b', 'gemma-4-e2b', 'moondream', 'florence-2'];
                             if (warmupModels.includes(modelName)) {
                                 apiFetch('/api/ocr/vlm_warmup', {
                                     method: 'POST',
@@ -5780,7 +5787,9 @@
                 'moondream': 'OpenCV+Moondream2 (1.9B-INT4)',
                 'florence-2': 'OpenCV+Florence-2 (770M-FP16)',
                 'minicpm-v': 'OpenCV+MiniCPM-V 2.6 (8B-INT4)',
-                'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)'
+                'gemma-3': 'OpenCV+Gemma 3 (4B-INT4)',
+                'gemma-4-e4b': 'OpenCV+Gemma 4 (4.5B-QAT)',
+                'gemma-4-e2b': 'OpenCV+Gemma 4 (2.3B-QAT)'
             };
             const friendlyName = friendlyNames[selectedVal] || selectedVal;
  

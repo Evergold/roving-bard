@@ -1468,12 +1468,16 @@ vlm_download_states = {
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
     "minicpm-v": {"ready": False, "status": "idle", "progress": 0},
     "gemma-3": {"ready": False, "status": "idle", "progress": 0},
+    "gemma-4-e4b": {"ready": False, "status": "idle", "progress": 0},
+    "gemma-4-e2b": {"ready": False, "status": "idle", "progress": 0},
     "mock-vlm": {"ready": False, "status": "idle", "progress": 0},
 }
 
 VLM_GPU_VRAM_REQUIREMENTS = {
     "minicpm-v": 7.5 * 1024 * 1024 * 1024,
     "gemma-3": 4.5 * 1024 * 1024 * 1024,
+    "gemma-4-e4b": 2.5 * 1024 * 1024 * 1024,
+    "gemma-4-e2b": 1.0 * 1024 * 1024 * 1024,
     "moondream": 2.0 * 1024 * 1024 * 1024,
     "florence-2": 2.5 * 1024 * 1024 * 1024
 }
@@ -1498,6 +1502,10 @@ def sync_ollama_ready_states():
                     ollama_names = ["minicpm-v", "minicpm-v:latest"]
                 elif model_id == "gemma-3":
                     ollama_names = ["gemma3:4b", "gemma3:4b-it-qat"]
+                elif model_id == "gemma-4-e4b":
+                    ollama_names = ["gemma4:e4b", "gemma4:e4b-it-qat", "gemma4", "gemma4:latest"]
+                elif model_id == "gemma-4-e2b":
+                    ollama_names = ["gemma4:e2b", "gemma4:e2b-it-qat"]
                 
                 if any(name in models_list for name in ollama_names):
                     state["ready"] = True
@@ -1511,12 +1519,16 @@ def resolve_active_ollama_tag(model_id: str) -> str:
     default_map = {
         "moondream": "moondream:latest",
         "minicpm-v": "minicpm-v",
-        "gemma-3": "gemma3:4b-it-qat"
+        "gemma-3": "gemma3:4b-it-qat",
+        "gemma-4-e4b": "gemma4:e4b",
+        "gemma-4-e2b": "gemma4:e2b"
     }
     candidate_map = {
         "moondream": ["moondream", "moondream:latest"],
         "minicpm-v": ["minicpm-v", "minicpm-v:latest"],
-        "gemma-3": ["gemma3:4b-it-qat", "gemma3:4b"]
+        "gemma-3": ["gemma3:4b-it-qat", "gemma3:4b"],
+        "gemma-4-e4b": ["gemma4:e4b", "gemma4:e4b-it-qat", "gemma4", "gemma4:latest"],
+        "gemma-4-e2b": ["gemma4:e2b", "gemma4:e2b-it-qat"]
     }
     if model_id not in candidate_map:
         return default_map.get(model_id, model_id)
@@ -1747,7 +1759,7 @@ def get_app_vram_usage_bytes(active_model: str | None = None):
         return 0
 
     # Local VLM models:
-    is_ollama = active_model in ["moondream", "minicpm-v", "gemma-3"]
+    is_ollama = active_model in ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
     if is_ollama:
         return get_ollama_vram_usage_bytes()
         
@@ -1861,7 +1873,9 @@ def api_vlm_pull(req: VlmPullRequest):
     model_map = {
         "moondream": "moondream:latest",
         "minicpm-v": "minicpm-v",
-        "gemma-3": "gemma3:4b-it-qat"
+        "gemma-3": "gemma3:4b-it-qat",
+        "gemma-4-e4b": "gemma4:e4b",
+        "gemma-4-e2b": "gemma4:e2b"
     }
 
     # Initialize active downloads entry
@@ -1936,7 +1950,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
         return {"status": "success", "message": f"Model {req.model} is not ready yet."}
 
     model_tag = resolve_active_ollama_tag(model_id)
-    warmup_models = ["minicpm-v", "gemma-3", "moondream"]
+    warmup_models = ["minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b", "moondream"]
     if model_id not in warmup_models:
         return {"status": "success", "message": "Warmup not required for this model."}
 
@@ -2013,7 +2027,9 @@ def api_vlm_unload(req: VlmUnloadRequest):
         "moondream": "moondream:latest",
         "paligemma": "pdevine/paligemma",
         "minicpm-v": "minicpm-v",
-        "gemma-3": "gemma3:4b-it-qat"
+        "gemma-3": "gemma3:4b-it-qat",
+        "gemma-4-e4b": "gemma4:e4b",
+        "gemma-4-e2b": "gemma4:e2b"
     }
     if model_id not in model_map:
         return {"status": "success", "message": "Unload not required/supported for this model."}
@@ -2132,7 +2148,7 @@ def api_gc(req: GcRequest):
     # 5. If the currently selected method is on the warm-up list, trigger reload/warmup
     selected_model = req.model.lower()
     
-    warmup_models = ["minicpm-v", "gemma-3", "moondream"]
+    warmup_models = ["minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b", "moondream"]
     
     if selected_model in warmup_models:
         try:
@@ -2708,6 +2724,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             "florence-2": {"loc": 45.0, "coords": 35.0, "ram": "650 MB", "vram": "1.8 GB"},
             "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "5.6 GB"},
             "gemma-3": {"loc": 110.0, "coords": 95.0, "ram": "2.2 GB", "vram": "4.5 GB"},
+            "gemma-4-e4b": {"loc": 100.0, "coords": 85.0, "ram": "2.0 GB", "vram": "2.5 GB"},
+            "gemma-4-e2b": {"loc": 75.0, "coords": 65.0, "ram": "1.2 GB", "vram": "1.0 GB"},
             "gemini-2.5-flash-lite": {"loc": 250.0, "coords": 200.0, "ram": "150 MB", "vram": "0 MB"}
         }
 
@@ -2720,6 +2738,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 selected_model = "florence-2"
             elif "minicpm" in selected_model:
                 selected_model = "minicpm-v"
+            elif "gemma-4-e4b" in selected_model or "gemma-4:e4b" in selected_model or "e4b" in selected_model:
+                selected_model = "gemma-4-e4b"
+            elif "gemma-4-e2b" in selected_model or "gemma-4:e2b" in selected_model or "e2b" in selected_model:
+                selected_model = "gemma-4-e2b"
             elif "gemma" in selected_model:
                 selected_model = "gemma-3"
             elif "gemini" in selected_model:
@@ -2732,7 +2754,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Map clean key names to Ollama tags using dynamic resolver
         model_tag = resolve_active_ollama_tag(selected_model)
 
-        local_gpu_models = ["moondream", "minicpm-v", "gemma-3"]
+        local_gpu_models = ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
         if selected_model in local_gpu_models:
             try:
                 ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
@@ -2806,7 +2828,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             }
 
         # Guard: Check system memory safety for local CPU/GPU models
-        local_models = ["moondream", "minicpm-v", "gemma-3", "florence-2"]
+        local_models = ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b", "florence-2"]
         if selected_model in local_models:
             device_type = "cpu"
             try:
@@ -2821,7 +2843,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
  
         # Start PeakMemoryMonitor
-        include_ollama_mon = selected_model in ["moondream", "minicpm-v", "gemma-3"]
+        include_ollama_mon = selected_model in ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
         mem_monitor = PeakMemoryMonitor(model_name=selected_model, include_ollama=include_ollama_mon)
         mem_monitor.start()
 
@@ -3110,10 +3132,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "warning": fallback_warning
             }
  
-        # Check if we should execute actual local Ollama VLM (Moondream, MiniCPM-V, Gemma-3)!
+        # Check if we should execute actual local Ollama VLM (Moondream, MiniCPM-V, Gemma-3, Gemma-4-e4b, Gemma-4-e2b)!
         else:
             model_tag = resolve_active_ollama_tag(selected_model)
-            ollama_models = ["moondream", "minicpm-v", "gemma-3"]
+            ollama_models = ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
             if selected_model not in ollama_models:
                 return {"status": "error", "message": f"Unsupported VLM model: {selected_model}"}
                 
@@ -3256,7 +3278,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             
             if response and response.status_code == 200:
                 currently_loaded_vlm = selected_model
-                if selected_model in ("moondream", "minicpm-v", "gemma-3"):
+                if selected_model in ("moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"):
                     warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55
