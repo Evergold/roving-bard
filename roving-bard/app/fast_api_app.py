@@ -2081,6 +2081,7 @@ class GcRequest(BaseModel):
 def api_gc(req: GcRequest):
     """Force unloads Ollama and HuggingFace, empties VRAM/RAM cache, resets baseline, and reloads selected model if warm-up."""
     global active_http_response
+    warmed_models.clear()
     vlm_inference_cancel_event.set()
     if active_http_response is not None:
         try:
