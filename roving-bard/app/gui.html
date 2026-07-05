@@ -5924,8 +5924,8 @@
                     const finalVram = (res.actual_vram && selectedVal !== 'gemini-2.5-flash-lite') ? res.actual_vram : "---";
                     const finalRam = res.actual_ram || "---";
                     runModelsThisSession.add(selectedVal);
-                    const existingVlmWarmup = vlmStatsCache[selectedVal]?.warmup_time_ms;
-                    const newVlmWarmup = (res.warmup_time_ms !== undefined && res.warmup_time_ms !== null) ? res.warmup_time_ms : existingVlmWarmup;
+                    const cachedVlmWarmup = vlmStatsCache[selectedVal]?.warmup_time_ms;
+                    const newVlmWarmup = (res.warmup_time_ms !== undefined && res.warmup_time_ms !== null) ? res.warmup_time_ms : cachedVlmWarmup;
 
                     vlmStatsCache[selectedVal] = {
                         postprocess_time_ms: res.postprocess_time_ms,
