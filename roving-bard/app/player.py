@@ -1922,6 +1922,11 @@ class ScreenGrabber:
 
 # Local OCR and parsing
 class LocalOCRParser:
+    # Stateful cache for the last successfully parsed coordinate directions
+    # Defaulting to LotRO's primary coordinates (S, W) which cover Eriador (Tinnudir, Bree, Shire, Rivendell, etc.)
+    _last_lat_dir = "S"
+    _last_lon_dir = "W"
+
     @staticmethod
     def preprocess_image(pil_img, ocr_pass=0):
         """Applies different preprocessing techniques based on the selected OCR pass."""
@@ -2048,11 +2053,11 @@ class LocalOCRParser:
             if not line:
                 continue
             cleaned_line = line
-            # Match coordinate patterns with either letters or digits at the end:
+            # 1. Match complete coordinate patterns with either letters or digits at the end:
             # - Latitudes can have 8, 2, 5 (common misreads for S) or 4 (common misread for N)
             # - Longitudes can have 8, 4, 7 (common misreads for W) or v/V/vV
             coord_sub_pattern = re.compile(
-                r"(\d+(?:\.\d+)?)\s*([NS8245])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])", re.IGNORECASE
+                r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*[\d\.])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*[\d\.])", re.IGNORECASE
             )
             match = coord_sub_pattern.search(line)
             if match:
@@ -2070,9 +2075,47 @@ class LocalOCRParser:
                 if lon_dir in ('8', '4', '7', 'V'):
                     lon_dir = 'W'
                     
+                # Cache the verified directions
+                LocalOCRParser._last_lat_dir = lat_dir
+                LocalOCRParser._last_lon_dir = lon_dir
+                
                 corrected_coords = f"{lat_val}{lat_dir}, {lon_val}{lon_dir}"
                 coord_start, coord_end = match.span()
                 cleaned_line = line[:coord_start] + corrected_coords + line[coord_end:]
+            else:
+                # 2. Check if latitude letter is missing but longitude has a letter: e.g. "11.9, 67.8 W"
+                lat_missing_pattern = re.compile(
+                    r"(\d+(?:\.\d+)?)(?!\s*[a-zA-Z0-9])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*[\d\.])", re.IGNORECASE
+                )
+                match = lat_missing_pattern.search(line)
+                if match:
+                    lat_val = match.group(1)
+                    lat_dir = LocalOCRParser._last_lat_dir
+                    lon_val = match.group(2)
+                    lon_dir = match.group(3).upper()
+                    if lon_dir in ('8', '4', '7', 'V'):
+                        lon_dir = 'W'
+                    corrected_coords = f"{lat_val}{lat_dir}, {lon_val}{lon_dir}"
+                    coord_start, coord_end = match.span()
+                    cleaned_line = line[:coord_start] + corrected_coords + line[coord_end:]
+                else:
+                    # 3. Check if longitude letter is missing but latitude has a letter: e.g. "11.9S, 67.8"
+                    lon_missing_pattern = re.compile(
+                        r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*[\d\.])[\s,\-]+(\d+(?:\.\d+)?)(?!\s*[a-zA-Z0-9])", re.IGNORECASE
+                    )
+                    match = lon_missing_pattern.search(line)
+                    if match:
+                        lat_val = match.group(1)
+                        lat_dir = match.group(2).upper()
+                        if lat_dir in ('8', '2', '5'):
+                            lat_dir = 'S'
+                        elif lat_dir == '4':
+                            lat_dir = 'N'
+                        lon_val = match.group(3)
+                        lon_dir = LocalOCRParser._last_lon_dir
+                        corrected_coords = f"{lat_val}{lat_dir}, {lon_val}{lon_dir}"
+                        coord_start, coord_end = match.span()
+                        cleaned_line = line[:coord_start] + corrected_coords + line[coord_end:]
                 
             lines.append(cleaned_line)
 

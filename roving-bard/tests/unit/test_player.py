@@ -37,6 +37,22 @@ def test_coordinate_parsing() -> None:
     assert coords == "42.0N, 12.5E"
     assert ns == 42.0
     assert ew == 12.5
+    # Reset state to default for testing
+    LocalOCRParser._last_lat_dir = "S"
+    LocalOCRParser._last_lon_dir = "W"
+    # Test partial coordinate parsing (missing latitude direction letter, should fallback to cached/default 'S')
+    loc, coords, ns, ew = LocalOCRParser.parse_text("Tinnudir\n11.9, 67.8W")
+    assert loc == "Tinnudir"
+    assert coords == "11.9S, 67.8W"
+    assert ns == -11.9
+    assert ew == -67.8
+
+    # Test partial coordinate parsing (missing longitude direction letter, should fallback to cached/default 'W')
+    loc, coords, ns, ew = LocalOCRParser.parse_text("Tinnudir\n11.9S, 67.8")
+    assert loc == "Tinnudir"
+    assert coords == "11.9S, 67.8W"
+    assert ns == -11.9
+    assert ew == -67.8
 
 
 def test_track_mapping() -> None:
