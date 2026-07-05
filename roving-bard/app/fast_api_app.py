@@ -1814,12 +1814,7 @@ class PeakMemoryMonitor:
                 # Query Roving Bard + model's RAM directly
                 ram = get_app_ram_usage_bytes(self.model_name)
                 
-                # Debug print to identify where 4.25GB is coming from
-                import torch
-                # If queried VRAM is abnormally high for Florence-2, print diagnostics
-                if self.model_name == "florence-2" and vram > 2 * 1024 * 1024 * 1024:
-                    print(f"[DEBUG MONITOR] florence-2 queried VRAM: {vram} bytes, memory_allocated: {torch.cuda.memory_allocated()} bytes", flush=True)
-                
+
                 if vram > self.peak_vram:
                     self.peak_vram = vram
                 if ram > self.peak_ram:
@@ -3086,21 +3081,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             raw_loc = rich["raw_location"]
             raw_coords = rich["raw_coordinates"]
             
-            # Print CUDA tensor debug information
-            import gc
-            import torch
-            print("[CUDA DEBUG] Listing all active tensors in CUDA memory:", flush=True)
-            total_tensor_bytes = 0
-            for obj in gc.get_objects():
-                try:
-                    if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                        if obj.is_cuda:
-                            sz = obj.element_size() * obj.nelement()
-                            total_tensor_bytes += sz
-                            print(f"Tensor shape: {obj.size()}, size: {sz} bytes", flush=True)
-                except:
-                    pass
-            print(f"[CUDA DEBUG] Total active tensor bytes: {total_tensor_bytes}", flush=True)
 
             act_ram, act_vram = mem_monitor.stop()
 
