@@ -3192,7 +3192,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 prompt = f"Identify the text at the bottom of the image. Extract both the location name and the coordinates. Read it exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate. Output format: Location Name, Coordinates. Do not include any other text."
  
             options = {
-                "temperature": 0.01 if selected_model == "moondream" else 0.0,
+                "temperature": 0.01,
                 "num_ctx": 1024
             }
  
