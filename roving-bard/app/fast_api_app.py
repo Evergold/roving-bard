@@ -1802,12 +1802,18 @@ class PeakMemoryMonitor:
                 # Query Roving Bard + model's RAM directly
                 ram = get_app_ram_usage_bytes(self.model_name)
                 
+                # Debug print to identify where 4.25GB is coming from
+                import torch
+                # If queried VRAM is abnormally high for Florence-2, print diagnostics
+                if self.model_name == "florence-2" and vram > 2 * 1024 * 1024 * 1024:
+                    print(f"[DEBUG MONITOR] florence-2 queried VRAM: {vram} bytes, memory_allocated: {torch.cuda.memory_allocated()} bytes", flush=True)
+                
                 if vram > self.peak_vram:
                     self.peak_vram = vram
                 if ram > self.peak_ram:
                     self.peak_ram = ram
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[DEBUG MONITOR] Error in monitor loop: {e}", flush=True)
             time.sleep(0.005)
 
     def stop(self):
@@ -2280,45 +2286,47 @@ def run_florence_ocr(image):
         
     device = florence_model.device
     import torch
-    inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
-    # Ensure input tensors match the model's dtype
-    inputs = {
-        k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
-        for k, v in inputs.items()
-    }
     
-    try:
-        generated_ids = florence_model.generate(
-            input_ids=inputs["input_ids"],
-            pixel_values=inputs["pixel_values"],
-            max_new_tokens=32,
-            num_beams=1
-        )
-    except RuntimeError as e:
-        if "no kernel image is available" in str(e) and device.type == "cuda":
-            print("[Florence-2] CUDA kernel compatibility error detected. Re-loading model on CPU...")
-            from transformers import AutoModelForCausalLM
-            florence_model = None
-            florence_model = AutoModelForCausalLM.from_pretrained(
-                "microsoft/Florence-2-large", 
-                trust_remote_code=True,
-                dtype=torch.float32,
-                local_files_only=True
-            ).to("cpu")
-            device = florence_model.device
-            inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
-            inputs = {
-                k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
-                for k, v in inputs.items()
-            }
+    with torch.no_grad():
+        inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
+        # Ensure input tensors match the model's dtype
+        inputs = {
+            k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+            for k, v in inputs.items()
+        }
+        
+        try:
             generated_ids = florence_model.generate(
                 input_ids=inputs["input_ids"],
                 pixel_values=inputs["pixel_values"],
                 max_new_tokens=32,
                 num_beams=1
             )
-        else:
-            raise e
+        except RuntimeError as e:
+            if "no kernel image is available" in str(e) and device.type == "cuda":
+                print("[Florence-2] CUDA kernel compatibility error detected. Re-loading model on CPU...")
+                from transformers import AutoModelForCausalLM
+                florence_model = None
+                florence_model = AutoModelForCausalLM.from_pretrained(
+                    "microsoft/Florence-2-large", 
+                    trust_remote_code=True,
+                    dtype=torch.float32,
+                    local_files_only=True
+                ).to("cpu")
+                device = florence_model.device
+                inputs = florence_processor(text="<OCR>", images=image, return_tensors="pt").to(device)
+                inputs = {
+                    k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                    for k, v in inputs.items()
+                }
+                generated_ids = florence_model.generate(
+                    input_ids=inputs["input_ids"],
+                    pixel_values=inputs["pixel_values"],
+                    max_new_tokens=32,
+                    num_beams=1
+                )
+            else:
+                raise e
     
     if not isinstance(generated_ids, str):
         decoded_text = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -2965,61 +2973,34 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             text_img_4x = make_image_square(text_img_4x)
             device = florence_model.device
             import torch
-            inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
-            # Ensure input tensors match the model's dtype
-            inputs = {
-                k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
-                for k, v in inputs.items()
-            }
-            tp1 = time.time()
-            preprocess_time_ms = (tp1 - tp0) * 1000.0
- 
-            t0 = time.time()
-            fallback_warning = "florence_cpu_fallback" if device.type == "cpu" else None
-            try:
-                from transformers import StoppingCriteria, StoppingCriteriaList
- 
-                class CancelStoppingCriteria(StoppingCriteria):
-                    def __init__(self, cancel_evt):
-                        super().__init__()
-                        self.cancel_evt = cancel_evt
-                    def __call__(self, input_ids, scores, **kwargs):
-                        return self.cancel_evt.is_set()
- 
-                stopping_criteria = StoppingCriteriaList([CancelStoppingCriteria(vlm_inference_cancel_event)])
- 
-                if vlm_inference_cancel_event.is_set():
-                    raise Exception("Inference cancelled by user.")
- 
-                generated_ids = florence_model.generate(
-                    input_ids=inputs["input_ids"],
-                    pixel_values=inputs["pixel_values"],
-                    max_new_tokens=32,
-                    num_beams=1,
-                    stopping_criteria=stopping_criteria
-                )
-            except RuntimeError as e:
-                if "no kernel image is available" in str(e) and device.type == "cuda":
-                    print("[Florence-2] CUDA kernel compatibility error detected in trial. Re-loading model on CPU...")
-                    fallback_warning = "florence_cpu_fallback"
-                    from transformers import AutoModelForCausalLM
-                    florence_model = None
-                    florence_model = AutoModelForCausalLM.from_pretrained(
-                        "microsoft/Florence-2-large", 
-                        trust_remote_code=True,
-                        dtype=torch.float32,
-                        local_files_only=True
-                    ).to("cpu")
-                    device = florence_model.device
-                    inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
-                    inputs = {
-                        k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
-                        for k, v in inputs.items()
-                    }
-                    
+            
+            with torch.no_grad():
+                inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                # Ensure input tensors match the model's dtype
+                inputs = {
+                    k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                    for k, v in inputs.items()
+                }
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
+     
+                t0 = time.time()
+                fallback_warning = "florence_cpu_fallback" if device.type == "cpu" else None
+                try:
+                    from transformers import StoppingCriteria, StoppingCriteriaList
+     
+                    class CancelStoppingCriteria(StoppingCriteria):
+                        def __init__(self, cancel_evt):
+                            super().__init__()
+                            self.cancel_evt = cancel_evt
+                        def __call__(self, input_ids, scores, **kwargs):
+                            return self.cancel_evt.is_set()
+     
+                    stopping_criteria = StoppingCriteriaList([CancelStoppingCriteria(vlm_inference_cancel_event)])
+     
                     if vlm_inference_cancel_event.is_set():
                         raise Exception("Inference cancelled by user.")
- 
+     
                     generated_ids = florence_model.generate(
                         input_ids=inputs["input_ids"],
                         pixel_values=inputs["pixel_values"],
@@ -3027,8 +3008,37 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         num_beams=1,
                         stopping_criteria=stopping_criteria
                     )
-                else:
-                    raise e
+                except RuntimeError as e:
+                    if "no kernel image is available" in str(e) and device.type == "cuda":
+                        print("[Florence-2] CUDA kernel compatibility error detected in trial. Re-loading model on CPU...")
+                        fallback_warning = "florence_cpu_fallback"
+                        from transformers import AutoModelForCausalLM
+                        florence_model = None
+                        florence_model = AutoModelForCausalLM.from_pretrained(
+                            "microsoft/Florence-2-large", 
+                            trust_remote_code=True,
+                            dtype=torch.float32,
+                            local_files_only=True
+                        ).to("cpu")
+                        device = florence_model.device
+                        inputs = florence_processor(text="<OCR>", images=text_img_4x, return_tensors="pt").to(device)
+                        inputs = {
+                            k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                            for k, v in inputs.items()
+                        }
+                        
+                        if vlm_inference_cancel_event.is_set():
+                            raise Exception("Inference cancelled by user.")
+     
+                        generated_ids = florence_model.generate(
+                            input_ids=inputs["input_ids"],
+                            pixel_values=inputs["pixel_values"],
+                            max_new_tokens=32,
+                            num_beams=1,
+                            stopping_criteria=stopping_criteria
+                        )
+                    else:
+                        raise e
 
             if vlm_inference_cancel_event.is_set():
                 raise Exception("Inference cancelled by user.")
@@ -3044,6 +3054,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 image_size=text_img_4x.size
             )["<OCR>"]
             t1 = time.time()
+            total_time_ms = (t1 - t0) * 1000.0
+            loc_time_ms = total_time_ms * 0.55
+            coords_time_ms = total_time_ms * 0.45
             
             rich = tools.ocr_parser.parse_text_rich(raw_text)
             loc_str = rich["parsed_location"]
@@ -3051,10 +3064,22 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             raw_loc = rich["raw_location"]
             raw_coords = rich["raw_coordinates"]
             
-            total_time_ms = (t1 - t0) * 1000.0
-            loc_time_ms = total_time_ms * 0.55
-            coords_time_ms = total_time_ms * 0.45
-            
+            # Print CUDA tensor debug information
+            import gc
+            import torch
+            print("[CUDA DEBUG] Listing all active tensors in CUDA memory:", flush=True)
+            total_tensor_bytes = 0
+            for obj in gc.get_objects():
+                try:
+                    if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                        if obj.is_cuda:
+                            sz = obj.element_size() * obj.nelement()
+                            total_tensor_bytes += sz
+                            print(f"Tensor shape: {obj.size()}, size: {sz} bytes", flush=True)
+                except:
+                    pass
+            print(f"[CUDA DEBUG] Total active tensor bytes: {total_tensor_bytes}", flush=True)
+
             act_ram, act_vram = mem_monitor.stop()
 
             # Clear PyTorch/MPS cache to prevent memory creep/leaks
