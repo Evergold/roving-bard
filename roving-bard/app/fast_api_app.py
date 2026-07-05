@@ -2887,228 +2887,213 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         scaled_h = int(text_img.height * scale_factor)
         text_img_scaled = text_img.resize((scaled_w, scaled_h), Image.Resampling.LANCZOS)
  
-        # Start PeakMemoryMonitor
-        include_ollama_mon = selected_model in ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
-        mem_monitor = PeakMemoryMonitor(model_name=selected_model, include_ollama=include_ollama_mon)
-        mem_monitor.start()
+        # Determine how many runs to perform
+        is_cold = (selected_model not in warmed_models)
+        num_runs = 2 if is_cold else 1
+        runs_data = []
 
-        # Check if we should execute actual local Tesseract OCR!
-        if selected_model == "tesseract":
+        for run_idx in range(num_runs):
             if vlm_inference_cancel_event.is_set():
                 raise Exception("Inference cancelled by user.")
-            tp0 = time.time()
-            _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
-            tp1 = time.time()
-            preprocess_time_ms = (tp1 - tp0) * 1000.0
- 
-            if vlm_inference_cancel_event.is_set():
-                raise Exception("Inference cancelled by user.")
-            t0 = time.time()
-            pass_num = getattr(tools, "current_ocr_pass", 2)
-            loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
-            t1 = time.time()
-            
-            if vlm_inference_cancel_event.is_set():
-                raise Exception("Inference cancelled by user.")
-            
-            raw_text = getattr(tools.ocr_parser, "latest_raw_text", "")
-            t_post0 = time.time()
-            rich = tools.ocr_parser.parse_text_rich(raw_text)
-            t_post1 = time.time()
-            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
-            raw_loc = rich["raw_location"]
-            raw_coords = rich["raw_coordinates"]
-            
-            coords_val = coords_str if coords_str else "None"
-            loc_val = loc_str if loc_str else "None"
-            total_time_ms = (t1 - t0) * 1000.0
-            
-            act_ram, act_vram = mem_monitor.stop()
-            
-            # Check if running in CPU-mode (OpenCL disabled)
-            tesseract_cpu = True
-            try:
-                import cv2
-                if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
-                    tesseract_cpu = False
-            except Exception:
-                pass
-            fallback_warning = "tesseract_cpu_fallback" if tesseract_cpu else None
-
-            return {
-                "status": "success",
-                "model": "OpenCV+Tesseract",
-                "parsed_location": loc_val,
-                "parsed_coordinates": coords_val,
-                "raw_location": raw_loc if raw_loc != "None" else None,
-                "raw_coordinates": raw_coords if raw_coords != "None" else None,
-                "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
-                "postprocess_time_ms": round(postprocess_time_ms, 2),
-                "preprocess_time_ms": round(preprocess_time_ms, 1),
-                "total_time_ms": round(total_time_ms, 1),
-                "actual_ram": act_ram,
-                "actual_vram": act_vram,
-                "warning": fallback_warning,
-                "method": f"Local OCR (Pass {getattr(tools.ocr_parser, 'latest_successful_pass', 2)})",
-                "current_ocr_pass": tools.current_ocr_pass
-            }
- 
-        # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!
-        elif selected_model == "gemini-2.5-flash-lite":
-            tp0 = time.time()
-            buffered = io.BytesIO()
-            vlm_format = tools.config.get("vlm_image_format", "JPEG").upper()
-            if vlm_format == "PNG":
-                text_img_scaled.save(buffered, format="PNG", compress_level=1)
-            else:
-                if text_img_scaled.mode != "RGB":
-                    text_img_scaled.convert("RGB").save(buffered, format="JPEG", quality=95)
-                else:
-                    text_img_scaled.save(buffered, format="JPEG", quality=95)
-            import base64
-            _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            tp1 = time.time()
-            preprocess_time_ms = (tp1 - tp0) * 1000.0
- 
-            if vlm_inference_cancel_event.is_set():
-                raise Exception("Inference cancelled by user.")
-            t0 = time.time()
-            loc_str, coords_str, _, _ = tools.call_gemini_vision(text_img_scaled, "gemini/gemini-2.5-flash-lite")
-            t1 = time.time()
-            if vlm_inference_cancel_event.is_set():
-                raise Exception("Inference cancelled by user.")
-            
-            if not loc_str and not coords_str:
-                raise Exception("No response from Gemini API or configuration key invalid.")
-            
-            t_post0 = time.time()
-            # Use parse_text_rich to fuzzy-match and extract raw values consistently
-            combined_text = f"{loc_str or ''}\n{coords_str or ''}"
-            rich = tools.ocr_parser.parse_text_rich(combined_text)
-            t_post1 = time.time()
-            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
-            
-            parsed_loc = rich["parsed_location"] if rich["parsed_location"] != "None" else (loc_str or "None")
-            parsed_coords = rich["parsed_coordinates"] if rich["parsed_coordinates"] != "None" else (coords_str or "None")
-            raw_loc = rich["raw_location"] if rich["raw_location"] != "None" else (loc_str or "None")
-            raw_coords = rich["raw_coordinates"] if rich["raw_coordinates"] != "None" else (coords_str or "None")
-            
-            # Enforce maximum location length and English/French/German alphabet on fallbacks
-            max_location_len = 50
-            app_dir = os.path.dirname(os.path.abspath(__file__))
-            wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
-            if os.path.exists(wordlist_path):
-                try:
-                    with open(wordlist_path, 'r', encoding='utf-8') as f:
-                        w_lines = [l.strip() for l in f if l.strip()]
-                        if w_lines:
-                            max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
-                except:
-                    pass
-
-            allowed_pattern = re.compile(
-                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
-            )
-
-            if parsed_loc and parsed_loc != "None":
-                if not allowed_pattern.match(parsed_loc):
-                    parsed_loc = "None"
-                elif len(parsed_loc) > max_location_len:
-                    parsed_loc = parsed_loc[:max_location_len].strip()
-
-            if raw_loc and raw_loc != "None":
-                if not allowed_pattern.match(raw_loc):
-                    raw_loc = "None"
-                elif len(raw_loc) > max_location_len:
-                    raw_loc = raw_loc[:max_location_len].strip()
-            
-            total_time_ms = (t1 - t0) * 1000.0
-            
-            act_ram, act_vram = mem_monitor.stop()
-            return {
-                "status": "success",
-                "model": "Gemini 2.5 Flash Lite",
-                "parsed_location": parsed_loc,
-                "parsed_coordinates": parsed_coords,
-                "raw_location": raw_loc,
-                "raw_coordinates": raw_coords,
-                "postprocess_time_ms": round(postprocess_time_ms, 2),
-                "preprocess_time_ms": round(preprocess_time_ms, 1),
-                "total_time_ms": round(total_time_ms, 1),
-                "actual_ram": act_ram,
-                "actual_vram": act_vram
-            }
- 
-        # Check if we should execute actual local Florence-2 (Large) inference!
-        elif selected_model == "florence-2":
-            if not vlm_download_states["florence-2"]["ready"]:
-                return {"status": "error", "message": "Florence-2 model is not downloaded/ready yet."}
                 
-            load_florence_model()
-            tp0 = time.time()
-            if text_img_scaled.mode != "RGB":
-                text_img_scaled = text_img_scaled.convert("RGB")
-            text_img_scaled = make_image_square(text_img_scaled)
-            device = florence_model.device
-            import torch
+            if run_idx > 0:
+                print(f"[VLM Hot Run] Auto-executing hot-memory run (Run {run_idx+1}/{num_runs}) for {selected_model}...", flush=True)
+
+            include_ollama_mon = selected_model in ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
+            mem_monitor = PeakMemoryMonitor(model_name=selected_model, include_ollama=include_ollama_mon)
+            mem_monitor.start()
             
-            with torch.no_grad():
-                inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
-                # Ensure input tensors match the model's dtype
-                inputs = {
-                    k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
-                    for k, v in inputs.items()
-                }
+            run_result = None
+
+            # Check if we should execute actual local Tesseract OCR!
+            if selected_model == "tesseract":
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
+                tp0 = time.time()
+                _ = tools.ocr_parser.preprocess_image(text_img, ocr_pass=2)
                 tp1 = time.time()
                 preprocess_time_ms = (tp1 - tp0) * 1000.0
      
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
                 t0 = time.time()
-                fallback_warning = "florence_cpu_fallback" if device.type == "cpu" else None
+                pass_num = getattr(tools, "current_ocr_pass", 2)
+                loc_str, coords_str, ns, ew = tools.ocr_parser.run_ocr(text_img, pass_num, already_cropped=True)
+                t1 = time.time()
+                
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
+                
+                raw_text = getattr(tools.ocr_parser, "latest_raw_text", "")
+                t_post0 = time.time()
+                rich = tools.ocr_parser.parse_text_rich(raw_text)
+                t_post1 = time.time()
+                postprocess_time_ms = (t_post1 - t_post0) * 1000.0
+                raw_loc = rich["raw_location"]
+                raw_coords = rich["raw_coordinates"]
+                
+                coords_val = coords_str if coords_str else "None"
+                loc_val = loc_str if loc_str else "None"
+                inference_time_ms = (t1 - t0) * 1000.0
+                total_time_ms = preprocess_time_ms + inference_time_ms + postprocess_time_ms
+                
+                act_ram, act_vram = mem_monitor.stop()
+                
+                # Check if running in CPU-mode (OpenCL disabled)
+                tesseract_cpu = True
                 try:
-                    from transformers import StoppingCriteria, StoppingCriteriaList
+                    import cv2
+                    if cv2.ocl.haveOpenCL() and cv2.ocl.useOpenCL():
+                        tesseract_cpu = False
+                except Exception:
+                    pass
+                fallback_warning = "tesseract_cpu_fallback" if tesseract_cpu else None
+    
+                run_result = {
+                    "status": "success",
+                    "model": "OpenCV+Tesseract",
+                    "parsed_location": loc_val,
+                    "parsed_coordinates": coords_val,
+                    "raw_location": raw_loc if raw_loc != "None" else None,
+                    "raw_coordinates": raw_coords if raw_coords != "None" else None,
+                    "parsed_bearing": tools.latest_parse_result.get("parsed_bearing", "None"),
+                    "postprocess_time_ms": round(postprocess_time_ms, 2),
+                    "preprocess_time_ms": round(preprocess_time_ms, 1),
+                    "total_time_ms": round(total_time_ms, 1),
+                    "actual_ram": act_ram,
+                    "actual_vram": act_vram,
+                    "warning": fallback_warning,
+                    "method": f"Local OCR (Pass {getattr(tools.ocr_parser, 'latest_successful_pass', 2)})",
+                    "current_ocr_pass": tools.current_ocr_pass
+                }
      
-                    class CancelStoppingCriteria(StoppingCriteria):
-                        def __init__(self, cancel_evt):
-                            super().__init__()
-                            self.cancel_evt = cancel_evt
-                        def __call__(self, input_ids, scores, **kwargs):
-                            return self.cancel_evt.is_set()
+            # Check if we should execute actual cloud Gemini 2.5 Flash Lite inference!
+            elif selected_model == "gemini-2.5-flash-lite":
+                tp0 = time.time()
+                buffered = io.BytesIO()
+                vlm_format = tools.config.get("vlm_image_format", "JPEG").upper()
+                if vlm_format == "PNG":
+                    text_img_scaled.save(buffered, format="PNG", compress_level=1)
+                else:
+                    if text_img_scaled.mode != "RGB":
+                        text_img_scaled.convert("RGB").save(buffered, format="JPEG", quality=95)
+                    else:
+                        text_img_scaled.save(buffered, format="JPEG", quality=95)
+                import base64
+                _ = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
      
-                    stopping_criteria = StoppingCriteriaList([CancelStoppingCriteria(vlm_inference_cancel_event)])
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
+                t0 = time.time()
+                loc_str, coords_str, _, _ = tools.call_gemini_vision(text_img_scaled, "gemini/gemini-2.5-flash-lite")
+                t1 = time.time()
+                if vlm_inference_cancel_event.is_set():
+                    raise Exception("Inference cancelled by user.")
+                
+                if not loc_str and not coords_str:
+                    raise Exception("No response from Gemini API or configuration key invalid.")
+                
+                t_post0 = time.time()
+                # Use parse_text_rich to fuzzy-match and extract raw values consistently
+                combined_text = f"{loc_str or ''}\n{coords_str or ''}"
+                rich = tools.ocr_parser.parse_text_rich(combined_text)
+                t_post1 = time.time()
+                postprocess_time_ms = (t_post1 - t_post0) * 1000.0
+                
+                parsed_loc = rich["parsed_location"] if rich["parsed_location"] != "None" else (loc_str or "None")
+                parsed_coords = rich["parsed_coordinates"] if rich["parsed_coordinates"] != "None" else (coords_str or "None")
+                raw_loc = rich["raw_location"] if rich["raw_location"] != "None" else (loc_str or "None")
+                raw_coords = rich["raw_coordinates"] if rich["raw_coordinates"] != "None" else (coords_str or "None")
+                
+                # Enforce maximum location length and English/French/German alphabet on fallbacks
+                max_location_len = 50
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+                wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+                if os.path.exists(wordlist_path):
+                    try:
+                        with open(wordlist_path, 'r', encoding='utf-8') as f:
+                            w_lines = [l.strip() for l in f if l.strip()]
+                            if w_lines:
+                                max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
+                    except:
+                        pass
+    
+                allowed_pattern = re.compile(
+                    r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
+                )
+    
+                if parsed_loc and parsed_loc != "None":
+                    if not allowed_pattern.match(parsed_loc):
+                        parsed_loc = "None"
+                    elif len(parsed_loc) > max_location_len:
+                        parsed_loc = parsed_loc[:max_location_len].strip()
+    
+                if raw_loc and raw_loc != "None":
+                    if not allowed_pattern.match(raw_loc):
+                        raw_loc = "None"
+                    elif len(raw_loc) > max_location_len:
+                        raw_loc = raw_loc[:max_location_len].strip()
+                
+                inference_time_ms = (t1 - t0) * 1000.0
+                total_time_ms = preprocess_time_ms + inference_time_ms + postprocess_time_ms
+                
+                act_ram, act_vram = mem_monitor.stop()
+                run_result = {
+                    "status": "success",
+                    "model": "Gemini 2.5 Flash Lite",
+                    "parsed_location": parsed_loc,
+                    "parsed_coordinates": parsed_coords,
+                    "raw_location": raw_loc,
+                    "raw_coordinates": raw_coords,
+                    "postprocess_time_ms": round(postprocess_time_ms, 2),
+                    "preprocess_time_ms": round(preprocess_time_ms, 1),
+                    "total_time_ms": round(total_time_ms, 1),
+                    "actual_ram": act_ram,
+                    "actual_vram": act_vram
+                }
      
-                    if vlm_inference_cancel_event.is_set():
-                        raise Exception("Inference cancelled by user.")
-     
-                    generated_ids = florence_model.generate(
-                        input_ids=inputs["input_ids"],
-                        pixel_values=inputs["pixel_values"],
-                        max_new_tokens=32,
-                        num_beams=1,
-                        stopping_criteria=stopping_criteria
-                    )
-                except RuntimeError as e:
-                    if "no kernel image is available" in str(e) and device.type == "cuda":
-                        print("[Florence-2] CUDA kernel compatibility error detected in trial. Re-loading model on CPU...")
-                        fallback_warning = "florence_cpu_fallback"
-                        from transformers import AutoModelForCausalLM
-                        florence_model = None
-                        florence_model = AutoModelForCausalLM.from_pretrained(
-                            "microsoft/Florence-2-large", 
-                            trust_remote_code=True,
-                            dtype=torch.float32,
-                            local_files_only=True
-                        ).to("cpu")
-                        _tie_florence_weights(florence_model)
-                        device = florence_model.device
-                        inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
-                        inputs = {
-                            k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
-                            for k, v in inputs.items()
-                        }
-                        
+            # Check if we should execute actual local Florence-2 (Large) inference!
+            elif selected_model == "florence-2":
+                if not vlm_download_states["florence-2"]["ready"]:
+                    return {"status": "error", "message": "Florence-2 model is not downloaded/ready yet."}
+                    
+                load_florence_model()
+                tp0 = time.time()
+                if text_img_scaled.mode != "RGB":
+                    text_img_scaled = text_img_scaled.convert("RGB")
+                text_img_scaled = make_image_square(text_img_scaled)
+                device = florence_model.device
+                import torch
+                
+                with torch.no_grad():
+                    inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
+                    # Ensure input tensors match the model's dtype
+                    inputs = {
+                        k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                        for k, v in inputs.items()
+                    }
+                    tp1 = time.time()
+                    preprocess_time_ms = (tp1 - tp0) * 1000.0
+         
+                    t0 = time.time()
+                    fallback_warning = "florence_cpu_fallback" if device.type == "cpu" else None
+                    try:
+                        from transformers import StoppingCriteria, StoppingCriteriaList
+         
+                        class CancelStoppingCriteria(StoppingCriteria):
+                            def __init__(self, cancel_evt):
+                                super().__init__()
+                                self.cancel_evt = cancel_evt
+                            def __call__(self, input_ids, scores, **kwargs):
+                                return self.cancel_evt.is_set()
+         
+                        stopping_criteria = StoppingCriteriaList([CancelStoppingCriteria(vlm_inference_cancel_event)])
+         
                         if vlm_inference_cancel_event.is_set():
                             raise Exception("Inference cancelled by user.")
-     
+         
                         generated_ids = florence_model.generate(
                             input_ids=inputs["input_ids"],
                             pixel_values=inputs["pixel_values"],
@@ -3116,242 +3101,83 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                             num_beams=1,
                             stopping_criteria=stopping_criteria
                         )
-                    else:
-                        raise e
-
-            if vlm_inference_cancel_event.is_set():
-                raise Exception("Inference cancelled by user.")
-
-            if not isinstance(generated_ids, str):
-                decoded_text = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            else:
-                decoded_text = generated_ids
-
-            raw_text = florence_processor.post_process_generation(
-                decoded_text, 
-                task="<OCR>", 
-                image_size=text_img_scaled.size
-            )["<OCR>"]
-            t1 = time.time()
-            total_time_ms = (t1 - t0) * 1000.0
-            loc_time_ms = total_time_ms * 0.55
-            coords_time_ms = total_time_ms * 0.45
-            
-            t_post0 = time.time()
-            rich = tools.ocr_parser.parse_text_rich(raw_text)
-            t_post1 = time.time()
-            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
-            loc_str = rich["parsed_location"]
-            coords_str = rich["parsed_coordinates"]
-            raw_loc = rich["raw_location"]
-            raw_coords = rich["raw_coordinates"]
-            
-
-            act_ram, act_vram = mem_monitor.stop()
-
-            # Clear PyTorch/MPS cache to prevent memory creep/leaks
-            try:
-                import gc
-                import torch
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                elif hasattr(torch, "mps") and torch.mps.is_available():
-                    torch.mps.empty_cache()
-            except Exception:
-                pass
-
-            return {
-                "status": "success",
-                "model": "Florence-2 (Large)",
-                "parsed_location": loc_str,
-                "parsed_coordinates": coords_str,
-                "raw_location": raw_loc,
-                "raw_coordinates": raw_coords,
-                "postprocess_time_ms": round(postprocess_time_ms, 2),
-                "preprocess_time_ms": round(preprocess_time_ms, 1),
-                "total_time_ms": round(total_time_ms, 1),
-                "actual_ram": act_ram,
-                "actual_vram": act_vram,
-                "warning": fallback_warning
-            }
- 
-        # Check if we should execute actual local Ollama VLM (Moondream, MiniCPM-V, Gemma-3, Gemma-4-e4b, Gemma-4-e2b)!
-        else:
-            model_tag = resolve_active_ollama_tag(selected_model)
-            ollama_models = ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
-            if selected_model not in ollama_models:
-                return {"status": "error", "message": f"Unsupported VLM model: {selected_model}"}
-                
-            if not vlm_download_states[selected_model]["ready"]:
-                return {"status": "error", "message": f"{selected_model.capitalize()} model is not downloaded/ready yet."}
-                
-            tp0 = time.time()
-            buffered = io.BytesIO()
-            vlm_format = tools.config.get("vlm_image_format", "JPEG").upper()
-            if vlm_format == "PNG":
-                text_img_scaled.save(buffered, format="PNG", compress_level=1)
-            else:
-                if text_img_scaled.mode != "RGB":
-                    text_img_scaled.convert("RGB").save(buffered, format="JPEG", quality=95)
-                else:
-                    text_img_scaled.save(buffered, format="JPEG", quality=95)
-            import base64
-            img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            tp1 = time.time()
-            preprocess_time_ms = (tp1 - tp0) * 1000.0
-            
-            max_tries = 2
-            response = None
-            t0, t1 = 0.0, 0.0
-            # Setup JSON payload and dynamic prompt
-            url = "http://127.0.0.1:11434/api/generate"
-            # Constrain to expected LOTRO locale based on user selection
-            lotro_lang = tools.config.get("lotro_locale", "en")
-            if lotro_lang not in ("en", "fr", "de"):
-                lotro_lang = "en"
-            
-            lotro_lang_name = "English"
-            if lotro_lang == "fr":
-                lotro_lang_name = "French"
-            elif lotro_lang == "de":
-                lotro_lang_name = "German"
- 
-            if selected_model == "moondream":
-                prompt = "Transcribe the location and coordinates text in this image."
-            else:
-                prompt = f"Extract both the location name and the coordinates in {lotro_lang_name} without translation. Output format: Location Name, Coordinates. Do not include any other text."
- 
-            options = {
-                "temperature": 0.01,
-                "num_ctx": 1024
-            }
- 
-            # Dynamic check to offload layers safely to prevent Ollama llama-server crash/OOM
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    free_vram, total_vram = torch.cuda.mem_get_info()
-                    if total_vram <= 9 * 1024 * 1024 * 1024:  # 8GB or smaller GPU
-                        if selected_model == "minicpm-v":
-                            print(f"[VLM GPU Offload] Capping GPU layers to 15 for MiniCPM-V to fit within 8GB VRAM limit.", flush=True)
-                            options["num_gpu"] = 15
-                    else:
-                        # For larger GPUs, check if we need a full CPU fallback due to heavy current usage
-                        req_vram = VLM_GPU_VRAM_REQUIREMENTS.get(selected_model, 2.0 * 1024 * 1024 * 1024)
-                        if free_vram < req_vram:
-                            print(f"[VLM CPU Fallback] Free VRAM ({free_vram / (1024**3):.2f} GB) is less than required ({req_vram / (1024**3):.2f} GB). Forcing CPU mode to prevent Ollama llama-server crash.", flush=True)
-                            options["num_gpu"] = 0
-            except Exception as e:
-                print(f"[VLM GPU Offload Check] Error checking VRAM: {e}", flush=True)
-            json_payload = {
-                "model": model_tag,
-                "prompt": prompt,
-                "images": [img_b64],
-                "stream": False,
-                "keep_alive": "5m",
-                "options": options
-            }
-            if "gemma-4" in selected_model:
-                json_payload["think"] = False
-
-            json_payload["stream"] = True
-            postprocess_time_ms = 0.0
-            for try_idx in range(max_tries):
+                    except RuntimeError as e:
+                        if "no kernel image is available" in str(e) and device.type == "cuda":
+                            print("[Florence-2] CUDA kernel compatibility error detected in trial. Re-loading model on CPU...")
+                            fallback_warning = "florence_cpu_fallback"
+                            from transformers import AutoModelForCausalLM
+                            florence_model = None
+                            florence_model = AutoModelForCausalLM.from_pretrained(
+                                "microsoft/Florence-2-large", 
+                                trust_remote_code=True,
+                                dtype=torch.float32,
+                                local_files_only=True
+                            ).to("cpu")
+                            _tie_florence_weights(florence_model)
+                            device = florence_model.device
+                            inputs = florence_processor(text="<OCR>", images=text_img_scaled, return_tensors="pt").to(device)
+                            inputs = {
+                                k: v.to(dtype=florence_model.dtype) if torch.is_tensor(v) and torch.is_floating_point(v) else v
+                                for k, v in inputs.items()
+                            }
+                            
+                            if vlm_inference_cancel_event.is_set():
+                                raise Exception("Inference cancelled by user.")
+          
+                            generated_ids = florence_model.generate(
+                                input_ids=inputs["input_ids"],
+                                pixel_values=inputs["pixel_values"],
+                                max_new_tokens=32,
+                                num_beams=1,
+                                stopping_criteria=stopping_criteria
+                            )
+                        else:
+                            raise e
+    
                 if vlm_inference_cancel_event.is_set():
                     raise Exception("Inference cancelled by user.")
-                t0 = time.time()
-                try:
-                    response = requests.post(
-                        url,
-                        json=json_payload,
-                        stream=True,
-                        timeout=180
-                    )
-                    active_http_response = response
-                    
-                    if response.status_code == 200:
-                        response_text = ""
-                        for line in response.iter_lines():
-                            if vlm_inference_cancel_event.is_set():
-                                response.close()
-                                raise Exception("Inference cancelled by user.")
-                            if line:
-                                chunk = json.loads(line.decode('utf-8'))
-                                response_text += chunk.get("response", "")
-                                if chunk.get("done", False):
-                                    break
-                        t1 = time.time()
-                        resp_json = {"response": response_text}
-                        print(f"[Ollama VLM Raw JSON] Model: {selected_model} (Try {try_idx + 1}), JSON: {resp_json!r}", flush=True)
-                        
-                        t_post0 = time.time()
-                        rich = tools.ocr_parser.parse_text_rich(response_text)
-                        t_post1 = time.time()
-                        postprocess_time_ms = (t_post1 - t_post0) * 1000.0
-                        loc_str = rich["parsed_location"]
-                        coords_str = rich["parsed_coordinates"]
-                        raw_loc = rich["raw_location"]
-                        raw_coords = rich["raw_coordinates"]
-                        
-                        # If parsing failed to extract a valid location or coordinates, automatically retry
-                        if (loc_str == "None" or coords_str == "None") and try_idx < max_tries - 1:
-                            print(f"[VLM Parse Retry] Incomplete parse (Location: {loc_str}, Coordinates: {coords_str}). Retrying...", flush=True)
-                            continue
-                        break
-                    else:
-                        if try_idx == max_tries - 1:
-                            err_text = response.text
-                            if "unable to load model" in err_text or "unknown model architecture" in err_text:
-                                raise Exception(
-                                    f"Ollama failed to load the model. This is likely due to an outdated Ollama installation "
-                                    f"(e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version."
-                                )
-                            raise Exception(f"Ollama returned status {response.status_code}: {err_text}")
-                finally:
-                    active_http_response = None
-                        
-            act_ram, act_vram = mem_monitor.stop()
-            
-            # Check if Ollama is executing on CPU (size_vram == 0 or less than half of total size is loaded in VRAM)
-            ollama_cpu = False
-            try:
-                ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
-                if ps_res.status_code == 200:
-                    ps_data = ps_res.json()
-                    models = ps_data.get("models", [])
-                    target_tag = model_tag
-                    for m in models:
-                        loaded_name = m.get("name", "")
-                        if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
-                            size = m.get("size", 0)
-                            vram = m.get("size_vram", 0)
-                            if vram == 0 or (size > 0 and vram / size < 0.5):
-                                ollama_cpu = True
-                            break
-            except Exception:
-                pass
-            
-            try:
-                import torch
-                if not torch.cuda.is_available():
-                    ollama_cpu = True
-            except Exception:
-                pass
-
-            fallback_warning = "ollama_cpu_fallback" if ollama_cpu else None
-            
-            if response and response.status_code == 200:
-                currently_loaded_vlm = selected_model
-                if selected_model in ("moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"):
-                    warmed_models.add(selected_model)
-                total_time_ms = (t1 - t0) * 1000.0
-                loc_time_ms = total_time_ms * 0.55
-                coords_time_ms = total_time_ms * 0.45
+    
+                if not isinstance(generated_ids, str):
+                    decoded_text = florence_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+                else:
+                    decoded_text = generated_ids
+    
+                raw_text = florence_processor.post_process_generation(
+                    decoded_text, 
+                    task="<OCR>", 
+                    image_size=text_img_scaled.size
+                )["<OCR>"]
+                t1 = time.time()
+                inference_time_ms = (t1 - t0) * 1000.0
                 
-                return {
+                t_post0 = time.time()
+                rich = tools.ocr_parser.parse_text_rich(raw_text)
+                t_post1 = time.time()
+                postprocess_time_ms = (t_post1 - t_post0) * 1000.0
+                loc_str = rich["parsed_location"]
+                coords_str = rich["parsed_coordinates"]
+                raw_loc = rich["raw_location"]
+                raw_coords = rich["raw_coordinates"]
+                
+                total_time_ms = preprocess_time_ms + inference_time_ms + postprocess_time_ms
+    
+                act_ram, act_vram = mem_monitor.stop()
+    
+                # Clear PyTorch/MPS cache to prevent memory creep/leaks
+                try:
+                    import gc
+                    import torch
+                    gc.collect()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    elif hasattr(torch, "mps") and torch.mps.is_available():
+                        torch.mps.empty_cache()
+                except Exception:
+                    pass
+    
+                run_result = {
                     "status": "success",
-                    "model": req.model,
+                    "model": "Florence-2 (Large)",
                     "parsed_location": loc_str,
                     "parsed_coordinates": coords_str,
                     "raw_location": raw_loc,
@@ -3363,8 +3189,210 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                     "actual_vram": act_vram,
                     "warning": fallback_warning
                 }
+     
+            # Check if we should execute actual local Ollama VLM (Moondream, MiniCPM-V, Gemma-3, Gemma-4-e4b, Gemma-4-e2b)!
             else:
-                raise Exception(f"Ollama returned status {response.status_code}")
+                model_tag = resolve_active_ollama_tag(selected_model)
+                ollama_models = ["moondream", "minicpm-v", "gemma-3", "gemma-4-e4b", "gemma-4-e2b"]
+                if selected_model not in ollama_models:
+                    return {"status": "error", "message": f"Unsupported VLM model: {selected_model}"}
+                    
+                if not vlm_download_states[selected_model]["ready"]:
+                    return {"status": "error", "message": f"{selected_model.capitalize()} model is not downloaded/ready yet."}
+                    
+                tp0 = time.time()
+                buffered = io.BytesIO()
+                vlm_format = tools.config.get("vlm_image_format", "JPEG").upper()
+                if vlm_format == "PNG":
+                    text_img_scaled.save(buffered, format="PNG", compress_level=1)
+                else:
+                    if text_img_scaled.mode != "RGB":
+                        text_img_scaled.convert("RGB").save(buffered, format="JPEG", quality=95)
+                    else:
+                        text_img_scaled.save(buffered, format="JPEG", quality=95)
+                import base64
+                img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                tp1 = time.time()
+                preprocess_time_ms = (tp1 - tp0) * 1000.0
+                
+                max_tries = 2
+                response = None
+                t0, t1 = 0.0, 0.0
+                # Setup JSON payload and dynamic prompt
+                url = "http://127.0.0.1:11434/api/generate"
+                # Constrain to expected LOTRO locale based on user selection
+                lotro_lang = tools.config.get("lotro_locale", "en")
+                if lotro_lang not in ("en", "fr", "de"):
+                    lotro_lang = "en"
+                
+                lotro_lang_name = "English"
+                if lotro_lang == "fr":
+                    lotro_lang_name = "French"
+                elif lotro_lang == "de":
+                    lotro_lang_name = "German"
+     
+                if selected_model == "moondream":
+                    prompt = "Transcribe the location and coordinates text in this image."
+                else:
+                    prompt = f"Extract both the location name and the coordinates in {lotro_lang_name} without translation. Output format: Location Name, Coordinates. Do not include any other text."
+     
+                options = {
+                    "temperature": 0.01,
+                    "num_ctx": 1024
+                }
+     
+                # Dynamic check to offload layers safely to prevent Ollama llama-server crash/OOM
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        free_vram, total_vram = torch.cuda.mem_get_info()
+                        if total_vram <= 9 * 1024 * 1024 * 1024:  # 8GB or smaller GPU
+                            if selected_model == "minicpm-v":
+                                print(f"[VLM GPU Offload] Capping GPU layers to 15 for MiniCPM-V to fit within 8GB VRAM limit.", flush=True)
+                                options["num_gpu"] = 15
+                        else:
+                            # For larger GPUs, check if we need a full CPU fallback due to heavy current usage
+                            req_vram = VLM_GPU_VRAM_REQUIREMENTS.get(selected_model, 2.0 * 1024 * 1024 * 1024)
+                            if free_vram < req_vram:
+                                print(f"[VLM CPU Fallback] Free VRAM ({free_vram / (1024**3):.2f} GB) is less than required ({req_vram / (1024**3):.2f} GB). Forcing CPU mode to prevent Ollama llama-server crash.", flush=True)
+                                options["num_gpu"] = 0
+                except Exception as e:
+                    print(f"[VLM GPU Offload Check] Error checking VRAM: {e}", flush=True)
+                json_payload = {
+                    "model": model_tag,
+                    "prompt": prompt,
+                    "images": [img_b64],
+                    "stream": False,
+                    "keep_alive": "5m",
+                    "options": options
+                }
+                if "gemma-4" in selected_model:
+                    json_payload["think"] = False
+    
+                json_payload["stream"] = True
+                postprocess_time_ms = 0.0
+                for try_idx in range(max_tries):
+                    if vlm_inference_cancel_event.is_set():
+                        raise Exception("Inference cancelled by user.")
+                    t0 = time.time()
+                    try:
+                        response = requests.post(
+                            url,
+                            json=json_payload,
+                            stream=True,
+                            timeout=180
+                        )
+                        active_http_response = response
+                        
+                        if response.status_code == 200:
+                            response_text = ""
+                            for line in response.iter_lines():
+                                if vlm_inference_cancel_event.is_set():
+                                    response.close()
+                                    raise Exception("Inference cancelled by user.")
+                                if line:
+                                    chunk = json.loads(line.decode('utf-8'))
+                                    response_text += chunk.get("response", "")
+                                    if chunk.get("done", False):
+                                        break
+                            t1 = time.time()
+                            resp_json = {"response": response_text}
+                            print(f"[Ollama VLM Raw JSON] Model: {selected_model} (Try {try_idx + 1}), JSON: {resp_json!r}", flush=True)
+                            
+                            t_post0 = time.time()
+                            rich = tools.ocr_parser.parse_text_rich(response_text)
+                            t_post1 = time.time()
+                            postprocess_time_ms = (t_post1 - t_post0) * 1000.0
+                            loc_str = rich["parsed_location"]
+                            coords_str = rich["parsed_coordinates"]
+                            raw_loc = rich["raw_location"]
+                            raw_coords = rich["raw_coordinates"]
+                            
+                            # If parsing failed to extract a valid location or coordinates, automatically retry
+                            if (loc_str == "None" or coords_str == "None") and try_idx < max_tries - 1:
+                                print(f"[VLM Parse Retry] Incomplete parse (Location: {loc_str}, Coordinates: {coords_str}). Retrying...", flush=True)
+                                continue
+                            break
+                        else:
+                            if try_idx == max_tries - 1:
+                                err_text = response.text
+                                if "unable to load model" in err_text or "unknown model architecture" in err_text:
+                                    raise Exception(
+                                        f"Ollama failed to load the model. This is likely due to an outdated Ollama installation "
+                                        f"(e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version."
+                                    )
+                                raise Exception(f"Ollama returned status {response.status_code}: {err_text}")
+                    finally:
+                        active_http_response = None
+                            
+                act_ram, act_vram = mem_monitor.stop()
+                
+                # Check if Ollama is executing on CPU (size_vram == 0 or less than half of total size is loaded in VRAM)
+                ollama_cpu = False
+                try:
+                    ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=2)
+                    if ps_res.status_code == 200:
+                        ps_data = ps_res.json()
+                        models = ps_data.get("models", [])
+                        target_tag = model_tag
+                        for m in models:
+                            loaded_name = m.get("name", "")
+                            if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
+                                size = m.get("size", 0)
+                                vram = m.get("size_vram", 0)
+                                if vram == 0 or (size > 0 and vram / size < 0.5):
+                                    ollama_cpu = True
+                                break
+                except Exception:
+                    pass
+                
+                try:
+                    import torch
+                    if not torch.cuda.is_available():
+                        ollama_cpu = True
+                except Exception:
+                    pass
+    
+                fallback_warning = "ollama_cpu_fallback" if ollama_cpu else None
+                
+                if response and response.status_code == 200:
+                    currently_loaded_vlm = selected_model
+                    inference_time_ms = (t1 - t0) * 1000.0
+                    total_time_ms = preprocess_time_ms + inference_time_ms + postprocess_time_ms
+                    
+                    run_result = {
+                        "status": "success",
+                        "model": req.model,
+                        "parsed_location": loc_str,
+                        "parsed_coordinates": coords_str,
+                        "raw_location": raw_loc,
+                        "raw_coordinates": raw_coords,
+                        "postprocess_time_ms": round(postprocess_time_ms, 2),
+                        "preprocess_time_ms": round(preprocess_time_ms, 1),
+                        "total_time_ms": round(total_time_ms, 1),
+                        "actual_ram": act_ram,
+                        "actual_vram": act_vram,
+                        "warning": fallback_warning
+                    }
+                else:
+                    raise Exception(f"Ollama returned status {response.status_code}")
+            
+            # Record run result
+            runs_data.append(run_result)
+
+        # End of runs. Determine final result to return.
+        final_result = runs_data[-1]
+        
+        # Calculate warmup time
+        if num_runs == 2:
+            warmup_time_ms = max(0.0, runs_data[0]["total_time_ms"] - runs_data[1]["total_time_ms"])
+        else:
+            warmup_time_ms = 0.0
+            
+        final_result["warmup_time_ms"] = round(warmup_time_ms, 1)
+        warmed_models.add(selected_model)
+        
+        return final_result
     except Exception as e:
         if 'mem_monitor' in locals() and mem_monitor:
             try:

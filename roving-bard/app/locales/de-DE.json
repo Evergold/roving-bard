@@ -229,6 +229,7 @@
     "vlm_act_ram": "RAM ",
     "vlm_preprocess": "Vorverarbeitung",
     "vlm_postprocess": "Nachverarbeitung",
+    "vlm_warmup": "Aufwärmzeit",
     "log_empty": "Noch keine Protokollmeldungen.",
     "session_log": "Sitzungsprotokoll",
     "clear_log": "Löschen",

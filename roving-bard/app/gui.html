@@ -4026,7 +4026,10 @@
                                 </div>
  
                                 <div id="vlm-stats" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.25rem; width: 100%;">
-                                    <div><span data-loc="vlm_total_parse">Total Parse</span>: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                        <div><span data-loc="vlm_total_parse">Total Parse</span>: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
+                                        <div id="stat-warmup-container" style="display: none; font-size: 0.7rem;"><span data-loc="vlm_warmup">Warm-up</span>: <span id="stat-warmup-time" style="color: #ff9d00; font-weight: bold;">0.0 ms</span></div>
+                                    </div>
                                     <div><span data-loc="vlm_postprocess">Post-processing</span>: <span id="stat-postprocess-time" style="color: #00d9ff; font-weight: bold;">0.0 ms</span></div>
                                     <div><span data-loc="vlm_preprocess">Pre-processing</span>: <span id="stat-preprocess-time" style="color: #a272ff; font-weight: bold;">0.0 ms</span></div>
                                 </div>
@@ -5302,6 +5305,18 @@
                     const prepEl = document.getElementById('stat-preprocess-time');
                     if (prepEl) prepEl.innerText = preprocessTime;
 
+                    const warmupTime = parse.warmup_time_ms !== undefined ? parse.warmup_time_ms : 0;
+                    const warmupContainer = document.getElementById('stat-warmup-container');
+                    const warmupValEl = document.getElementById('stat-warmup-time');
+                    if (warmupContainer && warmupValEl) {
+                        if (warmupTime > 0) {
+                            warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
+                            warmupContainer.style.display = "block";
+                        } else {
+                            warmupContainer.style.display = "none";
+                        }
+                    }
+
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
                     if (vramEl) {
@@ -5322,6 +5337,7 @@
                     postprocess_time_ms: parse.postprocess_time_ms !== undefined ? parse.postprocess_time_ms : null,
                     total_time_ms: parse.total_time_ms !== undefined ? parse.total_time_ms : null,
                     preprocess_time_ms: parse.preprocess_time_ms !== undefined ? parse.preprocess_time_ms : null,
+                    warmup_time_ms: parse.warmup_time_ms !== undefined ? parse.warmup_time_ms : null,
                     vram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.vram || finalVram) : finalVram,
                     ram: runModelsThisSession.has('tesseract') ? (vlmStatsCache['tesseract']?.ram || finalRam) : finalRam,
                     vramLabel: vramLabelText,
@@ -5388,6 +5404,18 @@
                 document.getElementById('stat-total-time').innerText = (cached.total_time_ms !== null && cached.total_time_ms !== undefined) ? `${cached.total_time_ms.toFixed(1)} ms` : "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = (cached.preprocess_time_ms !== null && cached.preprocess_time_ms !== undefined) ? `${cached.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
                 
+                const warmupContainer = document.getElementById('stat-warmup-container');
+                const warmupValEl = document.getElementById('stat-warmup-time');
+                if (warmupContainer && warmupValEl) {
+                    const warmupTime = cached.warmup_time_ms;
+                    if (warmupTime !== null && warmupTime !== undefined && warmupTime > 0) {
+                        warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
+                        warmupContainer.style.display = "block";
+                    } else {
+                        warmupContainer.style.display = "none";
+                    }
+                }
+
                 if (vramEl) vramEl.innerText = cached.vram || "---";
                 if (ramEl) ramEl.innerText = cached.ram || "---";
                 if (vramLabel) vramLabel.innerText = cached.vramLabel || t("vlm_est_vram", "VRAM");
@@ -5399,6 +5427,9 @@
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
                 
+                const warmupContainer = document.getElementById('stat-warmup-container');
+                if (warmupContainer) warmupContainer.style.display = "none";
+
                 if (vramEl) vramEl.innerText = "---";
                 if (ramEl) ramEl.innerText = "---";
                 if (vramLabel) vramLabel.innerText = t("vlm_est_vram", "VRAM");
@@ -5797,6 +5828,9 @@
             if (postEl) postEl.innerText = runningText;
             document.getElementById('stat-total-time').innerText = runningText;
             document.getElementById('stat-preprocess-time').innerText = runningText;
+
+            const warmupContainer = document.getElementById('stat-warmup-container');
+            if (warmupContainer) warmupContainer.style.display = "none";
             
             const vramEl = document.getElementById('stat-vram');
             const ramEl = document.getElementById('stat-ram');
@@ -5848,6 +5882,18 @@
                     }
                     document.getElementById('stat-total-time').innerText = (res.total_time_ms !== null && res.total_time_ms !== undefined) ? `${res.total_time_ms.toFixed(1)} ms` : "--- ms";
                     document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
+
+                    const warmupTime = res.warmup_time_ms !== undefined ? res.warmup_time_ms : 0;
+                    const warmupContainer = document.getElementById('stat-warmup-container');
+                    const warmupValEl = document.getElementById('stat-warmup-time');
+                    if (warmupContainer && warmupValEl) {
+                        if (warmupTime > 0) {
+                            warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
+                            warmupContainer.style.display = "block";
+                        } else {
+                            warmupContainer.style.display = "none";
+                        }
+                    }
  
                     const vramEl = document.getElementById('stat-vram');
                     const ramEl = document.getElementById('stat-ram');
@@ -5876,6 +5922,7 @@
                         postprocess_time_ms: res.postprocess_time_ms,
                         total_time_ms: res.total_time_ms,
                         preprocess_time_ms: res.preprocess_time_ms,
+                        warmup_time_ms: res.warmup_time_ms,
                         vram: finalVram,
                         ram: finalRam,
                         vramLabel: t("vlm_est_vram", "VRAM"),
