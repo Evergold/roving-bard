@@ -3130,7 +3130,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             tp1 = time.time()
             preprocess_time_ms = (tp1 - tp0) * 1000.0
             
-            max_tries = 1
+            max_tries = 2
             response = None
             t0, t1 = 0.0, 0.0
             # Setup JSON payload and dynamic prompt
@@ -3146,7 +3146,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             elif lotro_lang == "de":
                 lotro_lang_name = "German"
  
-            prompt = f"What does the text at the bottom of the image say? Read it exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
+            prompt = f"Identify the text at the bottom of the image. Extract both the location name and the coordinates. Read it exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
  
             options = {
                 "temperature": 0.0,
@@ -3215,6 +3215,13 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         coords_str = rich["parsed_coordinates"]
                         raw_loc = rich["raw_location"]
                         raw_coords = rich["raw_coordinates"]
+                        
+                        # If parsing failed to extract a valid location or coordinates, automatically retry
+                        if (loc_str == "None" or coords_str == "None") and try_idx < max_tries - 1:
+                            print(f"[VLM Parse Retry] Incomplete parse (Location: {loc_str}, Coordinates: {coords_str}). Retrying...", flush=True)
+                            # Slightly increase temperature for the retry to explore a different generation pathway
+                            json_payload["options"]["temperature"] = 0.2
+                            continue
                         break
                     else:
                         if try_idx == max_tries - 1:
