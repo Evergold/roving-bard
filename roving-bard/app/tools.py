@@ -229,15 +229,7 @@ def call_gemini_vision(img, model_name):
     elif lotro_lang == "de":
         lotro_lang_name = "German"
 
-    prompt = (
-        f"Analyze this screenshot cropped from a video game's mini-map widget. "
-        f"Extract the location name (if visible) and the coordinate string (e.g. '19.3N, 70.9W' or '14.9S, 103.1E') in the expected LOTRO game language: {lotro_lang_name}. "
-        f"Only provide answers that match a supported LOTRO language (English, German, or French) as written. Do not translate. "
-        f"Return a JSON object with keys:\n"
-        f"- 'location': string containing the name of the place, or null if not found\n"
-        f"- 'coordinates': string of coordinates (e.g. '19.3N, 70.9W'), or null if not found\n"
-        f"Do not include any markdown formatting or extra text outside the JSON object."
-    )
+    prompt = f"Extract both the location name and the coordinates in {lotro_lang_name} without translation. Output format: Location Name, Coordinates. Do not include any other text."
 
     try:
         response = litellm.completion(
@@ -254,23 +246,10 @@ def call_gemini_vision(img, model_name):
                     ],
                 }
             ],
-            response_format={"type": "json_object"},
+            temperature=0.01,
         )
         content = response.choices[0].message.content.strip()
-        start_idx = content.find("{")
-        end_idx = content.rfind("}")
-        if start_idx != -1 and end_idx != -1:
-            content = content[start_idx:end_idx+1]
-
-        parsed = json.loads(content)
-        # Convert location and coordinates string to matching values
-        location = parsed.get("location")
-        coordinates = parsed.get("coordinates")
-
-        ns_val, ew_val = None, None
-        if coordinates:
-            _, _, ns_val, ew_val = ocr_parser.parse_text(f"dummy\n{coordinates}")
-
+        location, coordinates, ns_val, ew_val = ocr_parser.parse_text(content)
         return location, coordinates, ns_val, ew_val
     except Exception as e:
         print(f"Error executing Gemini Vision fallback: {e}")
