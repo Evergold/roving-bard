@@ -2247,6 +2247,10 @@ def load_florence_model():
                 print(f"[Florence-2] GPU compute capability {cc[0]}.{cc[1]} < 6.0 is unsupported. Forcing CPU...")
                 device = "cpu"
                 dtype = torch.float32
+            elif cc[0] < 7:
+                print(f"[Florence-2] GPU compute capability {cc[0]}.{cc[1]} < 7.0 (no native FP16 support). Forcing float32 for numeric accuracy...", flush=True)
+                device = "cuda"
+                dtype = torch.float32
             else:
                 device = "cuda"
                 dtype = torch.float16
@@ -3014,6 +3018,8 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 
             load_florence_model()
             tp0 = time.time()
+            if text_img_scaled.mode != "RGB":
+                text_img_scaled = text_img_scaled.convert("RGB")
             text_img_scaled = make_image_square(text_img_scaled)
             device = florence_model.device
             import torch
