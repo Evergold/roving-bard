@@ -2220,7 +2220,43 @@ class LocalOCRParser:
                                         best_loc_score = w_ratio
                                         best_loc = w_matches[0]
                                         
-        location = best_loc if (best_loc and best_loc_score > 0.80) else first_candidate
+        # Check if the fuzzy match is strong enough (strictly > 0.80 to prevent false matches like Forest -> Fornost)
+        if best_loc and best_loc_score > 0.80:
+            location = best_loc
+        else:
+            # Fallback to the raw candidate
+            location = first_candidate
+            
+            # If the fallback candidate looks like a VLM descriptive prose sentence, extract the core location word
+            was_prose = False
+            if location:
+                words_list = location.split()
+                prose_indicators = ["image shows", "shows a", "screenshot", "background", "door", "banner", "text that", "read ", "reads "]
+                location_lower = location.lower()
+                if len(words_list) > 4 or any(ind in location_lower for ind in prose_indicators):
+                    was_prose = True
+                    # Try to extract quoted names
+                    quoted_match = re.search(r'["\'’]([a-zA-Z\séèàùçâêîôûëïüÿœæäöüß]+)["\'’]', location)
+                    if quoted_match:
+                        location = quoted_match.group(1).strip()
+                    else:
+                        # Extract the last capitalized word (excluding common sentence starters)
+                        cap_words = [w.strip(".,;:\"'’?!") for w in words_list if w and w[0].isupper()]
+                        common_caps = {"The", "In", "This", "I", "A", "Above", "On", "At", "Coordinates", "Location"}
+                        valid_caps = [w for w in cap_words if w not in common_caps]
+                        if valid_caps:
+                            location = valid_caps[-1]
+                        else:
+                            location = None
+            
+            # Re-attempt fuzzy matching ONLY if we extracted a word from descriptive prose
+            if was_prose and location and words:
+                import difflib
+                matches = difflib.get_close_matches(location, words, n=1, cutoff=0.7)
+                if matches:
+                    ratio = difflib.SequenceMatcher(None, location.lower(), matches[0].lower()).ratio()
+                    if ratio >= 0.75 or (len(location) >= 4 and location.lower() in matches[0].lower()):
+                        location = matches[0]
 
         # Enforce characters only belong to English/French/German alphabet
         if location:

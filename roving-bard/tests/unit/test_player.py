@@ -53,6 +53,12 @@ def test_coordinate_parsing() -> None:
     assert coords == "11.9S, 67.8W"
     assert ns == -11.9
     assert ew == -67.8
+    # Test prose cleaning extraction and fuzzy matching to Tinnudir
+    loc, coords, ns, ew = LocalOCRParser.parse_text(
+        "The image shows a wooden door. In the center, there are two lines of text that read Tinnuur 11.9S, 67.8W"
+    )
+    assert loc == "Tinnudir"
+    assert coords == "11.9S, 67.8W"
 
 
 def test_track_mapping() -> None:
