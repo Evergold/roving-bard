@@ -1465,12 +1465,17 @@ vlm_download_states = {
     "tesseract": {"ready": True, "status": "ready", "progress": 100},
     "gemini-2.5-flash-lite": {"ready": True, "status": "ready", "progress": 100},
     "moondream": {"ready": False, "status": "idle", "progress": 0},
-    "qwen2-vl": {"ready": False, "status": "idle", "progress": 0},
-    "qwen2.5-vl": {"ready": False, "status": "idle", "progress": 0},
     "florence-2": {"ready": False, "status": "idle", "progress": 0},
     "minicpm-v": {"ready": False, "status": "idle", "progress": 0},
     "gemma-3": {"ready": False, "status": "idle", "progress": 0},
     "mock-vlm": {"ready": False, "status": "idle", "progress": 0},
+}
+
+VLM_GPU_VRAM_REQUIREMENTS = {
+    "minicpm-v": 7.5 * 1024 * 1024 * 1024,
+    "gemma-3": 4.5 * 1024 * 1024 * 1024,
+    "moondream": 2.0 * 1024 * 1024 * 1024,
+    "florence-2": 2.5 * 1024 * 1024 * 1024
 }
 
 active_downloads = {}
@@ -1489,10 +1494,6 @@ def sync_ollama_ready_states():
                 ollama_names = []
                 if model_id == "moondream":
                     ollama_names = ["moondream", "moondream:latest"]
-                elif model_id == "qwen2-vl":
-                    ollama_names = ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b", "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M"]
-                elif model_id == "qwen2.5-vl":
-                    ollama_names = ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"]
                 elif model_id == "minicpm-v":
                     ollama_names = ["minicpm-v", "minicpm-v:latest"]
                 elif model_id == "gemma-3":
@@ -1509,15 +1510,11 @@ def sync_ollama_ready_states():
 def resolve_active_ollama_tag(model_id: str) -> str:
     default_map = {
         "moondream": "moondream:latest",
-        "qwen2-vl": "qwen2-vl",
-        "qwen2.5-vl": "qwen2.5vl:3b",
         "minicpm-v": "minicpm-v",
         "gemma-3": "gemma3:4b-it-qat"
     }
     candidate_map = {
         "moondream": ["moondream", "moondream:latest"],
-        "qwen2-vl": ["qwen2-vl", "qwen2-vl:latest", "qwen2-vl:2b", "hf.co/bartowski/Qwen2-VL-2B-Instruct-GGUF:Q4_K_M"],
-        "qwen2.5-vl": ["qwen2.5vl", "qwen2.5vl:latest", "qwen2.5vl:3b", "qwen2.5vl:7b"],
         "minicpm-v": ["minicpm-v", "minicpm-v:latest"],
         "gemma-3": ["gemma3:4b-it-qat", "gemma3:4b"]
     }
@@ -1590,140 +1587,7 @@ def pull_ollama_model_task(model_id: str, ollama_name: str):
             state["status"] = f"failed: {str(e)}"
 
 
-def pull_qwen2_vl_huggingface_task():
-    global vlm_download_states, active_downloads
-    state = vlm_download_states["qwen2-vl"]
-    state["status"] = "downloading"
-    state["progress"] = 0
-    cancel_evt = active_downloads["qwen2-vl"]["cancel_event"]
-    
-    try:
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        models_dir = os.path.join(app_dir, "models")
-        os.makedirs(models_dir, exist_ok=True)
-        
-        gguf_path = os.path.join(models_dir, "Qwen2-VL-2B-Instruct-Q4_K_M.gguf")
-        proj_path = os.path.join(models_dir, "mmproj-Qwen2-VL-2B-Instruct-f16.gguf")
-        modelfile_path = os.path.join(models_dir, "Modelfile_qwen2_vl")
-        
-        files_to_download = [
-            {
-                "url": "https://huggingface.co/bartowski/Qwen2-VL-2B-Instruct-GGUF/resolve/main/Qwen2-VL-2B-Instruct-Q4_K_M.gguf",
-                "path": gguf_path,
-                "size": 986047232
-            },
-            {
-                "url": "https://huggingface.co/bartowski/Qwen2-VL-2B-Instruct-GGUF/resolve/main/mmproj-Qwen2-VL-2B-Instruct-f16.gguf",
-                "path": proj_path,
-                "size": 1331656192
-            }
-        ]
-        
-        total_combined_size = sum(f["size"] for f in files_to_download)
-        downloaded_so_far = 0
-        
-        for file_info in files_to_download:
-            url = file_info["url"]
-            dest = file_info["path"]
-            
-            # Skip if file already fully exists
-            if os.path.exists(dest) and os.path.getsize(dest) == file_info["size"]:
-                downloaded_so_far += file_info["size"]
-                continue
-                
-            headers = {}
-            temp_size = 0
-            if os.path.exists(dest):
-                temp_size = os.path.getsize(dest)
-                if temp_size < file_info["size"]:
-                    headers["Range"] = f"bytes={temp_size}-"
-                    downloaded_so_far += temp_size
-                else:
-                    os.remove(dest)
-                    temp_size = 0
-                    
-            mode = "ab" if temp_size > 0 else "wb"
-            response = requests.get(url, headers=headers, stream=True, timeout=30)
-            active_downloads["qwen2-vl"]["response"] = response
-            
-            if response.status_code in (200, 206):
-                with open(dest, mode) as f:
-                    for chunk in response.iter_content(chunk_size=1024 * 1024):
-                        if cancel_evt.is_set():
-                            response.close()
-                            break
-                        if chunk:
-                            f.write(chunk)
-                            downloaded_so_far += len(chunk)
-                            progress = min(99, int((downloaded_so_far / total_combined_size) * 100))
-                            state["progress"] = progress
-                            state["status"] = f"downloading ({progress}%)"
-                            
-            if cancel_evt.is_set():
-                break
-                
-        if cancel_evt.is_set():
-            state["status"] = "paused"
-            return
-            
-        if not (os.path.exists(gguf_path) and os.path.getsize(gguf_path) == files_to_download[0]["size"]):
-            raise Exception("Base GGUF model download incomplete or corrupted.")
-        if not (os.path.exists(proj_path) and os.path.getsize(proj_path) == files_to_download[1]["size"]):
-            raise Exception("Multimodal projector download incomplete or corrupted.")
-            
-        state["status"] = "building model in ollama"
-        with open(modelfile_path, "w") as mf:
-            mf.write(f"FROM {gguf_path}\n")
-            mf.write(f"ADAPTER {proj_path}\n\n")
-            mf.write('TEMPLATE """{{- if .System -}}\n')
-            mf.write('<|im_start|>system\n')
-            mf.write('{{ .System }}<|im_end|>\n')
-            mf.write('{{- end -}}\n')
-            mf.write('{{- range $i, $_ := .Messages }}\n')
-            mf.write('{{- $last := eq (len (slice $.Messages $i)) 1 -}}\n')
-            mf.write('{{- if eq .Role "user" }}\n')
-            mf.write('<|im_start|>user\n')
-            mf.write('{{ .Content }}<|im_end|>\n')
-            mf.write('{{- else if eq .Role "assistant" }}\n')
-            mf.write('<|im_start|>assistant\n')
-            mf.write('{{ if .Content }}{{ .Content }}{{ if not $last }}<|im_end|>\n')
-            mf.write('{{- else -}}<|im_end|>{{- end -}}\n')
-            mf.write('{{- end -}}\n')
-            mf.write('{{- end -}}\n')
-            mf.write('{{- if and (ne .Role "assistant") $last }}\n')
-            mf.write('<|im_start|>assistant\n')
-            mf.write('{{ end -}}\n')
-            mf.write('{{- end }}"""\n\n')
-            mf.write('PARAMETER stop "<|im_start|>"\n')
-            mf.write('PARAMETER stop "<|im_end|>"\n')
-            mf.write('PARAMETER temperature 0.0001\n')
-            mf.write('PARAMETER num_predict 80\n')
-            
-        import subprocess
-        process = subprocess.Popen(
-            ["ollama", "create", "qwen2-vl", "-f", modelfile_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        active_downloads["qwen2-vl"]["subprocess"] = process
-        
-        stdout, stderr = process.communicate()
-        if process.returncode == 0:
-            state["ready"] = True
-            state["status"] = "ready"
-            state["progress"] = 100
-            print("[Qwen2-VL] Registered custom legacy Qwen2-VL model in Ollama successfully!")
-        else:
-            raise Exception(f"ollama create failed: {stderr or stdout}")
-            
-    except Exception as e:
-        print(f"[Qwen2-VL] Error during Hugging Face pull/build: {e}")
-        if cancel_evt.is_set():
-            state["status"] = "paused"
-        else:
-            state["status"] = f"failed: {str(e)}"
-            state["progress"] = 0
+
 
 
 def simulate_vlm_download(model_id: str):
@@ -1879,9 +1743,24 @@ def get_app_vram_usage_bytes(active_model: str | None = None):
         return 0
 
     # Local VLM models:
-    is_ollama = active_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
+    is_ollama = active_model in ["moondream", "minicpm-v", "gemma-3"]
     if is_ollama:
         return get_ollama_vram_usage_bytes()
+        
+    # PyTorch/Florence-2 model footprint and weights
+    try:
+        import sys
+        if "torch" in sys.modules:
+            import torch
+            if torch.cuda.is_available():
+                return torch.cuda.memory_allocated()
+            elif hasattr(torch, "mps") and torch.mps.is_available():
+                if hasattr(torch.mps, "driver_allocated_memory"):
+                    return torch.mps.driver_allocated_memory()
+                elif hasattr(torch.mps, "current_allocated_memory"):
+                    return torch.mps.current_allocated_memory()
+    except Exception:
+        pass
         
     return get_gpu_vram_usage_bytes(include_ollama=False)
 
@@ -1942,7 +1821,7 @@ def api_vlm_status(model: str | None = None):
     sync_florence_ready_state()
     
     total_ram = get_app_ram_usage_bytes(model)
-    total_vram = get_app_vram_usage_bytes(model)
+    total_vram = get_gpu_vram_usage_bytes(include_ollama=True)
     
     return {
         "status": "success", 
@@ -1971,7 +1850,6 @@ def api_vlm_pull(req: VlmPullRequest):
 
     model_map = {
         "moondream": "moondream:latest",
-        "qwen2.5-vl": "qwen2.5vl:3b",
         "minicpm-v": "minicpm-v",
         "gemma-3": "gemma3:4b-it-qat"
     }
@@ -1985,10 +1863,6 @@ def api_vlm_pull(req: VlmPullRequest):
 
     if model_id == "florence-2":
         t = threading.Thread(target=pull_florence_model_task)
-        t.daemon = True
-        t.start()
-    elif model_id == "qwen2-vl":
-        t = threading.Thread(target=pull_qwen2_vl_huggingface_task)
         t.daemon = True
         t.start()
     elif model_id in model_map:
@@ -2052,7 +1926,7 @@ def api_vlm_warmup(req: VlmWarmupRequest):
         return {"status": "success", "message": f"Model {req.model} is not ready yet."}
 
     model_tag = resolve_active_ollama_tag(model_id)
-    warmup_models = ["qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3", "moondream"]
+    warmup_models = ["minicpm-v", "gemma-3", "moondream"]
     if model_id not in warmup_models:
         return {"status": "success", "message": "Warmup not required for this model."}
 
@@ -2070,12 +1944,14 @@ def api_vlm_warmup(req: VlmWarmupRequest):
                     "stream": False,
                     "keep_alive": -1,
                     "options": {
-                        "num_ctx": 1024
+                        "num_ctx": 1024,
+                        "num_predict": 1
                     }
                 },
                 timeout=180
             )
             resp.raise_for_status()
+            warmed_models.add(model_id)
             print(f"[VLM Warmup] Background warmup for {model_id} completed.", flush=True)
         except Exception as e:
             err_msg = str(e).lower()
@@ -2122,16 +1998,17 @@ def api_vlm_unload(req: VlmUnloadRequest):
             except Exception:
                 pass
         return {"status": "success", "message": "Florence-2 has been unloaded."}
- 
+
     model_map = {
         "moondream": "moondream:latest",
-        "qwen2-vl": "qwen2-vl",
-        "qwen2.5-vl": "qwen2.5vl:3b",
         "paligemma": "pdevine/paligemma",
-        "minicpm-v": "minicpm-v"
+        "minicpm-v": "minicpm-v",
+        "gemma-3": "gemma3:4b-it-qat"
     }
     if model_id not in model_map:
         return {"status": "success", "message": "Unload not required/supported for this model."}
+
+    target_tag = resolve_active_ollama_tag(model_id) if model_id != "paligemma" else model_map[model_id]
 
     # Check if the Ollama model is actually loaded in memory
     is_loaded = False
@@ -2139,7 +2016,6 @@ def api_vlm_unload(req: VlmUnloadRequest):
         ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=3)
         if ps_res.status_code == 200:
             loaded_models = ps_res.json().get("models", [])
-            target_tag = model_map[model_id]
             for m in loaded_models:
                 loaded_name = m.get("name", "")
                 if loaded_name == target_tag or target_tag in loaded_name or loaded_name in target_tag:
@@ -2154,11 +2030,11 @@ def api_vlm_unload(req: VlmUnloadRequest):
     def run_unload():
         try:
             url = "http://127.0.0.1:11434/api/generate"
-            print(f"[VLM Unload] Starting immediate unload for {model_id}...", flush=True)
+            print(f"[VLM Unload] Starting immediate unload for {model_id} (tag: {target_tag})...", flush=True)
             requests.post(
                 url,
                 json={
-                    "model": model_map[model_id],
+                    "model": target_tag,
                     "prompt": "",
                     "keep_alive": "0s",
                     "stream": False
@@ -2246,8 +2122,7 @@ def api_gc(req: GcRequest):
     # 5. If the currently selected method is on the warm-up list, trigger reload/warmup
     selected_model = req.model.lower()
     
-    # Warm-up list models
-    warmup_models = ["qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3", "moondream"]
+    warmup_models = ["minicpm-v", "gemma-3", "moondream"]
     
     if selected_model in warmup_models:
         try:
@@ -2263,12 +2138,14 @@ def api_gc(req: GcRequest):
                     "stream": False,
                     "keep_alive": -1,
                     "options": {
-                        "num_ctx": 1024
+                        "num_ctx": 1024,
+                        "num_predict": 1
                     }
                 },
                 timeout=180
             )
             resp.raise_for_status()
+            warmed_models.add(selected_model)
             print(f"[GC] Successfully reloaded/warmed up model: {selected_model}", flush=True)
         except Exception as e:
             err_msg = str(e).lower()
@@ -2285,7 +2162,7 @@ def api_gc(req: GcRequest):
             print(f"[GC] Error reloading Florence-2: {e}", flush=True)
 
     total_ram = get_app_ram_usage_bytes(req.model)
-    total_vram = get_app_vram_usage_bytes(req.model)
+    total_vram = get_gpu_vram_usage_bytes(include_ollama=True)
     
     return {
         "status": "success",
@@ -2816,8 +2693,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         model_perf = {
             "tesseract": {"loc": 15.0, "coords": 10.0, "ram": "120 MB", "vram": "85 MB"},
             "moondream": {"loc": 65.0, "coords": 55.0, "ram": "850 MB", "vram": "1.0 GB"},
-            "qwen2-vl": {"loc": 95.0, "coords": 85.0, "ram": "1.2 GB", "vram": "1.65 GB"},
-            "qwen2.5-vl": {"loc": 85.0, "coords": 75.0, "ram": "1.4 GB", "vram": "2.0 GB"},
             "florence-2": {"loc": 45.0, "coords": 35.0, "ram": "650 MB", "vram": "1.8 GB"},
             "minicpm-v": {"loc": 185.0, "coords": 165.0, "ram": "1.8 GB", "vram": "5.6 GB"},
             "gemma-3": {"loc": 110.0, "coords": 95.0, "ram": "2.2 GB", "vram": "4.5 GB"},
@@ -2829,10 +2704,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             # Clean matching of model key name
             if "moondream" in selected_model:
                 selected_model = "moondream"
-            elif "qwen2.5" in selected_model or "qwen25" in selected_model:
-                selected_model = "qwen2.5-vl"
-            elif "qwen" in selected_model:
-                selected_model = "qwen2-vl"
             elif "florence" in selected_model:
                 selected_model = "florence-2"
             elif "minicpm" in selected_model:
@@ -2849,7 +2720,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         # Map clean key names to Ollama tags using dynamic resolver
         model_tag = resolve_active_ollama_tag(selected_model)
 
-        local_gpu_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
+        local_gpu_models = ["moondream", "minicpm-v", "gemma-3"]
         if selected_model in local_gpu_models:
             try:
                 ps_res = requests.get("http://127.0.0.1:11434/api/ps", timeout=5)
@@ -2901,6 +2772,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                                 print(f"[VLM Memory Management] Error checking memory: {check_err}", flush=True)
                         else:
                             print(f"[VLM Memory Management] Warning: VRAM did not fully clear of other models within 3 seconds.", flush=True)
+                        
+                        # Cooldown to allow GPU driver and Ollama's model runner process to fully clean up
+                        time.sleep(0.8)
             except Exception as e:
                 print(f"[VLM Memory Management] Error managing VRAM: {e}", flush=True)
 
@@ -2920,7 +2794,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             }
 
         # Guard: Check system memory safety for local CPU/GPU models
-        local_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3", "florence-2"]
+        local_models = ["moondream", "minicpm-v", "gemma-3", "florence-2"]
         if selected_model in local_models:
             device_type = "cpu"
             try:
@@ -2930,17 +2804,12 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             except Exception:
                 pass
             check_memory_safety(selected_model, device_type)
-        # Select scale factor: Qwen2-VL needs 6x to resolve small characters. Qwen2.5-VL works optimally at 2x. Others default to 4x.
-        if selected_model == "qwen2-vl":
-            scale_factor = 6
-        elif "qwen" in selected_model:
-            scale_factor = 2
-        else:
-            scale_factor = 4
+        # Select scale factor: Default to 4x.
+        scale_factor = 4
         text_img_4x = text_img.resize((text_img.width * scale_factor, text_img.height * scale_factor), Image.Resampling.LANCZOS)
  
         # Start PeakMemoryMonitor
-        include_ollama_mon = selected_model in ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
+        include_ollama_mon = selected_model in ["moondream", "minicpm-v", "gemma-3"]
         mem_monitor = PeakMemoryMonitor(model_name=selected_model, include_ollama=include_ollama_mon)
         mem_monitor.start()
 
@@ -3212,10 +3081,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 "warning": fallback_warning
             }
  
-        # Check if we should execute actual local Ollama VLM (Moondream, Qwen2-VL, Qwen2.5-VL, MiniCPM-V, Gemma-3)!
+        # Check if we should execute actual local Ollama VLM (Moondream, MiniCPM-V, Gemma-3)!
         else:
             model_tag = resolve_active_ollama_tag(selected_model)
-            ollama_models = ["moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"]
+            ollama_models = ["moondream", "minicpm-v", "gemma-3"]
             if selected_model not in ollama_models:
                 return {"status": "error", "message": f"Unsupported VLM model: {selected_model}"}
                 
@@ -3245,20 +3114,31 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 lotro_lang_name = "French"
             elif lotro_lang == "de":
                 lotro_lang_name = "German"
-
-            if "qwen" in selected_model:
-                prompt = f"The image shows a location name and coordinates. Read them exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
-            else:
-                prompt = f"What does the text at the bottom of the image say? Read it exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
-
+ 
+            prompt = f"What does the text at the bottom of the image say? Read it exactly in the expected LOTRO game language: {lotro_lang_name}. Only provide answers in a supported LOTRO language (English, German, or French) as written. Do not translate."
+ 
             options = {
                 "temperature": 0.0,
                 "num_ctx": 1024
             }
-            if "qwen" in selected_model:
-                options["num_predict"] = 80
-                options["stop"] = ["<|im_start|>", "<|im_end|>"]
-
+ 
+            # Dynamic check to offload layers safely to prevent Ollama llama-server crash/OOM
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    free_vram, total_vram = torch.cuda.mem_get_info()
+                    if total_vram <= 9 * 1024 * 1024 * 1024:  # 8GB or smaller GPU
+                        if selected_model == "minicpm-v":
+                            print(f"[VLM GPU Offload] Capping GPU layers to 15 for MiniCPM-V to fit within 8GB VRAM limit.", flush=True)
+                            options["num_gpu"] = 15
+                    else:
+                        # For larger GPUs, check if we need a full CPU fallback due to heavy current usage
+                        req_vram = VLM_GPU_VRAM_REQUIREMENTS.get(selected_model, 2.0 * 1024 * 1024 * 1024)
+                        if free_vram < req_vram:
+                            print(f"[VLM CPU Fallback] Free VRAM ({free_vram / (1024**3):.2f} GB) is less than required ({req_vram / (1024**3):.2f} GB). Forcing CPU mode to prevent Ollama llama-server crash.", flush=True)
+                            options["num_gpu"] = 0
+            except Exception as e:
+                print(f"[VLM GPU Offload Check] Error checking VRAM: {e}", flush=True)
             json_payload = {
                 "model": model_tag,
                 "prompt": prompt,
@@ -3347,7 +3227,7 @@ def api_ocr_try_vlm(req: VlmTryRequest):
             
             if response and response.status_code == 200:
                 currently_loaded_vlm = selected_model
-                if selected_model in ("moondream", "qwen2-vl", "qwen2.5-vl", "minicpm-v", "gemma-3"):
+                if selected_model in ("moondream", "minicpm-v", "gemma-3"):
                     warmed_models.add(selected_model)
                 total_time_ms = (t1 - t0) * 1000.0
                 loc_time_ms = total_time_ms * 0.55

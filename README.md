@@ -37,7 +37,7 @@ project/
 
 - **Automatic Minimap Scanning**: Captures the game screen, crops the minimap, and parses coordinates + location names using Tesseract OCR.
 - **VLM Preprocessing & 4x Scaling**: Resizes the raw location crop by **4x (Lanczos)** before passing it to Vision-Language Models (VLMs) to ensure high-contrast character transcription.
-- **Vision-Language Model Fallbacks**: If local Tesseract OCR is inconclusive, queries a VLM (Gemini 2.5 Flash Lite, Florence-2, Moondream, Qwen2-VL, etc.).
+- **Vision-Language Model Fallbacks**: If local Tesseract OCR is inconclusive, queries a VLM (Gemini 2.5 Flash Lite, Florence-2, Moondream, Gemma 3, etc.).
 - **VLM Warmup & Unload REST Endpoints**: Warm up models in the background or trigger immediate unloads to manage GPU VRAM.
 - **On-Demand SoundFont Downloader**: Download the uncompressed, lossless `MuseScore_General.sf2` SoundFont directly from the Preferences menu, with background thread updates.
 - **High-Fidelity Cross-Platform Audio Engine (Windows, Linux, macOS)**: Features a robust, low-latency `sounddevice` engine (built on PortAudio). It delivers studio-grade real-time SoundFont MIDI/ABC synthesis, smooth logarithmic volume-fading transitions, and high-fidelity parametric EQ filtering natively across all major operating systems.
@@ -59,7 +59,7 @@ project/
 - **Tesseract OCR**: Local OCR for minimap text (`sudo apt install tesseract-ocr`).
 - **libsndfile**: For soundfile EQ processing (`sudo apt install libsndfile1`).
 - **FluidSynth** (Optional): `sudo apt install fluidsynth` on Linux. System-installed FluidSynth soundfonts, such as `FluidR3_GM.sf2` or `TimGM6mb.sf2`, are supported as legacy fallback options but are optional and not required due to our bundled SoundFont.
-- **Ollama** (Optional): Local VLM service manager required for running offline models like Moondream or Qwen (`curl -fsSL https://ollama.com/install.sh | sh` on Linux). (Note: The `ollama` Python package is not required as the backend communicates with the local Ollama server via direct HTTP REST API calls).
+- **Ollama** (Optional): Local VLM service manager required for running offline models like Moondream or Gemma 3 (`curl -fsSL https://ollama.com/install.sh | sh` on Linux). (Note: The `ollama` Python package is not required as the backend communicates with the local Ollama server via direct HTTP REST API calls).
 
 ### Core Python Dependencies (managed via `pyproject.toml`)
 - `google-adk[gcp]` — Google Agent Development Kit & Cloud integrations
@@ -73,11 +73,11 @@ project/
 To enable all features and display active integration badges in the GUI dashboard, export the following environment variables before starting the server:
 
 - `AGENT_API_KEY` (Optional / Recommended): Required to secure REST API routes when accessed by remote network clients. (Loopback connections from localhost bypass authorization for developer convenience).
-- `GEMINI_API_KEY` or `GOOGLE_API_KEY` (Optional): Required only if you select the cloud-based **Gemini 2.5 Flash Lite** vision fallback. Local OCR (Tesseract) and local VLM models (Florence-2, Moondream, Qwen, etc.) run entirely offline and do not require keys.
+- `GEMINI_API_KEY` or `GOOGLE_API_KEY` (Optional): Required only if you select the cloud-based **Gemini 2.5 Flash Lite** vision fallback. Local OCR (Tesseract) and local VLM models (Florence-2, Moondream, Gemma 3, etc.) run entirely offline and do not require keys.
 
 ## ⚡ GPU Acceleration Support
 
-Roving Bard utilizes local VLMs (such as Florence-2, Moondream, and Qwen2-VL) to perform zero-shot visual character transcription. To run these models at low latency, the backend leverages hardware acceleration across all major GPU vendors (Nvidia, Apple, AMD, Intel) on Windows, Linux, and macOS.
+Roving Bard utilizes local VLMs (such as Florence-2, Moondream, and Gemma 3) to perform zero-shot visual character transcription. To run these models at low latency, the backend leverages hardware acceleration across all major GPU vendors (Nvidia, Apple, AMD, Intel) on Windows, Linux, and macOS.
 
 ### 🎮 Supported GPU Hardware & Frameworks
 
@@ -98,7 +98,7 @@ Roving Bard resolves and coordinates the hardware execution target across two di
    * **Apple Silicon (M1–M4)**: Checks `torch.backends.mps.is_available()` to bind model memory to `"mps"`, leveraging Apple's native Metal Performance Shaders.
    * **Intel Arc/CPUs**: Discrete Intel Arc GPUs run accelerated via the Intel Extension for PyTorch (IPEX) or OpenVINO, while standard configurations fall back to optimized, multi-threaded CPU tensor operations.
 
-2. **Offline Ollama/GGUF Models (e.g., Moondream, Qwen2-VL, Qwen2.5-VL)**:
+2. **Offline Ollama/GGUF Models (e.g., Moondream, Gemma 3)**:
    Executed by the local Ollama server. Because Roving Bard communicates with Ollama via loopback HTTP REST API calls, Ollama acts as a middle-tier hardware manager, dynamically offloading GGUF model layers to CUDA (Nvidia), Metal (Apple), ROCm/DirectML (AMD), or oneAPI/SYCL (Intel) depending on what accelerator hardware it discovers on the host system.
 
 3. **OpenCV + Tesseract GPU Acceleration (Optional)**:
@@ -125,12 +125,10 @@ Roving Bard resolves and coordinates the hardware execution target across two di
 | Model Name | Est. VRAM | Est. RAM | Quantization | Model Brief / Strengths |
 |---|---|---|---|---|
 | **OpenCV + Tesseract** | `85 MB` | `50 MB` | N/A | Classical OCR engine. Extremely fast, lightweight, but highly sensitive to pixel noise and map overlay graphics. |
-| **Florence-2 (770M-FP16)** | `1.8 GB` | `1.45 GB` | None (FP16) | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
-| **Moondream2 (1.9B-INT4)** | `2.5 GB` | `1.0 GB` | 4-bit (INT4) | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
-| **Qwen2-VL (2B-INT4)** | `2.75 GB` | `1.5 GB` | 4-bit (INT4) | State-of-the-art visual document model. Superb accuracy on small/fuzzy characters. Runs via Ollama. |
-| **Qwen2.5-VL (3B-INT4)** | `5.25 GB` | `1.5 GB` | 4-bit (INT4) | Next-generation VLM with enhanced spatial understanding and character transcription. Runs via Ollama. |
-| **Gemma 3 (4B-INT4)** | `3.3 GB` | `2.4 GB` | 4-bit (INT4) | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
-| **MiniCPM-V 2.6 (8B-INT4)** | `6.8 GB` | `2.8 GB` | 4-bit (INT4) | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
+| **Florence-2 (770M)** | `1.8 GB` | `1.45 GB` | None / FP16 | Microsoft's native visual grounding model. Extremely fast execution times with superior OCR transcription accuracy. Runs natively in PyTorch. |
+| **Moondream2 (1.9B)** | `2.5 GB` | `1.0 GB` | INT4 | Highly compact local VLM. Perfect balance of speed and low VRAM footprint. Runs via Ollama. |
+| **Gemma 3 (4B)** | `3.3 GB` | `2.4 GB` | INT4 | Google's next-generation multimodal model. Exceptional accuracy and OCR capabilities, optimized via QAT. Runs via Ollama. |
+| **MiniCPM-V 2.6 (8B)** | `6.8 GB` | `2.8 GB` | INT4 | Large visual-language model with multi-image support. Exceptional OCR capabilities but requires high VRAM. Runs via Ollama. |
 
 ### ☁️ Built-in Cloud VLMs
 
@@ -200,7 +198,7 @@ To allow development, testing, and benchmarking of the OCR/VLM pipeline without 
 * **How it Works**: When the server is launched and live screen capture is disabled (default `OFF`), the system uses static test screens stored sequentially in the `capture/` directory.
 * **File Naming Conventions**: Simulation screenshot files placed in the `capture/` directory must start with `test_` (case-insensitive) and use a supported image format extension (`.png`, `.jpg`, or `.jpeg`), for example: `test_1.png`, `test_2.jpg`. The backend sorts these files alphabetically and numerically, loading and cycling them sequentially.
 * **Stepping Through Screens**: Pressing **Refresh Capture** in the web dashboard loads the next test screen in the sorted sequence.
-* **Testing OCR / VLMs**: You can click **Try** or **Scan Screen** to run any local VLM (like Moondream or Qwen2.5-VL) or OpenCV + Tesseract OCR against these pre-captured simulation screenshots. This lets you observe coordinates, location match speeds, and memory stats under identical local environments without actual screen capture overhead.
+* **Testing OCR / VLMs**: You can click **Try** or **Scan Screen** to run any local VLM (like Moondream or Gemma 3) or OpenCV + Tesseract OCR against these pre-captured simulation screenshots. This lets you observe coordinates, location match speeds, and memory stats under identical local environments without actual screen capture overhead.
 
 ---
 

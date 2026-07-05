@@ -278,25 +278,25 @@ def test_vlm_endpoints(server_fixture: subprocess.Popen[str]) -> None:
     # Clean up by pausing
     requests.post(pause_url, json={"model": "mock-vlm"}, headers=HEADERS, timeout=10)
     
-    # 7. Trigger pull for qwen2.5-vl
-    response = requests.post(pull_url, json={"model": "qwen2.5-vl"}, headers=HEADERS, timeout=10)
+    # 7. Trigger pull for gemma-3
+    response = requests.post(pull_url, json={"model": "gemma-3"}, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    status = response.json()["states"]["qwen2.5-vl"]["status"]
+    status = response.json()["states"]["gemma-3"]["status"]
     assert status.startswith("downloading") or "pulling" in status or status == "ready"
     
-    # Pause qwen2.5-vl
-    response = requests.post(pause_url, json={"model": "qwen2.5-vl"}, headers=HEADERS, timeout=10)
+    # Pause gemma-3
+    response = requests.post(pause_url, json={"model": "gemma-3"}, headers=HEADERS, timeout=10)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     
-    # Verify qwen2.5-vl is paused
+    # Verify gemma-3 is paused
     response = requests.get(status_url, headers=HEADERS, timeout=10)
     assert response.status_code == 200
-    assert response.json()["states"]["qwen2.5-vl"]["status"] == "paused"
+    assert response.json()["states"]["gemma-3"]["status"] == "paused"
     
     # 8. Test warmup endpoint
     warmup_url = BASE_URL + "/api/ocr/vlm_warmup"
