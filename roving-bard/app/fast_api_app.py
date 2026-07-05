@@ -3262,8 +3262,6 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                         # If parsing failed to extract a valid location or coordinates, automatically retry
                         if (loc_str == "None" or coords_str == "None") and try_idx < max_tries - 1:
                             print(f"[VLM Parse Retry] Incomplete parse (Location: {loc_str}, Coordinates: {coords_str}). Retrying...", flush=True)
-                            # Slightly increase temperature for the retry to explore a different generation pathway
-                            json_payload["options"]["temperature"] = 0.2
                             continue
                         break
                     else:
