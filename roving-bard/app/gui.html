@@ -4028,7 +4028,7 @@
                                 <div id="vlm-stats" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; display: flex; flex-direction: column; gap: 0.25rem; width: 100%;">
                                     <div style="display: flex; justify-content: flex-start; gap: 1.5rem; align-items: center; width: 100%;">
                                         <div><span data-loc="vlm_total_parse">Total Parse</span>: <span id="stat-total-time" style="color: white; font-weight: bold;">0.0 ms</span></div>
-                                        <div id="stat-warmup-container" style="display: none; font-size: 0.7rem;"><span data-loc="vlm_warmup">Warm-up</span>: <span id="stat-warmup-time" style="color: #ff9d00; font-weight: bold;">0.0 ms</span></div>
+                                        <div id="stat-warmup-container" style="font-size: 0.7rem;"><span data-loc="vlm_warmup">Warm-up</span>: <span id="stat-warmup-time" style="color: #ff9d00; font-weight: bold;">--- ms</span></div>
                                     </div>
                                     <div><span data-loc="vlm_postprocess">Post-processing</span>: <span id="stat-postprocess-time" style="color: #00d9ff; font-weight: bold;">0.0 ms</span></div>
                                     <div><span data-loc="vlm_preprocess">Pre-processing</span>: <span id="stat-preprocess-time" style="color: #a272ff; font-weight: bold;">0.0 ms</span></div>
@@ -5306,14 +5306,12 @@
                     if (prepEl) prepEl.innerText = preprocessTime;
 
                     const warmupTime = parse.warmup_time_ms;
-                    const warmupContainer = document.getElementById('stat-warmup-container');
                     const warmupValEl = document.getElementById('stat-warmup-time');
-                    if (warmupContainer && warmupValEl) {
+                    if (warmupValEl) {
                         if (warmupTime !== undefined && warmupTime !== null) {
                             warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
-                            warmupContainer.style.display = "block";
                         } else {
-                            warmupContainer.style.display = "none";
+                            warmupValEl.innerText = "--- ms";
                         }
                     }
 
@@ -5404,15 +5402,13 @@
                 document.getElementById('stat-total-time').innerText = (cached.total_time_ms !== null && cached.total_time_ms !== undefined) ? `${cached.total_time_ms.toFixed(1)} ms` : "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = (cached.preprocess_time_ms !== null && cached.preprocess_time_ms !== undefined) ? `${cached.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
                 
-                const warmupContainer = document.getElementById('stat-warmup-container');
                 const warmupValEl = document.getElementById('stat-warmup-time');
-                if (warmupContainer && warmupValEl) {
+                if (warmupValEl) {
                     const warmupTime = cached.warmup_time_ms;
-                    if (warmupTime !== null && warmupTime !== undefined && warmupTime > 0) {
+                    if (warmupTime !== null && warmupTime !== undefined) {
                         warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
-                        warmupContainer.style.display = "block";
                     } else {
-                        warmupContainer.style.display = "none";
+                        warmupValEl.innerText = "--- ms";
                     }
                 }
 
@@ -5427,8 +5423,8 @@
                 document.getElementById('stat-total-time').innerText = "--- ms";
                 document.getElementById('stat-preprocess-time').innerText = "--- ms";
                 
-                const warmupContainer = document.getElementById('stat-warmup-container');
-                if (warmupContainer) warmupContainer.style.display = "none";
+                const warmupValEl = document.getElementById('stat-warmup-time');
+                if (warmupValEl) warmupValEl.innerText = "--- ms";
 
                 if (vramEl) vramEl.innerText = "---";
                 if (ramEl) ramEl.innerText = "---";
@@ -5829,8 +5825,8 @@
             document.getElementById('stat-total-time').innerText = runningText;
             document.getElementById('stat-preprocess-time').innerText = runningText;
 
-            const warmupContainer = document.getElementById('stat-warmup-container');
-            if (warmupContainer) warmupContainer.style.display = "none";
+            const warmupValEl = document.getElementById('stat-warmup-time');
+            if (warmupValEl) warmupValEl.innerText = runningText;
             
             const vramEl = document.getElementById('stat-vram');
             const ramEl = document.getElementById('stat-ram');
@@ -5884,14 +5880,12 @@
                     document.getElementById('stat-preprocess-time').innerText = (res.preprocess_time_ms !== null && res.preprocess_time_ms !== undefined) ? `${res.preprocess_time_ms.toFixed(1)} ms` : "--- ms";
 
                     const warmupTime = res.warmup_time_ms;
-                    const warmupContainer = document.getElementById('stat-warmup-container');
                     const warmupValEl = document.getElementById('stat-warmup-time');
-                    if (warmupContainer && warmupValEl) {
+                    if (warmupValEl) {
                         if (warmupTime !== undefined && warmupTime !== null) {
                             warmupValEl.innerText = `${warmupTime.toFixed(1)} ms`;
-                            warmupContainer.style.display = "block";
                         } else {
-                            warmupContainer.style.display = "none";
+                            warmupValEl.innerText = "--- ms";
                         }
                     }
  
