@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, mock_open
 from PIL import Image
 from app import tools
 
@@ -105,4 +105,81 @@ def test_parse_text_rich():
     assert rich2["parsed_location"] in ("xtrp", "p", "None") # cleaned is "xtrp" -> "p", or "None" if filtered
     assert rich2["parsed_coordinates"] == "None"
     assert rich2["raw_coordinates"] == "None"
+
+
+def test_simulation_mode_minimap_bounds_detection():
+    """Verify that in simulation mode, force_manual_bounds is ignored, auto-detection runs,
+
+    and it falls back to manual bounds appropriately based on config.yaml.
+    """
+    from app.fast_api_app import (
+        start_async_minimap_detection,
+        is_simulation_mode,
+        has_minimap_bounds_in_yaml,
+    )
+    from app import tools
+
+    class SyncThread:
+        def __init__(self, target, daemon=True):
+            self.target = target
+        def start(self):
+            self.target()
+
+    # Create a dummy image
+    img = Image.new("RGB", (100, 100))
+
+    # Scenario 1: Verify is_simulation_mode matches correctly
+    with patch("os.path.exists", return_value=True), \
+         patch("os.listdir", return_value=["test_screenshot1.png", "not_test.png", "test_screenshot2.jpg"]):
+        assert is_simulation_mode() is True
+
+    with patch("os.path.exists", return_value=True), \
+         patch("os.listdir", return_value=["not_test.png"]):
+        assert is_simulation_mode() is False
+
+    # Scenario 2: Verify has_minimap_bounds_in_yaml checks the raw YAML file correctly
+    with patch("os.path.exists", return_value=True), \
+         patch("builtins.open", mock_open(read_data="minimap_bounds:\n  x: 0.1\n")):
+        assert has_minimap_bounds_in_yaml() is True
+
+    with patch("os.path.exists", return_value=True), \
+         patch("builtins.open", mock_open(read_data="force_manual_bounds: false\n")):
+        assert has_minimap_bounds_in_yaml() is False
+
+    # Scenario 3: Verify start_async_minimap_detection in simulation mode
+    with patch("threading.Thread", SyncThread), \
+         patch("app.fast_api_app.is_simulation_mode", return_value=True), \
+         patch("app.tools.check_screen_and_update_music") as mock_check_screen:
+        
+        # Test Case A: Detection succeeds in Simulation Mode -> uses detected bounds
+        with patch("app.tools.load_config", return_value={"force_manual_bounds": True}), \
+             patch("app.fast_api_app.has_minimap_bounds_in_yaml", return_value=True), \
+             patch.object(tools.grabber, "detect_minimap", return_value=({"x": 0.5, "y": 0.5, "width": 0.2, "height": 0.2}, True)):
+            
+            start_async_minimap_detection(img)
+            
+            # Since is_sim=True, force_manual_bounds should be ignored (auto-detection runs)
+            assert tools.minimap_detected is True
+            assert tools.grabber.bounds == {"x": 0.5, "y": 0.5, "width": 0.2, "height": 0.2}
+
+        # Test Case B: Detection fails, minimap_bounds exists in yaml -> falls back to config's minimap_bounds
+        with patch("app.tools.load_config", return_value={"force_manual_bounds": True, "minimap_bounds": {"x": 0.7, "y": 0.7, "width": 0.1, "height": 0.1}}), \
+             patch("app.fast_api_app.has_minimap_bounds_in_yaml", return_value=True), \
+             patch.object(tools.grabber, "detect_minimap", return_value=(None, False)):
+            
+            start_async_minimap_detection(img)
+            
+            assert tools.minimap_detected is False
+            assert tools.grabber.bounds == {"x": 0.7, "y": 0.7, "width": 0.1, "height": 0.1}
+
+        # Test Case C: Detection fails, minimap_bounds does NOT exist in yaml -> falls back to default bounds
+        with patch("app.tools.load_config", return_value={"force_manual_bounds": True}), \
+             patch("app.fast_api_app.has_minimap_bounds_in_yaml", return_value=False), \
+             patch.object(tools.grabber, "detect_minimap", return_value=(None, False)):
+            
+            start_async_minimap_detection(img)
+            
+            assert tools.minimap_detected is False
+            assert tools.grabber.bounds == {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15}
+
 

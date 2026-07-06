@@ -548,7 +548,7 @@ def api_status():
     if tools.latest_full_screenshot_bytes is None:
         initialize_simulation_screen()
         
-    return {
+    res = {
         "current_track": tools.player.current_track,
         "volume": tools.player.volume,
         "simulated": tools.player.simulated,
@@ -567,6 +567,13 @@ def api_status():
         "available_soundfonts": get_available_soundfonts(tools.player.playlist_dir),
         "current_ocr_pass": tools.current_ocr_pass,
     }
+
+    if tools.latest_full_screenshot_bytes:
+        import base64
+        img_base64 = base64.b64encode(tools.latest_full_screenshot_bytes).decode("utf-8")
+        res["full_img_base64"] = f"data:image/png;base64,{img_base64}"
+
+    return res
 
 
 import threading
@@ -959,6 +966,36 @@ def api_screenshot_location_raw():
     return Response(content=transparent_png, media_type="image/png")
 
 
+def is_simulation_mode() -> bool:
+    """Checks if we are running with test screens in the capture folder."""
+    import os
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    capture_dir = os.path.join(os.path.dirname(app_dir), "capture")
+    
+    if os.path.exists(capture_dir):
+        test_files = [
+            f for f in os.listdir(capture_dir)
+            if f.lower().startswith("test_") and f.lower().endswith(('.png', '.jpg', '.jpeg'))
+            and not any(suffix in f.lower() for suffix in ["_minimap", "_location", "_cursor"])
+        ]
+        return len(test_files) > 0
+    return False
+
+
+def has_minimap_bounds_in_yaml() -> bool:
+    """Checks if the key minimap_bounds is physically defined in config.yaml."""
+    import os
+    import yaml
+    if os.path.exists(tools.CONFIG_PATH):
+        try:
+            with open(tools.CONFIG_PATH) as f:
+                raw_cfg = yaml.safe_load(f) or {}
+                return "minimap_bounds" in raw_cfg
+        except Exception:
+            pass
+    return False
+
+
 def start_async_minimap_detection(full_img):
     """Starts background detection of the minimap bounds to prevent UI freezing."""
     import threading
@@ -970,7 +1007,9 @@ def start_async_minimap_detection(full_img):
             config = tools.load_config()
             force_manual = config.get("force_manual_bounds", False)
             
-            if force_manual:
+            is_sim = is_simulation_mode()
+            
+            if force_manual and not is_sim:
                 tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
                 tools.minimap_detected = False
                 print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {tools.grabber.bounds}")
@@ -979,9 +1018,23 @@ def start_async_minimap_detection(full_img):
                 if detected:
                     tools.grabber.bounds = bounds
                     tools.minimap_detected = True
+                    print(f"[ScreenGrabber] Auto-detected minimap bounds: {tools.grabber.bounds}")
                 else:
-                    tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
                     tools.minimap_detected = False
+                    if is_sim:
+                        # In simulation mode (with test screens):
+                        # Only show/use minimap_bounds if it exists in config.yaml
+                        if has_minimap_bounds_in_yaml():
+                            tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                            print(f"[ScreenGrabber] Auto-detection failed (Simulation Mode). Falling back to minimap_bounds from config.yaml: {tools.grabber.bounds}")
+                        else:
+                            # Enable configuration of the bounds in Bounding Box Setup using the default bounds.
+                            tools.grabber.bounds = {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15}
+                            print(f"[ScreenGrabber] Auto-detection failed (Simulation Mode). minimap_bounds not in config.yaml. Enabling Bounding Box Setup configuration.")
+                    else:
+                        # Non-simulation mode:
+                        tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                        print(f"[ScreenGrabber] Auto-detection failed. Falling back to manual bounds: {tools.grabber.bounds}")
             
             # Update tools.config in memory
             tools.config["minimap_bounds"] = tools.grabber.bounds
@@ -1106,12 +1159,16 @@ def api_screenshot_refresh():
         # Start background async bounds detection
         start_async_minimap_detection(full_img)
         
+        import base64
+        img_base64 = base64.b64encode(tools.latest_full_screenshot_bytes).decode("utf-8")
+        
         return {
             "status": "success",
             "message": "Screenshot reloaded, dynamic detection started in background.",
             "detecting": True,
             "simulation": len(test_files) > 0,
-            "latest_parse": tools.latest_parse_result
+            "latest_parse": tools.latest_parse_result,
+            "full_img_base64": f"data:image/png;base64,{img_base64}"
         }
     except Exception as e:
         return {"status": "error", "message": f"Error starting background detection: {e}"}
