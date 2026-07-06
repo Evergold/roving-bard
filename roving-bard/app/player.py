@@ -1771,6 +1771,68 @@ class SafeMusicPlayer:
         sos_dict = {}
         is_midi_abc = self.current_track.lower().endswith((".abc", ".mid", ".midi")) if self.current_track else False
         
+        def restart_playback_stream(start_frame):
+            nonlocal is_midi_abc
+            if self._sf is not None:
+                self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
+                return
+            if self._ffmpeg_proc is not None:
+                try:
+                    self._ffmpeg_proc.terminate()
+                except Exception:
+                    pass
+                
+            cache_available = False
+            if is_midi_abc:
+                cache_dir = os.path.join(self.playlist_dir, ".cache")
+                if self.current_track.lower().endswith(".abc") and self.active_instrument is not None:
+                    cached_flac = os.path.join(cache_dir, f"{self.current_track}_inst_{self.active_instrument}.flac")
+                else:
+                    cached_flac = os.path.join(cache_dir, self.current_track + ".flac")
+                
+                if os.path.exists(cached_flac):
+                    import soundfile as sf
+                    try:
+                        self._sf = sf.SoundFile(cached_flac)
+                        self._sample_rate = self._sf.samplerate
+                        self._channels = self._sf.channels
+                        if not self.current_track.lower().endswith(".abc"):
+                            self.track_duration = len(self._sf) / self._sample_rate
+                        self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
+                        self._ffmpeg_proc = None
+                        cache_available = True
+                    except Exception as e:
+                        print(f"[Playback] Failed to load finished FLAC cache on loop restart: {e}")
+                        
+            if not cache_available:
+                if is_midi_abc:
+                    midi_path = os.path.join(self.playlist_dir, self.current_track)
+                    if self.current_track.lower().endswith(".abc"):
+                        midi_path = self._prepare_abc_midi(midi_path, 0.0)
+                    cmd = [
+                        "fluidsynth", "-ni", "-F", "/dev/stdout", "-T", "raw", "-r", "44100",
+                        self.soundfont_path, midi_path
+                    ]
+                    self._ffmpeg_proc = subprocess.Popen(
+                        cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+                    )
+                    if start_frame > 0:
+                        discard_bytes = start_frame * 2 * 2
+                        try:
+                            self._ffmpeg_proc.stdout.read(discard_bytes)
+                        except: pass
+                else:
+                    pos_sec = start_frame / self._sample_rate
+                    cmd = [
+                        "ffmpeg", "-y", "-ss", f"{pos_sec:.3f}",
+                        "-i", os.path.join(self.playlist_dir, self.current_track),
+                        "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
+                        "-ar", "44100", "-ac", "2", "-"
+                    ]
+                    self._ffmpeg_proc = subprocess.Popen(
+                        cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+                    )
+
         try:
             # --- ON-DEMAND LAZY LOADING FOR DEFERRED TRACKS ---
             with self._play_lock:
@@ -1893,23 +1955,7 @@ class SafeMusicPlayer:
                         # Ensure playhead is within bounds before reading
                         if self._playhead < start_frame or self._playhead >= end_frame:
                             self._playhead = start_frame
-                            if self._sf is not None:
-                                self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
-                            elif self._ffmpeg_proc is not None:
-                                try:
-                                    self._ffmpeg_proc.terminate()
-                                except Exception:
-                                    pass
-                                pos_sec = start_frame / self._sample_rate
-                                cmd = [
-                                    "ffmpeg", "-y", "-ss", f"{pos_sec:.3f}",
-                                    "-i", os.path.join(self.playlist_dir, self.current_track),
-                                    "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
-                                    "-ar", "44100", "-ac", "2", "-"
-                                ]
-                                self._ffmpeg_proc = subprocess.Popen(
-                                    cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-                                )
+                            restart_playback_stream(start_frame)
                             zi_dict.clear()
 
                         # Read exactly chunk_size frames, wrapping around if we hit end_frame
@@ -1921,23 +1967,7 @@ class SafeMusicPlayer:
                             if available_frames <= 0:
                                 # Loop back to start_frame
                                 self._playhead = start_frame
-                                if self._sf is not None:
-                                    self._sf.seek(min(len(self._sf) - 1, max(0, start_frame)))
-                                elif self._ffmpeg_proc is not None:
-                                    try:
-                                        self._ffmpeg_proc.terminate()
-                                    except Exception:
-                                        pass
-                                    pos_sec = start_frame / self._sample_rate
-                                    cmd = [
-                                        "ffmpeg", "-y", "-ss", f"{pos_sec:.3f}",
-                                        "-i", os.path.join(self.playlist_dir, self.current_track),
-                                        "-vn", "-f", "s16le", "-acodec", "pcm_s16le",
-                                        "-ar", "44100", "-ac", "2", "-"
-                                    ]
-                                    self._ffmpeg_proc = subprocess.Popen(
-                                        cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-                                    )
+                                restart_playback_stream(start_frame)
                                 zi_dict.clear()
                                 available_frames = end_frame - start_frame
                                 if available_frames <= 0:
