@@ -999,7 +999,10 @@ def has_minimap_bounds_in_yaml() -> bool:
 def start_async_minimap_detection(full_img):
     """Starts background detection of the minimap bounds to prevent UI freezing."""
     import threading
+    tools.detection_generation += 1
+    current_gen = tools.detection_generation
     tools.minimap_detecting = True
+    
     # Clear the OCR parse cache to remain blank while detection is active
     tools.latest_parse_result = {
         "parsed_location": "",
@@ -1011,36 +1014,44 @@ def start_async_minimap_detection(full_img):
     
     def run_detection():
         try:
-            print(f"[MinimapDetector] Background bounds detection started...")
+            print(f"[MinimapDetector] Background bounds detection started (Gen {current_gen})...")
+            if current_gen != tools.detection_generation:
+                print(f"[MinimapDetector] Aborting Gen {current_gen} before starting (newer Gen {tools.detection_generation} active).")
+                return
+                
             config = tools.load_config()
             force_manual = config.get("force_manual_bounds", False)
-            
             is_sim = is_simulation_mode()
             
             if force_manual and not is_sim:
-                tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                bounds_res = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                detected_res = False
+            else:
+                bounds_res, detected_res = tools.grabber.detect_minimap(full_img)
+            
+            if current_gen != tools.detection_generation:
+                print(f"[MinimapDetector] Aborting Gen {current_gen} after detection (newer Gen {tools.detection_generation} active).")
+                return
+                
+            if force_manual and not is_sim:
+                tools.grabber.bounds = bounds_res
                 tools.minimap_detected = False
                 print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {tools.grabber.bounds}")
             else:
-                bounds, detected = tools.grabber.detect_minimap(full_img)
-                if detected:
-                    tools.grabber.bounds = bounds
+                if detected_res:
+                    tools.grabber.bounds = bounds_res
                     tools.minimap_detected = True
                     print(f"[ScreenGrabber] Auto-detected minimap bounds: {tools.grabber.bounds}")
                 else:
                     tools.minimap_detected = False
                     if is_sim:
-                        # In simulation mode (with test screens):
-                        # Only show/use minimap_bounds if it exists in config.yaml
                         if has_minimap_bounds_in_yaml():
                             tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
                             print(f"[ScreenGrabber] Auto-detection failed (Simulation Mode). Falling back to minimap_bounds from config.yaml: {tools.grabber.bounds}")
                         else:
-                            # Enable configuration of the bounds in Bounding Box Setup using the default bounds.
                             tools.grabber.bounds = {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15}
                             print(f"[ScreenGrabber] Auto-detection failed (Simulation Mode). minimap_bounds not in config.yaml. Enabling Bounding Box Setup configuration.")
                     else:
-                        # Non-simulation mode:
                         tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
                         print(f"[ScreenGrabber] Auto-detection failed. Falling back to manual bounds: {tools.grabber.bounds}")
             
@@ -1052,11 +1063,12 @@ def start_async_minimap_detection(full_img):
             
             # Run the scan pipeline to cache images, run OCR, and update status
             tools.check_screen_and_update_music()
-            print(f"[MinimapDetector] Background bounds detection completed. Detected={tools.minimap_detected}, Bounds={tools.grabber.bounds}")
+            print(f"[MinimapDetector] Background bounds detection completed (Gen {current_gen}). Detected={tools.minimap_detected}, Bounds={tools.grabber.bounds}")
         except Exception as e:
-            print(f"[MinimapDetector] Background detection error: {e}")
+            print(f"[MinimapDetector] Background detection error (Gen {current_gen}): {e}")
         finally:
-            tools.minimap_detecting = False
+            if current_gen == tools.detection_generation:
+                tools.minimap_detecting = False
             
     thread = threading.Thread(target=run_detection, daemon=True)
     thread.start()

@@ -197,6 +197,7 @@ minimap_detecting = False
 server_baseline_ram = 1100 * 1024 * 1024  # Default fallback 1.1 GB
 server_baseline_vram = 0
 current_ocr_pass = "auto"
+detection_generation = 0
 latest_parse_result = {
     "parsed_location": None,
     "parsed_coordinates": None,
