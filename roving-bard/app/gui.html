@@ -2260,6 +2260,12 @@
             --slider-bg: #b4b8c0;
         }
 
+        .theme-toggle-group,
+        .font-size-group,
+        #server-baseline-display {
+            box-shadow: 0 0 8px var(--border-glow);
+        }
+
         body.light-theme header {
             background: #d2d5d8;
             border-bottom: 1px solid #b4b8c0;
@@ -2273,11 +2279,24 @@
             background: rgb(210, 213, 216) !important;
         }
 
-        /* Lighten the accessibility control pills in light theme */
         body.light-theme .theme-toggle-group,
         body.light-theme .font-size-group,
         body.light-theme #server-baseline-display {
             background: rgba(0, 0, 0, 0.06) !important;
+            border-color: rgba(0, 0, 0, 0.04) !important;
+            box-shadow: 0 0 8px var(--border-glow) !important;
+        }
+
+        body.light-theme #palantir-svg-body {
+            fill: url(#palantir-body-light) !important;
+        }
+        body.light-theme #palantir-svg-core {
+            fill: url(#palantir-core-light) !important;
+            mix-blend-mode: normal !important;
+            filter: none !important;
+        }
+        body.light-theme #palantir-svg-highlight {
+            opacity: 0.75 !important;
         }
 
         body.light-theme .dropdown-content {
@@ -3404,24 +3423,39 @@
                                         <radialGradient id="palantir-core" cx="50%" cy="50%" r="50%">
                                             <stop offset="0%" stop-color="#ffffff" />
                                             <stop offset="25%" stop-color="#a5f3fc" />
-                                            <stop offset="55%" stop-color="#06b6d4" />
-                                            <stop offset="85%" stop-color="#3b82f6" />
-                                            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+                                            <stop offset="45%" stop-color="#06b6d4" />
+                                            <stop offset="75%" stop-color="#3b82f6" stop-opacity="0.3" />
+                                            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+                                        </radialGradient>
+                                        <!-- Silver glass gradient for light theme -->
+                                        <radialGradient id="palantir-body-light" cx="35%" cy="35%" r="65%">
+                                            <stop offset="0%" stop-color="#ffffff" />
+                                            <stop offset="35%" stop-color="#e2e8f0" />
+                                            <stop offset="75%" stop-color="#cbd5e1" />
+                                            <stop offset="100%" stop-color="#94a3b8" />
+                                        </radialGradient>
+                                        <!-- Deeper blue core gradient for light theme -->
+                                        <radialGradient id="palantir-core-light" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stop-color="#d0e1fd" />
+                                            <stop offset="25%" stop-color="#93c5fd" />
+                                            <stop offset="45%" stop-color="#2563eb" />
+                                            <stop offset="70%" stop-color="#1d4ed8" stop-opacity="0.3" />
+                                            <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0" />
                                         </radialGradient>
                                     </defs>
                                     
-                                    <!-- Outer sphere container with theme-coherent boundary -->
-                                    <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.8" fill="url(#palantir-body)" />
+                                    <!-- Outer sphere container with no border -->
+                                    <circle id="palantir-svg-body" cx="12" cy="12" r="9.5" fill="url(#palantir-body)" />
                                     
-                                    <!-- Blue/cyan internal core -->
-                                    <circle cx="12" cy="12" r="5.5" fill="url(#palantir-core)" style="mix-blend-mode: screen; filter: drop-shadow(0 0 3px #06b6d4);" />
+                                    <!-- Clean blue/cyan internal core with minimal glow -->
+                                    <circle id="palantir-svg-core" cx="12" cy="12" r="9.5" fill="url(#palantir-core)" style="mix-blend-mode: screen; filter: drop-shadow(0 0 1.5px #06b6d4);" />
                                     
                                     <!-- Swirling elvish seeing-stone energies inside -->
                                     <path d="M 8.5,12 A 3.5 3.5 0 0 1 15.5,12 A 2.5 2.5 0 0 0 10.5,12" stroke="#38bdf8" stroke-width="0.8" fill="none" opacity="0.7" />
                                     <path d="M 7.5,12 A 4.5 3.5 0 0 0 16.5,12" stroke="#2563eb" stroke-width="0.6" fill="none" opacity="0.5" />
                                     
                                     <!-- Glass highlight reflection (crescent shine on top-left) -->
-                                    <path d="M 6.5,7 A 7.5 7.5 0 0 1 17.5,7" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" fill="none" opacity="0.3" />
+                                    <path id="palantir-svg-highlight" d="M 6.5,7 A 7.5 7.5 0 0 1 17.5,7" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" fill="none" opacity="0.3" />
                                     
                                     <!-- Pedestal Stand (obsidian/bronze claw wrapping base of orb, extending to bottom) -->
                                     <path d="M 6.0,32 L 9.5,24.0 Q 8.5,19.5 7.5,17.0 Q 9.8,19.0 12,19.5 Q 14.2,19.0 16.5,17.0 Q 15.5,19.5 14.5,24.0 L 18.0,32 Z" fill="currentColor" fill-opacity="0.85" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
