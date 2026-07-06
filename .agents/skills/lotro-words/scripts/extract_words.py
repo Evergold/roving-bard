@@ -9,80 +9,56 @@ sys.path.insert(0, os.path.join(workspace_root, "roving-bard"))
 
 from app.player import extract_lotro_words
 
-def get_available_locales():
-    locales = []
+def get_locale_dat_path(filename):
     # Check roving-bard/app/locales/
-    locales_dir = os.path.join(workspace_root, "roving-bard", "app", "locales")
-    if os.path.exists(locales_dir):
-        for name, lang, code in [
-            ("client_local_English.dat", "English", "EN"),
-            ("client_local_DE.dat", "German", "DE"),
-            ("client_local_FR.dat", "French", "FR")
-        ]:
-            path = os.path.join(locales_dir, name)
-            if os.path.exists(path):
-                locales.append((name, lang, code, path))
-    return locales
+    path = os.path.join(workspace_root, "roving-bard", "app", "locales", filename)
+    if os.path.exists(path):
+        return path
+    return None
 
-def prompt_manual_input():
-    path = input("Enter LOTRO install directory or path to localization DAT file (e.g. client_local_DE.dat): ").strip()
+def prompt_manual_input(filename):
+    path = input(f"Enter LOTRO install directory or path to {filename}: ").strip()
     if os.path.isdir(path):
-        for name, lang, code in [
-            ("client_local_English.dat", "English", "EN"),
-            ("client_local_DE.dat", "German", "DE"),
-            ("client_local_FR.dat", "French", "FR")
-        ]:
-            check_path = os.path.join(path, name)
-            if os.path.exists(check_path):
-                return check_path, code, lang
-        return os.path.join(path, "client_local_English.dat"), "EN", "English"
-    else:
-        base = os.path.basename(path).lower()
-        if "de" in base:
-            return path, "DE", "German"
-        elif "fr" in base:
-            return path, "FR", "French"
-        else:
-            return path, "EN", "English"
+        return os.path.join(path, filename)
+    return path
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="LOTRO Wordlist Extractor")
+    # Case-insensitive choices check via custom validator
+    def locale_type(s):
+        s_upper = s.upper()
+        if s_upper not in ("EN", "DE", "FR"):
+            raise argparse.ArgumentTypeError(f"Invalid locale choice: {s} (choose from EN, DE, FR)")
+        return s_upper
+        
+    parser.add_argument("locale", nargs="?", default="EN", type=locale_type, help="Locale to extract (EN, DE, FR; default: EN)")
+    args = parser.parse_args()
+    
+    lang_code = args.locale
+    locale_map = {
+        "EN": ("client_local_English.dat", "English"),
+        "DE": ("client_local_DE.dat", "German"),
+        "FR": ("client_local_FR.dat", "French")
+    }
+    filename, lang_name = locale_map[lang_code]
+    
     print("====================================================")
     print("            LOTRO Wordlist Extractor Skill          ")
     print("====================================================")
+    print(f"Targeting Locale: {lang_name} ({lang_code})")
+    print()
     
-    locales = get_available_locales()
-    if locales:
-        print("Found the following game data files:")
-        for idx, (name, lang, code, path) in enumerate(locales):
-            print(f"  [{idx + 1}] {name} ({lang} Locale)")
-        print()
-        
-        if len(locales) == 1:
-            name, lang, code, path = locales[0]
-            use_locale = input(f"Use {name}? [Y/n]: ").strip().lower()
-            if use_locale in ("", "y", "yes"):
-                dat_path = path
-                lang_code = code
-                lang_name = lang
-            else:
-                dat_path, lang_code, lang_name = prompt_manual_input()
+    locale_path = get_locale_dat_path(filename)
+    if locale_path:
+        print(f"Found {filename} in app locales directory:\n  {locale_path}\n")
+        use_locale = input("Use this file? [Y/n]: ").strip().lower()
+        if use_locale in ("", "y", "yes"):
+            dat_path = locale_path
         else:
-            selection = input(f"Select a file to parse (1-{len(locales)}) or press Enter for [1]: ").strip()
-            if not selection:
-                idx = 0
-            else:
-                try:
-                    idx = int(selection) - 1
-                    if idx < 0 or idx >= len(locales):
-                        idx = 0
-                except ValueError:
-                    idx = 0
-            name, lang, code, path = locales[idx]
-            dat_path = path
-            lang_code = code
-            lang_name = lang
+            dat_path = prompt_manual_input(filename)
     else:
-        dat_path, lang_code, lang_name = prompt_manual_input()
+        dat_path = prompt_manual_input(filename)
         
     if not os.path.exists(dat_path):
         print(f"Error: File not found at {dat_path}", file=sys.stderr)
