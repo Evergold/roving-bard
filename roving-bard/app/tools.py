@@ -374,6 +374,12 @@ def check_screen_and_update_music() -> dict:
         dict containing the extraction result (location, coordinates) and action taken.
     """
     global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_cursor_bytes, latest_character_bytes, latest_cursor_processed_bytes, latest_location_processed_bytes, latest_location_raw_bytes, latest_character_processed_bytes, latest_parse_result, current_ocr_pass
+    
+    import app.tools as tools_mod
+    if getattr(tools_mod, "minimap_detecting", False):
+        print("[ScanPipeline] Skipping scan: bounds detection is in progress.")
+        return {"status": "skipped", "message": "Minimap bounds detection in progress."}
+        
     full_img = grabber.capture_full()
     if not full_img:
         return {"status": "error", "message": "Failed to capture screenshot."}

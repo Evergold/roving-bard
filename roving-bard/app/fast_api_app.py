@@ -1000,6 +1000,14 @@ def start_async_minimap_detection(full_img):
     """Starts background detection of the minimap bounds to prevent UI freezing."""
     import threading
     tools.minimap_detecting = True
+    # Clear the OCR parse cache to remain blank while detection is active
+    tools.latest_parse_result = {
+        "parsed_location": "",
+        "parsed_coordinates": "",
+        "method": "None",
+        "matched_track": "None",
+        "timestamp": ""
+    }
     
     def run_detection():
         try:
@@ -1038,6 +1046,9 @@ def start_async_minimap_detection(full_img):
             
             # Update tools.config in memory
             tools.config["minimap_bounds"] = tools.grabber.bounds
+            
+            # Clear the detecting flag BEFORE calling check_screen_and_update_music so it can run OCR
+            tools.minimap_detecting = False
             
             # Run the scan pipeline to cache images, run OCR, and update status
             tools.check_screen_and_update_music()
@@ -2830,6 +2841,9 @@ def api_ocr_try_vlm(req: VlmTryRequest):
     """Runs a benchmark trial using a local Vision-Language Model (or falls back to simulated/estimated times if not pulled)."""
     global currently_loaded_vlm, florence_model, florence_processor, active_http_response
     
+    if getattr(tools, "minimap_detecting", False):
+        return {"status": "error", "message": "Minimap bounds detection in progress. Please wait."}
+        
     # Ensure Ollama and Python processes run at lower priority
     try:
         lower_ollama_priority()

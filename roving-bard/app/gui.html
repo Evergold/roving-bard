@@ -4688,6 +4688,11 @@
                     setManualEntryMode(!status.minimap_detected);
                 }
                 
+                const tryBtn = document.getElementById('btn-vlm-try');
+                if (tryBtn) {
+                    tryBtn.disabled = isDetecting;
+                }
+                
                 // Show detection started/completed toasts
                 if (isDetecting && !wasDetectingMinimap) {
                     showToast(t("minimap_detecting_started", "Minimap bounds detection started..."), "info");
@@ -5458,13 +5463,19 @@
             }
 
             if (!activeVLMModel) {
-                let locHtml = parse.parsed_location || t("unknown_out_of_bounds");
+                let locHtml = parse.parsed_location;
+                if (locHtml === null || locHtml === undefined) {
+                    locHtml = t("unknown_out_of_bounds");
+                }
                 if (parse.raw_location) {
                     locHtml += " <span style='font-size: 0.8rem; opacity: 0.7; margin-left: 5px;'>[" + parse.raw_location + "]</span>";
                 }
                 document.getElementById('parse-location').innerHTML = locHtml;
 
-                let coordsHtml = parse.parsed_coordinates || t("none");
+                let coordsHtml = parse.parsed_coordinates;
+                if (coordsHtml === null || coordsHtml === undefined) {
+                    coordsHtml = t("none");
+                }
                 if (parse.raw_coordinates) {
                     coordsHtml += "<br><span style='font-size: 0.8rem; opacity: 0.7;'>[" + parse.raw_coordinates + "]</span>";
                 }
@@ -5478,7 +5489,7 @@
                 if (methodText === "Simulation") {
                     methodText = t("method_simulation");
                 } else if (methodText === "None") {
-                    methodText = t("none");
+                    methodText = "";
                 } else if (selectedVal === 'tesseract') {
                     if (methodText === "Local OCR") {
                         methodText = "OpenCV+Tesseract";
