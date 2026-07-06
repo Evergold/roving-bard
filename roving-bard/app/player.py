@@ -140,6 +140,8 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
         first_lower = words[0].lower()
         if first_lower in ("defeat", "collect", "find", "talk", "bring", "complete", "enjoy", "slay", "use", "kill", "go", "deliver", "speak", "gather", "visit", "scout", "investigate", "discover", "help", "search", "rescue", "defend", "protect", "save", "active", "advance", "adventure", "alas", "afternoon", "also", "anniversary", "allegiance", "explore", "guide", "muster", "return", "map", "port", "ride", "sail", "boat", "travel"):
             return None
+        if first_lower in ("above", "across", "behind", "below", "beneath", "between", "beyond", "during", "inside", "outside", "through", "towards", "until", "within", "without", "actually", "admittedly", "sincerely", "cordially", "allow", "allowed", "bake", "attend"):
+            return None
         if words[0].endswith("ed") and words[0] not in ("Bed", "Red", "Ered"):
             return None
         if words[0].endswith("ing") and words[0] not in ("Delving", "Crossing", "Spring", "Ring", "Passing", "Dwelling", "Cliving", "Ethring", "Dwaling"):
@@ -158,6 +160,9 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "essence", "essences", "relic", "relics", "scroll", "scrolls", "chestpiece", "chestpieces",
             "box", "boxes", "chest", "chests", "shield-boss", "javelin", "instrument", "ore", "wood",
             "leather", "fiber", "tome", "tomes", "item", "items", "reward", "rewards", "xp",
+            "spittle", "wash", "acid", "strike", "badge", "badges", "wine", "wines", "bagpipe", "bagpipes",
+            "bandage", "bandages", "ballista", "ballistas", "accessory", "accessories", "recipe", "recipes",
+            "bread", "food", "drink", "potion", "potions",
             # Skills / Buffs / Stats / UI
             "bubble", "spirit", "wrath", "strength", "benevolence", "buff", "debuff", "morale", "power",
             "stat", "stats", "virtue", "level", "lvl", "leveling", "points", "point", "coin", "coins",
@@ -168,7 +173,10 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "abilities", "skill", "skills", "trait", "traits", "spell", "spells", "duration", "damage",
             "healing", "mitigation", "melee", "ranged", "combat", "tactical", "attack", "attacks",
             "courage", "cunning", "riddle", "riddles", "breath", "need", "queue", "combos", "combo",
-            # NPC / Animals / Creatures / Mobs / Enemies
+            "account", "admin", "photoshop", "adobe", "settings", "status", "connexion", "fellowship",
+            "menu", "options", "config", "unnamed", "unknown", "null", "none", "default", "temporary",
+            "test", "debug", "error", "log", "logs", "client", "server", "launcher", "application",
+            # NPC / Animals / Creatures / Mobs / Enemies / Characters
             "dog", "bee", "bees", "chicken", "chickens", "horse", "pony", "boar", "wolf", "bear",
             "ally", "friend", "kin", "survivor", "reeve", "champion", "defender", "dominator", "master",
             "overlord", "protector", "saviour", "sentinel", "vigilante", "warlord", "warrior", "guardian",
@@ -184,7 +192,16 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "soldier-slayer", "warriors", "archer", "archers", "scout", "scouts", "assassin", "assassins",
             "mage", "mages", "sorcerer", "sorcerers", "shaman", "shamans", "priest", "priests", "boss",
             "bosses", "elites", "elite", "nemesis", "arch-nemesis",
-            # Quest / System / General Non-Locations / Actions
+            "aragorn", "gandalf", "bilbo", "frodo", "elrond", "legolas", "gimli", "boromir", "faramir",
+            "sauron", "saruman", "arwen", "galadriel", "celeborn", "elendil", "isildur", "gollum", "smeagol",
+            "shelob", "balrog", "smaug", "thorin", "dwalin", "balin", "kili", "fili", "dori", "nori", "ori",
+            "oin", "gloin", "bifur", "bofur", "bombur", "radagast", "eomer", "theoden", "eowyn", "grima",
+            "wormtongue", "denethor", "peregrin", "pippin", "meriadoc", "merry", "samwise", "sam",
+            "glorfindel", "haldir", "celebrain", "elladan", "elrohir", "thranduil", "gildor", "cirdan",
+            "achardis", "aculf", "adalard", "adalbert", "adambel", "adasi", "adela", "adelard", "adhargal",
+            "adkhât", "aearil", "aeglir", "aelnir", "aerin", "aervir", "aevar", "agatha",
+            "baghi", "bainnas", "bainthir", "baldmund", "balhest", "bali", "baludam",
+            # Quest / System / General Non-Locations / Actions / Abstract Nouns
             "recipes", "recipe", "fishing", "task", "tasks", "challenge", "decision", "interruption",
             "experience", "reputation", "quests", "quest", "allies", "friends", "enemy", "abandon",
             "abandonn", "accept", "decline", "select", "cancel", "delete", "remove", "add", "create",
@@ -197,7 +214,11 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "t4", "t5", "t6", "t7", "t8", "t9", "t10", "difficulty", "difficulties", "delving", "delvings",
             "instance", "instances", "raid", "raids", "mission", "missions", "skirmish", "skirmishes",
             "scenarios", "scenario", "campaign", "campaigns", "co-op", "multiplayer", "singleplayer",
-            "pvp", "pve", "pvm"
+            "pvp", "pve", "pvm",
+            "aberration", "aberrations", "accuracy", "acquaintance", "bad", "private", "encounter", "data",
+            "bakery", "scourge", "nature", "birthday", "festival", "victory", "celebration",
+            "baby", "back", "background", "balance", "bane", "congratulations", "congrats", "welcome",
+            "goodbye", "hello", "thanks", "thank", "please", "sorry", "apologies"
         }
             
         for w in words:
@@ -208,12 +229,12 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
                 return None
                 
             w_orig_norm = w.lower()
-            if w_orig_norm.endswith(("\x27s", "\u2019s")):
-                w_norm = w_clean.lower()[:-1]  # Remove trailing s kept by re.sub
+            if w_orig_norm.endswith(("\x27s", "\u2019s", "'s", "’s")) or w_orig_norm.endswith(("\x27", "\u2019", "'", "’")):
+                w_norm = None
             else:
                 w_norm = w_clean.lower()
                 
-            if w_norm in non_location_terms:
+            if w_norm and w_norm in non_location_terms:
                 if w_norm == "helm" and "deep" in val.lower():
                     pass
                 elif w_norm == "shield" and "isles" in val.lower():
@@ -225,6 +246,8 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
                 elif w_norm == "delving" and "great" in val.lower():
                     pass
                 elif w_norm == "end" and "kings" in val.lower():
+                    pass
+                elif w_norm == "festival" and "grounds" in val.lower():
                     pass
                 else:
                     return None
