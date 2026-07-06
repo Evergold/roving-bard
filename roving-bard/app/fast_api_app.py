@@ -1018,6 +1018,25 @@ def initialize_simulation_screen():
         try:
             full_img = tools.grabber.capture_full()
             print(f"[ScreenGrabber] Init Simulation: Loaded test screen")
+            
+            # IMMEDIATELY cache the full and cropped screenshots so the UI displays them instantly
+            try:
+                from io import BytesIO
+                # Save full
+                buf_full = BytesIO()
+                full_img.save(buf_full, format="PNG")
+                tools.latest_full_screenshot_bytes = buf_full.getvalue()
+                
+                # Save crop using current bounds
+                img_crop = tools.grabber.crop_image(full_img)
+                from PIL import Image
+                img_2x = img_crop.resize((img_crop.width * 2, img_crop.height * 2), Image.Resampling.LANCZOS)
+                buf_crop = BytesIO()
+                img_2x.save(buf_crop, format="PNG")
+                tools.latest_screenshot_bytes = buf_crop.getvalue()
+            except Exception as e_cache:
+                print(f"[ScreenGrabber] Error caching screenshot immediately on startup: {e_cache}")
+                
             # Start background async bounds detection
             start_async_minimap_detection(full_img)
         except Exception as e:
@@ -1066,6 +1085,24 @@ def api_screenshot_refresh():
         return {"status": "error", "message": "Failed to capture/load screenshot."}
 
     try:
+        # IMMEDIATELY cache the full and cropped screenshots so the UI displays them instantly
+        try:
+            from io import BytesIO
+            # Save full
+            buf_full = BytesIO()
+            full_img.save(buf_full, format="PNG")
+            tools.latest_full_screenshot_bytes = buf_full.getvalue()
+            
+            # Save crop using current bounds
+            img_crop = tools.grabber.crop_image(full_img)
+            from PIL import Image
+            img_2x = img_crop.resize((img_crop.width * 2, img_crop.height * 2), Image.Resampling.LANCZOS)
+            buf_crop = BytesIO()
+            img_2x.save(buf_crop, format="PNG")
+            tools.latest_screenshot_bytes = buf_crop.getvalue()
+        except Exception as e_cache:
+            print(f"[ScreenGrabber] Error caching screenshot immediately on refresh: {e_cache}")
+
         # Start background async bounds detection
         start_async_minimap_detection(full_img)
         
