@@ -17,7 +17,7 @@ project/
 │   │   ├── player.py             #   SafeMusicPlayer, ScreenGrabber, LocalOCRParser, TrackMapper
 │   │   ├── fast_api_app.py       #   FastAPI server & REST endpoints
 │   │   ├── gui.html              #   Dashboard UI (HTML5/Vanilla CSS/JS)
-│   │   ├── lotro_words.txt       #   OCR dictionary (229 pre-populated locations)
+│   │   ├── lotro_words.txt       #   OCR dictionary (205 pre-populated locations)
 │   │   └── app_utils/            #   Shared utilities (telemetry, typing)
 │   ├── audio/                    # Audio library & mapping config
 │   │   ├── .cache/               #   Synthesized FLAC files
@@ -276,7 +276,7 @@ When playing ABC notation files, you can choose and hot-swap the active instrume
 Roving Bard utilizes specialized developer skills located in the `.agents/skills/` directory. These can be executed using the `./dev_tool.py` helper script at the workspace root:
 
 ### 1. Localized Vocabulary Synthesis (`lotro-words`)
-*   **Purpose**: Compiles a comprehensive location dictionary by matching, filtering, and caching localized game data. This expands the OCR/VLM parser vocabulary list (over 33,000 locations), handles accented character representations (diacritics), and optimizes fuzzy lookup tables.
+*   **Purpose**: Compiles a comprehensive location dictionary by matching, filtering, and caching localized game data. This expands the OCR/VLM parser vocabulary list to 4,638 location names, handles accented character representations (diacritics), and optimizes fuzzy lookup tables.
 *   **Usage**:
     ```bash
     ./dev_tool.py lotro-words
