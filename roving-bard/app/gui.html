@@ -3393,19 +3393,19 @@
                             <div class="theme-toggle-group" style="display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border); border-radius: 28px; padding: 2px; padding-left: 14px; padding-right: 12px; height: 54px; box-sizing: border-box; width: fit-content;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 24 32" fill="none" style="color: var(--text-muted); margin-right: 8px; flex-shrink: 0;">
                                     <defs>
-                                        <!-- Smoky obsidian/charcoal glass gradient -->
+                                        <!-- Silver/obsidian glass gradient -->
                                         <radialGradient id="palantir-body" cx="35%" cy="35%" r="65%">
-                                            <stop offset="0%" stop-color="#4b5563" />
-                                            <stop offset="40%" stop-color="#1f2937" />
-                                            <stop offset="85%" stop-color="#111827" />
-                                            <stop offset="100%" stop-color="#030712" />
+                                            <stop offset="0%" stop-color="#cbd5e1" />
+                                            <stop offset="35%" stop-color="#64748b" />
+                                            <stop offset="70%" stop-color="#1e293b" />
+                                            <stop offset="100%" stop-color="#0f172a" />
                                         </radialGradient>
-                                        <!-- Molten fiery energy core gradient -->
-                                        <radialGradient id="palantir-fire" cx="50%" cy="50%" r="50%">
+                                        <!-- Swirly blue/silver/cyan core gradient -->
+                                        <radialGradient id="palantir-core" cx="50%" cy="50%" r="50%">
                                             <stop offset="0%" stop-color="#ffffff" />
-                                            <stop offset="15%" stop-color="#ffea00" />
-                                            <stop offset="45%" stop-color="#ff5500" />
-                                            <stop offset="75%" stop-color="#e11d48" />
+                                            <stop offset="25%" stop-color="#a5f3fc" />
+                                            <stop offset="55%" stop-color="#06b6d4" />
+                                            <stop offset="85%" stop-color="#3b82f6" />
                                             <stop offset="100%" stop-color="#000000" stop-opacity="0" />
                                         </radialGradient>
                                     </defs>
@@ -3413,12 +3413,12 @@
                                     <!-- Outer sphere container with theme-coherent boundary -->
                                     <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.8" fill="url(#palantir-body)" />
                                     
-                                    <!-- Fiery internal core -->
-                                    <circle cx="12" cy="12" r="5.5" fill="url(#palantir-fire)" style="mix-blend-mode: screen; filter: drop-shadow(0 0 3px #ff3c00);" />
+                                    <!-- Blue/cyan internal core -->
+                                    <circle cx="12" cy="12" r="5.5" fill="url(#palantir-core)" style="mix-blend-mode: screen; filter: drop-shadow(0 0 3px #06b6d4);" />
                                     
                                     <!-- Swirling elvish seeing-stone energies inside -->
-                                    <path d="M 8.5,12 A 3.5 3.5 0 0 1 15.5,12 A 2.5 2.5 0 0 0 10.5,12" stroke="#ffa500" stroke-width="0.8" fill="none" opacity="0.7" />
-                                    <path d="M 7.5,12 A 4.5 3.5 0 0 0 16.5,12" stroke="#ff3c00" stroke-width="0.6" fill="none" opacity="0.5" />
+                                    <path d="M 8.5,12 A 3.5 3.5 0 0 1 15.5,12 A 2.5 2.5 0 0 0 10.5,12" stroke="#38bdf8" stroke-width="0.8" fill="none" opacity="0.7" />
+                                    <path d="M 7.5,12 A 4.5 3.5 0 0 0 16.5,12" stroke="#2563eb" stroke-width="0.6" fill="none" opacity="0.5" />
                                     
                                     <!-- Glass highlight reflection (crescent shine on top-left) -->
                                     <path d="M 6.5,7 A 7.5 7.5 0 0 1 17.5,7" stroke="#ffffff" stroke-width="1.0" stroke-linecap="round" fill="none" opacity="0.3" />
