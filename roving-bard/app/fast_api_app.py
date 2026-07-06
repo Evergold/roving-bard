@@ -317,6 +317,9 @@ app: FastAPI = get_fast_api_app(
 app.title = "roving-bard"
 app.description = "API for interacting with the Agent roving-bard"
 
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory=os.path.join(AGENT_DIR, "app", "static")), name="static")
+
 
 class ControlRequest(BaseModel):
     action: str  # play, stop, volume, scan, seek, pause, resume, set_bounds, select
