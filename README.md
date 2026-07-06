@@ -276,7 +276,7 @@ When playing ABC notation files, you can choose and hot-swap the active instrume
 Roving Bard utilizes specialized developer skills located in the `.agents/skills/` directory. These can be executed using the `./dev_tool.py` helper script at the workspace root:
 
 ### 1. Localized Vocabulary Synthesis (`lotro-words`)
-*   **Purpose**: Compiles a comprehensive location dictionary by matching, filtering, and caching localized game data. This expands the OCR/VLM parser vocabulary list to 4,638 location names, handles accented character representations (diacritics), and optimizes fuzzy lookup tables.
+*   **Purpose**: Compiles a comprehensive location dictionary by matching, filtering, and caching localized game data. This expands the OCR/VLM parser vocabulary list to 4,638 location names, handles accented character representations (diacritics) and ligatures (such as `æ`, `œ`), and optimizes fuzzy lookup tables.
 *   **Usage**:
     ```bash
     ./dev_tool.py lotro-words [locale]

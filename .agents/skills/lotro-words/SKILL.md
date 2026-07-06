@@ -16,8 +16,10 @@ This skill allows Roving Bard to generate or update the custom location vocabula
 ## How to use
 Run the extraction script from your terminal:
 ```bash
-python3 .agents/skills/lotro-words/scripts/extract_words.py
+python3 .agents/skills/lotro-words/scripts/extract_words.py [locale]
 ```
+Where `[locale]` is optional (choices: `EN`, `DE`, `FR`; defaults to `EN`). If `DE` or `FR` is chosen, the extraction dynamically aligns the translated locations line-by-line with the English vocabulary to maintain line index mapping across language files.
+
 When prompted, select the language locale found in your app locales directory or provide either your main LOTRO installation directory or the direct absolute path to the localization DAT file (e.g., `client_local_DE.dat`).
 
 ## Merged Loading

@@ -14,7 +14,16 @@
 from app.player import LocalOCRParser, TrackMapper
 
 
-def test_coordinate_parsing() -> None:
+def test_coordinate_parsing(monkeypatch) -> None:
+    import app.player
+    import os
+    default_words = []
+    tests_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    default_path = os.path.join(os.path.dirname(tests_dir), "app", "lotro_words.txt")
+    if os.path.exists(default_path):
+        with open(default_path, "r", encoding="utf-8") as f:
+            default_words = [line.strip() for line in f if line.strip()]
+    monkeypatch.setattr(app.player, "load_lotro_words", lambda: default_words)
     # Test North/West coordinate string parsing
     loc, coords, ns, ew = LocalOCRParser.parse_text("Town\n19.3N, 70.9W")
     assert loc == "Town"

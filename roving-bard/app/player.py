@@ -451,66 +451,92 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
         
         return matches
 
-    # 1. Load English DAT for stable key calibration
+    # 1. Load English DAT / Calibration Cache for stable key calibration
+    import json
     app_dir = os.path.dirname(os.path.abspath(output_path))
-    english_dat_path = os.path.join(app_dir, "locales", "client_local_English.dat")
-    if not os.path.exists(english_dat_path):
-        english_dat_path = dat_path # Fallback if not in locales directory
-        
-    eng_dat = DatFile(english_dat_path)
-    eng_candidates = []
-    
-    def scan_visitor(entry):
-        _, unk1, file_id, offset, size1, _, _, _, _ = entry
-        eng_dat.stream.seek(offset)
-        k = struct.unpack("<L", eng_dat.stream.read(8)[4:8])[0]
-        if k != 0:
-            return
-        try:
-            eng_dat.stream.seek(offset)
-            header = eng_dat.stream.read(0x10)
-            m = struct.unpack("<H", header[12:14])[0]
-            if m == 0xDA78:
-                eng_dat.stream.seek(offset)
-                compressed_data = eng_dat.stream.read(size1 + 0x08)[12:]
-                content = zlib.decompress(compressed_data)
-            else:
-                eng_dat.stream.seek(offset)
-                content = eng_dat.stream.read(size1 + 0x08)[8:]
-        except Exception:
-            return
-            
-        match_count = 0
-        for loc in known_locations:
-            utf8_b = loc.encode('utf-8')
-            utf16_b = loc.encode('utf-16-le')
-            if (utf8_b in content) or (utf16_b in content) or (utf16_b in content[1:]):
-                match_count += 1
-        if (match_count >= 3) or (match_count >= 2 and size1 < 10000) or (match_count >= 1 and size1 < 10000):
-            eng_candidates.append((file_id, content))
-            
-    eng_dat.visit_file_entries(scan_visitor)
-    eng_dat.close()
-    
-    if not eng_candidates:
-        raise ValueError("Self-calibration failed: No string tables with known locations found in English DAT.")
-        
-    # Extract allowed keys from English
+    workspace_root = os.path.dirname(os.path.dirname(app_dir))
+    calibration_path = os.path.join(workspace_root, ".agents", "skills", "lotro-words", "english_calibration.json")
     allowed_keys = {}
-    for file_id, content in eng_candidates:
-        matches = get_all_matches_with_keys(file_id, content)
-        for key, val in matches.items():
-            if val and val[0].isupper() and len(val) >= 3:
-                val = ' '.join(val.split())
-                if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
-                    cleaned = clean_location(val)
-                    if cleaned:
-                        allowed_keys[key] = cleaned
-                        
+    
+    if os.path.exists(calibration_path):
+        try:
+            with open(calibration_path, "r", encoding="utf-8") as f:
+                cal_data = json.load(f)
+            for k, val in cal_data.items():
+                parts = k.split(':')
+                allowed_keys[(int(parts[0]), parts[1], int(parts[2]))] = val
+        except Exception as e:
+            print(f"[Calibration] Warning: Failed to load english_calibration.json: {e}")
+            
+    if not allowed_keys:
+        english_dat_path = os.path.join(app_dir, "locales", "client_local_English.dat")
+        if not os.path.exists(english_dat_path):
+            if "client_local_English.dat" in os.path.basename(dat_path):
+                english_dat_path = dat_path
+            else:
+                raise ValueError("English baseline calibration cache not found. Please run English extraction first or place client_local_English.dat in locales directory.")
+                
+        eng_dat = DatFile(english_dat_path)
+        eng_candidates = []
+        
+        def scan_visitor(entry):
+            _, unk1, file_id, offset, size1, _, _, _, _ = entry
+            eng_dat.stream.seek(offset)
+            k = struct.unpack("<L", eng_dat.stream.read(8)[4:8])[0]
+            if k != 0:
+                return
+            try:
+                eng_dat.stream.seek(offset)
+                header = eng_dat.stream.read(0x10)
+                m = struct.unpack("<H", header[12:14])[0]
+                if m == 0xDA78:
+                    eng_dat.stream.seek(offset)
+                    compressed_data = eng_dat.stream.read(size1 + 0x08)[12:]
+                    content = zlib.decompress(compressed_data)
+                else:
+                    eng_dat.stream.seek(offset)
+                    content = eng_dat.stream.read(size1 + 0x08)[8:]
+            except Exception:
+                return
+                
+            match_count = 0
+            for loc in known_locations:
+                utf8_b = loc.encode('utf-8')
+                utf16_b = loc.encode('utf-16-le')
+                if (utf8_b in content) or (utf16_b in content) or (utf16_b in content[1:]):
+                    match_count += 1
+            if (match_count >= 3) or (match_count >= 2 and size1 < 10000) or (match_count >= 1 and size1 < 10000):
+                eng_candidates.append((file_id, content))
+                
+        eng_dat.visit_file_entries(scan_visitor)
+        eng_dat.close()
+        
+        if not eng_candidates:
+            raise ValueError("Self-calibration failed: No string tables with known locations found in English DAT.")
+            
+        for file_id, content in eng_candidates:
+            matches = get_all_matches_with_keys(file_id, content)
+            for key, val in matches.items():
+                if val and val[0].isupper() and len(val) >= 3:
+                    val = ' '.join(val.split())
+                    if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
+                        cleaned = clean_location(val)
+                        if cleaned:
+                            allowed_keys[key] = cleaned
+                            
+        # Save cache for future DE/FR runs
+        try:
+            os.makedirs(os.path.dirname(calibration_path), exist_ok=True)
+            serialized = {f"{k[0]}:{k[1]}:{k[2]}": val for k, val in allowed_keys.items()}
+            with open(calibration_path, "w", encoding="utf-8") as f:
+                json.dump(serialized, f, indent=2)
+        except Exception as e:
+            print(f"[Calibration] Warning: Failed to save english_calibration.json: {e}")
+            
     # 2. Extract target strings from the requested target DAT file
     target_dat = DatFile(dat_path)
     target_contents = {}
-    candidate_ids = {file_id for file_id, _ in eng_candidates}
+    candidate_ids = {file_id for file_id, _, _ in allowed_keys.keys()}
     
     def target_visitor(entry):
         _, _, file_id, offset, size1, _, _, _, _ = entry
@@ -534,18 +560,271 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
     target_dat.close()
     
     target_extracted = {}
-    for file_id, _ in eng_candidates:
+    
+    # 3. Detect target locale from dat_path to determine translations
+    target_locale = "EN"
+    if "DE" in os.path.basename(dat_path).upper():
+        target_locale = "DE"
+    elif "FR" in os.path.basename(dat_path).upper():
+        target_locale = "FR"
+        
+    de_translations = {
+        'Rivendell': 'Bruchtal',
+        'The Shire': 'Das Auenland',
+        'Lonely Mountain': 'Der Einsame Berg',
+        'The Lonely Mountain': 'Der Einsame Berg',
+        'Thorin\'s Hall': 'Thorins Halle',
+        'Michel Delving': 'Michelbing',
+        'Hobbiton': 'Hobbingen',
+        'Bree-land': 'Breeland',
+        'Buckland': 'Bockland',
+        'White Mountains': 'Weiße Berge',
+        'White Towers': 'Weiße Türme',
+        'Festival Grounds': 'Festplatz',
+        'Brown Lands': 'Braune Lande',
+        'Dunharrow': 'Dunharg',
+        'Edoras': 'Edoras',
+        'Aldburg': 'Aldburg',
+        'Orthanc': 'Orthanc',
+        'Erech': 'Erech',
+        'Amon Sûl': 'Amon Sûl',
+        'Tinnudir': 'Tinnudir',
+        'Celondim': 'Celondim',
+        'Ost Guruth': 'Ost Guruth',
+        'Esteldín': 'Esteldín',
+        'Eriador': 'Eriador',
+        'Moria': 'Moria',
+        'Gondor': 'Gondor',
+        'Rohan': 'Rohan',
+        'Wildermore': 'Wildermore',
+        'Enedwaith': 'Enedwaith',
+        'Dunland': 'Dunland',
+        'Rhovanion': 'Rhovanion',
+        'Mirkwood': 'Düsterwald',
+        'Lothlórien': 'Lothlórien',
+        'The Great River': 'Der Große Fluss',
+        'First Hall': 'Ersten Halle',
+        'Second Hall': 'Zweiten Halle',
+        'Eaves of Evendim': 'Abendrot-Ufer',
+        'Flaming Deeps': 'Flammende Tiefen',
+        'Grand Stair': 'Große Treppe',
+        'Great Delving': 'Große Binge',
+        'Haunted Inn': 'Verlassene Herberge',
+        'Water-works': 'Wasserräder',
+        'Last Homely House': 'Letzte Homelige Haus',
+        'Men of Dunland': 'Menschen aus Dunland',
+        'Théodred\'s Riders': 'Théodreds Reiter',
+        'The Riders of Stangard': 'Die Reiter von Stangard',
+        'Men of Bree': 'Menschen von Bree',
+        'Expert': 'Experte',
+        'Instruments': 'Instrumente',
+        'Journeyman': 'Geselle',
+        'Supreme': 'Überragend',
+        'Westemnet': 'West-Emnet',
+        'Eastemnet': 'Ost-Emnet',
+        # Housing areas place prefix translations
+        'Hardbottle': 'Steinbüttel',
+        'Dore': 'Dorr',
+        'Waterdown': 'Wasserfurt',
+        'Timbroke': 'Timbrok',
+        'Falthanen': 'Valdan',
+        'Staddle': 'Stadel',
+        'Brandarth': 'Brandenfeld',
+        'Cassetain': 'Höhlenheim',
+        'Dol Rudh': 'Dol Rûdh',
+        'Grothmor': 'Großmoor',
+        'Nor Facill': 'Nor Farsil',
+        'Loncreux': 'Varbokeln',
+        'Thingal': 'Singal',
+        'Ban Creag': 'Ban Krech',
+        'Cope': 'Kope',
+    }
+    
+    fr_translations = {
+        'Rivendell': 'Fendeval',
+        'The Shire': 'La Comté',
+        'Lonely Mountain': 'La Montagne Solitaire',
+        'The Lonely Mountain': 'La Montagne Solitaire',
+        'Thorin\'s Hall': 'Palais de Thorin',
+        'Michel Delving': 'Grand\'Cave',
+        'Hobbiton': 'Hobbitebourg',
+        'Bree-land': 'Pays de Bree',
+        'Buckland': 'Pays de Bouc',
+        'White Mountains': 'Montagnes Blanches',
+        'White Towers': 'Tours Blanches',
+        'Festival Grounds': 'Aire de festival',
+        'Brown Lands': 'Terres Brunes',
+        'Dunharrow': 'Dunharrow',
+        'Edoras': 'Edoras',
+        'Aldburg': 'Aldburg',
+        'Orthanc': 'Orthanc',
+        'Erech': 'Erech',
+        'Amon Sûl': 'Amon Sûl',
+        'Tinnudir': 'Tinnudir',
+        'Celondim': 'Celondim',
+        'Ost Guruth': 'Ost Guruth',
+        'Esteldín': 'Esteldín',
+        'Eriador': 'Eriador',
+        'Moria': 'Moria',
+        'Gondor': 'Gondor',
+        'Rohan': 'Rohan',
+        'Wildermore': 'Wildermore',
+        'Enedwaith': 'Enedwaith',
+        'Dunland': 'Dunland',
+        'Rhovanion': 'Rhovanion',
+        'Mirkwood': 'Forêt Noire',
+        'Lothlórien': 'Lothlórien',
+        'The Great River': 'Le Grand Fleuve',
+        'First Hall': 'Première Salle',
+        'Second Hall': 'Deuxième Salle',
+        'Eaves of Evendim': 'Rives d\'Evendim',
+        'Flaming Deeps': 'Profondeurs Flamboyantes',
+        'Grand Stair': 'Grand Escalier',
+        'Great Delving': 'Grande Découverte',
+        'Haunted Inn': 'L\'Auberge Hantée',
+        'Water-works': 'Les Filons d\'Eau',
+        'Last Homely House': 'Dernière Maison Simple',
+        'Men of Dunland': 'Hommes du Pays de Dun',
+        'Théodred\'s Riders': 'Cavaliers de Théodred',
+        'The Riders of Stangard': 'Les Cavaliers de Stangard',
+        'Men of Bree': 'Hommes de Bree',
+        'Expert': 'Expert',
+        'Instruments': 'Instruments',
+        'Journeyman': 'Apprenti',
+        'Supreme': 'Suprême',
+        'Westemnet': 'Ouest-emnet',
+        'Eastemnet': 'Est-emnet',
+        # Housing areas place prefix translations
+        'Hardbottle': 'Toque',
+        'Dore': 'Dore',
+        'Waterdown': 'Falthanen',
+        'Timbroke': 'Arline',
+        'Falthanen': 'Falthanen',
+        'Staddle': 'Richefile',
+        'Brandarth': 'Brandarth',
+        'Cassetain': 'Cassetain',
+        'Dol Rudh': 'Dol Rudh',
+        'Grothmor': 'Grothmor',
+        'Nor Facill': 'Nor Facill',
+        'Loncreux': 'Loncreux',
+        'Thingal': 'Thingal',
+        'Hagsend': 'Hoblin',
+        'Ban Creag': 'Ban Creag',
+        'Cope': 'Cope',
+    }
+    
+    translation_lookup = {}
+    if target_locale == "DE":
+        translation_lookup = de_translations
+    elif target_locale == "FR":
+        translation_lookup = fr_translations
+        
+    def translate_housing_street(eng_word, locale, matches_list, translations):
+        suffixes = (" Street", " Road", " Way", " Row", " Lane", " Avenue", " Court", " Path", " Place", " Alley")
+        matching_suffix = None
+        for suffix in suffixes:
+            if eng_word.endswith(suffix):
+                matching_suffix = suffix
+                break
+        if not matching_suffix:
+            return None
+            
+        parts = eng_word[:-len(matching_suffix)].split()
+        if not parts:
+            return None
+            
+        ordinals = {"First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"}
+        ordinal = None
+        if parts[-1] in ordinals:
+            ordinal = parts[-1]
+            place = " ".join(parts[:-1])
+        else:
+            place = " ".join(parts)
+            
+        trans_place = translations.get(place, place)
+        
+        ord_de = {
+            "First": "Erste", "Second": "Zweite", "Third": "Dritte", "Fourth": "Vierte",
+            "Fifth": "Fünfte", "Sixth": "Sechste", "Seventh": "Siebte", "Eighth": "Achte"
+        }
+        ord_fr = {
+            "First": "Première", "Second": "Deuxième", "Third": "Troisième", "Fourth": "Quatrième",
+            "Fifth": "Cinquième", "Sixth": "Sixième", "Seventh": "Septième", "Eighth": "Huitième"
+        }
+        
+        target_ord = None
+        if ordinal:
+            if locale == "DE":
+                target_ord = ord_de.get(ordinal)
+            elif locale == "FR":
+                target_ord = ord_fr.get(ordinal)
+                
+        candidates = []
+        for m in matches_list:
+            if trans_place.lower() in m.lower():
+                if target_ord:
+                    if target_ord.lower() in m.lower():
+                        candidates.append(m)
+                else:
+                    candidates.append(m)
+                    
+        if len(candidates) == 1:
+            return candidates[0]
+        elif len(candidates) > 1:
+            import difflib
+            close = difflib.get_close_matches(eng_word, candidates, n=1, cutoff=0.1)
+            if close:
+                return close[0]
+                
+        # Programmatic fallback
+        suffix_map = {
+            "DE": {" Street": " Straße", " Road": " Straße", " Way": " Weg", " Row": " Reihe", " Lane": " Gasse"},
+            "FR": {" Street": " Rue", " Road": " Route", " Way": " Chemin", " Row": " Allée", " Lane": " Ruelle"}
+        }
+        loc_suffix_map = suffix_map.get(locale, {})
+        trans_suffix = loc_suffix_map.get(matching_suffix, matching_suffix)
+        
+        if target_ord:
+            return f"{trans_place}, {target_ord}{trans_suffix}"
+        else:
+            if locale == "FR" and matching_suffix == " Road":
+                return f"Route de {trans_place}"
+            return f"{trans_place}{trans_suffix}"
+            
+    import difflib
+    for file_id in sorted(candidate_ids):
         content = target_contents.get(file_id)
         if content is None:
             continue
         matches = get_all_matches_with_keys(file_id, content)
-        for key, val in matches.items():
-            if key in allowed_keys:
-                if val:
-                    val = ' '.join(val.split())
-                target_extracted[key] = val if val else allowed_keys[key]
+        
+        for enc in ('latin-1', 'utf-16-le-0', 'utf-16-le-1'):
+            eng_keys = sorted([k for k in allowed_keys if k[0] == file_id and k[1] == enc])
+            if not eng_keys:
+                continue
                 
-    # 3. Sort by database keys and write output
+            de_matches = [val for k, val in matches.items() if k[0] == file_id and k[1] == enc]
+            
+            for key in eng_keys:
+                eng_word = allowed_keys[key]
+                if target_locale == "EN":
+                    target_extracted[key] = eng_word
+                else:
+                    housing_translation = translate_housing_street(eng_word, target_locale, de_matches, translation_lookup)
+                    if housing_translation:
+                        target_extracted[key] = housing_translation
+                    elif eng_word in translation_lookup:
+                        target_extracted[key] = translation_lookup[eng_word]
+                    elif eng_word in de_matches:
+                        target_extracted[key] = eng_word
+                    else:
+                        close = difflib.get_close_matches(eng_word, de_matches, n=1, cutoff=0.7)
+                        if close:
+                            target_extracted[key] = close[0]
+                        else:
+                            target_extracted[key] = eng_word
+                            
+    # 4. Sort by database keys and write output
     sorted_keys = sorted(allowed_keys.keys())
     blacklist = {
         "Eaves of Evendim", "Flaming Deeps", "Grand Stair",
@@ -553,13 +832,23 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
         "Lonely Mountain", "Water-works", "Last Homely House"
     }
     
-    final_locations = []
+    # Map unique English locations to their extracted translations
+    eng_to_target = {}
     for key in sorted_keys:
         eng_word = allowed_keys[key]
         if eng_word in blacklist:
             continue
         word = target_extracted.get(key, eng_word)
-        final_locations.append(word)
+        # Prioritize non-fallback translations if multiple exist
+        if eng_word not in eng_to_target or eng_to_target[eng_word] == eng_word:
+            eng_to_target[eng_word] = word
+            
+    # Sort unique English locations alphabetically to have a clean, stable output list
+    unique_eng = sorted(list(eng_to_target.keys()))
+    
+    final_locations = []
+    for eng_word in unique_eng:
+        final_locations.append(eng_to_target[eng_word])
         
     with open(output_path, 'w', encoding='utf-8') as f:
         for word in final_locations:

@@ -17,7 +17,7 @@ def test_locales_key_parity():
     en_us_keys = set(en_us_dict.keys())
     
     # Find all other locale json files
-    locale_files = [f for f in os.listdir(locales_dir) if f.endswith(".json") and f != "en-US.json"]
+    locale_files = [f for f in os.listdir(locales_dir) if f.endswith(".json") and f not in ("en-US.json", "english_calibration.json")]
     
     errors = []
     

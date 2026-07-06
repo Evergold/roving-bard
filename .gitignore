@@ -213,5 +213,5 @@ roving-bard/capture/*
 # Roving Bard untracked custom word lists
 roving-bard/app/lotro_words-*.txt
 
-# Local DAT archives
+# Local DAT archives and calibration caches
 roving-bard/app/locales/*.dat
