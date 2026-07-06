@@ -34,7 +34,7 @@ CAPTURE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 
 
 def extract_lotro_words(dat_path, default_words_path, output_path):
-    """Parses client_local_English.dat to extract locations and writes them to output_path."""
+    """Parses client_local DAT file to extract locations and writes them to output_path."""
     import struct
     import zlib
     import os
@@ -522,13 +522,13 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
 
 
 def get_active_wordlist_path():
-    """Gets the path to the active wordlist. Returns lotro_words-EN.txt if it exists, falling back to lotro_words.txt."""
+    """Gets the path to the active wordlist. Checks EN, DE, FR custom files, falling back to lotro_words.txt."""
     app_dir = os.path.dirname(os.path.abspath(__file__))
-    custom_path = os.path.join(app_dir, 'lotro_words-EN.txt')
+    for lang in ('EN', 'DE', 'FR'):
+        custom_path = os.path.join(app_dir, f'lotro_words-{lang}.txt')
+        if os.path.exists(custom_path):
+            return custom_path
     default_path = os.path.join(app_dir, 'lotro_words.txt')
-    
-    if os.path.exists(custom_path):
-        return custom_path
     return default_path
 
 
