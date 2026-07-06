@@ -2336,7 +2336,7 @@ class LocalOCRParser:
 
         # Enforce characters only belong to English/French/German alphabet
         allowed_pattern = re.compile(
-            r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]+$"
+            r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßáíóúñìòÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]+$"
         )
 
         if raw_loc and raw_loc != "None":
@@ -2602,7 +2602,7 @@ class LocalOCRParser:
         # Enforce characters only belong to English/French/German alphabet
         if location:
             allowed_pattern = re.compile(
-                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]+$"
+                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßáíóúñìòÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]+$"
             )
             if not allowed_pattern.match(location):
                 location = None
