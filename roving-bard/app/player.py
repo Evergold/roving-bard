@@ -1492,6 +1492,18 @@ def get_abc_duration(filepath: str) -> float:
 class SafeMusicPlayer:
     def __init__(self, playlist_dir="audio"):
         self.playlist_dir = playlist_dir
+        
+    @property
+    def playlist_dir(self):
+        return self._playlist_dir
+
+    @playlist_dir.setter
+    def playlist_dir(self, value):
+        if value and not os.path.isabs(value):
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            package_root = os.path.dirname(app_dir)
+            value = os.path.join(package_root, value)
+        self._playlist_dir = value
         self.current_track = None
         self.volume = 1.0
         self.simulated = False
