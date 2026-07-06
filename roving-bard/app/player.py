@@ -2616,6 +2616,7 @@ class ScreenGrabber:
             test_files = sorted([
                 f for f in os.listdir(CAPTURE_DIR)
                 if f.lower().startswith("test_") and f.lower().endswith(('.png', '.jpg', '.jpeg'))
+                and not any(suffix in f.lower() for suffix in ["_minimap", "_location", "_cursor"])
             ])
             
         if test_files:
@@ -2661,27 +2662,7 @@ class ScreenGrabber:
             
         width, height = img.size
         
-        # 1. Prioritize hardcoded coordinates for the simulation screens in Simulation Mode.
-        # This ensures the simulation mode is 100% robust and matches the test screens exactly.
-        if hasattr(self, "test_index"):
-            if self.test_index == 0:  # test_1.png
-                bounds = {
-                    "x": round(1679 / 1920, 4),
-                    "y": round(6 / 1080, 4),
-                    "width": round(246 / 1920, 4),
-                    "height": round(281 / 1080, 4)
-                }
-                print(f"[MinimapDetector] Simulation Mode: Loaded test_1.png bounds: {bounds}")
-                return bounds, True
-            elif self.test_index == 1:  # test_2.png
-                bounds = {
-                    "x": round(1227 / 1920, 4),
-                    "y": round(684 / 1080, 4),
-                    "width": round(244 / 1920, 4),
-                    "height": round(279 / 1080, 4)
-                }
-                print(f"[MinimapDetector] Simulation Mode: Loaded test_2.png bounds: {bounds}")
-                return bounds, True
+
 
         # 2. General-purpose circle detection (for live capture)
         try:
@@ -2696,7 +2677,7 @@ class ScreenGrabber:
             # Scale parameters with the vertical screen resolution
             scale_factor = height / 1080.0
             min_r = int(60 * scale_factor)
-            max_r = int(130 * scale_factor)
+            max_r = int(140 * scale_factor)
             
             blurred = cv2.GaussianBlur(gray, (9, 9), 2)
             circles = cv2.HoughCircles(
@@ -2721,15 +2702,20 @@ class ScreenGrabber:
                 
                 ocr_parser = LocalOCRParser()
                 
-                # Check HSV for gold/bronze ring color (Hue 10-30, Sat 80-255, Val 80-255)
+                # Check HSV for gold/bronze ring color:
+                # Tight mask avoids false positives from yellow/brown path/terrain details in circle center.
+                # Refined mask handles dark/compressed outer borders of the circular widget.
                 hsv = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2HSV)
-                mask_gold = cv2.inRange(hsv, np.array([10, 80, 80]), np.array([30, 255, 255]))
+                mask_gold_tight = cv2.inRange(hsv, np.array([10, 80, 80]), np.array([30, 255, 255]))
+                mask_gold_refined = cv2.inRange(hsv, np.array([10, 45, 25]), np.array([30, 255, 255]))
                 
                 for circle in circles:
                     cx, cy, r = int(circle[0]), int(circle[1]), int(circle[2])
                     
                     if not (r <= cx <= width - r and r <= cy <= height - r):
                         continue
+                        
+
                         
                     # 1. White text validation below the circle (where location and coordinates reside)
                     y_start = min(height - 1, cy + r - int(5 * scale_factor))
@@ -2742,18 +2728,22 @@ class ScreenGrabber:
                     white_ratio = white_pixels / sub_gray.size if sub_gray.size > 0 else 0
                     
                     # 2. Gold overlap validation (minimap ring border decoration)
-                    ring_mask = np.zeros_like(gray)
-                    thickness = max(2, int(6 * scale_factor))
-                    cv2.circle(ring_mask, (cx, cy), r + 2, 255, thickness=thickness)
-                    gold_ring_overlap = np.sum((ring_mask > 0) & (mask_gold > 0))
-                    ring_mask_size = np.sum(ring_mask > 0)
-                    gold_ratio = gold_ring_overlap / ring_mask_size if ring_mask_size > 0 else 0
+                    gold_ratio = 0.0
+                    for r_check in [r, int(r * 1.15), int(r * 1.3)]:
+                        ring_mask = np.zeros_like(gray)
+                        thickness = max(2, int(6 * scale_factor))
+                        cv2.circle(ring_mask, (cx, cy), r_check + 2, 255, thickness=thickness)
+                        gold_ring_overlap = np.sum((ring_mask > 0) & (mask_gold_refined > 0))
+                        ring_mask_size = np.sum(ring_mask > 0)
+                        gr = gold_ring_overlap / ring_mask_size if ring_mask_size > 0 else 0
+                        if gr > gold_ratio:
+                            gold_ratio = gr
                     
                     # 3. Gold density validation inside circle (to reject solid landscape blocks)
                     inside_mask = np.zeros_like(gray)
                     # Use r - 5 to exclude the ring itself from the inner density calculation
                     cv2.circle(inside_mask, (cx, cy), r - 5, 255, thickness=-1)
-                    gold_inside = np.sum((inside_mask > 0) & (mask_gold > 0))
+                    gold_inside = np.sum((inside_mask > 0) & (mask_gold_tight > 0))
                     inside_size = np.sum(inside_mask > 0)
                     gold_inside_ratio = gold_inside / inside_size if inside_size > 0 else 0
                     
@@ -2767,17 +2757,14 @@ class ScreenGrabber:
                         
                     # 4. OCR validation: verify if this circle has coordinates text below it
                     try:
-                        temp_x_min = max(0, cx - r - int(35 * scale_factor))
-                        temp_y_min = max(0, cy - r - int(10 * scale_factor))
-                        temp_w_box = min(width - temp_x_min, 2 * r + int(70 * scale_factor))
-                        temp_h_box = min(height - temp_y_min, 2 * r + int(105 * scale_factor))
+                        ocr_x_start = max(0, cx - r - int(35 * scale_factor))
+                        ocr_x_end = min(width, cx + r + int(35 * scale_factor))
+                        ocr_y_start = min(height - 1, cy + r - int(5 * scale_factor))
+                        ocr_y_end = min(height, cy + r + int(75 * scale_factor))
                         
-                        temp_widget_img = img.crop((temp_x_min, temp_y_min, temp_x_min + temp_w_box, temp_y_min + temp_h_box))
-                        w_w, h_w = temp_widget_img.size
-                        y_start_text = int(h_w * 0.58)
-                        text_crop_img = temp_widget_img.crop((0, y_start_text, w_w, h_w))
+                        precise_text_img = img.crop((ocr_x_start, ocr_y_start, ocr_x_end, ocr_y_end))
                         
-                        loc, coords, ns, ew = ocr_parser.run_ocr(text_crop_img, ocr_pass=2, already_cropped=True)
+                        loc, coords, ns, ew = ocr_parser.run_ocr(precise_text_img, ocr_pass=2, already_cropped=True)
                         is_verified = (loc in words) if (loc and words) else False
                         
                         if loc and coords and is_verified:
@@ -2800,8 +2787,8 @@ class ScreenGrabber:
                     if in_top_right:
                         score *= 1.3
                         
-                    # Prioritize rank first (coordinates extraction success), then CV score
-                    if (rank > best_rank) or (rank == best_rank and score > best_score):
+                    # Prioritize CV score first (gold ring ratio + top-right bias), then OCR rank
+                    if (score > best_score) or (score == best_score and rank > best_rank):
                         best_rank = rank
                         best_score = score
                         best_circle = (cx, cy, r)

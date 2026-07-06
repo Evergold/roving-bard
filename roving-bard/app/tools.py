@@ -368,11 +368,11 @@ def check_screen_and_update_music() -> dict:
     # Crop to bounds for OCR processing
     img = grabber.crop_image(full_img)
 
-    # Crop to location and coordinates (bottom 24%, middle 70% horizontally) at 1x for OCR
+    # Crop to location and coordinates (bottom 25%, full width horizontally with margin) at 1x for OCR
     w, h = img.size
-    y_start = int(h * 0.76)
-    x_min = int(w * 0.15)
-    x_max = int(w * 0.85)
+    y_start = int(h * 0.75)
+    x_min = int(w * 0.05)
+    x_max = int(w * 0.95)
     text_img_1x = img.crop((x_min, y_start, x_max, h))
 
     # Parse bearing from red cursor at the center of the minimap and crop it
@@ -383,9 +383,9 @@ def check_screen_and_update_music() -> dict:
         import cv2
         from PIL import Image
         
-        # Center of the radar circle (mw x mw square at the top)
+        # Center of the radar circle (vertical center is slightly higher in the widget)
         cx = w // 2
-        cy = w // 2
+        cy = int(h * 0.40)
         r = int(w * 0.12)
         cursor_crop = img.crop((cx - r, cy - r, cx + r, cy + r))
         

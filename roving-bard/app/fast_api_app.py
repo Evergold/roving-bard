@@ -970,6 +970,7 @@ def initialize_simulation_screen():
         test_files = sorted([
             f for f in os.listdir(capture_dir)
             if f.lower().startswith("test_") and f.lower().endswith(('.png', '.jpg', '.jpeg'))
+            and not any(suffix in f.lower() for suffix in ["_minimap", "_location", "_cursor"])
         ])
     
     if test_files:
@@ -1024,6 +1025,7 @@ def api_screenshot_refresh():
         test_files = sorted([
             f for f in os.listdir(capture_dir)
             if f.lower().startswith("test_") and f.lower().endswith(('.png', '.jpg', '.jpeg'))
+            and not any(suffix in f.lower() for suffix in ["_minimap", "_location", "_cursor"])
         ])
         
     if test_files:
