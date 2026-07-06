@@ -271,6 +271,26 @@ When playing ABC notation files, you can choose and hot-swap the active instrume
 
 ---
 
+## 🛠️ Project Developer Skills
+
+Roving Bard utilizes specialized developer skills located in the `.agents/skills/` directory. These can be executed using the `./dev_tool.py` helper script at the workspace root:
+
+### 1. Localized Vocabulary Synthesis (`lotro-words`)
+*   **Purpose**: Compiles a comprehensive location dictionary by matching, filtering, and caching localized game data. This expands the OCR/VLM parser vocabulary list (over 33,000 locations), handles accented character representations (diacritics), and optimizes fuzzy lookup tables.
+*   **Usage**:
+    ```bash
+    ./dev_tool.py lotro-words
+    ```
+
+### 2. Automated STRIDE Security Auditing (`stride-lint`)
+*   **Purpose**: Performs a security threat modeling check against the codebase, scanning for path traversal vulnerabilities, authentication bypasses, sensitive exposure in frontend code, and denial of service avenues.
+*   **Usage**:
+    ```bash
+    ./dev_tool.py stride-lint
+    ```
+
+---
+
 ## 🔒 Security & Threat Modeling
 
 A comprehensive **STRIDE Threat Modeling Assessment** is maintained at [threat_model.md](file:///home/chuubi/Desktop/vibe-coding-2026/capstone/threat_model.md) in the project root. Be sure to review boundaries and data sanitization guidelines before modifying endpoints.
