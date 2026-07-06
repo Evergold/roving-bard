@@ -2392,6 +2392,31 @@ class SafeMusicPlayer:
     def resume(self):
         if not self.current_track:
             return False
+            
+        # Check if the track was edited while paused (only for MIDI/ABC)
+        is_midi_abc = self.current_track.lower().endswith((".abc", ".mid", ".midi"))
+        if is_midi_abc:
+            track_path = os.path.join(self.playlist_dir, self.current_track)
+            if os.path.exists(track_path):
+                cache_dir = os.path.join(self.playlist_dir, ".cache")
+                if self.current_track.lower().endswith(".abc") and self.active_instrument is not None:
+                    cached_flac = os.path.join(cache_dir, f"{self.current_track}_inst_{self.active_instrument}.flac")
+                else:
+                    cached_flac = os.path.join(cache_dir, self.current_track + ".flac")
+                
+                source_mtime = os.path.getmtime(track_path)
+                cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
+                
+                if not os.path.exists(cached_flac) or source_mtime > cache_mtime or cached_flac in self._synthesizing_paths:
+                    print("[Playback] Track edited while paused, restarting from start_time with new edits.")
+                    self._stop_sounddevice_playback()
+                    self.was_stopped = False
+                    self.paused = False
+                    self.seeked_while_paused = False
+                    with self._play_lock:
+                        self._playhead = int(self.start_time * self._sample_rate)
+                        self._clear_eq_zi()
+
         print("[Playback] Resuming music.")
         self.paused = False
         self.last_play_time = time.time()
