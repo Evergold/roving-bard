@@ -1813,7 +1813,7 @@ class SafeMusicPlayer:
                 else:
                     cached_flac = os.path.join(cache_dir, self.current_track + ".flac")
                 
-                if os.path.exists(cached_flac):
+                if os.path.exists(cached_flac) and cached_flac not in self._synthesizing_paths:
                     import soundfile as sf
                     try:
                         self._sf = sf.SoundFile(cached_flac)
@@ -1877,7 +1877,7 @@ class SafeMusicPlayer:
                         source_mtime = os.path.getmtime(track_path)
                         cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
                         
-                        if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
+                        if not os.path.exists(cached_flac) or source_mtime > cache_mtime or cached_flac in self._synthesizing_paths:
                             print(f"[Synth] Background synthesizing {self.current_track} to FLAC cache...")
                             midi_path = track_path
                             if self.current_track.lower().endswith(".abc"):
@@ -2123,7 +2123,7 @@ class SafeMusicPlayer:
                 source_mtime = os.path.getmtime(track_path)
                 cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
                 
-                if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
+                if not os.path.exists(cached_flac) or source_mtime > cache_mtime or cached_flac in self._synthesizing_paths:
                     print(f"[Synth] Background synthesizing {track_file} to FLAC cache...")
                     midi_path = track_path
                     if track_file.lower().endswith(".abc"):
@@ -2284,7 +2284,7 @@ class SafeMusicPlayer:
             source_mtime = os.path.getmtime(track_path)
             cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
             
-            if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
+            if (not os.path.exists(cached_flac) or source_mtime > cache_mtime) and cached_flac not in self._synthesizing_paths:
                 print(f"[Synth] Background pre-synthesizing {track_file}...")
                 midi_path = track_path
                 if track_file.lower().endswith(".abc"):
