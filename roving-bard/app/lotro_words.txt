@@ -5,18 +5,12 @@ Aldburg
 Amon Sûl
 Anfalas
 Angmar
-Anhalt
-Annuminas
+Annúminas
 Archet
 Aughaire
-Bagpipe
-Barad Gularan
 Barad-dûr
 Barnavon
-Bassoon
-Beorn's House
-Boni
-Boss Arena
+Beorninghús
 Bree
 Bree-land
 Broadacres
@@ -32,9 +26,8 @@ Cardolan
 Carreglyn
 Celondim
 Central Gondor
-Ceryn Amroth
+Cerin Amroth
 Chetwood
-Clarabelle
 Clegur
 Cliving
 Combe
@@ -50,16 +43,14 @@ Dunland
 Durin's Way
 Durthang
 Dwaling
-East Rohan
 Eastern Gondor
-Eaves of Evendim
+Eastern Rohan
 Echad Candelleth
 Echad Dúnann
 Echad Mirobel
 Echad Sirion
 Edoras
 Elderslade
-Elrond's House
 Enedwaith
 Entwash Vale
 Erech
@@ -69,13 +60,9 @@ Eryn Lasgalen
 Esteldín
 Ethring
 Evendim
-Far Anórien
 Felegoth
-Fiddle
 First Hall
-Flaming Deeps
 Floodwend
-Flute
 Fornost
 Forochel
 Frogmorton
@@ -85,21 +72,17 @@ Garth Agarwen
 Gath Forthnír
 Gondamon
 Gondor
-Grand Stair
 Gravenwood
-Great Delving
-Great River
 Grey Mountains
+Grimbeorn's House
+Grimbeorn's Lodge
 Gundabad
 Gwingris
-Haldir's Bend
 Haldir's Camp
 Harad
 Harloeg
 Harndirion
-Harp
 Harwick
-Haunted Inn
 Helegrod
 Helm's Deep
 Hengstacer Farm
@@ -108,31 +91,24 @@ Herne
 High King's Crossing
 High Pass
 Hobbiton
-Horn
 Hornburg
 Hrimbarg
-Hultvis
+Hultvís
 Imlad Balchorth
 Iron Hills
 Isengard
 Járnfast
 Kauppa-kohta
 Kheledûl
-King's Stead
 Kings' End
 Lake-town
-Lansval
-Last Homely House
 Lhan Garan
 Lhanuch
+Lhingris
 Limlight Gorge
 Linhir
-Llingris
 Lone-lands
-Lonely Mountain
 Lothlórien
-Lute
-Mattugard
 Meluinen
 Michel Delving
 Mirkwood
@@ -143,12 +119,11 @@ Morlad
 Mossward
 Mount Doom
 Mournshaws
+Máttugard
 Nan Curunír
-Needham
 Noglond
 Norcrofts
 North Downs
-North Ithilien
 Nud-melek
 Oatbarton
 Old Anórien
@@ -162,20 +137,17 @@ Ost Rimmon
 Othrikar
 Pelargir
 Pelennor Fields
-Pibgorn
 Pinnath Gelin
 Plateau of Gorgoroth
-Pynti-poti
-Rath Duath
+Rath Dúath
 Redhorn Lodes
-Rhunen-lad
 Rivendell
 Rohan
 Ruddymore
 Rushgore
 Sarch Vorn
 Sarn Ford
-Sarnur
+Sarnûr
 Scary
 Scuttledells
 Second Hall
@@ -194,17 +166,23 @@ Talath Anor
 Talath Úrui
 Tarlang's Crown
 Taur Drúadan
-Thangorodrim
 Tharbad
 The Angle
+The Flaming Deeps
 The Forsaken Inn
+The Grand Stair
+The Great Delving
+The Great River
+The Haunted Inn
+The High Hall
+The Last Homely House
+The Lonely Mountain
 The Shire
 The Wastes
+The Water-works
 The Wold
-Theorbo
 Thorenhad
 Thorin's Hall
-Thrain's Vale
 Tinnudir
 Tornhad
 Trestlebridge
@@ -216,15 +194,12 @@ Umbar Baharbêl
 Underharrow
 Urugarth
 Vales of Anduin
-Water-works
 Waymeet
 Weathertop
 Wells of Langflood
-West Gondor
-West Rohan
+Western Gondor
+Western Rohan
 Wildermore
 Windfells
 Woodhall
-Zealendir
 Zirakzigil
-The High Hall

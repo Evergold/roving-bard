@@ -26,3 +26,13 @@ files, and code files to produce a structured `threat_model.md` assessment.
      control to reach privileged tool actions?
 3. **Output**: Generate a highly structured `threat_model.md` saved directly
    into the workspace root.
+
+## Automated Dev-Tool Linter
+You can automatically run a codebase-wide STRIDE security scan from the root directory using:
+```bash
+./dev_tool.py stride-lint
+```
+or by calling the script directly:
+```bash
+python3 .agents/skills/stride-linting/scripts/run_stride.py
+```

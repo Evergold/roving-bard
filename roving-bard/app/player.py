@@ -33,6 +33,276 @@ from tinytag import TinyTag
 CAPTURE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "capture")
 
 
+def extract_lotro_words(dat_path, default_words_path, output_path):
+    """Parses client_local_English.dat to extract locations and writes them to output_path."""
+    import struct
+    import zlib
+    import os
+    
+    class Directory:
+        def __init__(self, stream, offset, block_size):
+            self.subdir_ptrs = []
+            self.file_ptrs = []
+            stream.seek(offset)
+            stream.read(8)
+            stream.seek(offset + 8)
+            for i in range(62):
+                block, dir_offset = struct.unpack("<LL", stream.read(8))
+                if block == 0:
+                    break
+                self.subdir_ptrs.append((i, block, dir_offset))
+            stream.seek(offset + (8 * 63))
+            self.count = struct.unpack("<L", stream.read(4))[0]
+            self.subdir_ptrs = self.subdir_ptrs[:self.count + 1]
+            for i in range(self.count):
+                unk1, file_id, file_offset, size1, timestamp, version, size2, unk2 = \
+                    struct.unpack("<LLLLLLLL", stream.read(32))
+                if size1 > 0:
+                    self.file_ptrs.append((i, unk1, file_id, file_offset, size1, timestamp, version, size2, unk2))
+
+    class DatFile:
+        def __init__(self, filename):
+            self.filename = filename
+            self.stream = open(filename, "rb")
+            self.dir_cache = {}
+            buf = self.stream.read(1024)
+            self.block_size = struct.unpack("<L", buf[0x144:0x148])[0]
+            self.directory_offset = struct.unpack("<L", buf[0x160:0x164])[0]
+            
+        def directory(self, offset=None):
+            if offset is None:
+                offset = self.directory_offset
+            if offset in self.dir_cache:
+                return self.dir_cache[offset]
+            d = Directory(self.stream, offset, self.block_size)
+            self.dir_cache[offset] = d
+            return d
+            
+        def visit_file_entries(self, visitor, offset=None):
+            d = self.directory(offset)
+            if d.subdir_ptrs:
+                for i, block_size, dir_offset in d.subdir_ptrs:
+                    self.visit_file_entries(visitor, dir_offset)
+                    if i < d.count:
+                        visitor(d.file_ptrs[i])
+            else:
+                for file_entry in d.file_ptrs:
+                    visitor(file_entry)
+            
+        def close(self):
+            self.stream.close()
+
+    # Curated known locations for robust calibration without quest-log pollution
+    known_locations = {
+        # Eriador
+        "Tinnudir", "Celondim", "Michel Delving", "Thorin's Hall", "Rivendell", "Hobbiton", "Ost Guruth", "Amon Sûl", "Esteldín", "High Pass", "Imlad Balchorth", "Ost Alagos", "The High Hall", "Windfells", "Harloeg", "Barad Gúlaran", "Rhunenlad", "Vale of Thrain",
+        # Rohan / Moria / Rhovanion
+        "Twenty-first Hall", "Edoras", "Aldburg", "Hultvis", "Dale", "Kings' End", "The Lonely Mountain", "Orthanc", "Dunharrow", "Cliving", "Dushtalbuk Boss Arena", "Hrimil Boss Arena",
+        # Gondor / Mordor / Umbar
+        "Dol Amroth", "Minas Tirith", "Galtrev", "Umbar Baharbêl", "Cair Andros", "Dol Dinen", "Durthang", "Erech", "Mount Doom", "Plateau of Gorgoroth", "Talath Úrui",
+        # Beorning-lands
+        "Grimbeorn's Lodge", "Grimbeorn's House", "Beorninghús",
+        # Dunland / Enedwaith
+        "Lhanuch", "Barnavon", "Clegur", "Ruddymore",
+        # Target area anchors to enable regional database extraction
+        "Agamaur", "Chetwood", "Eastern Rohan", "The Last Homely House"
+    }
+
+    def clean_location(val):
+        if any(term in val.lower() for term in ("swift", "travel", "instances", "homesteads")):
+            return None
+        if re.search(r'[a-z][A-Z]', val):
+            return None
+        words = val.split()
+        if len(words) > 4:  # Confirmed max 4 words from default lotro_words.txt (e.g. The Last Homely House)
+            return None
+            
+        allowed_shorts = {"of", "in", "on", "the", "at", "by", "de", "la", "le", "and", "to"}
+        if val.lower() in allowed_shorts:
+            return None
+            
+        first_lower = words[0].lower()
+        if first_lower in ("defeat", "collect", "find", "talk", "bring", "complete", "enjoy", "slay", "use", "kill", "go", "deliver", "speak", "gather", "visit", "scout", "investigate", "discover", "help", "search", "rescue", "defend", "protect", "save", "active", "advance", "adventure", "alas", "afternoon", "also", "anniversary", "allegiance", "explore", "guide", "muster", "return", "map", "port", "ride", "sail", "boat", "travel"):
+            return None
+        if words[0].endswith("ed") and words[0] not in ("Bed", "Red", "Ered"):
+            return None
+        if words[0].endswith("ing") and words[0] not in ("Delving", "Crossing", "Spring", "Ring", "Passing", "Dwelling", "Cliving", "Ethring", "Dwaling"):
+            return None
+            
+        non_location_terms = {
+            # Armor / Items / Gear
+            "armour", "armor", "axe", "boots", "bow", "bracelet", "cloak", "club", "crossbow", "dagger",
+            "earring", "gauntlets", "gloves", "hammer", "hat", "helm", "helmet", "leggings", "mace",
+            "necklace", "pauldrons", "ring", "robe", "shoes", "shoulderpads", "sword", "trousers",
+            "weapons", "cuirass", "shoulders", "shoulder-guards", "carvings", "pennant", "banner",
+            "heraldry", "shield", "bag", "pouch", "waggon", "wagon", "key", "keys", "letter",
+            # Skills / Buffs / Stats
+            "bubble", "spirit", "wrath", "strength", "benevolence", "buff", "debuff", "morale", "power",
+            # NPC / Animals / Creatures
+            "dog", "bee", "bees", "chicken", "chickens", "horse", "pony", "boar", "wolf", "bear",
+            "ally", "friend", "kin", "survivor", "reeve", "champion", "defender", "dominator", "master",
+            "overlord", "protector", "saviour", "sentinel", "vigilante", "warlord", "warrior", "guardian",
+            "guest", "lord", "enemies", "family", "folk", "people", "buck", "doe", "hart", "hind", "stag",
+            # Quest / System / General Non-Locations
+            "recipes", "recipe", "fishing", "task", "tasks", "challenge", "decision", "interruption",
+            "experience", "reputation", "quests", "quest", "allies", "friends", "enemy"
+        }
+            
+        for w in words:
+            w_clean = re.sub(r'[^a-zA-ZáéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]', '', w)
+            if len(w_clean) < 3 and w.lower() not in allowed_shorts:
+                return None
+            if w_clean.isupper():
+                return None
+                
+            w_orig_norm = w.lower()
+            if w_orig_norm.endswith(("\x27s", "\u2019s")):
+                w_norm = w_clean.lower()[:-1]  # Remove trailing s kept by re.sub
+            else:
+                w_norm = w_clean.lower()
+                
+            if w_norm in non_location_terms:
+                if w_norm == "helm" and "deep" in val.lower():
+                    pass
+                elif w_norm == "shield" and "isles" in val.lower():
+                    pass
+                elif w_norm == "boss" and "arena" in val.lower():
+                    pass
+                else:
+                    return None
+                
+            # Significant words must be capitalized
+            if w.lower() not in allowed_shorts:
+                w_strip = w.lstrip("'’\"(-")
+                if w_strip and not w_strip[0].isupper():
+                    return None
+                    
+        if " is " in val or " are " in val or " was " in val or " were " in val or " has " in val or " have " in val:
+            return None
+        return val
+
+    def extract_strings(data):
+        found = set()
+        pattern = re.compile(r"[a-zA-Z'’\-áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ\s]{3,50}")
+        
+        # 1. UTF-8 / Latin-1
+        try:
+            text_utf8 = data.decode('latin-1')
+            for val in pattern.findall(text_utf8):
+                val = val.strip()
+                if val and val[0].isupper() and len(val) >= 3:
+                    val = ' '.join(val.split())
+                    if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
+                        cleaned = clean_location(val)
+                        if cleaned:
+                            found.add(cleaned)
+        except:
+            pass
+            
+        # 2. UTF-16-LE
+        try:
+            for shift in (0, 1):
+                text_utf16 = data[shift:].decode('utf-16-le', errors='ignore')
+                for val in pattern.findall(text_utf16):
+                    val = val.strip()
+                    if val and val[0].isupper() and len(val) >= 3:
+                        val = ' '.join(val.split())
+                        if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
+                            cleaned = clean_location(val)
+                            if cleaned:
+                                found.add(cleaned)
+        except:
+            pass
+            
+        return found
+
+    dat = DatFile(dat_path)
+    candidate_files = []
+    
+    def scan_visitor(entry):
+        _, unk1, file_id, offset, size1, _, _, _, _ = entry
+        dat.stream.seek(offset)
+        k = struct.unpack("<L", dat.stream.read(8)[4:8])[0]
+        if k != 0:
+            return
+        try:
+            dat.stream.seek(offset)
+            header = dat.stream.read(0x10)
+            m = struct.unpack("<H", header[12:14])[0]
+            if m == 0xDA78:
+                dat.stream.seek(offset)
+                compressed_data = dat.stream.read(size1 + 0x08)[12:]
+                content = zlib.decompress(compressed_data)
+            else:
+                dat.stream.seek(offset)
+                content = dat.stream.read(size1 + 0x08)[8:]
+        except Exception:
+            return
+            
+        match_count = 0
+        for loc in known_locations:
+            utf8_b = loc.encode('utf-8')
+            utf16_b = loc.encode('utf-16-le')
+            if (utf8_b in content) or (utf16_b in content) or (utf16_b in content[1:]):
+                match_count += 1
+        if (match_count >= 3) or (match_count >= 2 and size1 < 10000) or (match_count >= 1 and size1 < 10000):
+            candidate_files.append((file_id, match_count, content))
+            
+    dat.visit_file_entries(scan_visitor)
+    dat.close()
+    
+    if not candidate_files:
+        raise ValueError("Self-calibration failed: No string tables with known locations found.")
+        
+    raw_extracted = set()
+    for _, _, content in candidate_files:
+        words = extract_strings(content)
+        raw_extracted.update(words)
+        
+    default_words = set()
+    if os.path.exists(default_words_path):
+        with open(default_words_path, 'r', encoding='utf-8') as f:
+            default_words.update(line.strip() for line in f if line.strip())
+            
+    all_extracted = raw_extracted.copy()
+    all_extracted.update(default_words)
+    all_extracted.difference_update({
+        "Eaves of Evendim", "Flaming Deeps", "Grand Stair",
+        "Great Delving", "Great River", "Haunted Inn",
+        "Lonely Mountain", "Water-works", "Last Homely House"
+    })
+            
+    with open(output_path, 'w', encoding='utf-8') as f:
+        for word in sorted(all_extracted):
+            f.write(word + "\n")
+            
+    return raw_extracted
+
+
+def get_active_wordlist_path():
+    """Gets the path to the active wordlist. Returns lotro_words-EN.txt if it exists, falling back to lotro_words.txt."""
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    custom_path = os.path.join(app_dir, 'lotro_words-EN.txt')
+    default_path = os.path.join(app_dir, 'lotro_words.txt')
+    
+    if os.path.exists(custom_path):
+        return custom_path
+    return default_path
+
+
+def load_lotro_words():
+    """Loads all active LOTRO words from the active wordlist path."""
+    path = get_active_wordlist_path()
+    words = []
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                words = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            print(f"[Wordlist] Error reading active wordlist: {e}")
+    return words
+
+
 
 
 def abc_to_midi_bytes(abc_text: str, start_pos: float = 0.0, instrument: int | None = None) -> bytes:
@@ -1780,15 +2050,7 @@ class ScreenGrabber:
                 best_score = -1
                 
                 # Load words dictionary to prioritize valid locations
-                app_dir = os.path.dirname(os.path.abspath(__file__))
-                wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
-                words = []
-                if os.path.exists(wordlist_path):
-                    try:
-                        with open(wordlist_path, 'r', encoding='utf-8') as f:
-                            words = [line.strip() for line in f if line.strip()]
-                    except:
-                        pass
+                words = load_lotro_words()
                 
                 ocr_parser = LocalOCRParser()
                 
@@ -2010,20 +2272,13 @@ class LocalOCRParser:
                 
         # Determine the maximum allowed location length
         max_location_len = 50
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
-        if os.path.exists(wordlist_path):
-            try:
-                with open(wordlist_path, 'r', encoding='utf-8') as f:
-                    w_lines = [l.strip() for l in f if l.strip()]
-                    if w_lines:
-                        max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
-            except:
-                pass
+        w_lines = load_lotro_words()
+        if w_lines:
+            max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
 
         # Enforce characters only belong to English/French/German alphabet
         allowed_pattern = re.compile(
-            r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
+            r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]+$"
         )
 
         if raw_loc and raw_loc != "None":
@@ -2191,15 +2446,7 @@ class LocalOCRParser:
         first_candidate = None
         
         # Load words dictionary to prioritize valid locations
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
-        words = []
-        if os.path.exists(wordlist_path):
-            try:
-                with open(wordlist_path, 'r', encoding='utf-8') as f:
-                    words = [line.strip() for line in f if line.strip()]
-            except:
-                pass
+        words = load_lotro_words()
                 
         for line in lines:
             match = coord_pattern.search(line)
@@ -2209,7 +2456,7 @@ class LocalOCRParser:
                 line = line[:coord_start] + " " + line[coord_end:]
 
             # Remove symbols/noise, check if it looks like a location name
-            cleaned = re.sub(r"[^a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]", "", line).strip()
+            cleaned = re.sub(r"[^a-zA-Z\s'’\-.,àáâäçèéêëìíîïòóôöùúûüÿœæÀÁÂÄÇÈÉÊËÌÍÎÏÒÓÔÖÙÚÛÜŸŒÆß]", "", line).strip()
             
             # Clean leading 'xt' or 'xtr' visual noise from VLM border misreads
             cleaned_lower = cleaned.lower()
@@ -2237,8 +2484,10 @@ class LocalOCRParser:
                     # 2. Try matching individual words if full-line match is weak
                     if best_loc_score < 0.85:
                         for word in cleaned.split():
-                            w_cleaned = word
                             w_lower = word.lower()
+                            if w_lower in {"the", "of", "in", "on", "at", "by", "de", "la", "le", "and", "to"}:
+                                continue
+                            w_cleaned = word
                             if w_lower.startswith("xtr") and len(word) > 5:
                                 w_cleaned = word[3:]
                             elif w_lower.startswith("xt") and len(word) > 4:
@@ -2295,7 +2544,7 @@ class LocalOCRParser:
         # Enforce characters only belong to English/French/German alphabet
         if location:
             allowed_pattern = re.compile(
-                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"
+                r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]+$"
             )
             if not allowed_pattern.match(location):
                 location = None
@@ -2314,8 +2563,7 @@ class LocalOCRParser:
         try:
             processed = self.preprocess_image(text_img, ocr_pass)
             
-            app_dir = os.path.dirname(os.path.abspath(__file__))
-            wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
+            wordlist_path = get_active_wordlist_path()
             if not os.path.exists(wordlist_path):
                 lotro_words = ["Tinnudir", "Kings' End", "Echad Dúnann", "Bree-land", "The Shire", "Thorin's Hall", "Rivendell"]
                 try:
@@ -2363,15 +2611,7 @@ class LocalOCRParser:
                 text_img = pil_img.crop((0, text_y_start, width, height))
             
             # Load wordlist once to verify if extracted location names are valid LOTRO locations
-            app_dir = os.path.dirname(os.path.abspath(__file__))
-            wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
-            words = []
-            if os.path.exists(wordlist_path):
-                try:
-                    with open(wordlist_path, 'r', encoding='utf-8') as f:
-                        words = [line.strip() for line in f if line.strip()]
-                except Exception as e:
-                    print(f"Error reading wordlist: {e}")
+            words = load_lotro_words()
             
             # 2. Run passes in ranked priority (Best: verified location and coordinates; Worst: neither)
             best_outcome = (None, None, None, None)

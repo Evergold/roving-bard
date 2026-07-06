@@ -268,6 +268,14 @@ async def app_lifespan(app_instance: FastAPI):
     except Exception as e:
         print(f"[Player] Failed to initialize audio backend: {e}")
         
+    try:
+        from app.player import get_active_wordlist_path
+        path = get_active_wordlist_path()
+        if os.path.exists(path):
+            print(f"[Wordlist] Active location wordlist: {os.path.basename(path)}")
+    except Exception as e:
+        print(f"[Wordlist] Error checking active wordlist: {e}")
+        
     # Lower process priority to BELOW_NORMAL (Windows) or nice 10 (Unix)
     try:
         import psutil
@@ -1050,7 +1058,8 @@ def api_screenshot_refresh():
             "status": "success",
             "message": "Screenshot reloaded successfully.",
             "detected": detected,
-            "bounds": bounds
+            "bounds": bounds,
+            "simulation": len(test_files) > 0
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -3010,16 +3019,10 @@ def api_ocr_try_vlm(req: VlmTryRequest):
                 
                 # Enforce maximum location length and English/French/German alphabet on fallbacks
                 max_location_len = 50
-                app_dir = os.path.dirname(os.path.abspath(__file__))
-                wordlist_path = os.path.join(app_dir, 'lotro_words.txt')
-                if os.path.exists(wordlist_path):
-                    try:
-                        with open(wordlist_path, 'r', encoding='utf-8') as f:
-                            w_lines = [l.strip() for l in f if l.strip()]
-                            if w_lines:
-                                max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
-                    except:
-                        pass
+                from app.player import load_lotro_words
+                w_lines = load_lotro_words()
+                if w_lines:
+                    max_location_len = max(max_location_len, max(len(wl) for wl in w_lines))
     
                 allowed_pattern = re.compile(
                     r"^[a-zA-Z\s'’\-.,éèàùçâêîôûëïüÿœæäöüßÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆäöüßÄÖÜ]+$"

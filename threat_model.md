@@ -90,3 +90,21 @@ graph TD
    - When running uvicorn in development, use `--reload-exclude` to ignore the `audio/`, `audio/.cache/`, and `capture/` folders to prevent directory changes from causing crash/restart loops.
 3. **Chunked Upload Constraints**:
    - Enforce a maximum file size check (e.g. 50 MB) inside `/api/upload-audio` to reject massive payloads before they exhaust system memory or disk storage.
+
+---
+
+## 5. Automated Security Linting (Developer tool)
+
+To facilitate ongoing security audits during development, an automated STRIDE linter is provided at the workspace root:
+
+```bash
+./dev_tool.py stride-lint
+```
+
+This linter checks for common implementation risks:
+*   **Spoofing**: Validates FastAPI header API key dependencies.
+*   **Tampering**: Verifies path-traversal mitigations (`os.path.basename` usage).
+*   **Repudiation**: Inspects logging presence on state-modifying endpoints.
+*   **Information Disclosure**: Scans frontend source files (`gui.html`) for exposed keys.
+*   **Denial of Service**: Audits upload payload size checks.
+*   **Elevation of Privilege**: Warns about loopback bypass configurations.

@@ -209,3 +209,9 @@ roving-bard/audio/*
 
 roving-bard/capture/*
 !roving-bard/capture/.gitkeep
+
+# Roving Bard untracked custom word lists
+roving-bard/app/lotro_words-*.txt
+
+# Local DAT archives
+roving-bard/app/locales/*.dat
