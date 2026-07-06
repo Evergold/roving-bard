@@ -7,9 +7,9 @@ def print_help():
     print("Roving Bard Developer Tool")
     print("Usage: ./dev_tool.py [command]")
     print("\nAvailable commands:")
-    print("  lotro-words      Run the LOTRO location wordlist extractor skill")
-    print("  stride-lint      Run the STRIDE security threat linter skill")
-    print("  test             Run all backend unit tests")
+    print("  lotro-words [locale] Run the LOTRO location wordlist extractor skill (choices: EN, DE, FR; default: EN)")
+    print("  stride-lint          Run the STRIDE security threat linter skill")
+    print("  test                 Run all backend unit tests")
 
 def main():
     if len(sys.argv) < 2:
@@ -23,10 +23,10 @@ def main():
     
     if cmd == "lotro-words":
         script_path = os.path.join(script_dir, ".agents", "skills", "lotro-words", "scripts", "extract_words.py")
-        subprocess.run(["uv", "run", "--no-sync", "python", script_path], cwd=app_cwd)
+        subprocess.run(["uv", "run", "--no-sync", "python", script_path] + sys.argv[2:], cwd=app_cwd)
     elif cmd == "stride-lint":
         script_path = os.path.join(script_dir, ".agents", "skills", "stride-linting", "scripts", "run_stride.py")
-        subprocess.run(["uv", "run", "--no-sync", "python", script_path], cwd=app_cwd)
+        subprocess.run(["uv", "run", "--no-sync", "python", script_path] + sys.argv[2:], cwd=app_cwd)
     elif cmd == "test":
         subprocess.run(["uv", "run", "--no-sync", "pytest", "tests/unit/"], cwd=app_cwd)
     else:

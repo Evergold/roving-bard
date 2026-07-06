@@ -423,61 +423,60 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             return None
         return val
 
-    def extract_strings(data):
-        found = set()
+    # Helper to get all matches for a content block
+    def get_all_matches_with_keys(file_id, content):
         pattern = re.compile(r"[a-zA-Z'’\-áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ\s]{3,50}")
+        matches = {}
         
-        # 1. UTF-8 / Latin-1
+        # 1. Latin-1
         try:
-            text_utf8 = data.decode('latin-1')
-            for val in pattern.findall(text_utf8):
-                val = val.strip()
-                if val and val[0].isupper() and len(val) >= 3:
-                    val = ' '.join(val.split())
-                    if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
-                        cleaned = clean_location(val)
-                        if cleaned:
-                            found.add(cleaned)
-        except:
-            pass
-            
-        # 2. UTF-16-LE
+            text = content.decode('latin-1')
+            for idx, m in enumerate(pattern.finditer(text)):
+                matches[(file_id, 'latin-1', idx)] = m.group().strip()
+        except: pass
+        
+        # 2. UTF-16-LE shift 0
         try:
-            for shift in (0, 1):
-                text_utf16 = data[shift:].decode('utf-16-le', errors='ignore')
-                for val in pattern.findall(text_utf16):
-                    val = val.strip()
-                    if val and val[0].isupper() and len(val) >= 3:
-                        val = ' '.join(val.split())
-                        if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
-                            cleaned = clean_location(val)
-                            if cleaned:
-                                found.add(cleaned)
-        except:
-            pass
-            
-        return found
+            text = content.decode('utf-16-le', errors='ignore')
+            for idx, m in enumerate(pattern.finditer(text)):
+                matches[(file_id, 'utf-16-le-0', idx)] = m.group().strip()
+        except: pass
+        
+        # 3. UTF-16-LE shift 1
+        try:
+            text = content[1:].decode('utf-16-le', errors='ignore')
+            for idx, m in enumerate(pattern.finditer(text)):
+                matches[(file_id, 'utf-16-le-1', idx)] = m.group().strip()
+        except: pass
+        
+        return matches
 
-    dat = DatFile(dat_path)
-    candidate_files = []
+    # 1. Load English DAT for stable key calibration
+    app_dir = os.path.dirname(os.path.abspath(output_path))
+    english_dat_path = os.path.join(app_dir, "locales", "client_local_English.dat")
+    if not os.path.exists(english_dat_path):
+        english_dat_path = dat_path # Fallback if not in locales directory
+        
+    eng_dat = DatFile(english_dat_path)
+    eng_candidates = []
     
     def scan_visitor(entry):
         _, unk1, file_id, offset, size1, _, _, _, _ = entry
-        dat.stream.seek(offset)
-        k = struct.unpack("<L", dat.stream.read(8)[4:8])[0]
+        eng_dat.stream.seek(offset)
+        k = struct.unpack("<L", eng_dat.stream.read(8)[4:8])[0]
         if k != 0:
             return
         try:
-            dat.stream.seek(offset)
-            header = dat.stream.read(0x10)
+            eng_dat.stream.seek(offset)
+            header = eng_dat.stream.read(0x10)
             m = struct.unpack("<H", header[12:14])[0]
             if m == 0xDA78:
-                dat.stream.seek(offset)
-                compressed_data = dat.stream.read(size1 + 0x08)[12:]
+                eng_dat.stream.seek(offset)
+                compressed_data = eng_dat.stream.read(size1 + 0x08)[12:]
                 content = zlib.decompress(compressed_data)
             else:
-                dat.stream.seek(offset)
-                content = dat.stream.read(size1 + 0x08)[8:]
+                eng_dat.stream.seek(offset)
+                content = eng_dat.stream.read(size1 + 0x08)[8:]
         except Exception:
             return
             
@@ -488,37 +487,85 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             if (utf8_b in content) or (utf16_b in content) or (utf16_b in content[1:]):
                 match_count += 1
         if (match_count >= 3) or (match_count >= 2 and size1 < 10000) or (match_count >= 1 and size1 < 10000):
-            candidate_files.append((file_id, match_count, content))
+            eng_candidates.append((file_id, content))
             
-    dat.visit_file_entries(scan_visitor)
-    dat.close()
+    eng_dat.visit_file_entries(scan_visitor)
+    eng_dat.close()
     
-    if not candidate_files:
-        raise ValueError("Self-calibration failed: No string tables with known locations found.")
+    if not eng_candidates:
+        raise ValueError("Self-calibration failed: No string tables with known locations found in English DAT.")
         
-    raw_extracted = set()
-    for _, _, content in candidate_files:
-        words = extract_strings(content)
-        raw_extracted.update(words)
-        
-    default_words = set()
-    if os.path.exists(default_words_path):
-        with open(default_words_path, 'r', encoding='utf-8') as f:
-            default_words.update(line.strip() for line in f if line.strip())
-            
-    all_extracted = raw_extracted.copy()
-    all_extracted.update(default_words)
-    all_extracted.difference_update({
+    # Extract allowed keys from English
+    allowed_keys = {}
+    for file_id, content in eng_candidates:
+        matches = get_all_matches_with_keys(file_id, content)
+        for key, val in matches.items():
+            if val and val[0].isupper() and len(val) >= 3:
+                val = ' '.join(val.split())
+                if all(c.isalnum() or c in " '’-" or c in "áéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ" for c in val):
+                    cleaned = clean_location(val)
+                    if cleaned:
+                        allowed_keys[key] = cleaned
+                        
+    # 2. Extract target strings from the requested target DAT file
+    target_dat = DatFile(dat_path)
+    target_contents = {}
+    candidate_ids = {file_id for file_id, _ in eng_candidates}
+    
+    def target_visitor(entry):
+        _, _, file_id, offset, size1, _, _, _, _ = entry
+        if file_id in candidate_ids:
+            try:
+                target_dat.stream.seek(offset)
+                header = target_dat.stream.read(0x10)
+                m = struct.unpack("<H", header[12:14])[0]
+                if m == 0xDA78:
+                    target_dat.stream.seek(offset)
+                    compressed_data = target_dat.stream.read(size1 + 0x08)[12:]
+                    content = zlib.decompress(compressed_data)
+                else:
+                    target_dat.stream.seek(offset)
+                    content = target_dat.stream.read(size1 + 0x08)[8:]
+                target_contents[file_id] = content
+            except Exception:
+                pass
+                
+    target_dat.visit_file_entries(target_visitor)
+    target_dat.close()
+    
+    target_extracted = {}
+    for file_id, _ in eng_candidates:
+        content = target_contents.get(file_id)
+        if content is None:
+            continue
+        matches = get_all_matches_with_keys(file_id, content)
+        for key, val in matches.items():
+            if key in allowed_keys:
+                if val:
+                    val = ' '.join(val.split())
+                target_extracted[key] = val if val else allowed_keys[key]
+                
+    # 3. Sort by database keys and write output
+    sorted_keys = sorted(allowed_keys.keys())
+    blacklist = {
         "Eaves of Evendim", "Flaming Deeps", "Grand Stair",
         "Great Delving", "Great River", "Haunted Inn",
         "Lonely Mountain", "Water-works", "Last Homely House"
-    })
-            
+    }
+    
+    final_locations = []
+    for key in sorted_keys:
+        eng_word = allowed_keys[key]
+        if eng_word in blacklist:
+            continue
+        word = target_extracted.get(key, eng_word)
+        final_locations.append(word)
+        
     with open(output_path, 'w', encoding='utf-8') as f:
-        for word in sorted(all_extracted):
+        for word in final_locations:
             f.write(word + "\n")
             
-    return raw_extracted
+    return set(final_locations)
 
 
 def get_active_wordlist_path():

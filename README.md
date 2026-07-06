@@ -279,8 +279,9 @@ Roving Bard utilizes specialized developer skills located in the `.agents/skills
 *   **Purpose**: Compiles a comprehensive location dictionary by matching, filtering, and caching localized game data. This expands the OCR/VLM parser vocabulary list to 4,638 location names, handles accented character representations (diacritics), and optimizes fuzzy lookup tables.
 *   **Usage**:
     ```bash
-    ./dev_tool.py lotro-words
+    ./dev_tool.py lotro-words [locale]
     ```
+    Where `[locale]` is optional (choices: `EN`, `DE`, `FR`; defaults to `EN`). If `DE` or `FR` is chosen, the extraction dynamically aligns the translated locations line-by-line with the English vocabulary to maintain line index mapping across language files.
 
 ### 2. Automated STRIDE Security Auditing (`stride-lint`)
 *   **Purpose**: Performs a security threat modeling check against the codebase, scanning for path traversal vulnerabilities, authentication bypasses, sensitive exposure in frontend code, and denial of service avenues.
