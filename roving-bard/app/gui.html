@@ -4409,6 +4409,7 @@
         let isDraggingSeek = false;
         let isEditingBoundsInput = false;
         let wasDetectingMinimap = false;
+        let detectionPollInterval = null;
         let showRemainingTime = localStorage.getItem('showRemainingTime') === 'true';
         let seekTimerId = null;
         let isTransitioningTrack = false;
@@ -4668,6 +4669,22 @@
                     }
                 }
                 wasDetectingMinimap = isDetecting;
+                
+                // Start or stop fast polling for background detection completion
+                if (isDetecting) {
+                    if (detectionPollInterval === null) {
+                        console.log("[Detector] Minimap detection active on server. Starting fast polling interval...");
+                        detectionPollInterval = setInterval(async () => {
+                            await loadDashboard();
+                        }, 250);
+                    }
+                } else {
+                    if (detectionPollInterval !== null) {
+                        console.log("[Detector] Minimap detection completed. Stopping fast polling interval.");
+                        clearInterval(detectionPollInterval);
+                        detectionPollInterval = null;
+                    }
+                }
                 
                 if (isFirstDashboardLoad && !isDetecting) {
                     if (status.minimap_detected) {
