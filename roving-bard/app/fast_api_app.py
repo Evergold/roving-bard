@@ -1058,11 +1058,13 @@ def start_async_minimap_detection(full_img):
             # Update tools.config in memory
             tools.config["minimap_bounds"] = tools.grabber.bounds
             
-            # Clear the detecting flag BEFORE calling check_screen_and_update_music so it can run OCR
-            tools.minimap_detecting = False
+            # Run the scan pipeline to cache images (and run OCR only if auto-detection was successful)
+            # We pass ignore_detecting=True to bypass the guard since we are running within the detection thread.
+            should_skip_ocr = not getattr(tools, "minimap_detected", False)
+            tools.check_screen_and_update_music(ignore_detecting=True, skip_ocr=should_skip_ocr)
             
-            # Run the scan pipeline to cache images, run OCR, and update status
-            tools.check_screen_and_update_music()
+            # Clear the detecting flag AFTER the scan/OCR pipeline completes to ensure the frontend's status polls catch the final results
+            tools.minimap_detecting = False
             print(f"[MinimapDetector] Background bounds detection completed (Gen {current_gen}). Detected={tools.minimap_detected}, Bounds={tools.grabber.bounds}")
         except Exception as e:
             print(f"[MinimapDetector] Background detection error (Gen {current_gen}): {e}")

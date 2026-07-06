@@ -367,7 +367,7 @@ def get_actual_usage():
 # Agent Tools
 
 
-def check_screen_and_update_music() -> dict:
+def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool = False) -> dict:
     """Captures the foreground game screen, parses the location and coordinates,
     matches them against config.yaml, and plays the appropriate music track.
 
@@ -377,7 +377,7 @@ def check_screen_and_update_music() -> dict:
     global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_cursor_bytes, latest_character_bytes, latest_cursor_processed_bytes, latest_location_processed_bytes, latest_location_raw_bytes, latest_character_processed_bytes, latest_parse_result, current_ocr_pass
     
     import app.tools as tools_mod
-    if getattr(tools_mod, "minimap_detecting", False):
+    if not ignore_detecting and getattr(tools_mod, "minimap_detecting", False):
         print("[ScanPipeline] Skipping scan: bounds detection is in progress.")
         return {"status": "skipped", "message": "Minimap bounds detection in progress."}
         
@@ -540,6 +540,37 @@ def check_screen_and_update_music() -> dict:
         print(f"Error caching screenshot: {e}")
 
     # Step 1: Attempt local OCR on the 1x text-only image
+    if skip_ocr:
+        import datetime
+        act_ram, act_vram = get_actual_usage()
+        latest_parse_result = {
+            "parsed_location": "",
+            "parsed_coordinates": "",
+            "raw_location": None,
+            "raw_coordinates": None,
+            "parsed_bearing": bearing_str,
+            "matched_track": "None",
+            "action": "stopped",
+            "method": "None",
+            "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
+            "loc_time_ms": 0.0,
+            "coords_time_ms": 0.0,
+            "preprocess_time_ms": round(preprocess_time_ms, 1),
+            "total_time_ms": 0.0,
+            "actual_ram": act_ram,
+            "actual_vram": act_vram,
+            "current_ocr_pass": current_ocr_pass
+        }
+        return {
+            "status": "success",
+            "method": "None",
+            "parsed_location": "",
+            "parsed_coordinates": "",
+            "parsed_bearing": bearing_str,
+            "matched_track": "None",
+            "action": "stopped",
+        }
+
     t_start = time.time()
     location, coordinates, ns, ew = ocr_parser.run_ocr(text_img_1x, current_ocr_pass, already_cropped=True)
     t_end = time.time()
