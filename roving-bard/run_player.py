@@ -66,7 +66,7 @@ def main():
     print("         GAME-AWARE MUSIC PLAYER AGENT RUNNER")
     print("=" * 60)
 
-    # Import tools (this will parse mapping.yaml)
+    # Import tools (this will parse config.yaml)
     from app.tools import check_screen_and_update_music, config, stop_music, player
     player.initialize_backend(verbose=True)
 

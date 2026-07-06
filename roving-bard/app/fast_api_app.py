@@ -727,7 +727,7 @@ def api_control(req: ControlRequest):
 
 @app.post("/api/config", dependencies=[Depends(verify_api_key)])
 def api_config(req: ConfigUpdateRequest):
-    """Updates mapping.yaml on disk and hot-reloads config in memory."""
+    """Updates config.yaml on disk and hot-reloads config in memory."""
     try:
         new_config = req.model_dump()
         with open(tools.CONFIG_PATH, "w") as f:
@@ -757,7 +757,7 @@ class BoundsUpdateRequest(BaseModel):
 
 @app.post("/api/config/bounds", dependencies=[Depends(verify_api_key)])
 def api_update_bounds(req: BoundsUpdateRequest):
-    """Updates manual bounds in mapping.yaml, enforces size safeguards, and triggers a rescan."""
+    """Updates manual bounds in config.yaml, enforces size safeguards, and triggers a rescan."""
     x = max(0.0, min(1.0, req.x))
     y = max(0.0, min(1.0, req.y))
     w = max(0.05, min(0.30, req.width))
@@ -808,7 +808,7 @@ class CharBoundsUpdateRequest(BaseModel):
 
 @app.post("/api/config/char_bounds", dependencies=[Depends(verify_api_key)])
 def api_update_char_bounds(req: CharBoundsUpdateRequest):
-    """Updates manual character bounds in mapping.yaml."""
+    """Updates manual character bounds in config.yaml."""
     x = max(0.0, min(1.0, req.x))
     y = max(0.0, min(1.0, req.y))
     w = max(0.05, min(0.50, req.width))
@@ -1045,7 +1045,7 @@ def api_screenshot_refresh():
             tools.grabber.bounds = bounds
             tools.minimap_detected = True
         else:
-            # Fallback to mapping.yaml bounds
+            # Fallback to config.yaml bounds
             config = tools.load_config()
             tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
             tools.minimap_detected = False

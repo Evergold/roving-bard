@@ -36,7 +36,7 @@ os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
 os.environ["ADK_SUPPRESS_GEMINI_LITELLM_WARNINGS"] = "true"
 
-# Resolve model from configuration (mapping.yaml)
+# Resolve model from configuration (config.yaml)
 # LiteLLM format: e.g. "gemini/gemini-2.5-flash-lite", "openai/gpt-4o", etc.
 model_name = config.get("model_name", "gemini/gemini-2.5-flash-lite")
 if "gemini-1.5-flash" in model_name or "gemini-2.5-flash" in model_name:
@@ -51,7 +51,7 @@ root_agent = Agent(
         "background music playback for a video game running in the foreground.\n\n"
         "You have access to tools that can:\n"
         "- Capture and parse the game screen (Tesseract OCR + Gemini Vision fallback) to "
-        "update music dynamically according to mapping.yaml (use `check_screen_and_update_music`).\n"
+        "update music dynamically according to config.yaml (use `check_screen_and_update_music`).\n"
         "- Play specific tracks directly (use `play_track`).\n"
         "- Stop playback (use `stop_music`).\n"
         "- Set player volume (use `set_volume`).\n"

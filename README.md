@@ -19,13 +19,13 @@ project/
 │   │   ├── gui.html              #   Dashboard UI (HTML5/Vanilla CSS/JS)
 │   │   ├── lotro_words.txt       #   OCR dictionary (205 pre-populated locations)
 │   │   └── app_utils/            #   Shared utilities (telemetry, typing)
-│   ├── audio/                    # Audio library & mapping config
+│   ├── audio/                    # Audio library
 │   │   ├── .cache/               #   Synthesized FLAC files
-│   │   ├── mapping.yaml          #   Location → track mapping rules & config
 │   │   └── MuseScore_General.sf3 #   Bundled SoundFont
 │   ├── capture/                  # Screen capture staging directory
 │   ├── tests/                    # Unit, integration, and eval tests
 │   ├── run_player.py             # Standalone CLI player loop
+│   ├── config.yaml               # Configuration and track mapping rules
 │   ├── pyproject.toml            # Python packaging and dependencies
 │   ├── uv.lock                   # Lockfile
 │   └── AGENTS.md                 # Operational agent development rules
@@ -204,9 +204,9 @@ To allow development, testing, and benchmarking of the OCR/VLM pipeline without 
 
 ---
 
-## ⚙️ Configuration (`audio/mapping.yaml`)
+## ⚙️ Configuration (`config.yaml`)
 
-Edit the rules for mapping locations or coordinates to track files:
+Edit the rules for mapping locations or coordinates to track files in `config.yaml` located in the agent root directory:
 ```yaml
 active_soundfont: "MuseScore_General.sf3"
 polling_interval: 2.0
@@ -234,7 +234,7 @@ Roving Bard synthesizes `.mid` (MIDI) and `.abc` (ABC notation) music tracks in 
 ### 1. Bundled SoundFont (SF3)
 To ensure MIDI and ABC playback works out of the box, a lightweight, compressed SoundFont is pre-bundled:
 - **File**: `roving-bard/audio/MuseScore_General.sf3`
-- **Configuration**: Set `active_soundfont: "MuseScore_General.sf3"` in `audio/mapping.yaml`.
+- **Configuration**: Set `active_soundfont: "MuseScore_General.sf3"` in `config.yaml`.
 - **Why it is Better**: The bundled `MuseScore_General.sf3` file provides significantly higher instrument synthesis quality than system-default SoundFonts. Additionally, it is highly compressed (~35 MB vs. ~215 MB for the uncompressed `.sf2` version), avoiding the need to download large files over the internet on startup, reducing load times, and optimizing memory usage during playback.
 
 ### 2. Legacy SoundFont Fallbacks (Optional)
@@ -244,13 +244,13 @@ The engine automatically searches standard system directories for legacy FluidSy
 For high-fidelity audio synthesis, you can download the full, lossless **MuseScore General** SoundFont:
 - **File**: `MuseScore_General.sf2` (approx. 215 MB)
 - **How to Download**:
-  - Open the browser GUI dashboard (`http://localhost:8000/gui`).
-  - Navigate to **Preferences** (top-left) and under SoundFont select **MuseScore General (ULTRA)**.
-  - Alternatively, trigger the download via the REST API:
-    ```bash
-    curl -X POST http://localhost:8000/api/soundfont/download
-    ```
-- **Hot-swapping**: Once downloaded, select it from the SoundFont dropdown menu in the GUI or update `audio/mapping.yaml` to `active_soundfont: "MuseScore_General.sf2"`. The engine will reload it instantly without requiring a server restart.
+- Open the browser GUI dashboard (`http://localhost:8000/gui`).
+- Navigate to **Preferences** (top-left) and under SoundFont select **MuseScore General (ULTRA)**.
+- Alternatively, trigger the download via the REST API:
+  ```bash
+  curl -X POST http://localhost:8000/api/soundfont/download
+  ```
+- **Hot-swapping**: Once downloaded, select it from the SoundFont dropdown menu in the GUI or update `config.yaml` to `active_soundfont: "MuseScore_General.sf2"`. The engine will reload it instantly without requiring a server restart.
 
 ### 3. Dynamic Instrument Selection for ABC Tracks
 When playing ABC notation files, you can choose and hot-swap the active instrument directly from the dashboard:

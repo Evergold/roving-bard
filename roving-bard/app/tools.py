@@ -24,7 +24,7 @@ from app.player import LocalOCRParser, SafeMusicPlayer, ScreenGrabber, TrackMapp
 
 # Load configuration
 CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "mapping.yaml"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.yaml"
 )
 SEGMENTS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio", "segments.yaml"
@@ -355,7 +355,7 @@ def get_actual_usage():
 
 def check_screen_and_update_music() -> dict:
     """Captures the foreground game screen, parses the location and coordinates,
-    matches them against mapping.yaml, and plays the appropriate music track.
+    matches them against config.yaml, and plays the appropriate music track.
 
     Returns:
         dict containing the extraction result (location, coordinates) and action taken.

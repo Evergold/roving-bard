@@ -11,7 +11,7 @@ The Roving Bard system monitors a player's screen in real time to capture locati
 ```mermaid
 graph TD
     User([User / Client Browser]) <-->|Access /gui or REST API| API[FastAPI Server via Uvicorn]
-    API <-->|Reads/Writes Config| Config[(mapping.yaml)]
+    API <-->|Reads/Writes Config| Config[(config.yaml)]
     API -->|Reads/Decodes Audio| Audio[Audio Files in audio/]
     API -->|Triggers Screen Capture| Screen[mss Screen Capture]
     API -->|Triggers SoundFont Download| Downloader[Background Downloader Thread]
@@ -33,7 +33,7 @@ graph TD
 ### Data Storage & External Boundaries
 - **Playlist Directory (`audio/`)**: Folder containing audio assets (`.wav`, `.mp3`, `.ogg`, `.flac`, `.abc`, `.mid`) and SoundFonts (`.sf2`, `.sf3`).
 - **Capture Directory (`capture/`)**: Folder containing cropped location screenshots.
-- **Configuration File (`audio/mapping.yaml`)**: Stores current minimap bounds, coordinate mappings, and the active SoundFont.
+- **Configuration File (`config.yaml`)**: Stores current minimap bounds, coordinate mappings, and the active SoundFont.
 - **External VLM Endpoints**: Integrates with external LLM APIs (via LiteLLM / Gemini API keys) and the OSUOSL mirror for SoundFont downloads.
 
 ---
