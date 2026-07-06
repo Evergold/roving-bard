@@ -139,6 +139,17 @@ def save_tags_registry(tags: list):
 
 def load_config():
     cfg = {}
+    if not os.path.exists(CONFIG_PATH):
+        # Auto-create config.yaml from config.yaml.template if it exists in the agent root
+        template_path = os.path.join(os.path.dirname(CONFIG_PATH), "config.yaml.template")
+        if os.path.exists(template_path):
+            try:
+                import shutil
+                shutil.copy(template_path, CONFIG_PATH)
+                print(f"[Config] Created {CONFIG_PATH} from template.")
+            except Exception as e:
+                print(f"[Config] Error copying template to config.yaml: {e}")
+                
     if os.path.exists(CONFIG_PATH):
         try:
             with open(CONFIG_PATH) as f:
@@ -148,6 +159,7 @@ def load_config():
     
     defaults = {
         "minimap_bounds": {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15},
+        "force_manual_bounds": False,
         "transitions": {"fade_out_ms": 1500, "fade_in_ms": 1500},
         "playlist_directory": "audio",
         "model_name": "gemini/gemini-2.5-flash-lite",

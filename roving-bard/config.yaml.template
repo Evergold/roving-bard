@@ -1,0 +1,46 @@
+# Configuration for Roving Bard
+
+# Set to true to bypass auto-detection and strictly enforce manual bounds.
+# To specify manual bounds, add a minimap_bounds block in this file, e.g.:
+# minimap_bounds:
+#   x: 0.8
+#   y: 0.05
+#   width: 0.15
+#   height: 0.15
+force_manual_bounds: false
+
+# Audio crossfade transitions configuration
+transitions:
+  fade_out_ms: 1500
+  fade_in_ms: 1500
+
+# Directory within the project scope where tracks are located
+playlist_directory: "audio"
+
+# Default cloud VLM to use for fallback parsing via LiteLLM
+# Supported formats: gemini/gemini-2.5-flash-lite, gemini/gemini-1.5-flash, openai/gpt-4o, anthropic/claude-3-5-sonnet-20240620
+model_name: "gemini/gemini-2.5-flash-lite"
+
+# Screen polling interval in seconds
+polling_interval: 2.0
+
+# Default API key for frontend authentication should be set via AGENT_API_KEY environment variable.
+
+# Track mapping definitions
+# Will match by location name first (substring match), then check coordinate ranges.
+mappings:
+  - location_name: "Town"
+    track_file: "town.wav"
+    
+  - location_name: "Forest"
+    track_file: "forest.wav"
+    
+  - location_name: "Boss Arena"
+    track_file: "boss.wav"
+
+  # Example coordinate hotspot (e.g. Secret Cave coordinates around 15.0N, 70.0W)
+  - ns_min: 10.0
+    ns_max: 20.0
+    ew_min: -80.0
+    ew_max: -60.0
+    track_file: "cave.wav"

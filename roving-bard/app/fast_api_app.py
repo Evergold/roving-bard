@@ -979,15 +979,22 @@ def initialize_simulation_screen():
             full_img = tools.grabber.capture_full()
             print(f"[ScreenGrabber] Init Simulation: Loaded test screen")
             
-            # Run minimap detection
-            bounds, detected = tools.grabber.detect_minimap(full_img)
-            if detected:
-                tools.grabber.bounds = bounds
-                tools.minimap_detected = True
-            else:
-                config = tools.load_config()
+            config = tools.load_config()
+            force_manual = config.get("force_manual_bounds", False)
+            
+            if force_manual:
                 tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
                 tools.minimap_detected = False
+                print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {tools.grabber.bounds}")
+            else:
+                # Run minimap detection
+                bounds, detected = tools.grabber.detect_minimap(full_img)
+                if detected:
+                    tools.grabber.bounds = bounds
+                    tools.minimap_detected = True
+                else:
+                    tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                    tools.minimap_detected = False
             
             # Update tools.config in memory
             tools.config["minimap_bounds"] = tools.grabber.bounds
@@ -1040,18 +1047,26 @@ def api_screenshot_refresh():
         return {"status": "error", "message": "Failed to capture/load screenshot."}
 
     try:
-        # Run minimap detection on the full image
-        bounds, detected = tools.grabber.detect_minimap(full_img)
+        config = tools.load_config()
+        force_manual = config.get("force_manual_bounds", False)
         
-        if detected:
-            tools.grabber.bounds = bounds
-            tools.minimap_detected = True
-        else:
-            # Fallback to config.yaml bounds
-            config = tools.load_config()
+        if force_manual:
             tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
             tools.minimap_detected = False
             bounds = tools.grabber.bounds
+            print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {bounds}")
+        else:
+            # Run minimap detection on the full image
+            bounds, detected = tools.grabber.detect_minimap(full_img)
+            
+            if detected:
+                tools.grabber.bounds = bounds
+                tools.minimap_detected = True
+            else:
+                # Fallback to config.yaml bounds
+                tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                tools.minimap_detected = False
+                bounds = tools.grabber.bounds
             
         # Update tools.config in memory
         tools.config["minimap_bounds"] = tools.grabber.bounds
