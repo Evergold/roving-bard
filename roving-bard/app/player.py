@@ -113,15 +113,27 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             return None
         if re.search(r'[a-z][A-Z]', val):
             return None
+        # Reject any location name containing characters not used in English/Elvish/Dwarvish
+        # (grave accents, German/French/Spanish letters like ç, ß, æ, œ, ñ, and diaereses ï, ÿ)
+        # or containing 'q'/'Q' not followed by 'u' (visual noise)
+        if re.search(r'[àèìòùÀÈÌÒÙçÇßæœÆŒñÑïÿÏŸ]', val) or re.search(r'[qQ](?!u)', val):
+            return None
+            
         words = val.split()
         if len(words) > 4:  # Confirmed max 4 words from default lotro_words.txt (e.g. The Last Homely House)
             return None
             
-        # Reject single-word location names of length <= 3
-        if len(words) == 1 and len(words[0]) <= 3:
-            return None
+        # Reject single-word location names of length < 5 (except whitelisted proper places)
+        if len(words) == 1:
+            val_clean = re.sub(r'[^a-zA-ZáéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]', '', val)
+            if len(val_clean) < 5:
+                if val.lower() not in {"bree", "dale", "udûn", "nurn", "rhûn", "luin", "isen"}:
+                    return None
             
         for w in words:
+            # Reject words starting with accented uppercase characters (visual noise / translation metadata)
+            if re.match(r'^[ÁÂÄÉÊËÍÎÓÔÖÚÛÜ]', w) and not w.startswith(("Éowyn", "Éomer", "Éorl", "Éothain", "Úrui")):
+                return None
             # Reject words with more than 1 uppercase letter (filters out binary encoding noise)
             if sum(1 for c in w if c.isupper()) > 1:
                 return None
@@ -138,9 +150,20 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             return None
             
         first_lower = words[0].lower()
-        if first_lower in ("defeat", "collect", "find", "talk", "bring", "complete", "enjoy", "slay", "use", "kill", "go", "deliver", "speak", "gather", "visit", "scout", "investigate", "discover", "help", "search", "rescue", "defend", "protect", "save", "active", "advance", "adventure", "alas", "afternoon", "also", "anniversary", "allegiance", "explore", "guide", "muster", "return", "map", "port", "ride", "sail", "boat", "travel"):
+        if len(words) == 1 and first_lower in ("black", "great", "green", "grey", "light", "purple", "white", "úrui"):
             return None
-        if first_lower in ("above", "across", "behind", "below", "beneath", "between", "beyond", "during", "inside", "outside", "through", "towards", "until", "within", "without", "actually", "admittedly", "sincerely", "cordially", "allow", "allowed", "bake", "attend"):
+            
+        if val.lower() in ("mead hall", "light grey"):
+            return None
+            
+        if first_lower in ("defeat", "collect", "find", "talk", "bring", "complete", "enjoy", "slay", "use", "kill", "go", "deliver", "speak", "gather", "visit", "scout", "investigate", "discover", "help", "search", "rescue", "defend", "protect", "save", "active", "advance", "adventure", "alas", "afternoon", "also", "anniversary", "allegiance", "explore", "guide", "muster", "return", "map", "port", "ride", "sail", "boat", "travel", "above", "across", "behind", "below", "beneath", "between", "beyond", "during", "inside", "outside", "through", "towards", "until", "within", "without", "actually", "admittedly", "sincerely", "cordially", "allow", "allowed", "bake", "attend", "call", "calm", "can", "daily", "each", "faction", "fail", "failure", "faint", "fallen", "gameplay", "hair", "identify", "ignore", "ill", "jailbreak", "jar", "jars", "keg", "kegs", "keyboard", "laboratory", "ladder", "laden", "make", "mailbox", "male", "name", "objective", "odd", "oddities", "of", "page", "parcel", "parcels", "parent", "part", "quick", "quickly", "quit", "race", "races", "rage", "rain", "rally", "rampage", "sabotage", "sacrifice", "sacrificial", "sadly", "safe", "safety", "salute", "sand-flies", "tactics", "tailor", "take", "tale", "tales", "valour", "valuable", "vanquisher", "vegetables", "vengeance", "venom", "wait", "wanderer", "war", "war-master", "war-masters", "warband", "warden", "year", "yellow", "yestereve", "listen", "location", "override", "patrol", "step", "thrust", "again", "alive", "alone", "avoid", "already", "finally", "twice", "enter", "unselect", "deadly", "detestable", "movement", "wound", "provisions", "strongest", "unnatural", "wolves", "destination", "extract", "first", "hand", "intro", "meaner", "new", "unavailable", "stray", "pleasant", "cure", "dirty", "dismal", "extremely", "follow", "implement", "large", "locate", "low", "mark", "maven", "regen", "rename", "shatter", "speech", "think", "thrash", "time", "two", "party", "assist", "confront", "consider", "brilliant", "caught", "cease", "deeper", "emote", "from", "greet", "ground", "infamy", "meet", "more", "really", "resident", "show", "slain", "starlight", "stolen", "atop", "chat", "combine", "craft", "immediate", "into", "last", "met", "mountain", "mysteries", "offence", "official", "original", "randomize", "research", "seal", "second", "seconds", "session", "unknowingly", "unseen", "vitality", "alternatively", "dance", "defy", "female", "get", "read", "sign", "construction", "dark", "deep", "grisly", "luck-stone", "metalsmith", "unique", "vicious", "weaponsmith", "destroyer", "docks", "leader", "protectors", "ruffians", "sharp", "thumper", "appearance", "army", "barrel", "beehives", "capital", "coastal", "come", "crimson", "crown", "details", "documents", "dungeon", "exotic", "explorer", "fires", "found", "foul", "hide", "horror", "huge", "kiss", "land", "landscape", "library", "lost", "mostly", "one", "peoples", "perception", "physical", "pipit", "player", "poor", "presets", "region", "scales", "seek", "shadow", "shire", "siege", "simple", "sleek", "suspicious", "typeenum", "worn", "along", "are", "available", "delicate", "exit", "few", "flame-rider", "minstrel", "nightward", "phials", "report", "resist", "stand", "toolbar", "zoom", "bannerman", "exemplar", "fantastic", "many", "rangers", "retry", "stranger", "strategist", "thick", "word", "armoury", "auberge", "availabl", "certainly", "chapter", "circle", "clear", "coarse", "death", "decent", "dread", "earth", "earthquake", "evidently", "fauna", "give", "hold", "house", "imagine", "inform", "leastways", "lords", "not", "orders", "shanties", "survival", "thankfully", "thrown", "treason", "trouble", "unlike", "volatile", "would", "another", "artisan", "articles", "beorn", "chieftain", "conflict", "dead", "decorative", "free", "further", "guests", "halls", "hatch", "homestead", "knees", "leaves", "monstrous", "moss", "on", "perfect", "ready", "requires", "scrap", "size", "stood", "timeless", "ambush", "builders", "camp-site", "conductivity", "convert", "farewell", "forgotten", "fragments", "grief", "hopefully", "journey", "kneel", "lilies", "next", "turtles", "afraid", "cider", "hot", "offscreen", "onion", "phial", "stable-masters", "torn", "twilight", "wrought", "phooh", "water", "block", "fell", "play", "real", "special", "squishy", "great", "aid", "chance", "character", "cost", "dubious", "flee", "helpful", "scold", "steadfast", "truly", "twist", "vile", "wade", "after", "afterword", "alarmingly", "all", "although", "amazingly", "among", "ancient", "and", "animation", "anonymous", "any", "applies", "ardour", "artistic", "assembly", "at", "auto", "average", "awake", "backs", "beautiful", "bright", "common", "dangerous", "double", "elder", "featured", "frequent", "greater", "hidden", "important", "incredible", "legendary", "lesser", "mighty", "more", "most", "noble", "outpost", "reborn", "secured", "several", "unrelenting"):
+            if first_lower in ("first", "second") and "hall" in val.lower():
+                pass
+            elif first_lower == "great" and any(x in val.lower() for x in ("smials", "hall", "barrow", "barrows")):
+                pass
+            else:
+                return None
+        if first_lower.startswith(("face", "facial", "half", "you")):
             return None
         if words[0].endswith("ed") and words[0] not in ("Bed", "Red", "Ered"):
             return None
@@ -162,7 +185,10 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "leather", "fiber", "tome", "tomes", "item", "items", "reward", "rewards", "xp",
             "spittle", "wash", "acid", "strike", "badge", "badges", "wine", "wines", "bagpipe", "bagpipes",
             "bandage", "bandages", "ballista", "ballistas", "accessory", "accessories", "recipe", "recipes",
-            "bread", "food", "drink", "potion", "potions",
+            "bread", "food", "drink", "potion", "potions", "notes", "bulb", "bulbs", "halter", "halters",
+            "saddle", "saddles", "theme", "themes", "flowers", "flower", "apples", "oak",
+            "spice", "cram", "jewellery", "maggots", "corpse", "paints", "palisade", "parrot", "parrots",
+            "pack", "packs", "hood", "quivers", "sabatons", "saddlebag", "tail",
             # Skills / Buffs / Stats / UI
             "bubble", "spirit", "wrath", "strength", "benevolence", "buff", "debuff", "morale", "power",
             "stat", "stats", "virtue", "level", "lvl", "leveling", "points", "point", "coin", "coins",
@@ -176,6 +202,7 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "account", "admin", "photoshop", "adobe", "settings", "status", "connexion", "fellowship",
             "menu", "options", "config", "unnamed", "unknown", "null", "none", "default", "temporary",
             "test", "debug", "error", "log", "logs", "client", "server", "launcher", "application",
+            "kinship", "customization", "representative", "colour",
             # NPC / Animals / Creatures / Mobs / Enemies / Characters
             "dog", "bee", "bees", "chicken", "chickens", "horse", "pony", "boar", "wolf", "bear",
             "ally", "friend", "kin", "survivor", "reeve", "champion", "defender", "dominator", "master",
@@ -201,6 +228,27 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "achardis", "aculf", "adalard", "adalbert", "adambel", "adasi", "adela", "adelard", "adhargal",
             "adkhât", "aearil", "aeglir", "aelnir", "aerin", "aervir", "aevar", "agatha",
             "baghi", "bainnas", "bainthir", "baldmund", "balhest", "bali", "baludam",
+            "caddabrand", "cadvan", "calenglad", "canaddal", "candaith", "daemirdan", "daervunn", "dagor",
+            "dagoras", "dahámab", "daisy", "guard", "guards", "calf", "boar", "boars", "badger", "badgers",
+            "moose", "boy", "boys", "girl", "girls", "folk", "expedition", "expeditions",
+            "eadald", "faelbenn", "faellindiel", "failloth", "faimir", "falassiel", "falastír", "falco",
+            "gadda", "gaelalph", 'gaelnath', "gaerond", "gaervarad", "galkud", "galamira", "galathir",
+            "gamli", "galumar", "galvin", "gamgee", "habdir", "hadhelen", "hadun", "haelam", "haerel",
+            "halach", "halbarad", "haldalona", "haldirith", "haldis",
+            "lady", "keeper", "keepers",
+            "iaphel", "idagâl", "idhremmin", "idwadâr", "igash", 'igbâl', "ilcarix", "ilgo",
+            "jabe", "grimshaw", "oakley", "jadambor", "jagger", "jajax", "jakham", "janabor",
+            "jangador", "jangovar", "jashura", "jatimaga", "jeduth", "kalin", "karazgar", "karstíona",
+            "karuna", "kekkonen", "keteph", "keterang", "ladrochan", "amarthiel", "hildith", "rosfin",
+            "vanyalos", "laegon", "laerdan", "lagduf", "laivárth",
+            "maiden", "paladin",
+            "maddoc", "glenys", "stagshorn", "maechanar", "maergrind", "maeriel", "makham", "malbarth",
+            "malbéort", "malenfang", "malgâma", "nadfaron", "nagakhêdi", "nagamûn", "nagli", "nagrut",
+            "nakási", "nakûr", "namirek", "oakenshield", "oakheart", "odahild", "odilia", "odovacar", "pakonka",
+            "queen", "saburg",
+            "erna", "radwig", "raghathai", "ragnild", "ragrekhûl", "rahâzi", "raiglud", "raith",
+            "rajondi", "rakothas", "sadie", "marshbanks", 'sadux', "saeradan", "saija", "sally",
+            "sambrog", "tadan", "tadhrien", "taerthon", "tafin", "tajaba",
             # Quest / System / General Non-Locations / Actions / Abstract Nouns
             "recipes", "recipe", "fishing", "task", "tasks", "challenge", "decision", "interruption",
             "experience", "reputation", "quests", "quest", "allies", "friends", "enemy", "abandon",
@@ -218,11 +266,99 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "aberration", "aberrations", "accuracy", "acquaintance", "bad", "private", "encounter", "data",
             "bakery", "scourge", "nature", "birthday", "festival", "victory", "celebration",
             "baby", "back", "background", "balance", "bane", "congratulations", "congrats", "welcome",
-            "goodbye", "hello", "thanks", "thank", "please", "sorry", "apologies"
+            "goodbye", "hello", "thanks", "thank", "please", "sorry", "apologies", "vigil", "vigils",
+            "carry", "days", "bulwark", "neighbour", "neighbours", "truths", "halflings", "oliphaunts",
+            "ha-ha", "haha",
+            "delivery", "ideas", "duties", "threat", "bounty", "man", "woman", "omens", "marauders",
+            "communication", "nodes", "practices", "practises", "escape", "failing", "trail", "vermin",
+            "idle", "children", "madness", "legacies", "legacy", "doom", "oath", "oathbreaker",
+            "oatmeal", "problems", "benefactors", "darkness", "mad", "main", "pale", "parry",
+            "armaments", "regent", "questname", "hood", "info", "saddlebag", "news", "flies", "guild",
+            "questions", "quintessential", "quitters", "raarrgh", "rabid", "radiance", "salamander",
+            "salamanders", "sand", "heartwood", "vambraces", "horn", "lash", "lashes", "hymns", "stinger",
+            "stingers", "clan", "slayer", "vault", "brown", "unslakable", "returned",
+            "barber", "page", "bundles", "crawlers", "components", "crafts", "decoration", "drunkard",
+            "column", "fiddle", "wreath", "wedding", "medallion", "fitting", "steed", "curiosity",
+            "squatters", "strongholds", "thane", "blooms", "precious", "hawk", "hounds", "cart",
+            "patrician", "ranger", "largo", "mordrambor", "precision", "completed", "sarcophagus",
+            "tapestry", "spores", "roadsign", "frog", "bloated", "bounder", "ecthelion", "ergash",
+            "gilanor", "gurbák", "mauzur", "nimithil", "ossur", "veroth", "yamanim", "thrymm",
+            "deeds", "league", "valve", "robbers", "corsair", "sniper", "elk", "delight", "fireworks",
+            "goat", "blades", "arrangements", "disputes", "pumpkin", "dye", "scarlet", "shields",
+            "trailfood", "winchmaster", "seeker", "pool", "dispute", "beregond", "edwulf", "cutleaf",
+            "grimbold", "mauhur", "sindri", "prince", "constables", "eemj", "ethrx", "höfp", "kêff",
+            "mzhâ", "tyzôge", "ubyä", "bauble", "bonds", "beaks", "jacket", "greed", "limit", "trampers",
+            "tannery", "filth", "chieftains", "usurper", "tribunal", "chunk", "caltha", "carlo",
+            "grizagâr", "merethien", "húnbrit", "fróthi", "gormr", "gormrs", "millicent", "greenlake",
+            "randis", "thendor", "éogar", "captain", "fxje", "gbca", "wpîi", "uûzu", "êcér", "ôuyy",
+            "breakfast", "salmon", "reign", "chirurgeon", "clod", "gossip", "faire", "places",
+            "fireplace", "underbelly", "deceit", "cousin", "lodging", "malice", "splendor",
+            "merit", "books", "bando", "duinhir", "eldora", "esmerelda", "glador", "muzgash",
+            "rhonwen", "nesta", "ostur", "ostúr", "blue", "events", "companion", "upgrade", "dwelling",
+            "crier", "stairs", "vitals", "estates", "chestplate", "petition", "workspace", "straw",
+            "rebellion", "disputes", "aranarth", "proudfoot", "delyth", "glorwen", "grimreaver",
+            "lothrandir", "zôreth", "brenin", "dargnákh", "núrzum", "atwood", "ceorl", "took",
+            "grár", "irmingard", "grudd", "quince", "bregmor", "éomer", "fdef", "xêjb", "ëgjzûwl",
+            "eiikih", "fello", "gâdhûp", "gécb", "yvmó", "merchant", "society", "perks", "sculpture",
+            "order", "warehouse", "claws", "masterpiece", "mystery", "confrontation", "messenger",
+            "agelman", "filbert", "percy", "alroyd", "sharku", "clotild", "gruinwen", "faltharan",
+            "laerdan", "mosal-ruk", "burglar", "highwayman", "bící", "dávir", "övfi", "ouoz",
+            "nain", "housing", "berries", "earnings", "collectors", "radius", "citizen", "authun",
+            "athelbald", "belondor", "cartwell", "sarabeth", "vrarz", "greythistle", "leecher",
+            "cook", "second-watcher", "cemê", "lblsbool", "pîlü", "ucaofbf", "yjdi", "éwáo", "ttli",
+            "judgement", "music", "souls", "candlestick", "threshold", "clubs", "poetry", "hideout",
+            "dinner", "assault", "hides", "cuthbert", "sprunt", "athelward", "mansig", "borangos",
+            "akhil", "ashunûg", "shûma", "ausma", "bungo", "garvir", "shonith", "zoey", "nerzus",
+            "gortheron", "ulf", "gûui", "drxö", "scfûd", "ëvun", "ódbë", "ölkj", "clbrbool", "xdkê",
+            "beorning", "easterlings", "helmingas", "chambers", "bodhran", "defiler", "ledger",
+            "parts", "poison", "compendiums", "bracers", "teapot", "horns", "furs", "improvement",
+            "brynmód", "neville", "hopwood", "roderic", "sterkist", "firiondur", "thorongil",
+            "melilot", "cymunu", "gcâj", "ádût", "úcmdö", "drâghru", "dulgurz", "etasha", "jukara",
+            "laerlad", "tûzy", "yjer", "dsúu", "zkmêp", "ídvö", "stonemaiden", "predator", "bench",
+            "newborn", "milestone", "information", "feathers", "longswords", "omelet", "symphony",
+            "baranor", "corudan", "edstan", "erias", "eriac", "grishnakh", "heithur", "ironfist",
+            "stanric", "hildulf", "langhold", "leofdag", "léofdag", "arnvall", "dolvaethor",
+            "gorothúl", "rotog", "rothog", "gcdyírn", "úx-í", "aûrzx", "ylnup", "êkgd", "ëlrg",
+            "weaponsmith", "spinner", "smuggler", "udakhir", "blossom", "complaint", "truffles",
+            "success", "gothmog", "hildegard", "kurzkub", "narmeleth", "sogadan", "gatson",
+            "hutha", "minalzagar", "róglarg", "peabody", "ferndúr", "hornblower", "brushwood",
+            "bówt", "uäfne", "wubió", "cjâi", "hôfé", "opnz", "shxzû", "órug", "aözô", "écjó",
+            "skin", "association", "archivist", "announcer", "barrels", "incantations", "sails",
+            "sheep", "carapaces", "pie", "statue", "reflections", "chestnut", "membranes",
+            "jonar", "jónar", "anárion", "gurlázg", "bolts", "fire", "imprecations", "lore",
+            "incantations", "land", "claw", "rake", "secret", "secrets", "sacrifice", "beer",
+            "collection", "flora", "ale", "map", "history", "purification", "harvest", "note",
+            "notes", "candle", "roan", "skies", "table", "chair", "pudding", "snack", "mash",
+            "spot", "tongues", "shirt", "book", "books", "dyes", "brew", "fish", "fishes",
+            "beetle", "ear", "ears", "eye", "eyes", "goo", "host", "immunity", "feast",
+            "stones", "stone", "confession", "prowler", "leaders", "teeth", "agenda", "request",
+            "burden", "burdens", "crams", "tunic", "waistcoat", "seed", "message", "list",
+            "porter", "pickaxes", "hookah", "creed", "tinderbox", "concern", "cowl", "gait",
+            "legs", "rump", "advice", "pride", "might", "intention", "intentions", "appeal",
+            "arrow", "monitor", "whistle", "bracer", "choker", "jewel", "taxidermy", "shed",
+            "wheelbarrow", "bodyguard", "pupil", "pupils", "seamstress", "gleemen", "steward",
+            "special", "shadow", "shadows", "zúrsnaga", "éorl", "folca", "éothain", "éowyn", "éomer",
+            "apothecary", "apprentice", "apprentices", "assistant", "assistants", "armourer", "armorer",
+            "historian", "tinkerer", "yeoman", "forester", "prospector", "jeweller", "jeweler",
+            "scholar", "metalsmith", "weaponsmith", "tailor", "farmer", "shepherd", "woodworker",
+            "blacksmith", "goldsmith", "silversmith", "carpenter", "mason", "weaver", "tanner",
+            "grocer", "butcher", "baker", "trader", "vintner", "herbalist", "librarian", "scribe",
+            "herald", "constable", "constables", "general", "commander", "hunter", "hunters",
+            "acolyte", "acolytes", "ambassador", "adventurer", "adventurers", "messenger", "messengers",
+            "representative", "representatives", "adornment", "amberjack", "amberjacks", "arrowhead",
+            "arrowheads", "arrowshaft", "arrowshafts", "ashes", "atrophy", "attunement", "atunement",
+            "aurochs", "avanc", "avancs", "baggins", "citadel", "lantern", "lanterns", "mantle",
+            "mantles", "portcullis", "tribute", "tributes", "arifael", "azagath"
         }
             
         for w in words:
             w_clean = re.sub(r'[^a-zA-ZáéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]', '', w)
+            # Reject words with no vowels
+            if not any(c in "aeiouyAEIOUYáéíóúýÁÉÍÓÚÝâêîôûŷÂÊÎÔÛŶäëöüïÿÄËÖÜÏŸ" for c in w_clean):
+                return None
+            # Reject words with consecutive accented vowels
+            if re.search(r'[áéíóúýÁÉÍÓÚÝâêîôûŷÂÊÎÔÛŶäëöüïÿÄËÖÜÏŸ]{2}', w):
+                return None
             if len(w_clean) < 3 and w.lower() not in allowed_shorts:
                 return None
             if w_clean.isupper():
@@ -230,27 +366,52 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
                 
             w_orig_norm = w.lower()
             if w_orig_norm.endswith(("\x27s", "\u2019s", "'s", "’s")) or w_orig_norm.endswith(("\x27", "\u2019", "'", "’")):
-                w_norm = None
+                allowed_possessives = {"camp", "encampment", "shop", "pavilion", "lair", "farm", "way", "refuge", "house", "library", "edge", "look-out", "court", "room", "quarters", "gate", "hut", "watch", "lodge", "deep", "dike", "pond", "peak", "market", "cabin", "folly", "slough", "tomb", "barrow", "retreat", "overlook"}
+                if any(suffix in val.lower() for suffix in allowed_possessives):
+                    w_norm = None
+                else:
+                    w_norm = w_clean.lower()
             else:
                 w_norm = w_clean.lower()
                 
-            if w_norm and w_norm in non_location_terms:
-                if w_norm == "helm" and "deep" in val.lower():
-                    pass
-                elif w_norm == "shield" and "isles" in val.lower():
-                    pass
-                elif w_norm == "boss" and "arena" in val.lower():
-                    pass
-                elif w_norm == "delving" and "michel" in val.lower():
-                    pass
-                elif w_norm == "delving" and "great" in val.lower():
-                    pass
-                elif w_norm == "end" and "kings" in val.lower():
-                    pass
-                elif w_norm == "festival" and "grounds" in val.lower():
-                    pass
-                else:
-                    return None
+            # Check if w_norm or any hyphen-split component is in exclusions
+            components = [w_norm] if w_norm else []
+            if "-" in w:
+                for comp in w.split("-"):
+                    comp_clean = re.sub(r'[^a-zA-ZáéíóúüñßöäêîôûâîûôàèìòùëïÿçæœÉÈÀÙÇÂÊÎÔÛËÏÜŸŒÆÄÖÜÁÍÓÚÑÌÒ]', '', comp)
+                    if comp_clean:
+                        components.append(comp_clean.lower())
+                        
+            for comp in components:
+                if comp in non_location_terms:
+                    if comp == "helm" and "deep" in val.lower():
+                        pass
+                    elif comp == "land" and "bree" in val.lower():
+                        pass
+                    elif comp == "teeth" and "towers" in val.lower():
+                        pass
+                    elif comp == "shield" and "isles" in val.lower():
+                        pass
+                    elif comp == "boss" and "arena" in val.lower():
+                        pass
+                    elif comp == "delving" and "michel" in val.lower():
+                        pass
+                    elif comp == "delving" and "great" in val.lower():
+                        pass
+                    elif comp == "end" and "kings" in val.lower():
+                        pass
+                    elif comp == "festival" and "grounds" in val.lower():
+                        pass
+                    elif comp == "doom" and "mount" in val.lower():
+                        pass
+                    elif comp == "guild" and "hall" in val.lower():
+                        pass
+                    elif comp == "tailor" and "hall" in val.lower():
+                        pass
+                    elif comp == "brown" and "lands" in val.lower():
+                        pass
+                    else:
+                        return None
                 
             # Significant words must be capitalized
             if w.lower() not in allowed_shorts:
