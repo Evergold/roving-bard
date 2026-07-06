@@ -1523,6 +1523,7 @@ class SafeMusicPlayer:
         }
         self._abc_tmp_path: str | None = None
         self.active_instrument: int | None = None
+        self._synthesizing_paths = set()
 
         # sounddevice backend fields
         self._play_thread = None
@@ -1736,6 +1737,26 @@ class SafeMusicPlayer:
     def _clear_eq_zi(self):
         self._eq_zi.clear()
 
+    def _trigger_bg_synthesis(self, midi_path, cached_flac, track_file):
+        if self.simulated:
+            return
+        with self._play_lock:
+            if cached_flac in self._synthesizing_paths:
+                return
+            self._synthesizing_paths.add(cached_flac)
+            
+        def bg_worker():
+            try:
+                self._synthesize_midi_to_flac(midi_path, cached_flac)
+                print(f"[Synth] Background cache synthesis of {track_file} complete.")
+            except Exception as e:
+                print(f"[Synth] Background cache synthesis failed for {track_file}: {e}")
+            finally:
+                with self._play_lock:
+                    self._synthesizing_paths.discard(cached_flac)
+                    
+        threading.Thread(target=bg_worker, daemon=True).start()
+
     def _stop_sounddevice_playback(self):
         self.was_stopped = True
         if self._play_thread and self._play_thread.is_alive():
@@ -1762,6 +1783,8 @@ class SafeMusicPlayer:
                 self._ffmpeg_proc = None
 
     def _playback_loop(self):
+        if self.simulated:
+            return
         import sounddevice as sd
         from scipy.signal import sosfilt
         
@@ -1861,13 +1884,7 @@ class SafeMusicPlayer:
                                 self.track_duration = get_abc_duration(track_path) or 180.0
                                 midi_path = self._prepare_abc_midi(track_path, 0.0)
                             
-                            # Start background thread to build the cache
-                            def bg_build_cache():
-                                try:
-                                    self._synthesize_midi_to_flac(midi_path, cached_flac)
-                                except Exception as e:
-                                    print(f"[Synth] Background cache synthesis failed: {e}")
-                            threading.Thread(target=bg_build_cache, daemon=True).start()
+                            self._trigger_bg_synthesis(midi_path, cached_flac, self.current_track)
                             
                             # Play instantly using Fluidsynth stdout pipe
                             self._sf = None
@@ -2061,6 +2078,21 @@ class SafeMusicPlayer:
             print(f"Error: Track file not found: {track_path}")
             return False
 
+        if self.simulated:
+            if self.current_track and not self.paused and not self.was_stopped:
+                if fade_out_ms > 0:
+                    time.sleep(fade_out_ms / 1000.0)
+            self.current_track = track_file
+            self.paused = False
+            self.was_stopped = False
+            self.start_time = start_time
+            self.end_time = end_time
+            self._playhead = int(start_time * 44100)
+            self._audio_data = None
+            self._sf = None
+            self._ffmpeg_proc = None
+            return True
+
         is_midi_abc = track_file.lower().endswith((".abc", ".mid", ".midi"))
 
         if is_midi_abc and not self.fluidsynth_available:
@@ -2098,13 +2130,7 @@ class SafeMusicPlayer:
                         self.track_duration = get_abc_duration(track_path) or 180.0
                         midi_path = self._prepare_abc_midi(track_path, 0.0)
                     
-                    # Start background thread to build the cache
-                    def bg_build_cache():
-                        try:
-                            self._synthesize_midi_to_flac(midi_path, cached_flac)
-                        except Exception as e:
-                            print(f"[Synth] Background cache synthesis failed: {e}")
-                    threading.Thread(target=bg_build_cache, daemon=True).start()
+                    self._trigger_bg_synthesis(midi_path, cached_flac, track_file)
                     
                     # Play instantly using Fluidsynth stdout pipe
                     self._sf = None
@@ -2255,23 +2281,15 @@ class SafeMusicPlayer:
         if is_midi_abc:
             cache_dir = os.path.join(self.playlist_dir, ".cache")
             cached_flac = os.path.join(cache_dir, track_file + ".flac")
+            source_mtime = os.path.getmtime(track_path)
+            cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
             
-            def bg_pre_synth():
-                try:
-                    source_mtime = os.path.getmtime(track_path)
-                    cache_mtime = os.path.getmtime(cached_flac) if os.path.exists(cached_flac) else 0
-                    
-                    if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
-                        print(f"[Synth] Background pre-synthesizing {track_file}...")
-                        midi_path = track_path
-                        if track_file.lower().endswith(".abc"):
-                            midi_path = self._prepare_abc_midi(track_path, 0.0)
-                        self._synthesize_midi_to_flac(midi_path, cached_flac)
-                        print(f"[Synth] Background pre-synthesis of {track_file} complete.")
-                except Exception as e:
-                    print(f"[Synth] Background pre-synthesis failed for {track_file}: {e}")
-            
-            threading.Thread(target=bg_pre_synth, daemon=True).start()
+            if not os.path.exists(cached_flac) or source_mtime > cache_mtime:
+                print(f"[Synth] Background pre-synthesizing {track_file}...")
+                midi_path = track_path
+                if track_file.lower().endswith(".abc"):
+                    midi_path = self._prepare_abc_midi(track_path, 0.0)
+                self._trigger_bg_synthesis(midi_path, cached_flac, track_file)
 
         print(f"[Playback sounddevice] Selected: {track_file} (duration={self.track_duration:.2f}s)")
         return True
@@ -2318,6 +2336,8 @@ class SafeMusicPlayer:
 
     def set_instrument(self, program: int):
         self.active_instrument = program
+        if self.simulated:
+            return
         if self.current_track and self.current_track.lower().endswith(".abc"):
             track_path = os.path.join(self.playlist_dir, self.current_track)
             pos = self.get_current_position()
@@ -2377,6 +2397,8 @@ class SafeMusicPlayer:
         self.last_play_time = time.time()
         self.was_stopped = False
         self.seeked_while_paused = False
+        if self.simulated:
+            return True
         if self._play_thread is None or not self._play_thread.is_alive():
             self._play_thread = threading.Thread(target=self._playback_loop, daemon=True)
             self._play_thread.start()
