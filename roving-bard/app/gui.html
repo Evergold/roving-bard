@@ -5241,6 +5241,12 @@
                 stopBtn.style.borderColor = '';
                 stopBtn.style.boxShadow = '';
             }
+            
+            const isPlayingOrPausingMidiAbc = isPlayingOrPaused && (isAbc || isMidi);
+            const clearCacheBtn = document.getElementById('clear-cache-btn');
+            if (clearCacheBtn) {
+                clearCacheBtn.disabled = isPlayingOrPausingMidiAbc || cacheSizeMb <= 0.0;
+            }
             const eqBtn = document.getElementById('eq-btn');
             const instBtn = document.getElementById('instrument-btn');
             if (eqBtn && instBtn) {
@@ -9225,7 +9231,15 @@
                     }
                     const btn = document.getElementById('clear-cache-btn');
                     if (btn) {
-                        btn.disabled = res.size_mb <= 0.0;
+                        let isPlayingOrPausingMidiAbc = false;
+                        if (currentPlaybackStatus) {
+                            const currentTrackLower = currentPlaybackStatus.current_track ? currentPlaybackStatus.current_track.toLowerCase() : '';
+                            const isAbc = currentTrackLower.endsWith('.abc');
+                            const isMidi = currentTrackLower.endsWith('.mid') || currentTrackLower.endsWith('.midi');
+                            const isPlayingOrPaused = currentPlaybackStatus.current_track && !(currentPlaybackStatus.paused && currentPlaybackStatus.was_stopped);
+                            isPlayingOrPausingMidiAbc = isPlayingOrPaused && (isAbc || isMidi);
+                        }
+                        btn.disabled = isPlayingOrPausingMidiAbc || res.size_mb <= 0.0;
                     }
                 }
             } catch (e) {
