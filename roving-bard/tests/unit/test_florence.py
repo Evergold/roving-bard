@@ -117,6 +117,7 @@ def test_api_ocr_try_vlm_florence():
     from app import tools
     original_raw = tools.latest_location_raw_bytes
     original_screenshot = tools.latest_screenshot_bytes
+    original_detecting = tools.minimap_detecting
     
     # Create small valid mock PNG image
     img = Image.new("RGB", (100, 50), color="white")
@@ -126,6 +127,7 @@ def test_api_ocr_try_vlm_florence():
     
     tools.latest_location_raw_bytes = dummy_png_bytes
     tools.latest_screenshot_bytes = dummy_png_bytes
+    tools.minimap_detecting = False
     
     mock_model = MagicMock()
     mock_processor = MagicMock()
@@ -161,3 +163,4 @@ def test_api_ocr_try_vlm_florence():
     finally:
         tools.latest_location_raw_bytes = original_raw
         tools.latest_screenshot_bytes = original_screenshot
+        tools.minimap_detecting = original_detecting

@@ -29,6 +29,15 @@ from app.fast_api_app import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_minimap_detecting():
+    from app import tools
+    orig = tools.minimap_detecting
+    tools.minimap_detecting = False
+    yield
+    tools.minimap_detecting = orig
+
+
 def test_vlm_cancel_via_gc() -> None:
     """Test that invoking the GC endpoint cancels a running model inference in try_vlm."""
     enter_post_event = threading.Event()

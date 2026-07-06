@@ -4703,20 +4703,6 @@
                     } else {
                         showToast(t("minimap_detect_failed", "Minimap detection failed. Falling back to manual entry."), "warn");
                     }
-                    
-                    // Automatic VLM/OCR run if in simulation mode and polling is off
-                    const pollingToggle = document.getElementById('polling-toggle');
-                    const pollingOn = pollingToggle ? pollingToggle.checked : false;
-                    if (status.simulated && !pollingOn) {
-                        const modelSelect = document.getElementById('vlm-model-select');
-                        if (modelSelect) {
-                            const selectedVal = modelSelect.value;
-                            console.log(`[Auto-Run] Automatically running ${selectedVal} on updated simulation test screen after bounds detection.`);
-                            setTimeout(() => {
-                                executeVLMRealTrial(selectedVal);
-                            }, 50);
-                        }
-                    }
                 }
                 wasDetectingMinimap = isDetecting;
                 
@@ -6031,6 +6017,10 @@
         }
  
         async function executeVLMRealTrial(selectedVal) {
+            if (currentPlaybackStatus && currentPlaybackStatus.minimap_detecting) {
+                console.warn("[VLM-Try] Blocked: Auto-detection is currently active.");
+                return;
+            }
             const modelSelect = document.getElementById('vlm-model-select');
             document.getElementById('btn-vlm-try').disabled = true;
             showCancelVlmButton();
