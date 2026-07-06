@@ -146,22 +146,53 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             return None
             
         non_location_terms = {
-            # Armor / Items / Gear
+            # Armor / Items / Gear / Equipment
             "armour", "armor", "axe", "boots", "bow", "bracelet", "cloak", "club", "crossbow", "dagger",
             "earring", "gauntlets", "gloves", "hammer", "hat", "helm", "helmet", "leggings", "mace",
             "necklace", "pauldrons", "ring", "robe", "shoes", "shoulderpads", "sword", "trousers",
             "weapons", "cuirass", "shoulders", "shoulder-guards", "carvings", "pennant", "banner",
             "heraldry", "shield", "bag", "pouch", "waggon", "wagon", "key", "keys", "letter",
-            # Skills / Buffs / Stats
+            "spear", "spears", "swords", "axes", "maces", "halberd", "halberds", "daggers", "locket",
+            "lockets", "sash", "sashes", "caparison", "caparisons", "coffer", "coffers", "lootbox",
+            "lootboxes", "package", "packages", "pouches", "sack", "sacks", "bags", "token", "tokens",
+            "essence", "essences", "relic", "relics", "scroll", "scrolls", "chestpiece", "chestpieces",
+            "box", "boxes", "chest", "chests", "shield-boss", "javelin", "instrument", "ore", "wood",
+            "leather", "fiber", "tome", "tomes", "item", "items", "reward", "rewards", "xp",
+            # Skills / Buffs / Stats / UI
             "bubble", "spirit", "wrath", "strength", "benevolence", "buff", "debuff", "morale", "power",
-            # NPC / Animals / Creatures
+            "stat", "stats", "virtue", "level", "lvl", "leveling", "points", "point", "coin", "coins",
+            "currency", "currencies", "cap", "caps", "wallet", "barter", "tribute", "writ", "writs",
+            "booster", "boosters", "slots", "tracker",
+            # NPC / Animals / Creatures / Mobs / Enemies
             "dog", "bee", "bees", "chicken", "chickens", "horse", "pony", "boar", "wolf", "bear",
             "ally", "friend", "kin", "survivor", "reeve", "champion", "defender", "dominator", "master",
             "overlord", "protector", "saviour", "sentinel", "vigilante", "warlord", "warrior", "guardian",
             "guest", "lord", "enemies", "family", "folk", "people", "buck", "doe", "hart", "hind", "stag",
-            # Quest / System / General Non-Locations
+            "trainer", "trainers", "vendor", "vendors", "quartermaster", "quartermasters", "provisioner",
+            "provisioners", "healer", "healers", "decorator", "decorators", "banker", "bankers", "broker",
+            "brokers", "auctioneer", "auctioneers", "raider", "raiders", "slayer", "slayers", "brigand",
+            "brigands", "beast", "beasts", "monster", "monsters", "mob", "mobs", "creature", "creatures",
+            "animal", "animals", "dragon", "dragons", "drake", "drakes", "orc", "orcs", "goblin",
+            "goblins", "troll", "trolls", "warg", "wargs", "spider", "spiders", "undead", "wraith",
+            "wraiths", "wight", "wights", "ghoul", "ghouls", "skeleton", "skeletons", "zombie", "zombies",
+            "bandit", "bandits", "thief", "thieves", "outlaw", "outlaws", "cultist", "cultists", "soldier",
+            "soldier-slayer", "warriors", "archer", "archers", "scout", "scouts", "assassin", "assassins",
+            "mage", "mages", "sorcerer", "sorcerers", "shaman", "shamans", "priest", "priests", "boss",
+            "bosses", "elites", "elite", "nemesis", "arch-nemesis",
+            # Quest / System / General Non-Locations / Actions
             "recipes", "recipe", "fishing", "task", "tasks", "challenge", "decision", "interruption",
-            "experience", "reputation", "quests", "quest", "allies", "friends", "enemy"
+            "experience", "reputation", "quests", "quest", "allies", "friends", "enemy", "abandon",
+            "abandonn", "accept", "decline", "select", "cancel", "delete", "remove", "add", "create",
+            "search", "filter", "apply", "reset", "close", "open", "view", "lock", "unlock", "equip",
+            "unequip", "trade", "buy", "sell", "repair", "recharge", "teleport", "travel", "summon",
+            "dismiss", "use", "activate", "deactivate", "interact", "talk", "speak", "whisper", "shout",
+            "say", "yell", "tell", "defeat", "collect", "kill", "slay", "scout", "investigate", "discover",
+            "help", "defend", "protect", "save", "rescue", "complete", "finish", "start", "begin", "end",
+            "stop", "pause", "resume", "addition", "additionally", "tier", "tiers", "t1", "t2", "t3",
+            "t4", "t5", "t6", "t7", "t8", "t9", "t10", "difficulty", "difficulties", "delving", "delvings",
+            "instance", "instances", "raid", "raids", "mission", "missions", "skirmish", "skirmishes",
+            "scenarios", "scenario", "campaign", "campaigns", "co-op", "multiplayer", "singleplayer",
+            "pvp", "pve", "pvm"
         }
             
         for w in words:
@@ -183,6 +214,12 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
                 elif w_norm == "shield" and "isles" in val.lower():
                     pass
                 elif w_norm == "boss" and "arena" in val.lower():
+                    pass
+                elif w_norm == "delving" and "michel" in val.lower():
+                    pass
+                elif w_norm == "delving" and "great" in val.lower():
+                    pass
+                elif w_norm == "end" and "kings" in val.lower():
                     pass
                 else:
                     return None
