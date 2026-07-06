@@ -260,5 +260,9 @@
     "lang_es_ES": "Español (ES)",
     "lang_it_IT": "Italiano (IT)",
     "lang_ru_RU": "Ruso (RU)",
-    "ollama_outdated_error": "Ollama no pudo cargar el modelo. Es probable que se deba a una instalación de Ollama desactualizada (por ejemplo, arquitectura GGUF no soportada). Por favor, actualice Ollama a la última versión."
+    "ollama_outdated_error": "Ollama no pudo cargar el modelo. Es probable que se deba a una instalación de Ollama desactualizada (por ejemplo, arquitectura GGUF no soportada). Por favor, actualice Ollama a la última versión.",
+    "bearing": "Rumbo",
+    "gc_success_message": "Recolección de basura completada. Estadísticas de memoria actualizadas.",
+    "preferences_title": "Preferencias",
+    "vlm_cancel_btn": "Cancelar"
 }

@@ -260,5 +260,9 @@
     "lang_es_ES": "Spanish (ES)",
     "lang_it_IT": "Italian (IT)",
     "lang_ru_RU": "Russian (RU)",
-    "ollama_outdated_error": "Ollama failed to load the model. This is likely due to an outdated Ollama installation (e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version."
+    "ollama_outdated_error": "Ollama failed to load the model. This is likely due to an outdated Ollama installation (e.g., unsupported GGUF architecture). Please upgrade Ollama to the latest version.",
+    "bearing": "Bearing",
+    "gc_success_message": "Garbage collection completed. Memory stats updated.",
+    "preferences_title": "Preferences",
+    "vlm_cancel_btn": "Cancel"
 }

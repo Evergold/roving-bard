@@ -260,5 +260,9 @@
     "lang_es_ES": "Espagnol (ES)",
     "lang_it_IT": "Italien (IT)",
     "lang_ru_RU": "Russe (RU)",
-    "ollama_outdated_error": "Ollama n'a pas pu charger le modèle. Cela est probablement dû à une installation d'Ollama obsolète (par exemple, architecture GGUF non supportée). Veuillez mettre à jour Ollama vers la dernière version."
+    "ollama_outdated_error": "Ollama n'a pas pu charger le modèle. Cela est probablement dû à une installation d'Ollama obsolète (par exemple, architecture GGUF non supportée). Veuillez mettre à jour Ollama vers la dernière version.",
+    "bearing": "Cap",
+    "gc_success_message": "Ramasse-miettes terminé. Statistiques de mémoire mises à jour.",
+    "preferences_title": "Préférences",
+    "vlm_cancel_btn": "Annuler"
 }
