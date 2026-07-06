@@ -2505,6 +2505,10 @@ class LocalOCRParser:
         
         # Load words dictionary to prioritize valid locations
         words = load_lotro_words()
+        
+        import unicodedata
+        def strip_accents(s):
+            return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
                 
         for line in lines:
             match = coord_pattern.search(line)
@@ -2531,7 +2535,9 @@ class LocalOCRParser:
                     # 1. Try matching the full cleaned line
                     matches = difflib.get_close_matches(cleaned, words, n=1, cutoff=0.6)
                     if matches:
-                        ratio = difflib.SequenceMatcher(None, cleaned.lower(), matches[0].lower()).ratio()
+                        cleaned_flat = strip_accents(cleaned.lower())
+                        match_flat = strip_accents(matches[0].lower())
+                        ratio = difflib.SequenceMatcher(None, cleaned_flat, match_flat).ratio()
                         # Substring match reinforcement for VLM circle border crops
                         if len(cleaned) >= 4 and cleaned.lower() in matches[0].lower():
                             ratio = 1.0
@@ -2554,7 +2560,9 @@ class LocalOCRParser:
                             if len(w_cleaned) > 2:
                                 w_matches = difflib.get_close_matches(w_cleaned, words, n=1, cutoff=0.7)
                                 if w_matches:
-                                    w_ratio = difflib.SequenceMatcher(None, w_cleaned.lower(), w_matches[0].lower()).ratio()
+                                    w_cleaned_flat = strip_accents(w_cleaned.lower())
+                                    w_match_flat = strip_accents(w_matches[0].lower())
+                                    w_ratio = difflib.SequenceMatcher(None, w_cleaned_flat, w_match_flat).ratio()
                                     if len(w_cleaned) >= 4 and w_cleaned.lower() in w_matches[0].lower():
                                         w_ratio = 1.0
                                     if w_ratio > best_loc_score:
