@@ -2709,13 +2709,12 @@ class ScreenGrabber:
                 mask_gold_tight = cv2.inRange(hsv, np.array([10, 80, 80]), np.array([30, 255, 255]))
                 mask_gold_refined = cv2.inRange(hsv, np.array([10, 45, 25]), np.array([30, 255, 255]))
                 
+                candidates = []
                 for circle in circles:
                     cx, cy, r = int(circle[0]), int(circle[1]), int(circle[2])
                     
                     if not (r <= cx <= width - r and r <= cy <= height - r):
                         continue
-                        
-
                         
                     # 1. White text validation below the circle (where location and coordinates reside)
                     y_start = min(height - 1, cy + r - int(5 * scale_factor))
@@ -2755,6 +2754,27 @@ class ScreenGrabber:
                     if not (0.02 <= white_ratio <= 0.45):
                         continue
                         
+                    # Score based on gold ring ratio
+                    score = gold_ratio
+                    in_top_right = (cx > width * 0.4) and (cy < height * 0.6)
+                    if in_top_right:
+                        score *= 1.3
+                        
+                    candidates.append({
+                        "cx": cx,
+                        "cy": cy,
+                        "r": r,
+                        "score": score
+                    })
+                    
+                # Sort candidates by CV score descending and limit OCR to top 3 to prevent performance bottleneck
+                candidates.sort(key=lambda x: x["score"], reverse=True)
+                top_candidates = candidates[:3]
+                
+                for cand in top_candidates:
+                    cx, cy, r = cand["cx"], cand["cy"], cand["r"]
+                    score = cand["score"]
+                    
                     # 4. OCR validation: verify if this circle has coordinates text below it
                     try:
                         ocr_x_start = max(0, cx - r - int(35 * scale_factor))
@@ -2780,12 +2800,6 @@ class ScreenGrabber:
                     except Exception as ocr_err:
                         print(f"[MinimapDetector] OCR candidate validation error: {ocr_err}")
                         rank = 0
-                        
-                    # Score based on gold ring ratio
-                    score = gold_ratio
-                    in_top_right = (cx > width * 0.4) and (cy < height * 0.6)
-                    if in_top_right:
-                        score *= 1.3
                         
                     # Prioritize CV score first (gold ring ratio + top-right bias), then OCR rank
                     if (score > best_score) or (score == best_score and rank > best_rank):
