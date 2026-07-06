@@ -2809,12 +2809,12 @@ class ScreenGrabber:
                 
                 if best_circle:
                     cx, cy, r = best_circle
-                    # Set bounding box to cover the circle and the location/coords below it
-                    # Use a wider bounds box (35 pixels margin) to prevent text clipping
-                    x_min = max(0, cx - r - int(35 * scale_factor))
-                    y_min = max(0, cy - r - int(10 * scale_factor))
-                    w_box = min(width - x_min, 2 * r + int(70 * scale_factor))
-                    h_box = min(height - y_min, 2 * r + int(105 * scale_factor)) # Taller height to ensure coordinates are never cut off
+                    # Set bounding box using a consistent ideal size based on Test 1 (r = 88 at 1080p)
+                    r_ideal = int(88 * scale_factor)
+                    x_min = max(0, cx - r_ideal - int(35 * scale_factor))
+                    y_min = max(0, cy - r_ideal - int(10 * scale_factor))
+                    w_box = min(width - x_min, 2 * r_ideal + int(70 * scale_factor))
+                    h_box = min(height - y_min, 2 * r_ideal + int(105 * scale_factor))
                     
                     bounds = {
                         "x": round(x_min / width, 4),
