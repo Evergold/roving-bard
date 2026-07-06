@@ -2784,7 +2784,7 @@ class ScreenGrabber:
                         
                         precise_text_img = img.crop((ocr_x_start, ocr_y_start, ocr_x_end, ocr_y_end))
                         
-                        loc, coords, ns, ew = ocr_parser.run_ocr(precise_text_img, ocr_pass=2, already_cropped=True)
+                        loc, coords, ns, ew = ocr_parser.run_ocr(precise_text_img, ocr_pass=2, already_cropped=True, quiet=True)
                         is_verified = (loc in words) if (loc and words) else False
                         
                         if loc and coords and is_verified:
@@ -3235,7 +3235,7 @@ class LocalOCRParser:
 
         return location, coordinates, ns_val, ew_val
 
-    def _run_single_ocr_pass(self, text_img, ocr_pass, words):
+    def _run_single_ocr_pass(self, text_img, ocr_pass, words, quiet=False):
         try:
             processed = self.preprocess_image(text_img, ocr_pass)
             
@@ -3266,7 +3266,7 @@ class LocalOCRParser:
                 # Use a strict cutoff threshold of 0.80 to prevent trash fuzzy matches (e.g. Saye -> Scary)
                 matches = difflib.get_close_matches(location, words, n=1, cutoff=0.80)
                 if matches:
-                    if location != matches[0]:
+                    if location != matches[0] and not quiet:
                         print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
                     location = matches[0]
                         
@@ -3275,7 +3275,7 @@ class LocalOCRParser:
             print(f"Error in single OCR pass {ocr_pass}: {e}")
             return None, None, None, None
 
-    def run_ocr(self, pil_img, ocr_pass="auto", already_cropped=False):
+    def run_ocr(self, pil_img, ocr_pass="auto", already_cropped=False, quiet=False):
         self.tesseract_vram_initialized = True
         try:
             # 1. Crop only the bottom 42% of the bounding box if not already cropped
@@ -3304,8 +3304,9 @@ class LocalOCRParser:
                     passes_to_run = [2]
             
             for pass_idx in passes_to_run:
-                print(f"[Pipeline] Attempting local Tesseract OCR (Pass {pass_idx})...")
-                loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words)
+                if not quiet:
+                    print(f"[Pipeline] Attempting local Tesseract OCR (Pass {pass_idx})...")
+                loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words, quiet=quiet)
                 raw_text = getattr(self, "latest_raw_text", "")
                 
                 is_verified = (loc in words) if (loc and words) else False

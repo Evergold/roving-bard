@@ -996,7 +996,7 @@ def has_minimap_bounds_in_yaml() -> bool:
     return False
 
 
-def start_async_minimap_detection(full_img, is_first_launch: bool = False):
+def start_async_minimap_detection(full_img):
     """Starts background detection of the minimap bounds to prevent UI freezing."""
     import threading
     tools.detection_generation += 1
@@ -1058,9 +1058,9 @@ def start_async_minimap_detection(full_img, is_first_launch: bool = False):
             # Update tools.config in memory
             tools.config["minimap_bounds"] = tools.grabber.bounds
             
-            # Run the scan pipeline to cache images (and run OCR only if auto-detection was successful and not first launch)
+            # Run the scan pipeline to cache images (and run OCR only if auto-detection was successful)
             # We pass ignore_detecting=True to bypass the guard since we are running within the detection thread.
-            should_skip_ocr = is_first_launch or (not getattr(tools, "minimap_detected", False))
+            should_skip_ocr = not getattr(tools, "minimap_detected", False)
             tools.check_screen_and_update_music(ignore_detecting=True, skip_ocr=should_skip_ocr)
             
             # Clear the detecting flag AFTER the scan/OCR pipeline completes to ensure the frontend's status polls catch the final results
@@ -1116,7 +1116,7 @@ def initialize_simulation_screen():
                 print(f"[ScreenGrabber] Error caching screenshot immediately on startup: {e_cache}")
                 
             # Start background async bounds detection
-            start_async_minimap_detection(full_img, is_first_launch=True)
+            start_async_minimap_detection(full_img)
         except Exception as e:
             print(f"[ScreenGrabber] Failed to initialize simulation screen: {e}")
 
