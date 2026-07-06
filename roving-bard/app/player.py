@@ -117,6 +117,15 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
         if len(words) > 4:  # Confirmed max 4 words from default lotro_words.txt (e.g. The Last Homely House)
             return None
             
+        for w in words:
+            # Reject words with more than 1 uppercase letter (filters out binary encoding noise)
+            if sum(1 for c in w if c.isupper()) > 1:
+                return None
+            # Reject words with invalid apostrophe suffixes (only 's possessive or ending apostrophe allowed)
+            if ("'" in w) or ("’" in w):
+                if not (w.endswith("'") or w.endswith("’") or w.endswith("'s") or w.endswith("’s")):
+                    return None
+            
         allowed_shorts = {"of", "in", "on", "the", "at", "by", "de", "la", "le", "and", "to"}
         if val.lower() in allowed_shorts:
             return None
