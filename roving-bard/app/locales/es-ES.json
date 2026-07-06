@@ -264,5 +264,7 @@
     "bearing": "Rumbo",
     "gc_success_message": "Recolección de basura completada. Estadísticas de memoria actualizadas.",
     "preferences_title": "Preferencias",
-    "vlm_cancel_btn": "Cancelar"
+    "vlm_cancel_btn": "Cancelar",
+    "preview_location_original": "Original / VLM",
+    "preview_location_processed": "Tesseract"
 }

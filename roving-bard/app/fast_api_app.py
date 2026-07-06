@@ -563,6 +563,7 @@ def api_status():
         "active_instrument": tools.player.active_instrument if tools.player.active_instrument is not None else tools.player.get_default_instrument(),
         "is_abc": tools.player.current_track.lower().endswith(".abc") if tools.player.current_track else False,
         "minimap_detected": getattr(tools, "minimap_detected", False),
+        "minimap_detecting": getattr(tools, "minimap_detecting", False),
         "available_soundfonts": get_available_soundfonts(tools.player.playlist_dir),
         "current_ocr_pass": tools.current_ocr_pass,
     }
@@ -958,6 +959,45 @@ def api_screenshot_location_raw():
     return Response(content=transparent_png, media_type="image/png")
 
 
+def start_async_minimap_detection(full_img):
+    """Starts background detection of the minimap bounds to prevent UI freezing."""
+    import threading
+    tools.minimap_detecting = True
+    
+    def run_detection():
+        try:
+            print(f"[MinimapDetector] Background bounds detection started...")
+            config = tools.load_config()
+            force_manual = config.get("force_manual_bounds", False)
+            
+            if force_manual:
+                tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                tools.minimap_detected = False
+                print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {tools.grabber.bounds}")
+            else:
+                bounds, detected = tools.grabber.detect_minimap(full_img)
+                if detected:
+                    tools.grabber.bounds = bounds
+                    tools.minimap_detected = True
+                else:
+                    tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
+                    tools.minimap_detected = False
+            
+            # Update tools.config in memory
+            tools.config["minimap_bounds"] = tools.grabber.bounds
+            
+            # Run the scan pipeline to cache images, run OCR, and update status
+            tools.check_screen_and_update_music()
+            print(f"[MinimapDetector] Background bounds detection completed. Detected={tools.minimap_detected}, Bounds={tools.grabber.bounds}")
+        except Exception as e:
+            print(f"[MinimapDetector] Background detection error: {e}")
+        finally:
+            tools.minimap_detecting = False
+            
+    thread = threading.Thread(target=run_detection, daemon=True)
+    thread.start()
+
+
 def initialize_simulation_screen():
     """Loads the first test screen on startup if in simulation mode."""
     import os
@@ -978,29 +1018,8 @@ def initialize_simulation_screen():
         try:
             full_img = tools.grabber.capture_full()
             print(f"[ScreenGrabber] Init Simulation: Loaded test screen")
-            
-            config = tools.load_config()
-            force_manual = config.get("force_manual_bounds", False)
-            
-            if force_manual:
-                tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
-                tools.minimap_detected = False
-                print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {tools.grabber.bounds}")
-            else:
-                # Run minimap detection
-                bounds, detected = tools.grabber.detect_minimap(full_img)
-                if detected:
-                    tools.grabber.bounds = bounds
-                    tools.minimap_detected = True
-                else:
-                    tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
-                    tools.minimap_detected = False
-            
-            # Update tools.config in memory
-            tools.config["minimap_bounds"] = tools.grabber.bounds
-            
-            # Run the scan pipeline to cache images, run OCR, and update status
-            tools.check_screen_and_update_music()
+            # Start background async bounds detection
+            start_async_minimap_detection(full_img)
         except Exception as e:
             print(f"[ScreenGrabber] Failed to initialize simulation screen: {e}")
 
@@ -1047,42 +1066,18 @@ def api_screenshot_refresh():
         return {"status": "error", "message": "Failed to capture/load screenshot."}
 
     try:
-        config = tools.load_config()
-        force_manual = config.get("force_manual_bounds", False)
-        
-        if force_manual:
-            tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
-            tools.minimap_detected = False
-            bounds = tools.grabber.bounds
-            print(f"[ScreenGrabber] Bypassing detection: Using manual bounds: {bounds}")
-        else:
-            # Run minimap detection on the full image
-            bounds, detected = tools.grabber.detect_minimap(full_img)
-            
-            if detected:
-                tools.grabber.bounds = bounds
-                tools.minimap_detected = True
-            else:
-                # Fallback to config.yaml bounds
-                tools.grabber.bounds = config.get("minimap_bounds", {"x": 0.8, "y": 0.05, "width": 0.15, "height": 0.15})
-                tools.minimap_detected = False
-                bounds = tools.grabber.bounds
-            
-        # Update tools.config in memory
-        tools.config["minimap_bounds"] = tools.grabber.bounds
-            
-        # Run the scan pipeline to cache images, run OCR, and update status
-        tools.check_screen_and_update_music()
+        # Start background async bounds detection
+        start_async_minimap_detection(full_img)
         
         return {
             "status": "success",
-            "message": "Screenshot reloaded successfully.",
-            "detected": detected,
-            "bounds": bounds,
-            "simulation": len(test_files) > 0
+            "message": "Screenshot reloaded, dynamic detection started in background.",
+            "detecting": True,
+            "simulation": len(test_files) > 0,
+            "latest_parse": tools.latest_parse_result
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"Error starting background detection: {e}"}
 
 
 @app.post("/api/ocr/wrong", dependencies=[Depends(verify_api_key)])

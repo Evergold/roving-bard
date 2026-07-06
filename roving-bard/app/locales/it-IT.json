@@ -264,5 +264,7 @@
     "bearing": "Rilevamento",
     "gc_success_message": "Garbage collection completata. Statistiche della memoria aggiornate.",
     "preferences_title": "Preferenze",
-    "vlm_cancel_btn": "Annulla"
+    "vlm_cancel_btn": "Annulla",
+    "preview_location_original": "Originale / VLM",
+    "preview_location_processed": "Tesseract"
 }

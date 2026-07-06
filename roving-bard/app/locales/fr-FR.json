@@ -264,5 +264,7 @@
     "bearing": "Cap",
     "gc_success_message": "Ramasse-miettes terminé. Statistiques de mémoire mises à jour.",
     "preferences_title": "Préférences",
-    "vlm_cancel_btn": "Annuler"
+    "vlm_cancel_btn": "Annuler",
+    "preview_location_original": "Original / VLM",
+    "preview_location_processed": "Tesseract"
 }

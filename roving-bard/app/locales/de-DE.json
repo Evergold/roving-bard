@@ -264,5 +264,7 @@
     "bearing": "Peilung",
     "gc_success_message": "Garbage Collection abgeschlossen. Speicherstatistik aktualisiert.",
     "preferences_title": "Einstellungen",
-    "vlm_cancel_btn": "Abbrechen"
+    "vlm_cancel_btn": "Abbrechen",
+    "preview_location_original": "Original / VLM",
+    "preview_location_processed": "Tesseract"
 }

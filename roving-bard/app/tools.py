@@ -193,6 +193,7 @@ latest_location_processed_bytes = None
 latest_location_raw_bytes = None
 latest_character_processed_bytes = None
 minimap_detected = False
+minimap_detecting = False
 server_baseline_ram = 1100 * 1024 * 1024  # Default fallback 1.1 GB
 server_baseline_vram = 0
 current_ocr_pass = "auto"

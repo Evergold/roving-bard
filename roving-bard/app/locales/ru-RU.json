@@ -264,5 +264,7 @@
     "bearing": "Азимут",
     "gc_success_message": "Сборка мусора завершена. Статистика памяти обновлена.",
     "preferences_title": "Настройки",
-    "vlm_cancel_btn": "Отмена"
+    "vlm_cancel_btn": "Отмена",
+    "preview_location_original": "Оригинал / VLM",
+    "preview_location_processed": "Tesseract"
 }
