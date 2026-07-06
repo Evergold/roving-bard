@@ -162,7 +162,12 @@ def extract_lotro_words(dat_path, default_words_path, output_path):
             "bubble", "spirit", "wrath", "strength", "benevolence", "buff", "debuff", "morale", "power",
             "stat", "stats", "virtue", "level", "lvl", "leveling", "points", "point", "coin", "coins",
             "currency", "currencies", "cap", "caps", "wallet", "barter", "tribute", "writ", "writs",
-            "booster", "boosters", "slots", "tracker",
+            "booster", "boosters", "slots", "tracker", "attunement", "fervour", "focus", "gambit",
+            "dissonance", "resonance", "melody", "ballad", "coda", "anthem", "induction", "inductions",
+            "cooldown", "cooldowns", "stance", "stances", "specialization", "specializations", "ability",
+            "abilities", "skill", "skills", "trait", "traits", "spell", "spells", "duration", "damage",
+            "healing", "mitigation", "melee", "ranged", "combat", "tactical", "attack", "attacks",
+            "courage", "cunning", "riddle", "riddles", "breath", "need", "queue", "combos", "combo",
             # NPC / Animals / Creatures / Mobs / Enemies
             "dog", "bee", "bees", "chicken", "chickens", "horse", "pony", "boar", "wolf", "bear",
             "ally", "friend", "kin", "survivor", "reeve", "champion", "defender", "dominator", "master",
