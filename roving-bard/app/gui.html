@@ -6341,6 +6341,10 @@
         function switchPreviewTab(event, tabName) {
             if (event) event.preventDefault();
             
+            try {
+                localStorage.setItem('activePreviewTab', tabName);
+            } catch (e) {}
+            
             // Remove active class from all preview tabs
             document.querySelectorAll('.tabs-header .tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.screenshot-container .tab-content').forEach(content => {
@@ -9876,6 +9880,16 @@
                 }
             } catch (e_vlm) {
                 console.error("Error restoring VLM preference:", e_vlm);
+            }
+
+            // Restore Active Preview Tab preference
+            try {
+                const savedPreviewTab = localStorage.getItem('activePreviewTab');
+                if (savedPreviewTab) {
+                    switchPreviewTab(null, savedPreviewTab);
+                }
+            } catch (e_tab) {
+                console.error("Error restoring active preview tab:", e_tab);
             }
         };
     
