@@ -207,6 +207,7 @@
     "tab_location": "ЛОКАЦИЯ",
     "tab_char": "ПЕРСОНАЖ",
     "preview_original": "Оригинал",
+    "preview_cursor_original": "Оригинал / VLM",
     "preview_processed": "Обработан",
     "bounding_box_setup": "НАСТРОЙКА ОБЛАСТИ ОГРАНИЧЕНИЯ",
     "vlm_benchmarking": "Тестирование VLM",

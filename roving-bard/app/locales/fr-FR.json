@@ -207,6 +207,7 @@
     "tab_location": "EMPLACEMENT",
     "tab_char": "PERSONNAGE",
     "preview_original": "Original",
+    "preview_cursor_original": "Original / VLM",
     "preview_processed": "Traité",
     "bounding_box_setup": "CONFIGURATION DE ZONE DE CAPTURE",
     "vlm_benchmarking": "Analyse Comparative VLM",

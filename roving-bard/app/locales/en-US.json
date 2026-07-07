@@ -207,6 +207,7 @@
     "tab_location": "LOCATION",
     "tab_char": "CHARACTER",
     "preview_original": "Original",
+    "preview_cursor_original": "Original / VLM",
     "preview_processed": "Processed",
     "bounding_box_setup": "BOUNDING BOX SETUP",
     "vlm_benchmarking": "VLM Benchmarking",

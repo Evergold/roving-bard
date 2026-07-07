@@ -207,6 +207,7 @@
     "tab_location": "POSIZIONE",
     "tab_char": "PERSONAGGIO",
     "preview_original": "Originale",
+    "preview_cursor_original": "Originale / VLM",
     "preview_processed": "Elaborato",
     "bounding_box_setup": "CONFIGURAZIONE RETTANGOLO SELEZIONE",
     "vlm_benchmarking": "Benchmark VLM",

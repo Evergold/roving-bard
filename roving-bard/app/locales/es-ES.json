@@ -207,6 +207,7 @@
     "tab_location": "UBICACIÓN",
     "tab_char": "PERSONAJE",
     "preview_original": "Original",
+    "preview_cursor_original": "Original / VLM",
     "preview_processed": "Procesado",
     "bounding_box_setup": "CONFIGURACIÓN DE ÁREA DE CAPTURA",
     "vlm_benchmarking": "Prueba de VLM",
