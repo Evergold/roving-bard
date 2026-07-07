@@ -468,17 +468,8 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         hsv = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
         
-        # Save cursor processed crop (the cleaned chevron isolated on a black background)
-        try:
-            cursor_proc_bgr = cv2.bitwise_and(cv_crop, cv_crop, mask=mask)
-            cursor_proc_rgb = cursor_proc_bgr[:, :, ::-1].copy()
-            cursor_proc_pil = Image.fromarray(cursor_proc_rgb)
-            buf_cursor_proc = BytesIO()
-            cursor_proc_pil.save(buf_cursor_proc, format="PNG")
-            latest_cursor_processed_bytes = buf_cursor_proc.getvalue()
-        except Exception as e_mask:
-            print(f"Error caching processed cursor: {e_mask}")
-
+        # Calculate contours and bearing first so we have cX, cY, and furthest_pt
+        cX, cY, furthest_pt = None, None, None
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if contours:
             largest_contour = max(contours, key=cv2.contourArea)
@@ -488,7 +479,6 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
                     
-                    furthest_pt = None
                     max_dist = -1
                     for pt in largest_contour:
                         px, py = pt[0][0], pt[0][1]
@@ -497,14 +487,36 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
                             max_dist = dist
                             furthest_pt = (px, py)
                             
-                    dx = furthest_pt[0] - cX
-                    dy = furthest_pt[1] - cY
-                    angle_rad = np.arctan2(dx, -dy)
-                    bearing_deg = float(np.degrees(angle_rad) % 360)
-                    
-                    directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
-                    idx = int((bearing_deg + 11.25) / 22.5) % 16
-                    bearing_str = f"{bearing_deg:.1f}° ({directions[idx]})"
+                    if furthest_pt:
+                        dx = furthest_pt[0] - cX
+                        dy = furthest_pt[1] - cY
+                        angle_rad = np.arctan2(dx, -dy)
+                        bearing_deg = float(np.degrees(angle_rad) % 360)
+                        
+                        directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+                        idx = int((bearing_deg + 11.25) / 22.5) % 16
+                        bearing_str = f"{bearing_deg:.1f}° ({directions[idx]})"
+
+        # Save cursor processed crop (the cleaned chevron isolated on a black background, with the directional helper line)
+        try:
+            cursor_proc_bgr = cv2.bitwise_and(cv_crop, cv_crop, mask=mask)
+            if furthest_pt is not None and cX is not None and cY is not None:
+                dx = furthest_pt[0] - cX
+                dy = furthest_pt[1] - cY
+                length = np.sqrt(dx**2 + dy**2)
+                if length > 0:
+                    ux, uy = dx / length, dy / length
+                    start_pt = (int(furthest_pt[0]), int(furthest_pt[1]))
+                    end_pt = (int(furthest_pt[0] + ux * 15), int(furthest_pt[1] + uy * 15))
+                    cv2.line(cursor_proc_bgr, start_pt, end_pt, (0, 255, 0), 2) # Draw bright green line
+            
+            cursor_proc_rgb = cursor_proc_bgr[:, :, ::-1].copy()
+            cursor_proc_pil = Image.fromarray(cursor_proc_rgb)
+            buf_cursor_proc = BytesIO()
+            cursor_proc_pil.save(buf_cursor_proc, format="PNG")
+            latest_cursor_processed_bytes = buf_cursor_proc.getvalue()
+        except Exception as e_mask:
+            print(f"Error caching processed cursor: {e_mask}")
     except Exception as e:
         print(f"Error parsing bearing: {e}")
 
