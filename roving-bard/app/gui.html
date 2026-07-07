@@ -4416,6 +4416,7 @@
             }).join(" ");
         }
         let pollingIntervalId = null;
+        let lastLocationRouteHtml = "Waiting for scan...";
         let isEditIndex = -1;
         let currentPlaybackStatus = null;
         let audioLibraryFiles = [];
@@ -5498,11 +5499,11 @@
                 }
                 
                 if (selectedVal === 'tesseract' && (parse.parsed_location || parse.parsed_coordinates)) {
-                    document.getElementById('parse-route').innerHTML = `<div>${methodText}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
-                    updateWrongOcrButtonVisibility();
+                    lastLocationRouteHtml = `<div>${methodText}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
                 } else {
-                    document.getElementById('parse-route').innerText = methodText;
+                    lastLocationRouteHtml = methodText;
                 }
+                renderExtractionRoute();
 
                 const hasActual = (parse.actual_ram !== null && parse.actual_ram !== undefined);
                 const finalRam = hasActual ? parse.actual_ram : "---";
@@ -5799,17 +5800,14 @@
             }
             const parseLoc = document.getElementById('parse-location').innerText;
             const parseCoords = document.getElementById('parse-coords').innerText;
-            const routeEl = document.getElementById('parse-route');
-            if (routeEl) {
-                const hasLocation = parseLoc && parseLoc !== "Unknown" && parseLoc !== "";
-                const hasCoords = parseCoords && parseCoords !== "None" && parseCoords !== "";
-                if (selectedVal === 'tesseract' && (hasLocation || hasCoords)) {
-                    routeEl.innerHTML = `<div>${routeName}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
-                    updateWrongOcrButtonVisibility();
-                } else {
-                    routeEl.innerText = routeName;
-                }
+            const hasLocation = parseLoc && parseLoc !== "Unknown" && parseLoc !== "";
+            const hasCoords = parseCoords && parseCoords !== "None" && parseCoords !== "";
+            if (selectedVal === 'tesseract' && (hasLocation || hasCoords)) {
+                lastLocationRouteHtml = `<div>${routeName}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
+            } else {
+                lastLocationRouteHtml = routeName;
             }
+            renderExtractionRoute();
   
             // Clear cached memory stats if we haven't run the model this session
             if (!runModelsThisSession.has(selectedVal)) {
@@ -6098,16 +6096,16 @@
                             displayMethod = res.method.replace("Local OCR (Pass ", "OpenCV+Tesseract (Pass ").replace(")", modeSuffix + ")");
                         }
                         if (res.parsed_location || res.parsed_coordinates) {
-                            document.getElementById('parse-route').innerHTML = `<div>${displayMethod}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
-                            updateWrongOcrButtonVisibility();
+                            lastLocationRouteHtml = `<div>${displayMethod}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
                         } else {
-                            document.getElementById('parse-route').innerText = displayMethod;
+                            lastLocationRouteHtml = displayMethod;
                         }
                     } else {
-                        document.getElementById('parse-route').innerText = friendlyName;
+                        lastLocationRouteHtml = friendlyName;
                         activeVLMModel = friendlyName;
                         currentlyWarmModel = selectedVal;
                     }
+                    renderExtractionRoute();
                     if (statMethod) statMethod.innerText = friendlyName;
                     const postEl = document.getElementById('stat-postprocess-time');
                     if (postEl) {
@@ -6376,6 +6374,7 @@
                 }
             }
             updateWrongOcrButtonVisibility();
+            renderExtractionRoute();
         }
 
         function updateWrongOcrButtonVisibility() {
@@ -6389,6 +6388,28 @@
                     parentDiv.style.visibility = (activeTab === 'location') ? 'visible' : 'hidden';
                 }
             }
+        }
+
+        function renderExtractionRoute() {
+            const routeEl = document.getElementById('parse-route');
+            if (!routeEl) return;
+            
+            const activeTabBtn = document.querySelector('.tabs-header .tab-btn.active');
+            if (!activeTabBtn) return;
+            const activeTab = activeTabBtn.getAttribute('data-loc').replace('tab_', '');
+            
+            if (activeTab === 'cursor') {
+                // Keep the Wrong? button placeholder in HTML to prevent layout changes,
+                // but its visibility will be set to hidden by updateWrongOcrButtonVisibility().
+                if (lastLocationRouteHtml && lastLocationRouteHtml.includes('btn-wrong')) {
+                    routeEl.innerHTML = `<div>OpenCV+Tesseract (Pass 0 - Fixed)</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
+                } else {
+                    routeEl.innerText = "OpenCV+Tesseract (Pass 0 - Fixed)";
+                }
+            } else {
+                routeEl.innerHTML = lastLocationRouteHtml;
+            }
+            updateWrongOcrButtonVisibility();
         }
 
         function updateCharVisualizerBounds() {
