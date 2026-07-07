@@ -2982,7 +2982,7 @@ class LocalOCRParser:
             # - Latitudes can have 8, 2, 5 (common misreads for S) or 4 (common misread for N)
             # - Longitudes can have 8, 4, 7 (common misreads for W) or v/V/vV
             coord_sub_pattern = re.compile(
-                r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*[\d\.])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*[\d\.])", re.IGNORECASE
+                r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*(?:\d|\.\d))[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*(?:\d|\.\d))", re.IGNORECASE
             )
             match = coord_sub_pattern.search(line)
             if match:
@@ -3010,7 +3010,7 @@ class LocalOCRParser:
             else:
                 # 2. Check if latitude letter is missing but longitude has a letter: e.g. "11.9, 67.8 W"
                 lat_missing_pattern = re.compile(
-                    r"(\d+(?:\.\d+)?)(?!\s*[a-zA-Z0-9])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*[\d\.])", re.IGNORECASE
+                    r"(\d+(?:\.\d+)?)(?!\s*[a-zA-Z0-9])[\s,\-]+(\d+(?:\.\d+)?)\s*([EW847vV])(?!\s*(?:\d|\.\d))", re.IGNORECASE
                 )
                 match = lat_missing_pattern.search(line)
                 if match:
@@ -3026,7 +3026,7 @@ class LocalOCRParser:
                 else:
                     # 3. Check if longitude letter is missing but latitude has a letter: e.g. "11.9S, 67.8"
                     lon_missing_pattern = re.compile(
-                        r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*[\d\.])[\s,\-]+(\d+(?:\.\d+)?)(?!\s*[a-zA-Z0-9])", re.IGNORECASE
+                        r"(\d+(?:\.\d+)?)\s*([NS8245])(?!\s*(?:\d|\.\d))[\s,\-]+(\d+(?:\.\d+)?)(?!\s*[a-zA-Z0-9])", re.IGNORECASE
                     )
                     match = lon_missing_pattern.search(line)
                     if match:
