@@ -1146,11 +1146,16 @@
             font-size: 1rem;
             font-weight: 600;
             margin-top: 4px;
+            min-height: 1.5rem;
         }
 
         .data-item .coords-font {
             font-family: 'Space Mono', monospace;
             color: var(--neon-blue);
+        }
+
+        #parse-coords {
+            min-height: 2.8rem;
         }
 
         /* Config Forms */
@@ -6027,10 +6032,9 @@
             showCancelVlmButton();
             modelSelect.disabled = true;
  
-            // Clear existing dashboard values to ensure parsed values are visible
-            document.getElementById('parse-location').innerText = "";
-            document.getElementById('parse-coords').innerText = "";
-            document.getElementById('parse-bearing').innerText = "";
+            // Clear existing dashboard values using non-breaking spaces to preserve layout height and avoid shifts
+            document.getElementById('parse-location').innerText = "\u00A0";
+            document.getElementById('parse-coords').innerText = "\u00A0";
  
              const friendlyNames = {
                 'tesseract': 'OpenCV+Tesseract',
@@ -6087,7 +6091,9 @@
                         coordsHtml += "<br><span style='font-size: 0.8rem; opacity: 0.7;'>[" + res.raw_coordinates + "]</span>";
                     }
                     document.getElementById('parse-coords').innerHTML = coordsHtml;
-                    document.getElementById('parse-bearing').innerText = res.parsed_bearing || "None";
+                    if (res.parsed_bearing && res.parsed_bearing !== "None") {
+                        document.getElementById('parse-bearing').innerText = res.parsed_bearing;
+                    }
                     if (selectedVal === 'tesseract') {
                         activeVLMModel = null;
                         let displayMethod = friendlyName;
@@ -6402,9 +6408,9 @@
                 // Keep the Wrong? button placeholder in HTML to prevent layout changes,
                 // but its visibility will be set to hidden by updateWrongOcrButtonVisibility().
                 if (lastLocationRouteHtml && lastLocationRouteHtml.includes('btn-wrong')) {
-                    routeEl.innerHTML = `<div>OpenCV+Tesseract (Pass 0 - Fixed)</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
+                    routeEl.innerHTML = `<div>OpenCV (Pass 0 - Fixed)</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
                 } else {
-                    routeEl.innerText = "OpenCV+Tesseract (Pass 0 - Fixed)";
+                    routeEl.innerText = "OpenCV (Pass 0 - Fixed)";
                 }
             } else {
                 routeEl.innerHTML = lastLocationRouteHtml;
