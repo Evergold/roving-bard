@@ -4087,7 +4087,7 @@
                                 </div>
                                 <div class="data-item">
                                     <div class="label" data-loc="bearing">Bearing</div>
-                                    <div id="parse-bearing" class="value coords-font">None</div>
+                                    <div id="parse-bearing" class="value coords-font">&nbsp;</div>
                                 </div>
                             </div>
 
@@ -5576,10 +5576,10 @@
 
             if (document.getElementById('parse-bearing')) {
                 const bearingVal = parse.parsed_bearing;
-                if (bearingVal === "" || (currentPlaybackStatus && currentPlaybackStatus.minimap_detecting)) {
+                if (!bearingVal || bearingVal === "None" || bearingVal === "none" || (currentPlaybackStatus && currentPlaybackStatus.minimap_detecting)) {
                     document.getElementById('parse-bearing').innerText = "\u00A0";
                 } else {
-                    document.getElementById('parse-bearing').innerText = bearingVal || t("none");
+                    document.getElementById('parse-bearing').innerText = bearingVal;
                 }
             }
 
