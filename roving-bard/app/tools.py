@@ -435,6 +435,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         
         # 2. Calculate red centroid (fall back to center of image if no red found)
         cX_red, cY_red = cv_crop.shape[1] // 2, cv_crop.shape[0] // 2
+        bearing_approx_deg = 0.0
         contours_red, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if contours_red:
             largest_contour_red = max(contours_red, key=cv2.contourArea)
@@ -444,23 +445,52 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
                     cX_red = int(M_red["m10"] / M_red["m00"])
                     cY_red = int(M_red["m01"] / M_red["m00"])
                     
-        # 3. Dilate red mask to cover adjacent orange tips (3x3 kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                    # Find furthest point of red core to determine the base corners
+                    furthest_pt_red = None
+                    max_dist = -1
+                    for pt in largest_contour_red:
+                        px, py = pt[0][0], pt[0][1]
+                        dist = (px - cX_red)**2 + (py - cY_red)**2
+                        if dist > max_dist:
+                            max_dist = dist
+                            furthest_pt_red = (px, py)
+                    if furthest_pt_red is not None:
+                        dx = furthest_pt_red[0] - cX_red
+                        dy = furthest_pt_red[1] - cY_red
+                        angle_base = np.degrees(np.arctan2(dx, -dy)) % 360
+                        # Shift by 229 degrees to get approx true heading (opposite to base corner midpoint)
+                        bearing_approx_deg = (angle_base + 229.0) % 360
+                        
+        # 3. Dilate red mask to cover adjacent orange tips (5x5 kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         dilated_red = cv2.dilate(red_mask, kernel)
         
-        # 4. Spatial mask centered on the detected red centroid (radius 32.0)
+        # 4. Teardrop spatial mask centered on red centroid and aligned with approx heading
         H, W = cv_crop.shape[:2]
         y_indices, x_indices = np.ogrid[:H, :W]
-        dist_from_centroid = np.sqrt((x_indices - cX_red)**2 + (y_indices - cY_red)**2)
-        centroid_mask = dist_from_centroid <= 32.0
+        dx_pixels = x_indices - cX_red
+        dy_pixels = y_indices - cY_red
+        dist_pixels = np.sqrt(dx_pixels**2 + dy_pixels**2)
+        
+        approx_bearing_rad = np.radians(bearing_approx_deg)
+        ux = np.sin(approx_bearing_rad)
+        uy = -np.cos(approx_bearing_rad)
+        dot_val = dx_pixels * ux + dy_pixels * uy
+        normalized_dot = np.zeros_like(dist_pixels)
+        valid_dist = dist_pixels > 0
+        normalized_dot[valid_dist] = dot_val[valid_dist] / dist_pixels[valid_dist]
+        
+        # Radius scales from 21.0 (sides/back) to 32.0 (forward) to capture tip and block quest rings/borders
+        radius_limit = 21.0 + 11.0 * np.maximum(0.0, normalized_dot)
+        teardrop_mask = dist_pixels <= radius_limit
         
         # 5. Find only bright, saturated orange/yellow/peach pixels (excluding dark background paths/terrain)
         lower_orange = np.array([11, 50, 80])
         upper_orange = np.array([25, 255, 255])
         orange_mask = cv2.inRange(hsv_temp, lower_orange, upper_orange)
         
-        # 6. Combined mask: orange AND adjacent to red AND close to centroid
-        valid_orange_mask = orange_mask & dilated_red & centroid_mask
+        # 6. Combined mask: orange AND adjacent to red AND inside teardrop
+        valid_orange_mask = orange_mask & dilated_red & teardrop_mask
         cv_crop[valid_orange_mask > 0] = [0, 0, 255] # make them BGR red
         t_bearing_prep_end = time.time()
         bearing_prep_ms = (t_bearing_prep_end - t_bearing_prep_start) * 1000.0
@@ -468,8 +498,8 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         hsv = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
         
-        # Calculate contours and bearing first so we have cX, cY, and furthest_pt
-        cX, cY, furthest_pt = None, None, None
+        # Calculate contours and bearing first so we have cX, cY, and furthest_pt (front tip)
+        cX, cY, best_pt = None, None, None
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if contours:
             largest_contour = max(contours, key=cv2.contourArea)
@@ -479,19 +509,19 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
                     
-                    max_dist = -1
+                    # Find front tip by maximizing projection along bearing_approx_deg direction
+                    max_proj = -9999
                     for pt in largest_contour:
                         px, py = pt[0][0], pt[0][1]
-                        dist = (px - cX)**2 + (py - cY)**2
-                        if dist > max_dist:
-                            max_dist = dist
-                            furthest_pt = (px, py)
+                        proj = (px - cX) * ux + (py - cY) * uy
+                        if proj > max_proj:
+                            max_proj = proj
+                            best_pt = (px, py)
                             
-                    if furthest_pt:
-                        dx = furthest_pt[0] - cX
-                        dy = furthest_pt[1] - cY
-                        angle_rad = np.arctan2(dx, -dy)
-                        bearing_deg = float(np.degrees(angle_rad) % 360)
+                    if best_pt:
+                        dx = best_pt[0] - cX
+                        dy = best_pt[1] - cY
+                        bearing_deg = float(np.degrees(np.arctan2(dx, -dy)) % 360)
                         
                         directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
                         idx = int((bearing_deg + 11.25) / 22.5) % 16
@@ -500,15 +530,12 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         # Save cursor processed crop (the cleaned chevron isolated on a black background, with the directional helper line)
         try:
             cursor_proc_bgr = cv2.bitwise_and(cv_crop, cv_crop, mask=mask)
-            if furthest_pt is not None and cX is not None and cY is not None:
-                dx = furthest_pt[0] - cX
-                dy = furthest_pt[1] - cY
-                length = np.sqrt(dx**2 + dy**2)
-                if length > 0:
-                    ux, uy = dx / length, dy / length
-                    start_pt = (int(furthest_pt[0]), int(furthest_pt[1]))
-                    end_pt = (int(furthest_pt[0] + ux * 15), int(furthest_pt[1] + uy * 15))
-                    cv2.line(cursor_proc_bgr, start_pt, end_pt, (0, 255, 0), 2) # Draw bright green line
+            if best_pt is not None and cX is not None and cY is not None and bearing_deg is not None:
+                ux_true = np.sin(np.radians(bearing_deg))
+                uy_true = -np.cos(np.radians(bearing_deg))
+                start_pt = (int(best_pt[0]), int(best_pt[1]))
+                end_pt = (int(best_pt[0] + ux_true * 15), int(best_pt[1] + uy_true * 15))
+                cv2.line(cursor_proc_bgr, start_pt, end_pt, (0, 255, 0), 2) # Draw bright green line shooting out from front tip
             
             cursor_proc_rgb = cursor_proc_bgr[:, :, ::-1].copy()
             cursor_proc_pil = Image.fromarray(cursor_proc_rgb)
