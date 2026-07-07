@@ -5575,7 +5575,12 @@
             }
 
             if (document.getElementById('parse-bearing')) {
-                document.getElementById('parse-bearing').innerText = parse.parsed_bearing || t("none");
+                const bearingVal = parse.parsed_bearing;
+                if (bearingVal === "" || (currentPlaybackStatus && currentPlaybackStatus.minimap_detecting)) {
+                    document.getElementById('parse-bearing').innerText = "\u00A0";
+                } else {
+                    document.getElementById('parse-bearing').innerText = bearingVal || t("none");
+                }
             }
 
             document.getElementById('matched-track-file').innerText = parse.matched_track || t("none");

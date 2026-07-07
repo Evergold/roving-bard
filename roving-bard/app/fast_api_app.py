@@ -1007,6 +1007,7 @@ def start_async_minimap_detection(full_img):
     tools.latest_parse_result = {
         "parsed_location": "",
         "parsed_coordinates": "",
+        "parsed_bearing": "",
         "method": "None",
         "matched_track": "None",
         "timestamp": ""
