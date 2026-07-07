@@ -444,15 +444,15 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
                     cX_red = int(M_red["m10"] / M_red["m00"])
                     cY_red = int(M_red["m01"] / M_red["m00"])
                     
-        # 3. Dilate red mask to cover adjacent orange tips (5x5 kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        # 3. Dilate red mask to cover adjacent orange tips (3x3 kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         dilated_red = cv2.dilate(red_mask, kernel)
         
-        # 4. Spatial mask centered on the detected red centroid (radius 25.5)
+        # 4. Spatial mask centered on the detected red centroid (radius 32.0)
         H, W = cv_crop.shape[:2]
         y_indices, x_indices = np.ogrid[:H, :W]
         dist_from_centroid = np.sqrt((x_indices - cX_red)**2 + (y_indices - cY_red)**2)
-        centroid_mask = dist_from_centroid <= 25.5
+        centroid_mask = dist_from_centroid <= 32.0
         
         # 5. Find only bright, saturated orange/yellow/peach pixels (excluding dark background paths/terrain)
         lower_orange = np.array([11, 50, 80])
