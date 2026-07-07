@@ -5499,6 +5499,7 @@
                 
                 if (selectedVal === 'tesseract' && (parse.parsed_location || parse.parsed_coordinates)) {
                     document.getElementById('parse-route').innerHTML = `<div>${methodText}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
+                    updateWrongOcrButtonVisibility();
                 } else {
                     document.getElementById('parse-route').innerText = methodText;
                 }
@@ -5804,6 +5805,7 @@
                 const hasCoords = parseCoords && parseCoords !== "None" && parseCoords !== "";
                 if (selectedVal === 'tesseract' && (hasLocation || hasCoords)) {
                     routeEl.innerHTML = `<div>${routeName}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
+                    updateWrongOcrButtonVisibility();
                 } else {
                     routeEl.innerText = routeName;
                 }
@@ -6097,6 +6099,7 @@
                         }
                         if (res.parsed_location || res.parsed_coordinates) {
                             document.getElementById('parse-route').innerHTML = `<div>${displayMethod}</div><div style="margin-top: 0.35rem;"><button class="btn-wrong" onclick="reportWrongOcr()">Wrong?</button></div>`;
+                            updateWrongOcrButtonVisibility();
                         } else {
                             document.getElementById('parse-route').innerText = displayMethod;
                         }
@@ -6370,6 +6373,20 @@
                 const noScreen = document.getElementById('no-screenshot-message');
                 if (noScreen && noScreen.style.display === 'none') {
                     targetContent.style.display = 'flex';
+                }
+            }
+            updateWrongOcrButtonVisibility();
+        }
+
+        function updateWrongOcrButtonVisibility() {
+            const activeTabBtn = document.querySelector('.tabs-header .tab-btn.active');
+            if (!activeTabBtn) return;
+            const activeTab = activeTabBtn.getAttribute('data-loc').replace('tab_', '');
+            const wrongBtnContainer = document.querySelector('#parse-route .btn-wrong');
+            if (wrongBtnContainer) {
+                const parentDiv = wrongBtnContainer.parentElement;
+                if (parentDiv) {
+                    parentDiv.style.visibility = (activeTab === 'location') ? 'visible' : 'hidden';
                 }
             }
         }
