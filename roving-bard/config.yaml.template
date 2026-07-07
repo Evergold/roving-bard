@@ -1,20 +1,23 @@
 # Configuration for Roving Bard
 
 # Set to true to bypass auto-detection and strictly enforce manual bounds.
-# To specify manual bounds, add a minimap_bounds block in this file, e.g.:
-# minimap_bounds:
-#   x: 0.8
-#   y: 0.05
-#   width: 0.15
-#   height: 0.15
 force_manual_bounds: false
 
-# Audio crossfade transitions configuration
+# Manual boundaries of the game minimap on the screen.
+# Specified as relative ratios between 0.0 and 1.0.
+# e.g., x: 0.8 means starting at 80% width from the left edge of the screen.
+minimap_bounds:
+  x: 0.8
+  y: 0.05
+  width: 0.15
+  height: 0.15
+
+# Audio crossfade transitions configuration in milliseconds.
 transitions:
   fade_out_ms: 1500
   fade_in_ms: 1500
 
-# Directory within the project scope where tracks are located
+# Directory within the project scope where tracks are located.
 playlist_directory: "audio"
 
 # Active SoundFont to use for MIDI audio synthesis.
@@ -22,14 +25,28 @@ playlist_directory: "audio"
 # - "MuseScore_General.sf2" maps to MuseScore General (ULTRA) in the UI (uncompressed, downloaded on demand).
 active_soundfont: "MuseScore_General.sf3"
 
-# Default cloud VLM to use for fallback parsing via LiteLLM
+# Default cloud VLM to use for fallback parsing via LiteLLM.
 # Supported formats: gemini/gemini-2.5-flash-lite, gemini/gemini-1.5-flash, openai/gpt-4o, anthropic/claude-3-5-sonnet-20240620
 model_name: "gemini/gemini-2.5-flash-lite"
 
-# Screen polling interval in seconds
+# Screen polling interval in seconds.
 polling_interval: 2.0
 
-# Default API key for frontend authentication should be set via AGENT_API_KEY environment variable.
+# API Key for authenticating frontend requests.
+# If null, can also be set via the AGENT_API_KEY environment variable.
+api_key: null
+
+# Language locale of the LOTRO game client. Used for coordinate/bearing parsing and matching.
+# Supported values: "en" (English), "fr" (French), "de" (German)
+lotro_locale: "en"
+
+# Language of the dashboard UI.
+# Supported values: "en-US", "fr-FR", "de-DE"
+ui_lang: "en-US"
+
+# Image format to compress screenshot crops before sending to VLM inference models.
+# Supported values: "JPEG", "PNG"
+vlm_image_format: "JPEG"
 
 # Track mapping definitions
 # Will match by location name first (substring match), then check coordinate ranges.
