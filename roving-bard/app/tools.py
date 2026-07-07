@@ -468,9 +468,10 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         hsv = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
         
-        # Save cursor processed crop (the red-corrected BGR image converted to RGB)
+        # Save cursor processed crop (the red-corrected BGR image converted to RGB, with fixed corners highlighted in bright green)
         try:
             cursor_proc_rgb = cv_crop[:, :, ::-1].copy()
+            cursor_proc_rgb[valid_orange_mask > 0] = [0, 255, 0] # Highlight corrected pixels in bright green
             cursor_proc_pil = Image.fromarray(cursor_proc_rgb)
             buf_cursor_proc = BytesIO()
             cursor_proc_pil.save(buf_cursor_proc, format="PNG")
