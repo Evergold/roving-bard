@@ -209,6 +209,7 @@ latest_parse_result = {
     "loc_time_ms": 0.0,
     "coords_time_ms": 0.0,
     "preprocess_time_ms": 0.0,
+    "postprocess_time_ms": 0.0,
     "total_time_ms": 0.0,
     "actual_ram": None,
     "actual_vram": None
@@ -556,6 +557,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
             "loc_time_ms": 0.0,
             "coords_time_ms": 0.0,
             "preprocess_time_ms": round(preprocess_time_ms, 1),
+            "postprocess_time_ms": 0.0,
             "total_time_ms": 0.0,
             "actual_ram": act_ram,
             "actual_vram": act_vram,
@@ -591,7 +593,10 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
 
     # Extract raw unfuzzy location/coordinates from Tesseract output
     raw_text = getattr(ocr_parser, "latest_raw_text", "")
+    t_post0 = time.time()
     rich = ocr_parser.parse_text_rich(raw_text)
+    t_post1 = time.time()
+    postprocess_time_ms = (t_post1 - t_post0) * 1000.0
     raw_location = rich["raw_location"]
     raw_coordinates = rich["raw_coordinates"]
 
@@ -643,6 +648,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         "loc_time_ms": round(tesseract_total_ms * 0.55, 1),
         "coords_time_ms": round(tesseract_total_ms * 0.45, 1),
         "preprocess_time_ms": round(preprocess_time_ms, 1),
+        "postprocess_time_ms": round(postprocess_time_ms, 2),
         "total_time_ms": round(tesseract_total_ms, 1),
         "actual_ram": act_ram,
         "actual_vram": act_vram,
