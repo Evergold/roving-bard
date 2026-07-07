@@ -41,7 +41,7 @@ api_key: null
 lotro_locale: "en"
 
 # Language of the dashboard UI.
-# Supported values: "en-US", "fr-FR", "de-DE"
+# Supported values: "en-US", "en-GB", "fr-FR", "de-DE", "es-ES", "it-IT", "ru-RU"
 ui_lang: "en-US"
 
 # Image format to compress screenshot crops before sending to VLM inference models.
