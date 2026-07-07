@@ -406,9 +406,9 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         from PIL import Image
         
         # Center of the radar circle (vertical center is slightly higher in the widget)
-        cx = w // 2
-        cy = int(h * 0.40)
-        r = int(w * 0.12)
+        cx = int(w * 0.512)
+        cy = int(h * 0.367)
+        r = int(w * 0.10)
         cursor_crop = img.crop((cx - r, cy - r, cx + r, cy + r))
         
         # Enlarge 3x for preview and high-precision detection
