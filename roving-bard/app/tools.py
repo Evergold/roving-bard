@@ -377,6 +377,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
     """
     global latest_screenshot_bytes, latest_full_screenshot_bytes, latest_cursor_bytes, latest_character_bytes, latest_cursor_processed_bytes, latest_location_processed_bytes, latest_location_raw_bytes, latest_character_processed_bytes, latest_parse_result, current_ocr_pass
     
+    bearing_prep_ms = 0.0
     import app.tools as tools_mod
     if not ignore_detecting and getattr(tools_mod, "minimap_detecting", False):
         print("[ScanPipeline] Skipping scan: bounds detection is in progress.")
@@ -420,13 +421,51 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         # Parse bearing angle using the scaled up 3x image
         cv_crop = np.array(cursor_crop_3x)
         cv_crop = cv_crop[:, :, ::-1].copy()
-        hsv = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
         
-        # Red HSV ranges
+        # Pre-process the BGR crop to fix the orange corners of the chevron to red before final HSV conversion
+        t_bearing_prep_start = time.time()
+        hsv_temp = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
+        
+        # 1. Find red core of chevron
         lower_red1 = np.array([0, 70, 50])
         upper_red1 = np.array([10, 255, 255])
         lower_red2 = np.array([170, 70, 50])
         upper_red2 = np.array([180, 255, 255])
+        red_mask = cv2.inRange(hsv_temp, lower_red1, upper_red1) | cv2.inRange(hsv_temp, lower_red2, upper_red2)
+        
+        # 2. Calculate red centroid (fall back to center of image if no red found)
+        cX_red, cY_red = cv_crop.shape[1] // 2, cv_crop.shape[0] // 2
+        contours_red, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours_red:
+            largest_contour_red = max(contours_red, key=cv2.contourArea)
+            if cv2.contourArea(largest_contour_red) >= 5:
+                M_red = cv2.moments(largest_contour_red)
+                if M_red["m00"] > 0:
+                    cX_red = int(M_red["m10"] / M_red["m00"])
+                    cY_red = int(M_red["m01"] / M_red["m00"])
+                    
+        # 3. Dilate red mask to cover adjacent orange tips (3x3 kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        dilated_red = cv2.dilate(red_mask, kernel)
+        
+        # 4. Spatial mask centered on the detected red centroid (radius 24)
+        H, W = cv_crop.shape[:2]
+        y_indices, x_indices = np.ogrid[:H, :W]
+        dist_from_centroid = np.sqrt((x_indices - cX_red)**2 + (y_indices - cY_red)**2)
+        centroid_mask = dist_from_centroid <= 24
+        
+        # 5. Find only bright, saturated orange/yellow/peach pixels (excluding dark background paths/terrain)
+        lower_orange = np.array([11, 80, 200])
+        upper_orange = np.array([25, 255, 255])
+        orange_mask = cv2.inRange(hsv_temp, lower_orange, upper_orange)
+        
+        # 6. Combined mask: orange AND adjacent to red AND close to centroid
+        valid_orange_mask = orange_mask & dilated_red & centroid_mask
+        cv_crop[valid_orange_mask > 0] = [0, 0, 255] # make them BGR red
+        t_bearing_prep_end = time.time()
+        bearing_prep_ms = (t_bearing_prep_end - t_bearing_prep_start) * 1000.0
+        
+        hsv = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
         
         # Save cursor processed crop (the red mask)
@@ -516,7 +555,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
     except Exception as e_loc_proc:
         print(f"Error caching location images: {e_loc_proc}")
     t_prep_end = time.time()
-    preprocess_time_ms = (t_prep_end - t_prep_start) * 1000.0
+    preprocess_time_ms = (t_prep_end - t_prep_start) * 1000.0 + bearing_prep_ms
 
     # Create the 2x enlarged preview for the GUI
     try:
