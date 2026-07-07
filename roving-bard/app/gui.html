@@ -4704,7 +4704,7 @@
                         showToast(t("minimap_detect_failed", "Minimap detection failed. Falling back to manual entry."), "warn");
                     }
                 }
-                wasDetectingMinimap = isDetecting;
+
                 
                 // Start or stop fast polling for background detection completion
                 if (isDetecting) {
@@ -4752,6 +4752,7 @@
                         reloadScreenshot();
                     }
                 }
+                wasDetectingMinimap = isDetecting;
 
                 // Load audio library files
                 loadAudioLibrary();
@@ -5769,7 +5770,7 @@
                 'gemma-4-e4b': 'Gemma 4 (4.5B-INT4)',
                 'gemma-4-e2b': 'Gemma 4 (2.3B-INT4)'
             };
-            activeVLMModel = friendlyNames[selectedVal] || selectedVal;
+            activeVLMModel = selectedVal === 'tesseract' ? null : (friendlyNames[selectedVal] || selectedVal);
             
             const resetBtn = document.getElementById('btn-vlm-reset');
             if (resetBtn) {
