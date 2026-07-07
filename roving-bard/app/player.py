@@ -3258,7 +3258,6 @@ class LocalOCRParser:
             )
             
             raw_text = pytesseract.image_to_string(processed, config=config)
-            self.latest_raw_text = raw_text
             location, coordinates, ns, ew = self.parse_text(raw_text)
             
             if location and words:
@@ -3270,7 +3269,7 @@ class LocalOCRParser:
                         print(f"[OCR] Fuzzy matched '{location}' to '{matches[0]}'")
                     location = matches[0]
                         
-            return location, coordinates, ns, ew
+            return location, coordinates, ns, ew, raw_text
         except Exception as e:
             print(f"Error in single OCR pass {ocr_pass}: {e}")
             return None, None, None, None
@@ -3301,11 +3300,12 @@ class LocalOCRParser:
                 except Exception:
                     passes_to_run = [2]
             
-            for pass_idx in passes_to_run:
+            from concurrent.futures import ThreadPoolExecutor
+            
+            def run_one(pass_idx):
                 if not quiet:
                     print(f"[Pipeline] Attempting local Tesseract OCR (Pass {pass_idx})...")
-                loc, coords, ns, ew = self._run_single_ocr_pass(text_img, pass_idx, words, quiet=quiet)
-                raw_text = getattr(self, "latest_raw_text", "")
+                loc, coords, ns, ew, r_text = self._run_single_ocr_pass(text_img, pass_idx, words, quiet=quiet)
                 
                 is_verified = (loc in words) if (loc and words) else False
                 
@@ -3333,13 +3333,19 @@ class LocalOCRParser:
                 else:
                     effective_pixels = white_pixels * 1.5
                     
-                outcomes.append({
+                return {
                     "pass_idx": pass_idx,
                     "outcome": (loc, coords, ns, ew),
-                    "raw_text": raw_text,
+                    "raw_text": r_text,
                     "rank": rank,
                     "effective_pixels": effective_pixels
-                })
+                }
+                
+            if len(passes_to_run) == 1:
+                outcomes.append(run_one(passes_to_run[0]))
+            else:
+                with ThreadPoolExecutor(max_workers=len(passes_to_run)) as executor:
+                    outcomes = list(executor.map(run_one, passes_to_run))
                 
             # Pick the best choice
             if outcomes:
