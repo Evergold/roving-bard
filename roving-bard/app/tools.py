@@ -455,7 +455,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         centroid_mask = dist_from_centroid <= 24
         
         # 5. Find only bright, saturated orange/yellow/peach pixels (excluding dark background paths/terrain)
-        lower_orange = np.array([11, 80, 200])
+        lower_orange = np.array([11, 50, 80])
         upper_orange = np.array([25, 255, 255])
         orange_mask = cv2.inRange(hsv_temp, lower_orange, upper_orange)
         
