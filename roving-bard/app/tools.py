@@ -444,8 +444,8 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
                     cX_red = int(M_red["m10"] / M_red["m00"])
                     cY_red = int(M_red["m01"] / M_red["m00"])
                     
-        # 3. Dilate red mask to cover adjacent orange tips (3x3 kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        # 3. Dilate red mask to cover adjacent orange tips (7x7 kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
         dilated_red = cv2.dilate(red_mask, kernel)
         
         # 4. Spatial mask centered on the detected red centroid (radius 24)
