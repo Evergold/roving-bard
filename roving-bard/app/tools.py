@@ -410,6 +410,7 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         cx = int(w * 0.512)
         cy = int(h * 0.367)
         r = int(w * 0.10)
+        t_bearing_prep_start = time.time()
         cursor_crop = img.crop((cx - r, cy - r, cx + r, cy + r))
         
         # Enlarge 3x for preview and high-precision detection
@@ -423,7 +424,6 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
         cv_crop = cv_crop[:, :, ::-1].copy()
         
         # Pre-process the BGR crop to fix the orange corners of the chevron to red before final HSV conversion
-        t_bearing_prep_start = time.time()
         hsv_temp = cv2.cvtColor(cv_crop, cv2.COLOR_BGR2HSV)
         
         # 1. Find red core of chevron
@@ -544,6 +544,9 @@ def check_screen_and_update_music(ignore_detecting: bool = False, skip_ocr: bool
             latest_cursor_processed_bytes = buf_cursor_proc.getvalue()
         except Exception as e_mask:
             print(f"Error caching processed cursor: {e_mask}")
+        
+        t_bearing_prep_end = time.time()
+        bearing_prep_ms = (t_bearing_prep_end - t_bearing_prep_start) * 1000.0
     except Exception as e:
         print(f"Error parsing bearing: {e}")
 
