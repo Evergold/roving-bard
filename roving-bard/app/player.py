@@ -3290,13 +3290,11 @@ class LocalOCRParser:
             words = load_lotro_words()
             
             # 2. Run passes in ranked priority (Best: verified location and coordinates; Worst: neither)
-            best_outcome = (None, None, None, None)
-            best_rank = -1  # Initialize to -1 so rank 0 outcomes still set best_pass
-            best_pass = 2
+            outcomes = []
             
             # Determine which passes to run
             if ocr_pass == "auto":
-                passes_to_run = [2, 1, 0]
+                passes_to_run = [0, 1, 2]
             else:
                 try:
                     passes_to_run = [int(ocr_pass)]
@@ -3323,16 +3321,40 @@ class LocalOCRParser:
                 else:
                     rank = 0
                     
-                if rank > best_rank:
-                    best_rank = rank
-                    best_pass = pass_idx
-                    best_outcome = (loc, coords, ns, ew)
-                    best_raw_text = raw_text
+                # Compute white pixels
+                processed = self.preprocess_image(text_img, pass_idx)
+                white_pixels = np.sum(processed == 255)
                 
-                # If we get a perfect match (verified location and coordinates) in auto mode, stop early
-                if ocr_pass == "auto" and rank == 4:
-                    break
+                # Apply bias to favor HSV white mask (0) and fixed threshold (1) over noisy Otsu (2)
+                if pass_idx == 0:
+                    effective_pixels = white_pixels * 0.8
+                elif pass_idx == 1:
+                    effective_pixels = white_pixels * 1.0
+                else:
+                    effective_pixels = white_pixels * 1.5
                     
+                outcomes.append({
+                    "pass_idx": pass_idx,
+                    "outcome": (loc, coords, ns, ew),
+                    "raw_text": raw_text,
+                    "rank": rank,
+                    "effective_pixels": effective_pixels
+                })
+                
+            # Pick the best choice
+            if outcomes:
+                max_rank = max(o["rank"] for o in outcomes)
+                best_candidates = [o for o in outcomes if o["rank"] == max_rank]
+                best_choice = min(best_candidates, key=lambda o: o["effective_pixels"])
+                
+                best_outcome = best_choice["outcome"]
+                best_pass = best_choice["pass_idx"]
+                best_raw_text = best_choice["raw_text"]
+            else:
+                best_outcome = (None, None, None, None)
+                best_pass = 2
+                best_raw_text = ""
+                     
             self.latest_raw_text = best_raw_text
             self.latest_successful_pass = best_pass
             return best_outcome
