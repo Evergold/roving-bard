@@ -2771,10 +2771,10 @@ class ScreenGrabber:
                 candidates.sort(key=lambda x: x["score"], reverse=True)
                 top_candidates = candidates[:3]
                 
-                for cand in top_candidates:
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def validate_candidate(cand):
                     cx, cy, r = cand["cx"], cand["cy"], cand["r"]
-                    score = cand["score"]
-                    
                     # 4. OCR validation: verify if this circle has coordinates text below it
                     try:
                         ocr_x_start = max(0, cx - r - int(35 * scale_factor))
@@ -2800,7 +2800,17 @@ class ScreenGrabber:
                     except Exception as ocr_err:
                         print(f"[MinimapDetector] OCR candidate validation error: {ocr_err}")
                         rank = 0
+                    return cand, rank
+
+                if len(top_candidates) == 1:
+                    results = [validate_candidate(top_candidates[0])]
+                else:
+                    with ThreadPoolExecutor(max_workers=len(top_candidates)) as executor:
+                        results = list(executor.map(validate_candidate, top_candidates))
                         
+                for cand, rank in results:
+                    cx, cy, r = cand["cx"], cand["cy"], cand["r"]
+                    score = cand["score"]
                     # Prioritize CV score first (gold ring ratio + top-right bias), then OCR rank
                     if (score > best_score) or (score == best_score and rank > best_rank):
                         best_rank = rank
