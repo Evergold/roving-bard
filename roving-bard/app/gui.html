@@ -10156,6 +10156,7 @@
                 { id: 'region-mappings', col: 0, order: 1 },
                 { id: 'active-screen',   col: 0, order: 2 },
                 { id: 'bounding-box',    col: 0, order: 3 },
+                { id: 'generative-audio',col: 0, order: 4 },
                 { id: 'audio-library',   col: 1, order: 0 },
             ];
 
@@ -10169,7 +10170,15 @@
                     const raw = localStorage.getItem('panelLayout');
                     if (raw) {
                         const parsed = JSON.parse(raw);
-                        if (parsed.panels && Array.isArray(parsed.panels)) return parsed;
+                        if (parsed.panels && Array.isArray(parsed.panels)) {
+                            // Merge missing defaults
+                            PANEL_DEFAULTS.forEach(dp => {
+                                if (!parsed.panels.find(p => p.id === dp.id)) {
+                                    parsed.panels.push(dp);
+                                }
+                            });
+                            return parsed;
+                        }
                     }
                 } catch(e) {}
                 return { panels: JSON.parse(JSON.stringify(PANEL_DEFAULTS)), manuallyForcedSingleCol: false };
