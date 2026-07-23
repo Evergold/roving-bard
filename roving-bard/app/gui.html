@@ -4436,6 +4436,9 @@
                         <div id="tab-audio-files" class="audio-tab" onclick="selectLibraryTab('files')" style="flex: 1; padding: 0.6rem; text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--neon-blue); cursor: pointer; font-family: 'Space Mono', monospace; text-transform: uppercase; border-bottom: 2px solid var(--neon-blue); transition: all 0.2s ease;">
                             Audio Files
                         </div>
+                        <div id="tab-generated-audio" class="audio-tab" onclick="selectLibraryTab('generated')" style="flex: 1; padding: 0.6rem; text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); cursor: pointer; font-family: 'Space Mono', monospace; text-transform: uppercase; border-bottom: 2px solid transparent; transition: all 0.2s ease;">
+                            Generated Audio
+                        </div>
                         <div id="tab-exported-segments" class="audio-tab" onclick="selectLibraryTab('segments')" style="flex: 1; padding: 0.6rem; text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); cursor: pointer; font-family: 'Space Mono', monospace; text-transform: uppercase; border-bottom: 2px solid transparent; transition: all 0.2s ease;">
                             Exported Segments
                         </div>
@@ -4448,6 +4451,13 @@
                                 document.getElementById('tab-audio-files').style.borderBottomColor = 'transparent';
                                 document.getElementById('tab-exported-segments').style.color = 'var(--accent)';
                                 document.getElementById('tab-exported-segments').style.borderBottomColor = 'var(--accent)';
+                            } else if (activeTab === 'generated') {
+                                document.getElementById('tab-audio-files').style.color = 'var(--text-muted)';
+                                document.getElementById('tab-audio-files').style.borderBottomColor = 'transparent';
+                                if(document.getElementById('tab-generated-audio')) {
+                                    document.getElementById('tab-generated-audio').style.color = 'var(--neon-blue)';
+                                    document.getElementById('tab-generated-audio').style.borderBottomColor = 'var(--neon-blue)';
+                                }
                             }
                         })();
                     </script>
@@ -6812,13 +6822,8 @@
             const wasStopped = currentPlaybackStatus ? currentPlaybackStatus.was_stopped : false;
             
             // ─── AUDIO FILES SECTION ───
-            if (isSearching || currentLibraryTab === 'files') {
-                if (isSearching) {
-                    const filesHeader = document.createElement('div');
-                    filesHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-                    filesHeader.innerText = t('audio_files_title');
-                    list.appendChild(filesHeader);
-                }
+            if (isSearching || currentLibraryTab === 'files' || currentLibraryTab === 'generated') {
+
                 
                 const matchedFiles = audioLibraryFiles.filter(fileObj => {
                     const file = typeof fileObj === 'string' ? fileObj : fileObj.filename;
@@ -6935,19 +6940,23 @@
                         list.appendChild(item);
                     };
 
-                    if (importedFiles.length > 0) {
-                        const importedHeader = document.createElement('div');
-                        importedHeader.style = "font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace; font-weight: normal;";
-                        importedHeader.innerText = 'Imported Audio';
-                        list.appendChild(importedHeader);
+                    if ((isSearching || currentLibraryTab === 'files') && importedFiles.length > 0) {
+                        if (isSearching) {
+                            const filesHeader = document.createElement('div');
+                            filesHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                            filesHeader.innerText = t('audio_files_title');
+                            list.appendChild(filesHeader);
+                        }
                         importedFiles.forEach(renderFileItem);
                     }
                     
-                    if (generatedFiles.length > 0) {
-                        const generatedHeader = document.createElement('div');
-                        generatedHeader.style = "font-size: 0.85rem; font-weight: bold; color: var(--neon-blue); margin-top: 1rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-                        generatedHeader.innerText = 'Generated Audio';
-                        list.appendChild(generatedHeader);
+                    if ((isSearching || currentLibraryTab === 'generated') && generatedFiles.length > 0) {
+                        if (isSearching || currentLibraryTab === 'generated') {
+                            const generatedHeader = document.createElement('div');
+                            generatedHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-top: " + (isSearching && importedFiles.length > 0 ? "1.25rem" : "0") + "; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                            generatedHeader.innerText = 'Generated Audio';
+                            list.appendChild(generatedHeader);
+                        }
                         generatedFiles.forEach(renderFileItem);
                     }
                 }
@@ -7491,11 +7500,28 @@
                     tabFiles.style.borderBottomColor = 'var(--neon-blue)';
                     tabSegments.style.color = 'var(--text-muted)';
                     tabSegments.style.borderBottomColor = 'transparent';
-                } else {
+                    if(document.getElementById('tab-generated-audio')) {
+                        document.getElementById('tab-generated-audio').style.color = 'var(--text-muted)';
+                        document.getElementById('tab-generated-audio').style.borderBottomColor = 'transparent';
+                    }
+                } else if (currentLibraryTab === 'segments') {
                     tabFiles.style.color = 'var(--text-muted)';
                     tabFiles.style.borderBottomColor = 'transparent';
                     tabSegments.style.color = 'var(--accent)';
                     tabSegments.style.borderBottomColor = 'var(--accent)';
+                    if(document.getElementById('tab-generated-audio')) {
+                        document.getElementById('tab-generated-audio').style.color = 'var(--text-muted)';
+                        document.getElementById('tab-generated-audio').style.borderBottomColor = 'transparent';
+                    }
+                } else if (currentLibraryTab === 'generated') {
+                    tabFiles.style.color = 'var(--text-muted)';
+                    tabFiles.style.borderBottomColor = 'transparent';
+                    tabSegments.style.color = 'var(--text-muted)';
+                    tabSegments.style.borderBottomColor = 'transparent';
+                    if(document.getElementById('tab-generated-audio')) {
+                        document.getElementById('tab-generated-audio').style.color = 'var(--neon-blue)';
+                        document.getElementById('tab-generated-audio').style.borderBottomColor = 'var(--neon-blue)';
+                    }
                 }
             }
         }
