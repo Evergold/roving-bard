@@ -3543,6 +3543,41 @@ def api_ocr_try_vlm(req: VlmTryRequest):
         return {"status": "error", "message": str(e)}
 
 
+class LyriaGenerateRequest(BaseModel):
+    prompt: str
+    duration: int = 15
+    has_reference: bool = False
+    trim_enabled: bool = False
+    trim_length: int = 30
+    reference_name: str = ""
+
+class LyriaExtractRequest(BaseModel):
+    melody: bool = True
+    bass: bool = True
+    drums: bool = False
+    unload_vlm: bool = False
+    auto_pipeline: bool = True
+    force_parallel: bool = False
+
+@app.post("/api/lyria/generate", dependencies=[Depends(verify_api_key)])
+def lyria_generate(req: LyriaGenerateRequest):
+    import time
+    time.sleep(2) # Simulate generation time
+    dummy_audio = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
+    return {"status": "success", "audio_url": dummy_audio}
+
+@app.post("/api/lyria/export-flac", dependencies=[Depends(verify_api_key)])
+def lyria_export_flac():
+    import time
+    time.sleep(0.5)
+    return {"status": "success"}
+
+@app.post("/api/lyria/extract-midi", dependencies=[Depends(verify_api_key)])
+def lyria_extract_midi(req: LyriaExtractRequest):
+    import time
+    time.sleep(4) 
+    return {"status": "success"}
+
 # Main execution
 if __name__ == "__main__":
     import uvicorn

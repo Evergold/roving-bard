@@ -4248,6 +4248,92 @@
 
         <!-- RIGHT PANEL: Configuration editor -->
         <div class="dashboard-panel" id="col-1" data-col="1">
+            <!-- GENERATIVE AUDIO CARD -->
+            <div class="card" id="card-generative-audio" data-panel-id="generative-audio" style="position: relative;">
+                <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
+                    <div class="title-text-container">
+                        <svg class="collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                        <span>GENERATIVE STUDIO</span>
+                    </div>
+                </div>
+                <div class="card-body-wrapper">
+                    <div style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;">Prompt Generation</label>
+                            <textarea id="lyria-prompt" placeholder="Describe the audio to generate (e.g., A lively tavern jig featuring a prominent lute and hand drums, 120 BPM)" style="width: 100%; height: 60px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); color: var(--text); padding: 0.5rem; border-radius: 4px; resize: none; font-family: inherit; font-size: 0.9rem;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="document.getElementById('lyria-prompt').value = 'A lively tavern jig featuring a prominent lute and hand drums, 120 BPM'" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; min-width: auto; height: auto;">Preset: Tavern Jig</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('lyria-prompt').value = 'Ambient orchestral exploration music with sweeping strings and a solo flute'" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; min-width: auto; height: auto;">Preset: Exploration</button>
+                            
+                            <div style="width: 1px; height: 20px; background: var(--border); margin: 0 0.5rem;"></div>
+                            
+                            <input type="file" id="lyria-reference-input" accept="audio/*" style="display: none;" onchange="handleLyriaReference(this)">
+                            <button class="btn btn-secondary" onclick="document.getElementById('lyria-reference-input').click()" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; min-width: auto; height: auto;">Set Reference</button>
+                            
+                            <div id="lyria-reference-info" style="display: none; align-items: center; gap: 0.5rem;">
+                                <span id="lyria-reference-name" style="font-size: 0.75rem; color: var(--neon-blue); max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">audio.wav</span>
+                                <label style="font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.2rem;">
+                                    <input type="checkbox" id="lyria-trim-ref" checked> Trim to
+                                </label>
+                                <input type="number" id="lyria-trim-length" value="30" min="5" max="120" style="width: 45px; font-size: 0.75rem; padding: 0.1rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text);">
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">s</span>
+                            </div>
+
+                            <div style="flex: 1;"></div>
+                            <label style="font-size: 0.8rem; color: var(--text-secondary);">Duration:</label>
+                            <input type="range" id="lyria-duration" min="10" max="30" value="15" style="width: 80px;" oninput="document.getElementById('lyria-duration-val').innerText = this.value + 's'">
+                            <span id="lyria-duration-val" style="font-size: 0.8rem; font-family: 'Space Mono', monospace; width: 30px;">15s</span>
+                        </div>
+                        <button class="btn" id="btn-generate-lyria" onclick="generateLyriaAudio()" style="width: 100%; font-weight: bold; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">Generate Audio</button>
+                        
+                        <div id="lyria-result-container" style="display: none; border-top: 1px solid var(--border); padding-top: 1rem; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <label style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;">Generated Result</label>
+                                <audio id="lyria-audio-player" controls style="width: 100%; height: 40px;"></audio>
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 4px; border: 1px solid var(--border);">
+                                <label style="color: var(--text-secondary); font-size: 0.8rem; display: block; font-weight: bold;">Stem Extraction (MIDI / ABC)</label>
+                                <div style="display: flex; gap: 1rem; font-size: 0.85rem;">
+                                    <label><input type="checkbox" id="stem-melody" checked> Melody / Lead</label>
+                                    <label><input type="checkbox" id="stem-bass" checked> Bass</label>
+                                    <label><input type="checkbox" id="stem-drums"> Drums</label>
+                                </div>
+                                <div style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; flex-wrap: wrap; padding-top: 0.25rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                                    <label title="Unload the vision model to free VRAM before audio processing">
+                                        <input type="checkbox" id="lyria-unload-vlm"> Unload active VLM
+                                    </label>
+                                    <div style="width: 1px; background: var(--border);"></div>
+                                    <label title="Automatically decide pipeline strategy based on VRAM">
+                                        <input type="checkbox" id="lyria-parallel-auto" checked onchange="toggleParallelAuto(this)"> AUTO Pipeline
+                                    </label>
+                                    <label id="lyria-parallel-manual-label" style="opacity: 0.5; pointer-events: none;" title="Force parallel pipeline (high VRAM usage)">
+                                        <input type="checkbox" id="lyria-parallel-manual" onchange="warnParallelManual(this)"> Force Parallel
+                                    </label>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <button class="btn btn-secondary" onclick="exportLyriaFast()" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; height: auto;">Export to FLAC (Fast)</button>
+                                    <button class="btn btn-secondary" onclick="extractLyriaMidi()" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; height: auto; border-color: var(--neon-blue); color: var(--neon-blue);">Extract to MIDI / ABC</button>
+                                </div>
+                            </div>
+                            
+                            <div id="lyria-progress-container" style="display: none; flex-direction: column; gap: 0.25rem;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary);">
+                                    <span id="lyria-progress-status">Processing...</span>
+                                    <span id="lyria-progress-pct">0%</span>
+                                </div>
+                                <div style="width: 100%; background: rgba(0,0,0,0.3); height: 6px; border-radius: 3px; overflow: hidden;">
+                                    <div id="lyria-progress-bar" style="width: 0%; height: 100%; background: var(--neon-blue); transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- AUDIO LIBRARY CARD -->
             <div class="card" id="card-audio-library" data-panel-id="audio-library" style="position: relative;">
                 <div class="card-title collapsible-header" onclick="toggleCardCollapse(event, this)">
@@ -10879,6 +10965,159 @@
                 }
             });
         }
+// --- Lyria Generative Audio Functions ---
+let lyriaReferenceFile = null;
+
+function handleLyriaReference(input) {
+    if (input.files && input.files[0]) {
+        lyriaReferenceFile = input.files[0];
+        document.getElementById('lyria-reference-name').innerText = lyriaReferenceFile.name;
+        document.getElementById('lyria-reference-info').style.display = 'flex';
+    }
+}
+
+function toggleParallelAuto(cb) {
+    const manualLabel = document.getElementById('lyria-parallel-manual-label');
+    const manualCb = document.getElementById('lyria-parallel-manual');
+    if (cb.checked) {
+        manualLabel.style.opacity = '0.5';
+        manualLabel.style.pointerEvents = 'none';
+        showToast("AUTO Pipeline enabled. The system will dynamically manage VRAM.", "info");
+    } else {
+        manualLabel.style.opacity = '1';
+        manualLabel.style.pointerEvents = 'auto';
+        showToast("Warning: AUTO disabled. Forcing parallel processing may cause Out-of-Memory crashes.", "warning");
+    }
+}
+
+function warnParallelManual(cb) {
+    if (cb.checked) {
+        showToast("Parallel pipeline forced ON. Ensure you have >8GB free VRAM!", "warning");
+    }
+}
+
+async function generateLyriaAudio() {
+    const prompt = document.getElementById('lyria-prompt').value;
+    const duration = document.getElementById('lyria-duration').value;
+    if (!prompt.trim()) {
+        showToast("Please enter a prompt.", "error");
+        return;
+    }
+    
+    // Prepare payload
+    let payload = { prompt, duration };
+    if (lyriaReferenceFile) {
+        payload.has_reference = true;
+        payload.trim_enabled = document.getElementById('lyria-trim-ref').checked;
+        payload.trim_length = parseInt(document.getElementById('lyria-trim-length').value);
+        payload.reference_name = lyriaReferenceFile.name;
+        // In a real app we'd convert the file to Base64 or use FormData here
+        // e.g. payload.reference_b64 = await toBase64(lyriaReferenceFile);
+    }
+    
+    const btn = document.getElementById('btn-generate-lyria');
+    btn.disabled = true;
+    btn.innerText = "Generating...";
+    
+    try {
+        const resp = await fetch('/api/lyria/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        if (!resp.ok) throw new Error("Failed to generate audio");
+        
+        const data = await resp.json();
+        const player = document.getElementById('lyria-audio-player');
+        player.src = data.audio_url; // Endpoint should return a path or base64
+        
+        document.getElementById('lyria-result-container').style.display = 'flex';
+        showToast("Audio generated successfully!", "success");
+    } catch (e) {
+        showToast(e.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Generate Audio";
+    }
+}
+
+async function exportLyriaFast() {
+    showToast("Exporting to FLAC...", "info");
+    try {
+        const resp = await fetch('/api/lyria/export-flac', { method: 'POST' });
+        if (!resp.ok) throw new Error("Export failed");
+        showToast("Exported successfully to library!", "success");
+        if (typeof fetchLibrary === 'function') fetchLibrary(); // refresh audio library
+    } catch (e) {
+        showToast(e.message, "error");
+    }
+}
+
+async function extractLyriaMidi() {
+    const payload = {
+        melody: document.getElementById('stem-melody').checked,
+        bass: document.getElementById('stem-bass').checked,
+        drums: document.getElementById('stem-drums').checked,
+        unload_vlm: document.getElementById('lyria-unload-vlm').checked,
+        auto_pipeline: document.getElementById('lyria-parallel-auto').checked,
+        force_parallel: document.getElementById('lyria-parallel-manual').checked
+    };
+    
+    const progressContainer = document.getElementById('lyria-progress-container');
+    const progressBar = document.getElementById('lyria-progress-bar');
+    const progressStatus = document.getElementById('lyria-progress-status');
+    const progressPct = document.getElementById('lyria-progress-pct');
+    
+    progressContainer.style.display = 'flex';
+    progressBar.style.width = '10%';
+    
+    if (payload.unload_vlm) {
+        progressStatus.innerText = "Unloading active VLM...";
+    } else {
+        progressStatus.innerText = "Initializing Demucs separation...";
+    }
+    progressPct.innerText = "10%";
+    
+    try {
+        // Simulating progress for the UX while fetch is happening
+        let pct = 10;
+        const interval = setInterval(() => {
+            pct += Math.random() * 10;
+            if (pct >= 90) pct = 90;
+            progressBar.style.width = pct + '%';
+            progressPct.innerText = Math.round(pct) + '%';
+            if (pct > 30 && pct < 60) progressStatus.innerText = "Isolating stems...";
+            if (pct >= 60) progressStatus.innerText = "Transcribing with Basic Pitch...";
+        }, 800);
+        
+        const resp = await fetch('/api/lyria/extract-midi', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        clearInterval(interval);
+        
+        if (!resp.ok) throw new Error("Extraction failed");
+        
+        const data = await resp.json();
+        
+        progressBar.style.width = '100%';
+        progressPct.innerText = '100%';
+        progressStatus.innerText = "Complete!";
+        
+        showToast("MIDI/ABC extracted and saved to library!", "success");
+        if (typeof fetchLibrary === 'function') fetchLibrary();
+        
+        setTimeout(() => {
+            progressContainer.style.display = 'none';
+        }, 3000);
+    } catch (e) {
+        progressStatus.innerText = "Error";
+        showToast(e.message, "error");
+    }
+}
 </script>
     <div id="delete-confirm-popover" class="dropdown-content delete-popover" style="position: fixed; z-index: 1050; padding: 0.75rem 1rem; min-width: 170px; text-align: center; border-radius: 8px; border: 1px solid var(--border); background: rgba(22, 28, 38, 0.95); backdrop-filter: blur(10px); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
         <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.6rem; color: var(--text-main);" data-loc="confirm_delete_segment">Delete Segment?</div>
