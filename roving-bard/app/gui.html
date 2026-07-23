@@ -6821,7 +6821,7 @@
                 }
                 
                 const matchedFiles = audioLibraryFiles.filter(fileObj => {
-                    const file = typeof fileObj === 'string' ? fileObj : fileObj.name;
+                    const file = typeof fileObj === 'string' ? fileObj : fileObj.filename;
                     const fileTags = audioLibraryFileTags[file] || [];
                     const matchesSearch = file.toLowerCase().includes(searchVal) || fileTags.some(tag => tag.toLowerCase().includes(searchVal));
                     const matchesTag = !tagVal || fileTags.includes(tagVal);
@@ -6834,8 +6834,8 @@
 
                 const sortFiles = (arr) => {
                     arr.sort((aObj, bObj) => {
-                        const a = typeof aObj === 'string' ? aObj : aObj.name;
-                        const b = typeof bObj === 'string' ? bObj : bObj.name;
+                        const a = typeof aObj === 'string' ? aObj : aObj.filename;
+                        const b = typeof bObj === 'string' ? bObj : bObj.filename;
                         if (librarySortByType) {
                             const extA = getFileExtension(a);
                             const extB = getFileExtension(b);
@@ -6866,7 +6866,7 @@
                     list.appendChild(emptyFiles);
                 } else {
                     const renderFileItem = (fileObj) => {
-                        const file = typeof fileObj === 'string' ? fileObj : fileObj.name;
+                        const file = typeof fileObj === 'string' ? fileObj : fileObj.filename;
                         const item = document.createElement('div');
                         item.className = 'mapping-item';
                         item.setAttribute('onclick', `handleAudioItemClick(event, () => selectAudioFile('${file.replace(/\'/g, "\\\'")}'))`);
