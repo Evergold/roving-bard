@@ -6811,6 +6811,9 @@
             const list = document.getElementById('audio-files-list');
             list.innerHTML = '';
             
+            const emptyStatesContainer = document.createElement('div');
+            list.appendChild(emptyStatesContainer);
+            
             updateTabUi();
             
             const searchVal = (document.getElementById('audio-search-input')?.value || '').trim().toLowerCase();
@@ -6863,12 +6866,7 @@
                     const emptyFiles = document.createElement('div');
                     emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
                     emptyFiles.innerText = t('no_raw_tracks');
-                    list.appendChild(emptyFiles);
-                } else if (matchedFiles.length === 0) {
-                    const emptyFiles = document.createElement('div');
-                    emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
-                    emptyFiles.innerText = t('no_matching_audio_files');
-                    list.appendChild(emptyFiles);
+                    emptyStatesContainer.appendChild(emptyFiles);
                 } else {
                     const renderFileItem = (fileObj) => {
                         const file = typeof fileObj === 'string' ? fileObj : fileObj.filename;
@@ -6940,24 +6938,38 @@
                         list.appendChild(item);
                     };
 
-                    if ((isSearching || currentLibraryTab === 'files') && importedFiles.length > 0) {
-                        if (isSearching) {
-                            const filesHeader = document.createElement('div');
-                            filesHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-                            filesHeader.innerText = t('audio_files_title');
-                            list.appendChild(filesHeader);
+                    if (isSearching || currentLibraryTab === 'files') {
+                        if (importedFiles.length > 0) {
+                            if (isSearching) {
+                                const filesHeader = document.createElement('div');
+                                filesHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                                filesHeader.innerText = t('audio_files_title');
+                                list.appendChild(filesHeader);
+                            }
+                            importedFiles.forEach(renderFileItem);
+                        } else {
+                            const emptyFiles = document.createElement('div');
+                            emptyFiles.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                            emptyFiles.innerText = isSearching ? t('no_matching_audio_files') : "No imported audio files found.";
+                            emptyStatesContainer.appendChild(emptyFiles);
                         }
-                        importedFiles.forEach(renderFileItem);
                     }
                     
-                    if ((isSearching || currentLibraryTab === 'generated') && generatedFiles.length > 0) {
-                        if (isSearching || currentLibraryTab === 'generated') {
-                            const generatedHeader = document.createElement('div');
-                            generatedHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-pink); text-transform: uppercase; margin-top: " + (isSearching && importedFiles.length > 0 ? "1.25rem" : "0") + "; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-                            generatedHeader.innerText = 'Generated Audio';
-                            list.appendChild(generatedHeader);
+                    if (isSearching || currentLibraryTab === 'generated') {
+                        if (generatedFiles.length > 0) {
+                            if (isSearching || currentLibraryTab === 'generated') {
+                                const generatedHeader = document.createElement('div');
+                                generatedHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-pink); text-transform: uppercase; margin-top: " + (isSearching && importedFiles.length > 0 ? "1.25rem" : "0") + "; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                                generatedHeader.innerText = 'Generated Audio';
+                                list.appendChild(generatedHeader);
+                            }
+                            generatedFiles.forEach(renderFileItem);
+                        } else {
+                            const emptyGen = document.createElement('div');
+                            emptyGen.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
+                            emptyGen.innerText = "No matching generated audio.";
+                            emptyStatesContainer.appendChild(emptyGen);
                         }
-                        generatedFiles.forEach(renderFileItem);
                     }
                 }
             }
@@ -6998,12 +7010,12 @@
                     const emptySegments = document.createElement('div');
                     emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
                     emptySegments.innerText = t('no_segments_exported');
-                    list.appendChild(emptySegments);
+                    emptyStatesContainer.appendChild(emptySegments);
                 } else if (matchedSegments.length === 0) {
                     const emptySegments = document.createElement('div');
                     emptySegments.style = "color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; font-family: 'Space Mono', monospace;";
                     emptySegments.innerText = t('no_matching_segments');
-                    list.appendChild(emptySegments);
+                    emptyStatesContainer.appendChild(emptySegments);
                 } else {
                     matchedSegments.forEach(segment => {
                         const item = document.createElement('div');
