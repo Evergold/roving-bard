@@ -3620,6 +3620,58 @@ def gc_stems_and_temp():
 async def startup_gc():
     gc_stems_and_temp()
 
+
+class LyriaSaveRequest(BaseModel):
+    url: str
+    title: str
+
+@app.post("/api/lyria/save-to-library", dependencies=[Depends(verify_api_key)])
+async def api_lyria_save(req: LyriaSaveRequest):
+    try:
+        # url is e.g. /api/lyria/audio/output_batch_0.wav
+        filename = req.url.split("/")[-1]
+        source_path = os.path.join(config.get("audio_dir", "."), filename)
+        if not os.path.exists(source_path):
+            return JSONResponse(status_code=404, content={"error": "Audio not found"})
+        
+        safe_title = "".join([c for c in req.title if c.isalnum() or c in " -_"]).strip()
+        if not safe_title:
+            safe_title = "Generated Result"
+        
+        target_filename = f"{safe_title}.flac"
+        target_path = os.path.join(config.get("audio_dir", "."), target_filename)
+        
+        # Avoid overwriting existing files
+        counter = 1
+        while os.path.exists(target_path):
+            target_filename = f"{safe_title}_{counter}.flac"
+            target_path = os.path.join(config.get("audio_dir", "."), target_filename)
+            counter += 1
+            
+        # Convert to flac-fast
+        subprocess.run([
+            "ffmpeg", "-y", "-i", source_path,
+            "-compression_level", "0",
+            target_path
+        ], check=True, capture_output=True)
+        
+        # Tag with mutagen
+        try:
+            import mutagen
+            from mutagen.flac import FLAC
+            audio = FLAC(target_path)
+            audio["ALBUM"] = "Lyria"
+            audio["GENRE"] = "Generated Audio"
+            audio["TITLE"] = safe_title
+            audio.save()
+        except Exception as e:
+            print(f"Error tagging: {e}")
+            
+        return {"status": "success", "filename": target_filename}
+    except Exception as e:
+        print(f"Error saving to library: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 @app.post("/api/lyria/generate", dependencies=[Depends(verify_api_key)])
 def lyria_generate(req: LyriaGenerateRequest):
     import time
