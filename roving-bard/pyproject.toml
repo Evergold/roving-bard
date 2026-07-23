@@ -31,6 +31,7 @@ dependencies = [
     "psutil",
     "botocore",
     "mido",
+    "librosa>=0.11.0",
 ]
 requires-python = ">=3.11,<3.14"
 
