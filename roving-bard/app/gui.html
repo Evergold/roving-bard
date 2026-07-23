@@ -4345,6 +4345,10 @@
                                     <label id="lyria-parallel-manual-label" style="opacity: 0.5; pointer-events: none;" title="Force parallel pipeline (high VRAM usage)">
                                         <input type="checkbox" id="lyria-parallel-manual" onchange="warnParallelManual(this)"> Force Parallel
                                     </label>
+                                    <div style="width: 1px; background: var(--border);"></div>
+                                    <label title="Export extracted ABC/MIDI files to LOTRO Music folder">
+                                        <input type="checkbox" id="lyria-export-lotro" checked> Export copy to LOTRO Music folder
+                                    </label>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
                                     <button class="btn btn-secondary" onclick="exportLyriaFast()" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; height: auto;">Export to FLAC (Fast)</button>
@@ -6816,7 +6820,8 @@
                     list.appendChild(filesHeader);
                 }
                 
-                const matchedFiles = audioLibraryFiles.filter(file => {
+                const matchedFiles = audioLibraryFiles.filter(fileObj => {
+                    const file = typeof fileObj === 'string' ? fileObj : fileObj.name;
                     const fileTags = audioLibraryFileTags[file] || [];
                     const matchesSearch = file.toLowerCase().includes(searchVal) || fileTags.some(tag => tag.toLowerCase().includes(searchVal));
                     const matchesTag = !tagVal || fileTags.includes(tagVal);
@@ -6824,21 +6829,30 @@
                     return matchesSearch && matchesTag && matchesExtension;
                 });
 
-                // Sort matched files
-                matchedFiles.sort((a, b) => {
-                    if (librarySortByType) {
-                        const extA = getFileExtension(a);
-                        const extB = getFileExtension(b);
-                        if (extA !== extB) {
-                            return librarySortOrder === 'asc'
-                                ? extA.localeCompare(extB, undefined, { sensitivity: 'base' })
-                                : extB.localeCompare(extA, undefined, { sensitivity: 'base' });
+                const importedFiles = matchedFiles.filter(f => (typeof f === 'string' ? null : f.category) !== 'Generated Audio');
+                const generatedFiles = matchedFiles.filter(f => (typeof f === 'string' ? null : f.category) === 'Generated Audio');
+
+                const sortFiles = (arr) => {
+                    arr.sort((aObj, bObj) => {
+                        const a = typeof aObj === 'string' ? aObj : aObj.name;
+                        const b = typeof bObj === 'string' ? bObj : bObj.name;
+                        if (librarySortByType) {
+                            const extA = getFileExtension(a);
+                            const extB = getFileExtension(b);
+                            if (extA !== extB) {
+                                return librarySortOrder === 'asc'
+                                    ? extA.localeCompare(extB, undefined, { sensitivity: 'base' })
+                                    : extB.localeCompare(extA, undefined, { sensitivity: 'base' });
+                            }
                         }
-                    }
-                    return librarySortOrder === 'asc'
-                        ? a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-                        : b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
-                });
+                        return librarySortOrder === 'asc'
+                            ? a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+                            : b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
+                    });
+                };
+                
+                sortFiles(importedFiles);
+                sortFiles(generatedFiles);
 
                 if (audioLibraryFiles.length === 0) {
                     const emptyFiles = document.createElement('div');
@@ -6851,7 +6865,8 @@
                     emptyFiles.innerText = t('no_matching_audio_files');
                     list.appendChild(emptyFiles);
                 } else {
-                    matchedFiles.forEach(file => {
+                    const renderFileItem = (fileObj) => {
+                        const file = typeof fileObj === 'string' ? fileObj : fileObj.name;
                         const item = document.createElement('div');
                         item.className = 'mapping-item';
                         item.setAttribute('onclick', `handleAudioItemClick(event, () => selectAudioFile('${file.replace(/\'/g, "\\\'")}'))`);
@@ -6918,7 +6933,23 @@
                             <button class="${btnClass}" style="${btnStyle}" onclick="${btnClick}">${btnText}</button>
                         `;
                         list.appendChild(item);
-                    });
+                    };
+
+                    if (importedFiles.length > 0) {
+                        const importedHeader = document.createElement('div');
+                        importedHeader.style = "font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace; font-weight: normal;";
+                        importedHeader.innerText = 'Imported Audio';
+                        list.appendChild(importedHeader);
+                        importedFiles.forEach(renderFileItem);
+                    }
+                    
+                    if (generatedFiles.length > 0) {
+                        const generatedHeader = document.createElement('div');
+                        generatedHeader.style = "font-size: 0.85rem; font-weight: bold; color: var(--neon-blue); margin-top: 1rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                        generatedHeader.innerText = 'Generated Audio';
+                        list.appendChild(generatedHeader);
+                        generatedFiles.forEach(renderFileItem);
+                    }
                 }
             }
             
@@ -11210,7 +11241,8 @@ async function extractLyriaMidi() {
         auto_pipeline: document.getElementById('lyria-parallel-auto').checked,
         force_parallel: document.getElementById('lyria-parallel-manual').checked,
         transcription_engine: document.getElementById('lyria-transcription-engine').value,
-        lotro_instrument: document.getElementById('lyria-lotro-instrument').value
+        lotro_instrument: document.getElementById('lyria-lotro-instrument').value,
+        export_to_lotro: document.getElementById('lyria-export-lotro').checked
     };
     
     const progressContainer = document.getElementById('lyria-progress-container');
