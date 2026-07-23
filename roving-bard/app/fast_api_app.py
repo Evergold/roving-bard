@@ -3550,6 +3550,7 @@ class LyriaGenerateRequest(BaseModel):
     trim_enabled: bool = False
     trim_length: int = 30
     reference_name: str = ""
+    batch_size: int = 1
 
 class LyriaExtractRequest(BaseModel):
     melody: bool = True
@@ -3560,12 +3561,41 @@ class LyriaExtractRequest(BaseModel):
     force_parallel: bool = False
     transcription_engine: str = "librosa"
 
+import glob
+import os
+
+def gc_stems_and_temp():
+    """Cleans up intermediate .wav stems and temporary reference files."""
+    try:
+        paths_to_check = [
+            os.path.join(AGENT_DIR, "app", "temp_*.wav"),
+            os.path.join(AGENT_DIR, "app", "*_stem.wav"),
+            os.path.join(AGENT_DIR, "*_stem.wav"),
+            "/tmp/*_stem.wav",
+            "/tmp/temp_*.wav"
+        ]
+        count = 0
+        for pattern in paths_to_check:
+            for filepath in glob.glob(pattern):
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    count += 1
+        if count > 0:
+            print(f"[Garbage Collection] Removed {count} intermediate/temp files.")
+    except Exception as e:
+        print(f"[Garbage Collection] Error during GC: {e}")
+
+@app.on_event("startup")
+async def startup_gc():
+    gc_stems_and_temp()
+
 @app.post("/api/lyria/generate", dependencies=[Depends(verify_api_key)])
 def lyria_generate(req: LyriaGenerateRequest):
     import time
     time.sleep(2) # Simulate generation time
     dummy_audio = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
-    return {"status": "success", "audio_url": dummy_audio}
+    audio_urls = [dummy_audio] * req.batch_size
+    return {"status": "success", "audio_urls": audio_urls}
 
 @app.post("/api/lyria/export-flac", dependencies=[Depends(verify_api_key)])
 def lyria_export_flac():
@@ -3579,6 +3609,30 @@ def lyria_export_flac():
     except ImportError:
         pass
     return {"status": "success", "message": "Exported to FLAC and auto-tagged."}
+
+@app.get("/api/lyria/extract-midi-stream", dependencies=[Depends(verify_api_key)])
+def lyria_extract_midi_stream(
+    stems: str = Query(default="melody"),
+    pipeline: str = Query(default=""),
+    target_instrument: str = Query(default="lute")
+):
+    from fastapi.responses import StreamingResponse
+    import time
+    import json
+    
+    def event_stream():
+        yield "data: " + json.dumps({"step": "Unloading VLM", "progress": 10}) + "\n\n"
+        time.sleep(0.5)
+        yield "data: " + json.dumps({"step": "Running Demucs", "progress": 40}) + "\n\n"
+        time.sleep(1)
+        yield "data: " + json.dumps({"step": "Running Transcription Engine", "progress": 70}) + "\n\n"
+        time.sleep(1)
+        yield "data: " + json.dumps({"step": "Converting to ABC for " + target_instrument, "progress": 90}) + "\n\n"
+        time.sleep(0.5)
+        gc_stems_and_temp()
+        yield "data: " + json.dumps({"step": "Done", "progress": 100}) + "\n\n"
+        
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 @app.post("/api/lyria/extract-midi", dependencies=[Depends(verify_api_key)])
 def lyria_extract_midi(req: LyriaExtractRequest):
