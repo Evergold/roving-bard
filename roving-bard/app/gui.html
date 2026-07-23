@@ -4290,11 +4290,15 @@
                             <label style="font-size: 0.8rem; color: var(--text-secondary);">Duration:</label>
                             <input type="range" id="lyria-duration" min="10" max="30" value="15" style="width: 80px;" oninput="document.getElementById('lyria-duration-val').innerText = this.value + 's'">
                             <span id="lyria-duration-val" style="font-size: 0.8rem; font-family: 'Space Mono', monospace; width: 30px;">15s</span>
+                            
+                            <label style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 0.5rem;">Batch Size:</label>
+                            <input type="range" id="lyria-batch-size" min="1" max="4" value="1" style="width: 60px;" oninput="document.getElementById('lyria-batch-size-val').innerText = this.value">
+                            <span id="lyria-batch-size-val" style="font-size: 0.8rem; font-family: 'Space Mono', monospace; width: 20px;">1</span>
                         </div>
                         <button class="btn" id="btn-generate-lyria" onclick="generateLyriaAudio()" style="width: 100%; font-weight: bold; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">Generate Audio</button>
                         
                         <div id="lyria-result-container" style="display: none; border-top: 1px solid var(--border); padding-top: 1rem; flex-direction: column; gap: 1rem;">
-                            <div>
+                            <div id="lyria-audio-player-container">
                                 <label style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;">Generated Result</label>
                                 <audio id="lyria-audio-player" controls style="width: 100%; height: 40px;"></audio>
                             </div>
@@ -4306,13 +4310,29 @@
                                     <label><input type="checkbox" id="stem-bass" checked> Bass</label>
                                     <label><input type="checkbox" id="stem-drums"> Drums</label>
                                 </div>
-                                <div style="display: flex; gap: 1rem; font-size: 0.85rem; align-items: center; margin-top: 0.25rem;">
-                                    <label style="color: var(--text-secondary);">Engine:</label>
-                                    <select id="lyria-transcription-engine" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text); padding: 0.1rem 0.3rem; border-radius: 2px; font-size: 0.8rem;">
-                                        <option value="librosa">Librosa DSP (Fast, CPU)</option>
-                                        <option value="mt3">Google MT3 (Transformer, GPU)</option>
-                                        <option value="omnizart">Omnizart (Multi-Inst, GPU)</option>
-                                    </select>
+                                <div style="display: flex; gap: 1rem; font-size: 0.85rem; align-items: center; margin-top: 0.25rem; flex-wrap: wrap;">
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <label style="color: var(--text-secondary);">Engine:</label>
+                                        <select id="lyria-transcription-engine" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text); padding: 0.1rem 0.3rem; border-radius: 2px; font-size: 0.8rem;">
+                                            <option value="librosa">Librosa DSP (Fast, CPU)</option>
+                                            <option value="mt3">Google MT3 (Transformer, GPU)</option>
+                                            <option value="omnizart">Omnizart (Multi-Inst, GPU)</option>
+                                        </select>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <label style="color: var(--text-secondary);">Target LOTRO Instrument:</label>
+                                        <select id="lyria-lotro-instrument" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text); padding: 0.1rem 0.3rem; border-radius: 2px; font-size: 0.8rem;">
+                                            <option value="lute">Lute</option>
+                                            <option value="flute">Flute</option>
+                                            <option value="theorbo">Theorbo</option>
+                                            <option value="harp">Harp</option>
+                                            <option value="horn">Horn</option>
+                                            <option value="bagpipe">Bagpipe</option>
+                                            <option value="clarinet">Clarinet</option>
+                                            <option value="fiddle">Fiddle</option>
+                                            <option value="cowbell">Cowbell</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; flex-wrap: wrap; padding-top: 0.25rem; border-top: 1px solid rgba(255,255,255,0.05);">
                                     <label title="Unload the vision model to free VRAM before audio processing">
@@ -11083,13 +11103,14 @@ function audioBufferToWav(buffer, opt) {
 async function generateLyriaAudio() {
     const prompt = document.getElementById('lyria-prompt').value;
     const duration = document.getElementById('lyria-duration').value;
+    const batchSize = document.getElementById('lyria-batch-size').value;
     if (!prompt.trim()) {
         showToast("Please enter a prompt.", "error");
         return;
     }
     
     // Prepare payload
-    let payload = { prompt, duration };
+    let payload = { prompt, duration, batch_size: parseInt(batchSize) };
     if (lyriaReferenceFile) {
         payload.has_reference = true;
         payload.trim_enabled = document.getElementById('lyria-trim-ref').checked;
@@ -11138,8 +11159,25 @@ async function generateLyriaAudio() {
         if (!resp.ok) throw new Error("Failed to generate audio");
         
         const data = await resp.json();
-        const player = document.getElementById('lyria-audio-player');
-        player.src = data.audio_url; // Endpoint should return a path or base64
+        const container = document.getElementById('lyria-audio-player-container');
+        
+        let html = `<label style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;">Generated Result${data.audio_urls && data.audio_urls.length > 1 ? 's' : ''}</label>`;
+        
+        if (data.audio_urls && data.audio_urls.length > 0) {
+            html += `<div style="display: flex; flex-direction: column; gap: 0.5rem;">`;
+            data.audio_urls.forEach((url, i) => {
+                html += `
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); min-width: 20px;">#${i + 1}</span>
+                        <audio controls style="width: 100%; height: 40px;" src="${url}"></audio>
+                    </div>`;
+            });
+            html += `</div>`;
+        } else if (data.audio_url) {
+            html += `<audio controls style="width: 100%; height: 40px;" src="${data.audio_url}"></audio>`;
+        }
+        
+        container.innerHTML = html;
         
         document.getElementById('lyria-result-container').style.display = 'flex';
         showToast("Audio generated successfully!", "success");
@@ -11171,7 +11209,8 @@ async function extractLyriaMidi() {
         unload_vlm: document.getElementById('lyria-unload-vlm').checked,
         auto_pipeline: document.getElementById('lyria-parallel-auto').checked,
         force_parallel: document.getElementById('lyria-parallel-manual').checked,
-        transcription_engine: document.getElementById('lyria-transcription-engine').value
+        transcription_engine: document.getElementById('lyria-transcription-engine').value,
+        lotro_instrument: document.getElementById('lyria-lotro-instrument').value
     };
     
     const progressContainer = document.getElementById('lyria-progress-container');
@@ -11190,39 +11229,49 @@ async function extractLyriaMidi() {
     progressPct.innerText = "10%";
     
     try {
-        // Simulating progress for the UX while fetch is happening
-        let pct = 10;
-        const interval = setInterval(() => {
-            pct += Math.random() * 10;
-            if (pct >= 90) pct = 90;
-            progressBar.style.width = pct + '%';
-            progressPct.innerText = Math.round(pct) + '%';
-            if (pct > 30 && pct < 60) progressStatus.innerText = "Isolating stems...";
-            if (pct >= 60) progressStatus.innerText = "Transcribing with Basic Pitch...";
-        }, 800);
+        const queryParams = new URLSearchParams(payload);
+        const eventSource = new EventSource('/api/lyria/extract-midi-stream?' + queryParams.toString());
         
-        const resp = await fetch('/api/lyria/extract-midi', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
+        eventSource.onmessage = (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                
+                if (data.progress !== undefined) {
+                    progressBar.style.width = data.progress + '%';
+                    progressPct.innerText = Math.round(data.progress) + '%';
+                }
+                
+                if (data.status) {
+                    progressStatus.innerText = data.status;
+                }
+                
+                if (data.done) {
+                    eventSource.close();
+                    progressBar.style.width = '100%';
+                    progressPct.innerText = '100%';
+                    progressStatus.innerText = "Complete!";
+                    
+                    showToast("MIDI/ABC extracted and saved to library!", "success");
+                    if (typeof fetchLibrary === 'function') fetchLibrary();
+                    
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 3000);
+                } else if (data.error) {
+                    eventSource.close();
+                    progressStatus.innerText = "Error";
+                    showToast(data.error, "error");
+                }
+            } catch (err) {
+                console.error("Error parsing SSE data", err);
+            }
+        };
         
-        clearInterval(interval);
-        
-        if (!resp.ok) throw new Error("Extraction failed");
-        
-        const data = await resp.json();
-        
-        progressBar.style.width = '100%';
-        progressPct.innerText = '100%';
-        progressStatus.innerText = "Complete!";
-        
-        showToast("MIDI/ABC extracted and saved to library!", "success");
-        if (typeof fetchLibrary === 'function') fetchLibrary();
-        
-        setTimeout(() => {
-            progressContainer.style.display = 'none';
-        }, 3000);
+        eventSource.onerror = (e) => {
+            eventSource.close();
+            progressStatus.innerText = "Error";
+            showToast("Connection to extraction stream failed.", "error");
+        };
     } catch (e) {
         progressStatus.innerText = "Error";
         showToast(e.message, "error");
