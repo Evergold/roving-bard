@@ -3574,8 +3574,40 @@ def lyria_export_flac():
 
 @app.post("/api/lyria/extract-midi", dependencies=[Depends(verify_api_key)])
 def lyria_extract_midi(req: LyriaExtractRequest):
+    global currently_loaded_vlm
     import time
-    time.sleep(4) 
+    import requests
+
+    vlm_to_reload = None
+    if req.unload_vlm and currently_loaded_vlm and currently_loaded_vlm != "florence-2":
+        vlm_to_reload = currently_loaded_vlm
+        try:
+            model_tag = resolve_active_ollama_tag(vlm_to_reload) if vlm_to_reload != "paligemma" else "pdevine/paligemma"
+            requests.post("http://127.0.0.1:11434/api/generate", json={"model": model_tag, "keep_alive": 0}, timeout=5)
+        except Exception as e:
+            print(f"Failed to unload VLM: {e}")
+
+    try:
+        import demucs.api
+        # demucs logic goes here
+    except ImportError:
+        print("Demucs mocked")
+        time.sleep(1)
+
+    try:
+        from basic_pitch.inference import predict
+        # basic-pitch logic goes here
+    except ImportError:
+        print("Basic Pitch mocked")
+        time.sleep(1)
+
+    if vlm_to_reload:
+        try:
+            model_tag = resolve_active_ollama_tag(vlm_to_reload) if vlm_to_reload != "paligemma" else "pdevine/paligemma"
+            requests.post("http://127.0.0.1:11434/api/generate", json={"model": model_tag, "keep_alive": "5m"}, timeout=5)
+        except Exception as e:
+            print(f"Failed to reload VLM: {e}")
+
     return {"status": "success"}
 
 # Main execution
