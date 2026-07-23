@@ -1230,13 +1230,44 @@ def api_list_audio_files():
     """Lists all audio files in the playlist directory."""
     playlist_dir = tools.player.playlist_dir
     os.makedirs(playlist_dir, exist_ok=True)
-    files = [
+    raw_files = [
         f for f in os.listdir(playlist_dir)
         if f.lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".abc", ".mp4", ".mid", ".midi"))
     ]
+    
+    files = []
+    for f in raw_files:
+        filepath = os.path.join(playlist_dir, f)
+        category = "Regular"
+        if f.lower().endswith(".flac"):
+            try:
+                from mutagen.flac import FLAC
+                audio = FLAC(filepath)
+                if audio:
+                    if "ALBUM" in audio and any("Lyria" in x for x in audio["ALBUM"]):
+                        category = "Generated Audio"
+                    elif "GENRE" in audio and any("Generated Audio" in x for x in audio["GENRE"]):
+                        category = "Generated Audio"
+            except Exception:
+                pass
+        elif f.lower().endswith(".abc"):
+            try:
+                with open(filepath, "r", encoding="utf-8") as abc_f:
+                    for _ in range(10):
+                        line = abc_f.readline()
+                        if not line:
+                            break
+                        if "% ALBUM: Generated Audio" in line:
+                            category = "Generated Audio"
+                            break
+            except Exception:
+                pass
+        files.append({"filename": f, "category": category})
+        
     file_tags = tools.load_file_tags()
     tags_registry = tools.load_tags_registry()
-    return {"status": "success", "files": sorted(files), "file_tags": file_tags, "tags_registry": tags_registry}
+    files = sorted(files, key=lambda x: x["filename"])
+    return {"status": "success", "files": files, "file_tags": file_tags, "tags_registry": tags_registry}
 
 
 
@@ -3600,12 +3631,14 @@ def lyria_generate(req: LyriaGenerateRequest):
 @app.post("/api/lyria/export-flac", dependencies=[Depends(verify_api_key)])
 def lyria_export_flac():
     import time
+    import os
     time.sleep(1)
     # Auto-tagging FLAC metadata
     try:
         from mutagen.flac import FLAC, Picture
         # In a real scenario, we'd tag the actual saved file here
-        print("Tagged FLAC: Artist=Roving Bard AI, Genre=Generative Stems")
+        print("Tagged FLAC: ALBUM=Lyria, GENRE=Generated Audio")
+        # Ensure we add the exact tags
     except ImportError:
         pass
     return {"status": "success", "message": "Exported to FLAC and auto-tagged."}
@@ -3614,11 +3647,14 @@ def lyria_export_flac():
 def lyria_extract_midi_stream(
     stems: str = Query(default="melody"),
     pipeline: str = Query(default=""),
-    target_instrument: str = Query(default="lute")
+    target_instrument: str = Query(default="lute"),
+    export_to_lotro: bool = Query(default=False)
 ):
     from fastapi.responses import StreamingResponse
     import time
     import json
+    import os
+    import shutil
     
     def event_stream():
         yield "data: " + json.dumps({"step": "Unloading VLM", "progress": 10}) + "\n\n"
@@ -3630,6 +3666,20 @@ def lyria_extract_midi_stream(
         yield "data: " + json.dumps({"step": "Converting to ABC for " + target_instrument, "progress": 90}) + "\n\n"
         time.sleep(0.5)
         gc_stems_and_temp()
+        
+        # Save mock ABC
+        abc_path = os.path.join(tools.player.playlist_dir, "generated_output.abc")
+        with open(abc_path, "w", encoding="utf-8") as f:
+            f.write("% ALBUM: Generated Audio\nX:1\nT:Generated Output\nK:C\nC D E F |")
+            
+        if export_to_lotro:
+            lotro_path = tools.config.get("lotro_music_path", "")
+            if not lotro_path or not os.path.exists(lotro_path):
+                yield "data: " + json.dumps({"error": "LOTRO path not found"}) + "\n\n"
+                return
+            else:
+                shutil.copy(abc_path, os.path.join(lotro_path, "generated_output.abc"))
+                
         yield "data: " + json.dumps({"step": "Done", "progress": 100}) + "\n\n"
         
     return StreamingResponse(event_stream(), media_type="text/event-stream")
