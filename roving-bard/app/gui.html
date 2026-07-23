@@ -4455,8 +4455,8 @@
                                 document.getElementById('tab-audio-files').style.color = 'var(--text-muted)';
                                 document.getElementById('tab-audio-files').style.borderBottomColor = 'transparent';
                                 if(document.getElementById('tab-generated-audio')) {
-                                    document.getElementById('tab-generated-audio').style.color = 'var(--neon-blue)';
-                                    document.getElementById('tab-generated-audio').style.borderBottomColor = 'var(--neon-blue)';
+                                    document.getElementById('tab-generated-audio').style.color = 'var(--neon-pink)';
+                                    document.getElementById('tab-generated-audio').style.borderBottomColor = 'var(--neon-pink)';
                                 }
                             }
                         })();
@@ -6953,7 +6953,7 @@
                     if ((isSearching || currentLibraryTab === 'generated') && generatedFiles.length > 0) {
                         if (isSearching || currentLibraryTab === 'generated') {
                             const generatedHeader = document.createElement('div');
-                            generatedHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-blue); text-transform: uppercase; margin-top: " + (isSearching && importedFiles.length > 0 ? "1.25rem" : "0") + "; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                            generatedHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--neon-pink); text-transform: uppercase; margin-top: " + (isSearching && importedFiles.length > 0 ? "1.25rem" : "0") + "; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
                             generatedHeader.innerText = 'Generated Audio';
                             list.appendChild(generatedHeader);
                         }
@@ -6964,19 +6964,19 @@
             
             // ─── EXPORTED SEGMENTS SECTION ───
             if (!activeExtensionFilter && (isSearching || currentLibraryTab === 'segments')) {
-                if (isSearching) {
-                    const segmentsHeader = document.createElement('div');
-                    segmentsHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
-                    segmentsHeader.innerText = t('exported_segments_title');
-                    list.appendChild(segmentsHeader);
-                }
-                
                 const matchedSegments = segments.filter(segment => {
                     const segTags = segment.tags || [];
                     const matchesSearch = segment.name.toLowerCase().includes(searchVal) || segTags.some(tag => tag.toLowerCase().includes(searchVal));
                     const matchesTag = !tagVal || segTags.includes(tagVal);
                     return matchesSearch && matchesTag;
                 });
+
+                if (isSearching && matchedSegments.length > 0) {
+                    const segmentsHeader = document.createElement('div');
+                    segmentsHeader.style = "font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-top: 1.25rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Space Mono', monospace;";
+                    segmentsHeader.innerText = t('exported_segments_title');
+                    list.appendChild(segmentsHeader);
+                }
 
                 // Sort matched segments
                 matchedSegments.sort((a, b) => {
@@ -7519,8 +7519,8 @@
                     tabSegments.style.color = 'var(--text-muted)';
                     tabSegments.style.borderBottomColor = 'transparent';
                     if(document.getElementById('tab-generated-audio')) {
-                        document.getElementById('tab-generated-audio').style.color = 'var(--neon-blue)';
-                        document.getElementById('tab-generated-audio').style.borderBottomColor = 'var(--neon-blue)';
+                        document.getElementById('tab-generated-audio').style.color = 'var(--neon-pink)';
+                        document.getElementById('tab-generated-audio').style.borderBottomColor = 'var(--neon-pink)';
                     }
                 }
             }
