@@ -4276,9 +4276,13 @@
                             <div id="lyria-reference-info" style="display: none; align-items: center; gap: 0.5rem;">
                                 <span id="lyria-reference-name" style="font-size: 0.75rem; color: var(--neon-blue); max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">audio.wav</span>
                                 <label style="font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.2rem;">
-                                    <input type="checkbox" id="lyria-trim-ref" checked> Trim to
+                                    <input type="checkbox" id="lyria-trim-ref" checked> Trim
                                 </label>
-                                <input type="number" id="lyria-trim-length" value="30" min="5" max="120" style="width: 45px; font-size: 0.75rem; padding: 0.1rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text);">
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">Start:</span>
+                                <input type="number" id="lyria-trim-start" value="0" min="0" style="width: 40px; font-size: 0.75rem; padding: 0.1rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text);">
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">s</span>
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">End:</span>
+                                <input type="number" id="lyria-trim-end" value="30" min="1" style="width: 40px; font-size: 0.75rem; padding: 0.1rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text);">
                                 <span style="font-size: 0.75rem; color: var(--text-secondary);">s</span>
                             </div>
 
@@ -4301,6 +4305,14 @@
                                     <label><input type="checkbox" id="stem-melody" checked> Melody / Lead</label>
                                     <label><input type="checkbox" id="stem-bass" checked> Bass</label>
                                     <label><input type="checkbox" id="stem-drums"> Drums</label>
+                                </div>
+                                <div style="display: flex; gap: 1rem; font-size: 0.85rem; align-items: center; margin-top: 0.25rem;">
+                                    <label style="color: var(--text-secondary);">Engine:</label>
+                                    <select id="lyria-transcription-engine" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text); padding: 0.1rem 0.3rem; border-radius: 2px; font-size: 0.8rem;">
+                                        <option value="librosa">Librosa DSP (Fast, CPU)</option>
+                                        <option value="mt3">Google MT3 (Transformer, GPU)</option>
+                                        <option value="omnizart">Omnizart (Multi-Inst, GPU)</option>
+                                    </select>
                                 </div>
                                 <div style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; flex-wrap: wrap; padding-top: 0.25rem; border-top: 1px solid rgba(255,255,255,0.05);">
                                     <label title="Unload the vision model to free VRAM before audio processing">
@@ -11081,19 +11093,24 @@ async function generateLyriaAudio() {
     if (lyriaReferenceFile) {
         payload.has_reference = true;
         payload.trim_enabled = document.getElementById('lyria-trim-ref').checked;
-        payload.trim_length = parseInt(document.getElementById('lyria-trim-length').value);
         payload.reference_name = lyriaReferenceFile.name;
         
         if (payload.trim_enabled) {
             const arrayBuffer = await lyriaReferenceFile.arrayBuffer();
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-            const trimDuration = Math.min(audioBuffer.duration, payload.trim_length);
+            
+            const startSec = parseFloat(document.getElementById('lyria-trim-start').value) || 0;
+            const endSec = parseFloat(document.getElementById('lyria-trim-end').value) || 30;
+            const actualStart = Math.max(0, Math.min(startSec, audioBuffer.duration));
+            const actualEnd = Math.max(actualStart + 0.1, Math.min(endSec, audioBuffer.duration));
+            const trimDuration = actualEnd - actualStart;
+            
             const offlineCtx = new OfflineAudioContext(audioBuffer.numberOfChannels, audioBuffer.sampleRate * trimDuration, audioBuffer.sampleRate);
             const source = offlineCtx.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(offlineCtx.destination);
-            source.start(0);
+            source.start(0, actualStart, trimDuration);
             const renderedBuffer = await offlineCtx.startRendering();
             const wavBuffer = audioBufferToWav(renderedBuffer);
             payload.reference_b64 = arrayBufferToBase64(wavBuffer);
@@ -11153,7 +11170,8 @@ async function extractLyriaMidi() {
         drums: document.getElementById('stem-drums').checked,
         unload_vlm: document.getElementById('lyria-unload-vlm').checked,
         auto_pipeline: document.getElementById('lyria-parallel-auto').checked,
-        force_parallel: document.getElementById('lyria-parallel-manual').checked
+        force_parallel: document.getElementById('lyria-parallel-manual').checked,
+        transcription_engine: document.getElementById('lyria-transcription-engine').value
     };
     
     const progressContainer = document.getElementById('lyria-progress-container');
